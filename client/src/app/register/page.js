@@ -115,7 +115,7 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>Full Name</label>
-                <input type="text" placeholder="Tarun Gupta" value={name} onChange={e => setName(e.target.value)} required style={inputStyle}
+                <input type="text" placeholder="Sona`1" value={name} onChange={e => setName(e.target.value)} required style={inputStyle}
                   onFocus={e => e.target.style.borderColor = '#6366f1'}
                   onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
               </div>
