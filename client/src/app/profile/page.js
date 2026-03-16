@@ -26,7 +26,7 @@ export default function ProfilePage() {
   const updateName = async (e) => {
     e.preventDefault(); setNameMsg(''); setNameError('');
     try {
-      const res = await fetch('http://localhost:5000/api/auth/profile', {
+      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ name: nameForm.name }),
@@ -46,7 +46,7 @@ export default function ProfilePage() {
     if (passForm.newPassword !== passForm.confirmPassword) { setPassError('Passwords do not match'); return; }
     if (passForm.newPassword.length < 6) { setPassError('Min 6 characters'); return; }
     try {
-      const res = await fetch('http://localhost:5000/api/auth/password', {
+      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/password', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ currentPassword: passForm.currentPassword, newPassword: passForm.newPassword }),

@@ -20,7 +20,7 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/products', {
+      const res = await fetch('https://rakh-rakhaav.onrender.com/api/products', {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.status === 401) { router.push('/login'); return; }
@@ -66,7 +66,7 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = editProduct ? `http://localhost:5000/api/products/${editProduct.id}` : 'http://localhost:5000/api/products';
+    const url = editProduct ? `https://rakh-rakhaav.onrender.com/api/products/${editProduct.id}` : 'https://rakh-rakhaav.onrender.com/api/products';
     const method = editProduct ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -81,7 +81,7 @@ export default function ProductsPage() {
   const handleDelete = async (id) => {
     if (!confirm('Delete this product?')) return;
     try {
-      await fetch(`http://localhost:5000/api/products/${id}`, {
+      await fetch(`https://rakh-rakhaav.onrender.com/api/products/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${getToken()}` },
       });

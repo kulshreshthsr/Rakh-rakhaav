@@ -22,9 +22,9 @@ export default function DashboardPage() {
     try {
       const headers = { Authorization: `Bearer ${getToken()}` };
       const [pRes, sRes, puRes] = await Promise.all([
-        fetch('http://localhost:5000/api/products', { headers }),
-        fetch('http://localhost:5000/api/sales', { headers }),
-        fetch('http://localhost:5000/api/purchases', { headers }),
+        fetch('https://rakh-rakhaav.onrender.com/api/products', { headers }),
+        fetch('https://rakh-rakhaav.onrender.com/api/sales', { headers }),
+        fetch('https://rakh-rakhaav.onrender.com/api/purchases', { headers }),
       ]);
       const products = await pRes.json();
       const sales = await sRes.json();

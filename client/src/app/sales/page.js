@@ -16,7 +16,7 @@ export default function SalesPage() {
 
   const fetchSales = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/sales', { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch('https://rakh-rakhaav.onrender.com/api/sales', { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.status === 401) { router.push('/login'); return; }
       setSales(await res.json());
     } catch { setError('Could not load sales'); }
@@ -24,7 +24,7 @@ export default function SalesPage() {
   };
 
   const fetchProducts = async () => {
-    const res = await fetch('http://localhost:5000/api/products', { headers: { Authorization: `Bearer ${getToken()}` } });
+    const res = await fetch('https://rakh-rakhaav.onrender.com/api/products', { headers: { Authorization: `Bearer ${getToken()}` } });
     setProducts(await res.json());
   };
 
@@ -36,7 +36,7 @@ export default function SalesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault(); setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/sales', {
+      const res = await fetch('https://rakh-rakhaav.onrender.com/api/sales', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify(form),
