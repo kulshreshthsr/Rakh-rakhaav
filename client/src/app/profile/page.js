@@ -3,14 +3,20 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../components/Layout';
 
+const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh'];
+
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
+  const [shop, setShop] = useState(null);
   const [nameForm, setNameForm] = useState({ name: '' });
   const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [shopForm, setShopForm] = useState({ name: '', address: '', city: '', state: '', pincode: '', gstin: '', phone: '', email: '' });
   const [nameMsg, setNameMsg] = useState('');
   const [passMsg, setPassMsg] = useState('');
+  const [shopMsg, setShopMsg] = useState('');
   const [nameError, setNameError] = useState('');
   const [passError, setPassError] = useState('');
+  const [shopError, setShopError] = useState('');
   const router = useRouter();
 
   const getToken = () => localStorage.getItem('token');
@@ -21,7 +27,28 @@ export default function ProfilePage() {
     const u = JSON.parse(stored);
     setUser(u);
     setNameForm({ name: u.name });
+    fetchShop();
   }, []);
+
+  const fetchShop = async () => {
+    try {
+      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/shop', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      setShop(data);
+      setShopForm({
+        name: data.name || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        pincode: data.pincode || '',
+        gstin: data.gstin || '',
+        phone: data.phone || '',
+        email: data.email || '',
+      });
+    } catch {}
+  };
 
   const updateName = async (e) => {
     e.preventDefault(); setNameMsg(''); setNameError('');
@@ -57,12 +84,26 @@ export default function ProfilePage() {
     } catch { setPassError('Server error'); }
   };
 
+  const updateShop = async (e) => {
+    e.preventDefault(); setShopMsg(''); setShopError('');
+    try {
+      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/shop', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify(shopForm),
+      });
+      const data = await res.json();
+      if (res.ok) { setShop(data); setShopMsg('Shop details updated!'); }
+      else setShopError(data.message || 'Failed');
+    } catch { setShopError('Server error'); }
+  };
+
   return (
     <Layout>
       <div className="page-title">Profile & Settings</div>
+      <div style={{ maxWidth: 560 }}>
 
-      <div style={{ maxWidth: 520 }}>
-        {/* Avatar + info */}
+        {/* Avatar */}
         <div className="card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
             {user?.name?.charAt(0).toUpperCase()}
@@ -70,12 +111,63 @@ export default function ProfilePage() {
           <div>
             <div style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>{user?.name}</div>
             <div style={{ color: '#9ca3af', fontSize: 14 }}>{user?.email}</div>
+            {shop?.gstin && <div style={{ fontSize: 12, color: '#6366f1', fontWeight: 600, marginTop: 2 }}>GSTIN: {shop.gstin}</div>}
           </div>
+        </div>
+
+        {/* Shop Details */}
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 4 }}>🏪 Shop Details</div>
+          <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>Used in invoices — fill completely for GST compliance</div>
+          {shopMsg && <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{shopMsg}</div>}
+          {shopError && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{shopError}</div>}
+          <form onSubmit={updateShop}>
+            <div className="form-group">
+              <label className="form-label">Shop Name *</label>
+              <input className="form-input" value={shopForm.name} onChange={e => setShopForm({ ...shopForm, name: e.target.value })} required />
+            </div>
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label">Phone</label>
+                <input className="form-input" placeholder="9876543210" value={shopForm.phone} onChange={e => setShopForm({ ...shopForm, phone: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input className="form-input" placeholder="shop@email.com" value={shopForm.email} onChange={e => setShopForm({ ...shopForm, email: e.target.value })} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Address</label>
+              <input className="form-input" placeholder="Street address" value={shopForm.address} onChange={e => setShopForm({ ...shopForm, address: e.target.value })} />
+            </div>
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label">City</label>
+                <input className="form-input" placeholder="City" value={shopForm.city} onChange={e => setShopForm({ ...shopForm, city: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Pincode</label>
+                <input className="form-input" placeholder="110001" value={shopForm.pincode} onChange={e => setShopForm({ ...shopForm, pincode: e.target.value })} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">State (for CGST/IGST detection)</label>
+              <select className="form-input" value={shopForm.state} onChange={e => setShopForm({ ...shopForm, state: e.target.value })}>
+                <option value="">Select State</option>
+                {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">GSTIN (optional)</label>
+              <input className="form-input" placeholder="22AAAAA0000A1Z5" value={shopForm.gstin} onChange={e => setShopForm({ ...shopForm, gstin: e.target.value })} />
+            </div>
+            <button type="submit" className="btn-primary" style={{ width: '100%' }}>Save Shop Details</button>
+          </form>
         </div>
 
         {/* Update name */}
         <div className="card" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 16 }}>Update Name</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 16 }}>✏️ Update Name</div>
           {nameMsg && <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{nameMsg}</div>}
           {nameError && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{nameError}</div>}
           <form onSubmit={updateName} style={{ display: 'flex', gap: 10 }}>
@@ -86,7 +178,7 @@ export default function ProfilePage() {
 
         {/* Change password */}
         <div className="card">
-          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 16 }}>Change Password</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 16 }}>🔒 Change Password</div>
           {passMsg && <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{passMsg}</div>}
           {passError && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{passError}</div>}
           <form onSubmit={updatePassword}>

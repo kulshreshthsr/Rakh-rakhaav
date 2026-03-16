@@ -9,7 +9,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', price: '', quantity: '', unit: '' });
+  const [form, setForm] = useState({ name: '', description: '', price: '', quantity: '', unit: '', hsn_code: '', gst_rate: 0 });
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('name');
@@ -54,19 +54,26 @@ export default function ProductsPage() {
 
   const openAdd = () => {
     setEditProduct(null);
-    setForm({ name: '', description: '', price: '', quantity: '', unit: '' });
+    setForm({ name: '', description: '', price: '', quantity: '', unit: '', hsn_code: '', gst_rate: 0 });
     setShowModal(true);
   };
 
   const openEdit = (product) => {
     setEditProduct(product);
-    setForm({ name: product.name, description: product.description || '', price: product.price, quantity: product.quantity, unit: product.unit || '' });
+    setForm({
+      name: product.name,
+      description: product.description || '',
+      price: product.price,
+      quantity: product.quantity,
+      unit: product.unit || '',
+      hsn_code: product.hsn_code || '',
+      gst_rate: product.gst_rate || 0,
+    });
     setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // ✅ _id fix
     const url = editProduct ? `https://rakh-rakhaav.onrender.com/api/products/${editProduct._id}` : 'https://rakh-rakhaav.onrender.com/api/products';
     const method = editProduct ? 'PUT' : 'POST';
     try {
@@ -94,6 +101,11 @@ export default function ProductsPage() {
     if (qty === 0) return <span className="badge badge-red">Out of stock</span>;
     if (qty <= 5) return <span className="badge badge-yellow">Low stock</span>;
     return <span className="badge badge-green">In stock</span>;
+  };
+
+  const getGSTBadge = (rate) => {
+    if (!rate || rate === 0) return <span style={{ color: '#9ca3af', fontSize: 12 }}>No GST</span>;
+    return <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>GST {rate}%</span>;
   };
 
   return (
@@ -135,17 +147,22 @@ export default function ProductsPage() {
         </div>
       ) : (
         <>
+          {/* Desktop table */}
           <div className="table-container hidden-xs">
             <table>
               <thead>
-                <tr><th>Name</th><th>Description</th><th>Price</th><th>Qty</th><th>Unit</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>Name</th><th>HSN</th><th>Base Price</th><th>GST</th><th>Qty</th><th>Unit</th><th>Status</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {filtered.map(p => (
                   <tr key={p._id}>
-                    <td style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.name}</td>
-                    <td style={{ color: '#9ca3af' }}>{p.description || '—'}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.name}</div>
+                      <div style={{ color: '#9ca3af', fontSize: 12 }}>{p.description || ''}</div>
+                    </td>
+                    <td style={{ color: '#9ca3af', fontSize: 13 }}>{p.hsn_code || '—'}</td>
                     <td style={{ fontWeight: 600 }}>₹{p.price}</td>
+                    <td>{getGSTBadge(p.gst_rate)}</td>
                     <td>{p.quantity}</td>
                     <td style={{ color: '#9ca3af' }}>{p.unit || '—'}</td>
                     <td>{getStockBadge(p.quantity)}</td>
@@ -159,6 +176,7 @@ export default function ProductsPage() {
             </table>
           </div>
 
+          {/* Mobile cards */}
           <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtered.map(p => (
               <div key={p._id} className="card">
@@ -169,10 +187,12 @@ export default function ProductsPage() {
                   </div>
                   {getStockBadge(p.quantity)}
                 </div>
-                <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#1a1a2e' }}>₹{p.price}</div></div>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>BASE PRICE</div><div style={{ fontWeight: 700, color: '#1a1a2e' }}>₹{p.price}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: '#1a1a2e' }}>{p.quantity}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>UNIT</div><div style={{ fontWeight: 700, color: '#1a1a2e' }}>{p.unit || '—'}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>HSN</div><div style={{ fontWeight: 700, color: '#1a1a2e' }}>{p.hsn_code || '—'}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><div>{getGSTBadge(p.gst_rate)}</div></div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => openEdit(p)} style={{ flex: 1, padding: '8px', background: '#eef2ff', color: '#6366f1', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
@@ -184,13 +204,14 @@ export default function ProductsPage() {
         </>
       )}
 
+      {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 20 }}>{editProduct ? 'Edit Product' : 'Add Product'}</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label className="form-label">Name</label>
+                <label className="form-label">Name *</label>
                 <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div className="form-group">
@@ -199,18 +220,43 @@ export default function ProductsPage() {
               </div>
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Price (₹)</label>
+                  <label className="form-label">Base Price ₹ *</label>
                   <input className="form-input" type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Quantity</label>
+                  <label className="form-label">Quantity *</label>
                   <input className="form-input" type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required />
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Unit (kg, pcs, box...)</label>
-                <input className="form-input" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">Unit (kg, pcs...)</label>
+                  <input className="form-input" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">HSN/SAC Code</label>
+                  <input className="form-input" placeholder="e.g. 8471" value={form.hsn_code} onChange={e => setForm({ ...form, hsn_code: e.target.value })} />
+                </div>
               </div>
+              <div className="form-group">
+                <label className="form-label">GST Rate</label>
+                <select className="form-input" value={form.gst_rate} onChange={e => setForm({ ...form, gst_rate: parseInt(e.target.value) })}>
+                  <option value={0}>0% — No GST</option>
+                  <option value={5}>5% GST</option>
+                  <option value={12}>12% GST</option>
+                  <option value={18}>18% GST</option>
+                  <option value={28}>28% GST</option>
+                </select>
+              </div>
+              {/* Live GST preview */}
+              {form.price && form.gst_rate > 0 && (
+                <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>
+                  <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: 4 }}>GST Preview</div>
+                  <div style={{ color: '#7c3aed' }}>
+                    Base: ₹{parseFloat(form.price).toFixed(2)} + GST {form.gst_rate}%: ₹{(form.price * form.gst_rate / 100).toFixed(2)} = <strong>₹{(parseFloat(form.price) * (1 + form.gst_rate / 100)).toFixed(2)}</strong>
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                 <button type="submit" className="btn-primary" style={{ flex: 1 }}>{editProduct ? 'Update' : 'Add Product'}</button>
                 <button type="button" onClick={() => setShowModal(false)} style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
