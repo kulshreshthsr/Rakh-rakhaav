@@ -1,11 +1,19 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 const sendVerificationEmail = async (email, name, token) => {
   const url = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
-  await resend.emails.send({
-    from: 'रखरखाव <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: '"रखरखाव" <guptatarun52778@gmail.com>',
     to: email,
     subject: 'Verify your email — रखरखाव',
     html: `
@@ -27,8 +35,8 @@ const sendVerificationEmail = async (email, name, token) => {
 
 const sendPasswordResetEmail = async (email, name, token) => {
   const url = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
-  await resend.emails.send({
-    from: 'रखरखाव <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: '"रखरखाव" <guptatarun52778@gmail.com>',
     to: email,
     subject: 'Reset your password — रखरखाव',
     html: `
@@ -56,8 +64,8 @@ const sendLowStockAlert = async (email, shopName, products) => {
     </tr>
   `).join('');
 
-  await resend.emails.send({
-    from: 'रखरखाव <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: '"रखरखाव" <guptatarun52778@gmail.com>',
     to: email,
     subject: `⚠️ Low Stock Alert — ${shopName}`,
     html: `
