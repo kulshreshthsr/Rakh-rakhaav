@@ -106,57 +106,81 @@ export default function Layout({ children }) {
       </main>
 
       {/* ── MOBILE BOTTOM NAV ── */}
-<nav className="mobile-bottom-nav" style={{
-  position: 'fixed', bottom: 0, left: 0, right: 0,
-  background: '#1a1a2e',
-  borderTop: '1px solid rgba(255,255,255,0.1)',
-  padding: '6px 0 10px', zIndex: 50,
-  boxShadow: '0 -4px 20px rgba(0,0,0,0.3)',
-}}>
-  {navItems.map(item => (
-    <a key={item.href} href={item.href} style={{
-      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-      gap: 3, textDecoration: 'none', padding: '6px 4px',
-      position: 'relative',
-    }}>
-      {/* Active background pill */}
-      {isActive(item.href) && (
-        <div style={{
-          position: 'absolute', top: 0, left: '10%', right: '10%', bottom: 0,
-          background: 'rgba(99,102,241,0.18)',
-          borderRadius: 12,
-          border: '1px solid rgba(99,102,241,0.35)',
-        }} />
-      )}
-      {/* Active top bar */}
-      {isActive(item.href) && (
-        <div style={{
-          position: 'absolute', top: -1, left: '30%', right: '30%',
-          height: 3, background: '#6366f1',
-          borderRadius: '0 0 4px 4px',
-          boxShadow: '0 0 8px #6366f1',
-        }} />
-      )}
-      <span style={{
-        fontSize: 20, position: 'relative', zIndex: 1,
-        filter: isActive(item.href) ? 'drop-shadow(0 0 6px #6366f1)' : 'none',
-        transform: isActive(item.href) ? 'scale(1.15)' : 'scale(1)',
-        transition: 'all 0.15s',
-      }}>{item.icon}</span>
-      <span style={{
-        fontSize: 10, fontWeight: isActive(item.href) ? 700 : 500,
-        color: isActive(item.href) ? '#818cf8' : 'rgba(255,255,255,0.4)',
-        position: 'relative', zIndex: 1,
-        transition: 'all 0.15s',
-      }}>{item.label}</span>
-    </a>
-  ))}
-  <button onClick={logout} style={{
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-    gap: 3, background: 'none', border: 'none', cursor: 'pointer',
-    padding: '6px 4px', position: 'relative',
-  }}>
-    <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.4)' }}>⏻</span>
-    <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>Logout</span>
-  </button>
-</nav>
+      <nav className="mobile-bottom-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: '#1a1a2e',
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+        padding: '6px 0 10px', zIndex: 50,
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.3)',
+      }}>
+        {navItems.map(item => (
+          <a key={item.href} href={item.href} style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 3, textDecoration: 'none', padding: '6px 4px',
+            position: 'relative',
+          }}>
+            {isActive(item.href) && (
+              <div style={{
+                position: 'absolute', top: 0, left: '10%', right: '10%', bottom: 0,
+                background: 'rgba(99,102,241,0.18)', borderRadius: 12,
+                border: '1px solid rgba(99,102,241,0.35)',
+              }} />
+            )}
+            {isActive(item.href) && (
+              <div style={{
+                position: 'absolute', top: -1, left: '30%', right: '30%',
+                height: 3, background: '#6366f1',
+                borderRadius: '0 0 4px 4px',
+                boxShadow: '0 0 8px #6366f1',
+              }} />
+            )}
+            <span style={{
+              fontSize: 20, position: 'relative', zIndex: 1,
+              filter: isActive(item.href) ? 'drop-shadow(0 0 6px #6366f1)' : 'none',
+              transform: isActive(item.href) ? 'scale(1.15)' : 'scale(1)',
+              transition: 'all 0.15s',
+            }}>{item.icon}</span>
+            <span style={{
+              fontSize: 10, fontWeight: isActive(item.href) ? 700 : 500,
+              color: isActive(item.href) ? '#818cf8' : 'rgba(255,255,255,0.4)',
+              position: 'relative', zIndex: 1,
+              transition: 'all 0.15s',
+            }}>{item.label}</span>
+          </a>
+        ))}
+        <button onClick={logout} style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: 3, background: 'none', border: 'none', cursor: 'pointer',
+          padding: '6px 4px', position: 'relative',
+        }}>
+          <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.4)' }}>⏻</span>
+          <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.4)' }}>Logout</span>
+        </button>
+      </nav>
+
+      <style>{`
+        .mobile-topbar { display: none; }
+        .mobile-bottom-nav { display: none; flex-direction: row; }
+        .desktop-sidebar { display: flex; }
+
+        @media (max-width: 768px) {
+          .desktop-sidebar { display: none !important; }
+          .mobile-topbar { display: flex !important; }
+          .mobile-bottom-nav { display: flex !important; }
+          .main-content {
+            margin-left: 0 !important;
+            padding: 80px 16px 90px !important;
+          }
+          .card { border-radius: 12px !important; padding: 16px !important; }
+          .table-container { border-radius: 12px !important; }
+          .btn-primary, .btn-success, .btn-warning { padding: 10px 16px !important; font-size: 13px !important; }
+          .stat-card { padding: 16px !important; }
+          .stat-value { font-size: 26px !important; }
+          .modal { padding: 20px !important; border-radius: 16px !important; max-height: 90vh !important; overflow-y: auto !important; }
+        }
+
+        a:hover { opacity: 0.85; }
+      `}</style>
+    </div>
+  );
+}
