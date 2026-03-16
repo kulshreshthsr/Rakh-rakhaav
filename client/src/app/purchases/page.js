@@ -71,7 +71,7 @@ export default function PurchasesPage() {
                 <thead><tr><th>Product</th><th>Qty</th><th>Price/Unit</th><th>Total</th><th>Date</th></tr></thead>
                 <tbody>
                   {purchases.map(p => (
-                    <tr key={p.id}>
+                    <tr key={p._id}>
                       <td style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.product_name}</td>
                       <td>{p.quantity}</td>
                       <td>₹{p.price_per_unit}</td>
@@ -85,7 +85,7 @@ export default function PurchasesPage() {
 
             <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {purchases.map(p => (
-                <div key={p.id} className="card">
+                <div key={p._id} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{p.product_name}</div>
                     <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 16 }}>₹{p.total_amount}</div>
@@ -109,9 +109,10 @@ export default function PurchasesPage() {
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Product</label>
-                <select className="form-input" value={form.product_id} onChange={e => { const p = products.find(x => x.id === parseInt(e.target.value)); setForm({ ...form, product_id: e.target.value, price_per_unit: p?.price || '' }); }} required>
+                {/* ✅ _id fix */}
+                <select className="form-input" value={form.product_id} onChange={e => { const prod = products.find(x => x._id === e.target.value); setForm({ ...form, product_id: e.target.value, price_per_unit: prod?.price || '' }); }} required>
                   <option value="">Select a product</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.quantity})</option>)}
+                  {products.map(p => <option key={p._id} value={p._id}>{p.name} (Stock: {p.quantity})</option>)}
                 </select>
               </div>
               <div className="grid-2">

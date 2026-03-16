@@ -66,7 +66,8 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = editProduct ? `https://rakh-rakhaav.onrender.com/api/products/${editProduct.id}` : 'https://rakh-rakhaav.onrender.com/api/products';
+    // ✅ _id fix
+    const url = editProduct ? `https://rakh-rakhaav.onrender.com/api/products/${editProduct._id}` : 'https://rakh-rakhaav.onrender.com/api/products';
     const method = editProduct ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -105,15 +106,8 @@ export default function ProductsPage() {
         <button onClick={openAdd} className="btn-primary">+ Add Product</button>
       </div>
 
-      {/* Filters */}
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          className="form-input"
-          style={{ flex: 1, minWidth: 200 }}
-          placeholder="Search products..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <input className="form-input" style={{ flex: 1, minWidth: 200 }} placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} />
         <select className="form-input" style={{ minWidth: 130 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
           <option value="all">All Stock</option>
           <option value="instock">In Stock</option>
@@ -141,23 +135,14 @@ export default function ProductsPage() {
         </div>
       ) : (
         <>
-          {/* Desktop table */}
           <div className="table-container hidden-xs">
             <table>
               <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Price</th>
-                  <th>Qty</th>
-                  <th>Unit</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
+                <tr><th>Name</th><th>Description</th><th>Price</th><th>Qty</th><th>Unit</th><th>Status</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {filtered.map(p => (
-                  <tr key={p.id}>
+                  <tr key={p._id}>
                     <td style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.name}</td>
                     <td style={{ color: '#9ca3af' }}>{p.description || '—'}</td>
                     <td style={{ fontWeight: 600 }}>₹{p.price}</td>
@@ -166,7 +151,7 @@ export default function ProductsPage() {
                     <td>{getStockBadge(p.quantity)}</td>
                     <td>
                       <button onClick={() => openEdit(p)} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginRight: 12 }}>Edit</button>
-                      <button onClick={() => handleDelete(p.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Delete</button>
+                      <button onClick={() => handleDelete(p._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Delete</button>
                     </td>
                   </tr>
                 ))}
@@ -174,10 +159,9 @@ export default function ProductsPage() {
             </table>
           </div>
 
-          {/* Mobile cards */}
           <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filtered.map(p => (
-              <div key={p.id} className="card">
+              <div key={p._id} className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e' }}>{p.name}</div>
@@ -192,7 +176,7 @@ export default function ProductsPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => openEdit(p)} style={{ flex: 1, padding: '8px', background: '#eef2ff', color: '#6366f1', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
-                  <button onClick={() => handleDelete(p.id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+                  <button onClick={() => handleDelete(p._id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
                 </div>
               </div>
             ))}
@@ -237,13 +221,8 @@ export default function ProductsPage() {
       )}
 
       <style>{`
-        @media (max-width: 640px) {
-          .hidden-xs { display: none !important; }
-          .show-xs { display: flex !important; }
-        }
-        @media (min-width: 641px) {
-          .show-xs { display: none !important; }
-        }
+        @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
+        @media (min-width: 641px) { .show-xs { display: none !important; } }
       `}</style>
     </Layout>
   );

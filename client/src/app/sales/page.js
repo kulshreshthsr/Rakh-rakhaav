@@ -49,7 +49,7 @@ export default function SalesPage() {
 
   const printInvoice = (sale) => {
     const win = window.open('', '_blank');
-    win.document.write(`<html><head><title>Invoice #${sale.id}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#333}.header{display:flex;justify-content:space-between;margin-bottom:30px}.title{font-size:28px;font-weight:bold;color:#6366f1}.divider{border:none;border-top:2px solid #e5e7eb;margin:20px 0}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f3f4f6;padding:12px;text-align:left;font-size:13px;text-transform:uppercase}td{padding:12px;border-bottom:1px solid #f3f4f6}.total-amount{color:#10b981;font-size:20px;font-weight:bold}.footer{margin-top:40px;text-align:center;color:#9ca3af;font-size:12px}</style></head><body><div class="header"><div><div class="title">रखरखाव</div><div style="color:#666;font-size:14px">Inventory Management</div></div><div style="text-align:right;font-size:14px"><div><strong>Invoice #${sale.id}</strong></div><div>Date: ${new Date(sale.sold_at).toLocaleDateString('en-IN')}</div></div></div><hr class="divider"/><table><thead><tr><th>Product</th><th>Qty</th><th>Price/Unit</th><th>Total</th></tr></thead><tbody><tr><td>${sale.product_name}</td><td>${sale.quantity}</td><td>₹${sale.price_per_unit}</td><td class="total-amount">₹${sale.total_amount}</td></tr></tbody><tfoot><tr><td colspan="3" style="text-align:right;padding-right:20px;font-weight:bold">Grand Total:</td><td class="total-amount">₹${sale.total_amount}</td></tr></tfoot></table><div class="footer">Thank you for your business! — रखरखाव</div></body></html>`);
+    win.document.write(`<html><head><title>Invoice #${sale._id}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#333}.header{display:flex;justify-content:space-between;margin-bottom:30px}.title{font-size:28px;font-weight:bold;color:#6366f1}.divider{border:none;border-top:2px solid #e5e7eb;margin:20px 0}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f3f4f6;padding:12px;text-align:left;font-size:13px;text-transform:uppercase}td{padding:12px;border-bottom:1px solid #f3f4f6}.total-amount{color:#10b981;font-size:20px;font-weight:bold}.footer{margin-top:40px;text-align:center;color:#9ca3af;font-size:12px}</style></head><body><div class="header"><div><div class="title">रखरखाव</div><div style="color:#666;font-size:14px">Inventory Management</div></div><div style="text-align:right;font-size:14px"><div><strong>Invoice #${sale._id}</strong></div><div>Date: ${new Date(sale.sold_at).toLocaleDateString('en-IN')}</div></div></div><hr class="divider"/><table><thead><tr><th>Product</th><th>Qty</th><th>Price/Unit</th><th>Total</th></tr></thead><tbody><tr><td>${sale.product_name}</td><td>${sale.quantity}</td><td>₹${sale.price_per_unit}</td><td class="total-amount">₹${sale.total_amount}</td></tr></tbody><tfoot><tr><td colspan="3" style="text-align:right;padding-right:20px;font-weight:bold">Grand Total:</td><td class="total-amount">₹${sale.total_amount}</td></tr></tfoot></table><div class="footer">Thank you for your business! — रखरखाव</div></body></html>`);
     win.document.close(); win.print();
   };
 
@@ -77,7 +77,7 @@ export default function SalesPage() {
                 <thead><tr><th>Product</th><th>Qty</th><th>Price/Unit</th><th>Total</th><th>Date</th><th>Invoice</th></tr></thead>
                 <tbody>
                   {sales.map(s => (
-                    <tr key={s.id}>
+                    <tr key={s._id}>
                       <td style={{ fontWeight: 600, color: '#1a1a2e' }}>{s.product_name}</td>
                       <td>{s.quantity}</td>
                       <td>₹{s.price_per_unit}</td>
@@ -92,7 +92,7 @@ export default function SalesPage() {
 
             <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {sales.map(s => (
-                <div key={s.id} className="card">
+                <div key={s._id} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{s.product_name}</div>
                     <div style={{ fontWeight: 700, color: '#10b981', fontSize: 16 }}>₹{s.total_amount}</div>
@@ -117,9 +117,10 @@ export default function SalesPage() {
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Product</label>
-                <select className="form-input" value={form.product_id} onChange={e => { const p = products.find(x => x.id === parseInt(e.target.value)); setForm({ ...form, product_id: e.target.value, price_per_unit: p?.price || '' }); }} required>
+                {/* ✅ _id use kar rahe hain ab */}
+                <select className="form-input" value={form.product_id} onChange={e => { const p = products.find(x => x._id === e.target.value); setForm({ ...form, product_id: e.target.value, price_per_unit: p?.price || '' }); }} required>
                   <option value="">Select a product</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.quantity})</option>)}
+                  {products.map(p => <option key={p._id} value={p._id}>{p.name} (Stock: {p.quantity})</option>)}
                 </select>
               </div>
               <div className="grid-2">
