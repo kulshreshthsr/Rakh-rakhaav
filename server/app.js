@@ -1,4 +1,4 @@
-require('dotenv').config(); // ✅ sabse pehle ye hona chahiye!
+// dotenv ki zaroorat hi nahi Render pe — Render khud inject karta hai!
 
 const connectDB = require('./config/db');
 const express = require('express');
