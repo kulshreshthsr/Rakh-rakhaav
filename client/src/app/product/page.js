@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Layout from '@/components/Layout';
+import Layout from '../components/Layout';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
