@@ -8,7 +8,8 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:3000' }));
+
+app.use(cors({ origin: '*' })); // ✅ sabhi origins allow karo abhi ke liye
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -17,4 +18,9 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use(errorHandler);
 
-module.exports = app;
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`); // ✅ listen pehle
+});
+
+module.exports = app; // ✅ export baad mein
