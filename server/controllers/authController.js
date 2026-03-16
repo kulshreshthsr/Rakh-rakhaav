@@ -19,9 +19,8 @@ const register = async (req, res) => {
     if (userExists) return res.status(400).json({ message: 'User already exists' });
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await User.create({
       name, email, password: hashedPassword,
@@ -30,6 +29,19 @@ const register = async (req, res) => {
     });
 
     await Shop.create({ name: 'My Shop', owner: user._id });
+
+    // Email try karo — fail ho to bhi register ho jaye
+    try {
+      await sendVerificationEmail(email, name, verificationToken);
+    } catch (emailErr) {
+      console.error('Email sending failed:', emailErr.message);
+    }
+
+    res.status(201).json({ message: 'Registration successful! Please check your email to verify your account.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
     // Send verification email
     await sendVerificationEmail(email, name, verificationToken);
@@ -69,7 +81,7 @@ const login = async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Invalid email or password' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
-    if (!user.isVerified) return res.status(400).json({ message: 'Please verify your email first. Check your inbox.', notVerified: true });
+    //if (!user.isVerified) return res.status(400).json({ message: 'Please verify your email first. Check your inbox.', notVerified: true });
 
     const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ user: { id: user._id, name: user.name, email: user.email }, token });
