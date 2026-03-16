@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../components/Layout';
 
+const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
+const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+
 export default function SalesPage() {
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
@@ -40,7 +43,6 @@ export default function SalesPage() {
     setForm({ ...form, product_id: e.target.value, price_per_unit: p?.price || '' });
   };
 
-  // Auto GST calculation
   const calcGST = () => {
     if (!form.quantity || !form.price_per_unit || !selectedProduct) return null;
     const taxable = parseFloat(form.quantity) * parseFloat(form.price_per_unit);
@@ -217,7 +219,6 @@ export default function SalesPage() {
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: '#1a1a2e' }}>Record Sale</h3>
             {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
             <form onSubmit={handleSubmit}>
-              {/* Product */}
               <div className="form-group">
                 <label className="form-label">Product *</label>
                 <select className="form-input" value={form.product_id} onChange={handleProductChange} required>
@@ -225,7 +226,6 @@ export default function SalesPage() {
                   {products.map(p => <option key={p._id} value={p._id}>{p.name} (Stock: {p.quantity}) {p.gst_rate > 0 ? `• GST ${p.gst_rate}%` : ''}</option>)}
                 </select>
               </div>
-
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Quantity *</label>
@@ -237,7 +237,6 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              {/* GST Preview */}
               {gstPreview && (
                 <div style={{ background: gstPreview.gst_rate > 0 ? '#ede9fe' : '#f0fdf4', border: `1px solid ${gstPreview.gst_rate > 0 ? '#c4b5fd' : '#bbf7d0'}`, borderRadius: 10, padding: '12px 14px', marginBottom: 16, fontSize: 13 }}>
                   <div style={{ fontWeight: 700, color: gstPreview.gst_rate > 0 ? '#6d28d9' : '#059669', marginBottom: 6 }}>Bill Preview</div>
@@ -254,7 +253,6 @@ export default function SalesPage() {
                 </div>
               )}
 
-              {/* Buyer details — optional */}
               <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Buyer Details (Optional)</div>
                 <div className="form-group">
@@ -268,7 +266,16 @@ export default function SalesPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Buyer State</label>
-                    <input className="form-input" placeholder="For IGST detection" value={form.buyer_state} onChange={e => setForm({ ...form, buyer_state: e.target.value })} />
+                    {/* ✅ State dropdown */}
+                    <select className="form-input" value={form.buyer_state} onChange={e => setForm({ ...form, buyer_state: e.target.value })}>
+                      <option value="">Select State/UT</option>
+                      <optgroup label="── States ──">
+                        {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </optgroup>
+                      <optgroup label="── Union Territories ──">
+                        {UTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      </optgroup>
+                    </select>
                   </div>
                 </div>
                 <div className="form-group">

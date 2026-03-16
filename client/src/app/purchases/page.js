@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../components/Layout';
 
+const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
+const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
@@ -201,7 +204,16 @@ export default function PurchasesPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Supplier State</label>
-                    <input className="form-input" placeholder="For IGST detection" value={form.supplier_state} onChange={e => setForm({ ...form, supplier_state: e.target.value })} />
+                    {/* ✅ State dropdown */}
+                    <select className="form-input" value={form.supplier_state} onChange={e => setForm({ ...form, supplier_state: e.target.value })}>
+                      <option value="">Select State/UT</option>
+                      <optgroup label="── States ──">
+                        {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </optgroup>
+                      <optgroup label="── Union Territories ──">
+                        {UTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      </optgroup>
+                    </select>
                   </div>
                 </div>
                 <div className="form-group">
