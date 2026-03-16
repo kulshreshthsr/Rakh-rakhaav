@@ -1,3 +1,4 @@
+const connectDB = require('./config/db');
 const express = require('express');
 const cors = require('cors');
 
@@ -8,6 +9,8 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
+
+connectDB();
 
 app.use(cors({ origin: '*' })); // ✅ sabhi origins allow karo abhi ke liye
 app.use(express.json());
