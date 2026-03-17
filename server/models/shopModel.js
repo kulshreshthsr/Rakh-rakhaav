@@ -5,11 +5,16 @@ const shopSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   address: { type: String },
   city: { type: String },
-  state: { type: String }, // important for CGST/SGST vs IGST
+  state: { type: String },
   pincode: { type: String },
-  gstin: { type: String }, // shop ka GSTIN (optional)
+  gstin: { type: String },
   phone: { type: String },
   email: { type: String },
+  bank_name: { type: String },
+  bank_account: { type: String },
+  bank_ifsc: { type: String },
+  bank_branch: { type: String },
+  terms: { type: String, default: 'Goods once sold will not be taken back.\nSubject to local jurisdiction.' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Shop', shopSchema);

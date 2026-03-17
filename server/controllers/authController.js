@@ -75,12 +75,12 @@ const getShop = async (req, res) => {
 };
 
 const updateShop = async (req, res) => {
-  const { name, address, city, state, pincode, gstin, phone, email } = req.body;
+  const { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, terms } = req.body;
   try {
     const shop = await getOrCreateShop(req.user.id);
     const updated = await Shop.findByIdAndUpdate(
       shop._id,
-      { name, address, city, state, pincode, gstin, phone, email },
+      { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, terms },
       { new: true }
     );
     res.json(updated);

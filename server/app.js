@@ -15,7 +15,7 @@ const app = express();
 
 connectDB();
 
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: ['https://rakh-rakhaav-1.onrender.com', 'http://localhost:3000'] }));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);

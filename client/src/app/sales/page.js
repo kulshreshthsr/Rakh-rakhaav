@@ -74,14 +74,165 @@ export default function SalesPage() {
     } catch { setError('हटाने में विफल / Failed to delete'); }
   };
 
-  const printInvoice = (sale) => {
-    const win = window.open('', '_blank');
-    const gstRows = sale.gst_type === 'IGST'
-      ? `<tr><td colspan="3" style="text-align:right;font-weight:600">IGST @${sale.gst_rate}%</td><td>₹${sale.igst_amount?.toFixed(2)}</td></tr>`
-      : `<tr><td colspan="3" style="text-align:right;font-weight:600">CGST @${sale.gst_rate / 2}%</td><td>₹${sale.cgst_amount?.toFixed(2)}</td></tr>
-         <tr><td colspan="3" style="text-align:right;font-weight:600">SGST @${sale.gst_rate / 2}%</td><td>₹${sale.sgst_amount?.toFixed(2)}</td></tr>`;
-    win.document.write(`<html><head><title>${sale.invoice_number}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#333;max-width:800px;margin:0 auto}.header{display:flex;justify-content:space-between;margin-bottom:30px}.title{font-size:28px;font-weight:bold;color:#6366f1}.divider{border:none;border-top:2px solid #e5e7eb;margin:20px 0}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f3f4f6;padding:12px;text-align:left;font-size:13px;text-transform:uppercase}td{padding:12px;border-bottom:1px solid #f3f4f6}.total{color:#10b981;font-size:18px;font-weight:bold}.footer{margin-top:40px;text-align:center;color:#9ca3af;font-size:12px}.badge{background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:20px;font-size:12px}</style></head><body><div class="header"><div><div class="title">रखरखाव</div><div style="color:#666;font-size:13px">Inventory Management</div></div><div style="text-align:right;font-size:14px"><div><strong>${sale.invoice_number}</strong></div><div>दिनांक / Date: ${new Date(sale.sold_at).toLocaleDateString('en-IN')}</div></div></div>${sale.buyer_name ? `<div style="margin-bottom:20px"><strong>बिल प्राप्तकर्ता / Bill To:</strong><br/>${sale.buyer_name}${sale.buyer_gstin ? `<br/>GSTIN: ${sale.buyer_gstin}` : ''}${sale.buyer_address ? `<br/>${sale.buyer_address}` : ''}</div>` : ''}<hr class="divider"/><table><thead><tr><th>उत्पाद/Product</th><th>HSN</th><th>मात्रा/Qty</th><th>दर/Rate</th><th>कर योग्य/Taxable</th></tr></thead><tbody><tr><td>${sale.product_name}</td><td>${sale.hsn_code || '—'}</td><td>${sale.quantity}</td><td>₹${sale.price_per_unit}</td><td>₹${sale.taxable_amount?.toFixed(2)}</td></tr></tbody><tfoot><tr><td colspan="4" style="text-align:right;font-weight:600">कर योग्य राशि / Taxable Amount</td><td>₹${sale.taxable_amount?.toFixed(2)}</td></tr>${sale.gst_rate > 0 ? gstRows : ''}<tr><td colspan="4" style="text-align:right;font-weight:700;font-size:16px">कुल / Total</td><td class="total">₹${sale.total_amount?.toFixed(2)}</td></tr></tfoot></table>${sale.gst_rate > 0 ? `<div style="margin-top:16px"><span class="badge">GST ${sale.gst_type === 'IGST' ? 'IGST' : 'CGST+SGST'} @ ${sale.gst_rate}%</span></div>` : ''}<div class="footer">धन्यवाद! Thank you for your business! — रखरखाव</div></body></html>`);
-    win.document.close(); win.print();
+  const printInvoice = async (sale) => {
+  const shopRes = await fetch('https://rakh-rakhaav.onrender.com/api/auth/shop', {
+    headers: { Authorization: `Bearer ${getToken()}` }
+  });
+  const shop = await shopRes.json();
+
+  const numberToWords = (num) => {
+    const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    const convert = (n) => {
+      if (n < 20) return ones[n];
+      if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' '+ones[n%10] : '');
+      if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' '+convert(n%100) : '');
+      if (n < 100000) return convert(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' '+convert(n%1000) : '');
+      if (n < 10000000) return convert(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' '+convert(n%100000) : '');
+      return convert(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' '+convert(n%10000000) : '');
+    };
+    const rupees = Math.floor(num);
+    const paise = Math.round((num - rupees) * 100);
+    return convert(rupees) + ' Rupees' + (paise ? ' and ' + convert(paise) + ' Paise' : '') + ' Only';
+  };
+
+  const isIGST = sale.gst_type === 'IGST';
+  const win = window.open('', '_blank');
+
+  win.document.write(`<!DOCTYPE html><html><head><title>Invoice - ${sale.invoice_number}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;color:#000;background:#fff}.invoice{max-width:800px;margin:0 auto;padding:20px;border:2px solid #000}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;border-bottom:3px solid #1a1a2e;padding-bottom:10px}.shop-name{font-size:28px;font-weight:900;color:#1a1a2e;letter-spacing:-0.5px}.shop-name span{color:#6366f1}.title-bar{background:#1a1a2e;color:white;text-align:center;padding:6px;font-size:16px;font-weight:700;letter-spacing:2px;margin-bottom:8px}.gstin-row{display:flex;justify-content:space-between;align-items:center;border:1px solid #000;margin-bottom:8px}.gstin-cell{padding:5px 10px;font-weight:700;font-size:12px;border-right:1px solid #000}.original-stamp{padding:5px 10px;font-size:10px;font-weight:700;color:#6366f1;border-left:1px solid #000}.parties{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;margin-bottom:0}.party-box{padding:8px}.party-box:first-child{border-right:1px solid #000}.party-label{font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;margin-bottom:4px;border-bottom:1px solid #e5e7eb;padding-bottom:3px}.party-name{font-size:14px;font-weight:700;color:#1a1a2e}.party-detail{font-size:11px;color:#374151;margin-top:2px}.inv-details{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:none;margin-bottom:8px}.inv-detail-box{padding:5px 8px;border-right:1px solid #e5e7eb;font-size:11px}table{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:0}th{background:#1a1a2e;color:white;padding:6px 8px;text-align:center;font-size:10px;text-transform:uppercase;border:1px solid #374151}td{padding:6px 8px;border:1px solid #d1d5db;text-align:center;font-size:11px}td:nth-child(2){text-align:left}tr:nth-child(even){background:#f9fafb}.totals-section{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:none}.words-box{padding:10px;border-right:1px solid #000}.words-label{font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px}.words-value{font-size:11px;font-weight:600;color:#1a1a2e;font-style:italic}.amounts-box{padding:6px 10px}.amount-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid #f3f4f6}.amount-total{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;font-weight:900;color:#1a1a2e;border-top:2px solid #1a1a2e;margin-top:4px}.footer-section{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:none}.bank-box{padding:10px;border-right:1px solid #000}.bank-label{font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;margin-bottom:6px}.bank-row{font-size:11px;margin-bottom:3px}.sign-box{padding:10px;text-align:right}.terms-box{border:1px solid #000;border-top:none;padding:8px 10px}.logo-circle{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1a1a2e,#6366f1);display:flex;align-items:center;justify-content:center;color:white;font-size:24px;font-weight:900}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}</style></head><body><div class="invoice">
+  <div class="header">
+    <div>
+      <div class="shop-name">रख<span>रखाव</span></div>
+      <div style="font-size:11px;color:#6366f1;font-weight:600;background:#eef2ff;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:2px">Inventory Management System</div>
+      ${shop.address ? `<div style="font-size:11px;color:#374151;margin-top:4px">${shop.address}${shop.city ? ', '+shop.city : ''}${shop.pincode ? ' - '+shop.pincode : ''}</div>` : ''}
+      ${shop.phone ? `<div style="font-size:11px;color:#374151">📞 ${shop.phone}${shop.email ? ' | ✉️ '+shop.email : ''}</div>` : ''}
+    </div>
+    <div class="logo-circle">र</div>
+  </div>
+
+  <div class="title-bar">TAX INVOICE / कर चालान</div>
+
+  <div class="gstin-row">
+    <div class="gstin-cell">GSTIN: ${shop.gstin || 'N/A'}</div>
+    <div style="flex:1;text-align:center"></div>
+    <div class="original-stamp">ORIGINAL FOR RECIPIENT</div>
+  </div>
+
+  <div class="parties">
+    <div class="party-box">
+      <div class="party-label">विक्रेता / Seller</div>
+      <div class="party-name">${shop.name || 'रखरखाव'}</div>
+      ${shop.address ? `<div class="party-detail">📍 ${shop.address}${shop.city ? ', '+shop.city : ''}${shop.state ? ', '+shop.state : ''}${shop.pincode ? ' - '+shop.pincode : ''}</div>` : ''}
+      ${shop.phone ? `<div class="party-detail">📞 ${shop.phone}</div>` : ''}
+      ${shop.gstin ? `<div class="party-detail" style="font-weight:700">GSTIN: ${shop.gstin}</div>` : ''}
+    </div>
+    <div class="party-box">
+      <div class="party-label">खरीदार / Buyer</div>
+      <div class="party-name">${sale.buyer_name || 'Cash Customer'}</div>
+      ${sale.buyer_address ? `<div class="party-detail">📍 ${sale.buyer_address}</div>` : ''}
+      ${sale.buyer_state ? `<div class="party-detail">राज्य: ${sale.buyer_state}</div>` : ''}
+      ${sale.buyer_gstin ? `<div class="party-detail" style="font-weight:700">GSTIN: ${sale.buyer_gstin}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="inv-details">
+    <div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Invoice No.</div><div style="font-weight:700;color:#6366f1">${sale.invoice_number}</div></div>
+    <div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">दिनांक / Date</div><div style="font-weight:700">${new Date(sale.sold_at).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'})}</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30px">Sr.</th>
+        <th style="text-align:left">उत्पाद / Product</th>
+        <th>HSN</th>
+        <th>मात्रा/Qty</th>
+        <th>दर/Rate ₹</th>
+        <th>कर योग्य ₹</th>
+        ${isIGST ? '<th>IGST %</th><th>IGST Amt</th>' : '<th>CGST %</th><th>CGST ₹</th><th>SGST %</th><th>SGST ₹</th>'}
+        <th>कुल/Total ₹</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td style="text-align:left"><strong>${sale.product_name}</strong></td>
+        <td>${sale.hsn_code || '—'}</td>
+        <td>1.00</td>
+        <td>${sale.price_per_unit}</td>
+        <td>${sale.taxable_amount?.toFixed(2)}</td>
+        ${isIGST
+          ? `<td>${sale.gst_rate}%</td><td>${sale.igst_amount?.toFixed(2)||'0.00'}</td>`
+          : `<td>${(sale.gst_rate/2).toFixed(1)}%</td><td>${sale.cgst_amount?.toFixed(2)||'0.00'}</td><td>${(sale.gst_rate/2).toFixed(1)}%</td><td>${sale.sgst_amount?.toFixed(2)||'0.00'}</td>`
+        }
+        <td><strong>${sale.total_amount?.toFixed(2)}</strong></td>
+      </tr>
+      ${Array(4).fill(`<tr>${'<td style="height:20px"></td>'.repeat(isIGST ? 8 : 10)}</tr>`).join('')}
+    </tbody>
+    <tfoot>
+      <tr style="background:#f3f4f6;font-weight:700">
+        <td colspan="5" style="text-align:right">कुल / Total</td>
+        <td>${sale.taxable_amount?.toFixed(2)}</td>
+        ${isIGST
+          ? `<td></td><td>${sale.igst_amount?.toFixed(2)||'0.00'}</td>`
+          : `<td></td><td>${sale.cgst_amount?.toFixed(2)||'0.00'}</td><td></td><td>${sale.sgst_amount?.toFixed(2)||'0.00'}</td>`
+        }
+        <td><strong>${sale.total_amount?.toFixed(2)}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="totals-section">
+    <div class="words-box">
+      <div class="words-label">राशि शब्दों में / Amount in Words</div>
+      <div class="words-value">${numberToWords(parseFloat(sale.total_amount))}</div>
+      <div style="margin-top:8px">
+        <div class="words-label">GST प्रकार / Type</div>
+        <div style="font-size:12px;font-weight:700;color:#6366f1">${isIGST ? 'IGST (Inter-State)' : 'CGST + SGST (Intra-State)'}</div>
+      </div>
+    </div>
+    <div class="amounts-box">
+      <div class="amount-row"><span>कर योग्य / Taxable</span><span>₹${sale.taxable_amount?.toFixed(2)}</span></div>
+      ${isIGST
+        ? `<div class="amount-row"><span>Add: IGST @${sale.gst_rate}%</span><span>₹${sale.igst_amount?.toFixed(2)||'0.00'}</span></div>`
+        : `<div class="amount-row"><span>Add: CGST @${(sale.gst_rate/2).toFixed(1)}%</span><span>₹${sale.cgst_amount?.toFixed(2)||'0.00'}</span></div>
+           <div class="amount-row"><span>Add: SGST @${(sale.gst_rate/2).toFixed(1)}%</span><span>₹${sale.sgst_amount?.toFixed(2)||'0.00'}</span></div>`
+      }
+      <div class="amount-row"><span>कुल कर / Total Tax</span><span>₹${sale.total_gst?.toFixed(2)||'0.00'}</span></div>
+      <div class="amount-total"><span>कुल राशि / TOTAL</span><span>₹${sale.total_amount?.toFixed(2)}</span></div>
+      <div style="font-size:10px;color:#9ca3af;text-align:right">(E & O.E.)</div>
+    </div>
+  </div>
+
+  <div class="footer-section">
+    <div class="bank-box">
+      ${shop.bank_name ? `
+        <div class="bank-label">🏦 बैंक विवरण / Bank Details</div>
+        <div class="bank-row">Bank: <strong>${shop.bank_name}</strong></div>
+        ${shop.bank_branch ? `<div class="bank-row">Branch: <strong>${shop.bank_branch}</strong></div>` : ''}
+        ${shop.bank_account ? `<div class="bank-row">A/C No.: <strong>${shop.bank_account}</strong></div>` : ''}
+        ${shop.bank_ifsc ? `<div class="bank-row">IFSC: <strong>${shop.bank_ifsc}</strong></div>` : ''}
+      ` : '<div style="color:#9ca3af;font-size:11px;font-style:italic">Profile mein bank details bharen / Add bank details in Profile</div>'}
+    </div>
+    <div class="sign-box">
+      <div style="font-size:12px;font-weight:700;margin-bottom:40px">For <strong>${shop.name || 'रखरखाव'}</strong></div>
+      <div style="border-top:1px solid #000;padding-top:4px;font-size:11px;font-weight:700">Authorised Signatory</div>
+      <div style="font-size:10px;color:#9ca3af;margin-top:6px">यह कंप्यूटर जनित चालान है<br/>Computer generated invoice<br/>No signature required.</div>
+    </div>
+  </div>
+
+  ${shop.terms ? `
+    <div class="terms-box">
+      <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">नियम एवं शर्तें / Terms & Conditions</div>
+      <div style="font-size:10px;color:#374151">${shop.terms.split('\n').map((t,i) => `${i+1}. ${t}`).join('<br/>')}</div>
+    </div>
+  ` : ''}
+
+  <div style="text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;font-style:italic">~ रखरखाव Inventory Management System ~</div>
+</div>
+<script>window.onload = () => window.print();</script>
+</body></html>`);
+  win.document.close();
   };
 
   const total = sales.reduce((s, x) => s + parseFloat(x.total_amount || 0), 0);
