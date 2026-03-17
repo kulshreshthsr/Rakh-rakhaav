@@ -33,51 +33,86 @@ export default function LoginPage() {
 
   return (
     <>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'DM Sans', sans-serif", background: '#f5f5f0' }}>
-        <div style={{ flex: 1, background: '#1a1a2e', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48 }} className="auth-left">
-          <div style={{ maxWidth: 360 }}>
-            <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 8, letterSpacing: -1, color: '#fff' }}>
-              रख<span style={{ color: '#6366f1' }}>रखाव</span>
-            </div>
-            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginBottom: 48 }}>Smart inventory management</div>
-            {['Track stock in real-time', 'Record sales & purchases', 'Get profit & loss insights'].map((f, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>✓</div>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>{f}</span>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet" />
+      <div style={{ minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", background: '#f5f5f0', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Top hero section */}
+        <div style={{ background: '#1a1a2e', padding: '48px 32px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ fontSize: 42, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>
+            रख<span style={{ color: '#6366f1' }}>रखाव</span>
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 28 }}>Smart Inventory Manager</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['📦 Stock Track', '💰 Sales & Purchase', '📊 Profit Reports'].map((f, i) => (
+              <div key={i} style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 20, padding: '6px 14px', fontSize: 12, color: '#a5b4fc', fontWeight: 500 }}>
+                {f}
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <div style={{ width: '100%', maxWidth: 400 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1a1a2e', marginBottom: 6, letterSpacing: -0.5 }}>Welcome back</h1>
-            <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 32 }}>Sign in to your account</p>
+        {/* Wave divider */}
+        <div style={{ background: '#1a1a2e', marginBottom: -1 }}>
+          <svg viewBox="0 0 375 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
+            <path d="M0 0 C100 40 275 40 375 0 L375 40 L0 40 Z" fill="#f5f5f0"/>
+          </svg>
+        </div>
 
-            {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, fontSize: 13, marginBottom: 20 }}>{error}</div>}
+        {/* Form section */}
+        <div style={{ flex: 1, padding: '24px 24px 40px', maxWidth: 440, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1a1a2e', marginBottom: 4, letterSpacing: -0.5 }}>Welcome back! 👋</h1>
+          <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 28 }}>Sign in to continue</p>
 
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label className="form-label">Username</label>
-                <input className="form-input" type="text" placeholder="your_username" value={username} onChange={e => setUsername(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
-              </div>
-              <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 8, opacity: loading ? 0.7 : 1 }}>
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </form>
+          {error && (
+            <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 12, fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>⚠️</span> {error}
+            </div>
+          )}
 
-            <p style={{ textAlign: 'center', fontSize: 14, color: '#9ca3af', marginTop: 24 }}>
-              Don't have an account?{' '}
-              <a href="/register" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>Create one</a>
-            </p>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Username</label>
+              <input
+                type="text"
+                placeholder="your_username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #e5e7eb', borderRadius: 12, fontSize: 15, color: '#1a1a2e', background: '#fff', boxSizing: 'border-box', outline: 'none' }}
+              />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #e5e7eb', borderRadius: 12, fontSize: 15, color: '#1a1a2e', background: '#fff', boxSizing: 'border-box', outline: 'none' }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ width: '100%', padding: '15px', background: loading ? '#9ca3af' : '#6366f1', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: 0.3 }}
+            >
+              {loading ? 'Signing in...' : 'Sign in →'}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: 14, color: '#9ca3af', marginTop: 24 }}>
+            Don't have an account?{' '}
+            <a href="/register" style={{ color: '#6366f1', fontWeight: 700, textDecoration: 'none' }}>Create one</a>
+          </p>
+
+          {/* Trust badges */}
+          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center', gap: 20 }}>
+            {['🔒 Secure', '⚡ Fast', '📱 Mobile Ready'].map((b, i) => (
+              <div key={i} style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>{b}</div>
+            ))}
           </div>
         </div>
-        <style>{`@media (max-width: 768px) { .auth-left { display: none !important; } } .form-input { width: 100%; }`}</style>
       </div>
     </>
   );
