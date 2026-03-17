@@ -62,7 +62,6 @@ export default function DashboardPage() {
   const profit = stats.revenue - stats.spent;
   const netGST = stats.gstCollected - stats.gstPaid;
 
-  // ── CSV Export ──
   const exportCSV = (type) => {
     let rows, filename;
     if (type === 'sales') {
@@ -70,13 +69,13 @@ export default function DashboardPage() {
         ['Invoice No', 'Product', 'HSN', 'Qty', 'Price/Unit', 'Taxable', 'GST Rate', 'CGST', 'SGST', 'IGST', 'Total GST', 'Total', 'Buyer', 'Buyer GSTIN', 'Date'],
         ...allSales.map(s => [s.invoice_number, s.product_name, s.hsn_code || '', s.quantity, s.price_per_unit, s.taxable_amount, s.gst_rate, s.cgst_amount, s.sgst_amount, s.igst_amount, s.total_gst, s.total_amount, s.buyer_name || '', s.buyer_gstin || '', new Date(s.sold_at).toLocaleDateString('en-IN')])
       ];
-      filename = 'sales_report.csv';
+      filename = 'bikri_report.csv';
     } else {
       rows = [
         ['Bill No', 'Product', 'HSN', 'Qty', 'Price/Unit', 'Taxable', 'GST Rate', 'CGST', 'SGST', 'IGST', 'Total GST', 'Total', 'Supplier', 'Supplier GSTIN', 'Date'],
         ...allPurchases.map(p => [p.invoice_number, p.product_name, p.hsn_code || '', p.quantity, p.price_per_unit, p.taxable_amount, p.gst_rate, p.cgst_amount, p.sgst_amount, p.igst_amount, p.total_gst, p.total_amount, p.supplier_name || '', p.supplier_gstin || '', new Date(p.purchased_at).toLocaleDateString('en-IN')])
       ];
-      filename = 'purchases_report.csv';
+      filename = 'kharid_report.csv';
     }
     const csv = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -85,11 +84,10 @@ export default function DashboardPage() {
     URL.revokeObjectURL(url);
   };
 
-  // ── PDF Export ──
   const exportPDF = (type) => {
     const win = window.open('', '_blank');
     const data = type === 'sales' ? allSales : allPurchases;
-    const title = type === 'sales' ? 'Sales Report' : 'Purchases Report';
+    const title = type === 'sales' ? 'बिक्री रिपोर्ट / Sales Report' : 'खरीद रिपोर्ट / Purchases Report';
     const totalAmount = data.reduce((s, x) => s + parseFloat(x.total_amount || 0), 0);
     const totalGST = data.reduce((s, x) => s + parseFloat(x.total_gst || 0), 0);
 
@@ -111,18 +109,18 @@ export default function DashboardPage() {
       </style></head>
       <body>
         <h1>रखरखाव — ${title}</h1>
-        <div class="subtitle">Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        <div class="subtitle">तैयार किया / Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
         <div class="summary">
-          <div class="summary-item"><div class="summary-label">Total Records</div><div class="summary-value purple">${data.length}</div></div>
-          <div class="summary-item"><div class="summary-label">Total Amount</div><div class="summary-value ${type === 'sales' ? 'green' : 'red'}">₹${totalAmount.toFixed(2)}</div></div>
-          <div class="summary-item"><div class="summary-label">Total GST</div><div class="summary-value purple">₹${totalGST.toFixed(2)}</div></div>
-          <div class="summary-item"><div class="summary-label">Taxable Amount</div><div class="summary-value">₹${(totalAmount - totalGST).toFixed(2)}</div></div>
+          <div class="summary-item"><div class="summary-label">कुल / Total Records</div><div class="summary-value purple">${data.length}</div></div>
+          <div class="summary-item"><div class="summary-label">कुल राशि / Total Amount</div><div class="summary-value ${type === 'sales' ? 'green' : 'red'}">₹${totalAmount.toFixed(2)}</div></div>
+          <div class="summary-item"><div class="summary-label">कुल GST</div><div class="summary-value purple">₹${totalGST.toFixed(2)}</div></div>
+          <div class="summary-item"><div class="summary-label">कर योग्य / Taxable</div><div class="summary-value">₹${(totalAmount - totalGST).toFixed(2)}</div></div>
         </div>
         <table>
           <thead><tr>
-            <th>Invoice</th><th>Product</th><th>HSN</th><th>Qty</th>
-            <th>Taxable</th><th>GST%</th><th>GST Amt</th><th>Total</th>
-            <th>${type === 'sales' ? 'Buyer' : 'Supplier'}</th><th>Date</th>
+            <th>Invoice</th><th>उत्पाद/Product</th><th>HSN</th><th>मात्रा/Qty</th>
+            <th>कर योग्य/Taxable</th><th>GST%</th><th>GST Amt</th><th>कुल/Total</th>
+            <th>${type === 'sales' ? 'खरीदार/Buyer' : 'आपूर्तिकर्ता/Supplier'}</th><th>तारीख/Date</th>
           </tr></thead>
           <tbody>
             ${data.map(item => `<tr>
@@ -140,7 +138,7 @@ export default function DashboardPage() {
           </tbody>
           <tfoot>
             <tr style="background:#f9f9f7;font-weight:700">
-              <td colspan="4">TOTAL</td>
+              <td colspan="4">कुल / TOTAL</td>
               <td>₹${(totalAmount - totalGST).toFixed(2)}</td>
               <td>—</td>
               <td>₹${totalGST.toFixed(2)}</td>
@@ -157,16 +155,16 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="page-title">Dashboard</div>
+      <div className="page-title">डैशबोर्ड / Dashboard</div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Products', value: stats.products, color: '#6366f1' },
-          { label: 'Sales', value: stats.sales, color: '#10b981' },
-          { label: 'Purchases', value: stats.purchases, color: '#f59e0b' },
-          { label: 'Revenue', value: `₹${stats.revenue.toFixed(0)}`, color: '#10b981' },
-          { label: 'Amount Spent', value: `₹${stats.spent.toFixed(0)}`, color: '#ef4444' },
+          { label: 'उत्पाद / Products', value: stats.products, color: '#6366f1' },
+          { label: 'बिक्री / Sales', value: stats.sales, color: '#10b981' },
+          { label: 'खरीद / Purchases', value: stats.purchases, color: '#f59e0b' },
+          { label: 'आय / Revenue', value: `₹${stats.revenue.toFixed(0)}`, color: '#10b981' },
+          { label: 'खर्च / Spent', value: `₹${stats.spent.toFixed(0)}`, color: '#ef4444' },
         ].map((s, i) => (
           <div key={i} className="stat-card">
             <div className="stat-label">{s.label}</div>
@@ -183,14 +181,14 @@ export default function DashboardPage() {
         display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap',
       }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, color: '#9ca3af' }}>Net Profit</div>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, color: '#9ca3af' }}>शुद्ध लाभ / Net Profit</div>
           <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1, color: profit >= 0 ? '#059669' : '#dc2626' }}>
             {profit >= 0 ? '+' : ''}₹{profit.toFixed(2)}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>REVENUE</div><div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>₹{stats.revenue.toFixed(2)}</div></div>
-          <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>SPENT</div><div style={{ fontSize: 20, fontWeight: 700, color: '#dc2626' }}>₹{stats.spent.toFixed(2)}</div></div>
+          <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>आय / REVENUE</div><div style={{ fontSize: 20, fontWeight: 700, color: '#059669' }}>₹{stats.revenue.toFixed(2)}</div></div>
+          <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>खर्च / SPENT</div><div style={{ fontSize: 20, fontWeight: 700, color: '#dc2626' }}>₹{stats.spent.toFixed(2)}</div></div>
         </div>
       </div>
 
@@ -202,34 +200,35 @@ export default function DashboardPage() {
           display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap',
         }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, color: '#7c3aed' }}>GST Liability</div>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, color: '#7c3aed' }}>GST देनदारी / Liability</div>
             <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: -1, color: netGST >= 0 ? '#6d28d9' : '#059669' }}>
-              {netGST >= 0 ? 'Pay ' : 'Refund '}₹{Math.abs(netGST).toFixed(2)}
+              {netGST >= 0 ? 'भरें / Pay ' : 'वापसी / Refund '}₹{Math.abs(netGST).toFixed(2)}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            <div><div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>GST COLLECTED</div><div style={{ fontSize: 18, fontWeight: 700, color: '#6d28d9' }}>₹{stats.gstCollected.toFixed(2)}</div></div>
-            <div><div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>GST INPUT CREDIT</div><div style={{ fontSize: 18, fontWeight: 700, color: '#6d28d9' }}>₹{stats.gstPaid.toFixed(2)}</div></div>
+            <div><div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>GST वसूला / COLLECTED</div><div style={{ fontSize: 18, fontWeight: 700, color: '#6d28d9' }}>₹{stats.gstCollected.toFixed(2)}</div></div>
+            <div><div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>GST इनपुट / INPUT</div><div style={{ fontSize: 18, fontWeight: 700, color: '#6d28d9' }}>₹{stats.gstPaid.toFixed(2)}</div></div>
           </div>
         </div>
       )}
 
       {/* Export buttons */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>📤 Export Reports</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>📤 रिपोर्ट निर्यात / Export Reports</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={() => exportCSV('sales')} style={{ padding: '8px 16px', background: '#f0fdf4', color: '#059669', border: '1.5px solid #bbf7d0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📊 Sales CSV</button>
-          <button onClick={() => exportCSV('purchases')} style={{ padding: '8px 16px', background: '#fffbeb', color: '#d97706', border: '1.5px solid #fde68a', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📊 Purchases CSV</button>
-          <button onClick={() => exportPDF('sales')} style={{ padding: '8px 16px', background: '#eef2ff', color: '#6366f1', border: '1.5px solid #c7d2fe', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📄 Sales PDF</button>
-          <button onClick={() => exportPDF('purchases')} style={{ padding: '8px 16px', background: '#eef2ff', color: '#6366f1', border: '1.5px solid #c7d2fe', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📄 Purchases PDF</button>
+          <button onClick={() => exportCSV('sales')} style={{ padding: '8px 16px', background: '#f0fdf4', color: '#059669', border: '1.5px solid #bbf7d0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📊 बिक्री CSV / Sales CSV</button>
+          <button onClick={() => exportCSV('purchases')} style={{ padding: '8px 16px', background: '#fffbeb', color: '#d97706', border: '1.5px solid #fde68a', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📊 खरीद CSV / Purchases CSV</button>
+          <button onClick={() => exportPDF('sales')} style={{ padding: '8px 16px', background: '#eef2ff', color: '#6366f1', border: '1.5px solid #c7d2fe', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📄 बिक्री PDF / Sales PDF</button>
+          <button onClick={() => exportPDF('purchases')} style={{ padding: '8px 16px', background: '#eef2ff', color: '#6366f1', border: '1.5px solid #c7d2fe', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>📄 खरीद PDF / Purchases PDF</button>
         </div>
       </div>
 
       {/* Quick actions */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <a href="/product" style={{ background: '#6366f1', color: '#fff', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>+ Add Product</a>
-        <a href="/sales" style={{ background: '#10b981', color: '#fff', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>+ Record Sale</a>
-        <a href="/purchases" style={{ background: '#f59e0b', color: '#fff', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>+ Record Purchase</a>
+        <a href="/product" style={{ background: '#6366f1', color: '#fff', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>+ उत्पाद जोड़ें / Add Product</a>
+        <a href="/sales" style={{ background: '#10b981', color: '#fff', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>+ बिक्री दर्ज / Record Sale</a>
+        <a href="/purchases" style={{ background: '#f59e0b', color: '#fff', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>+ खरीद दर्ज / Record Purchase</a>
+        <a href="/udhaar" style={{ background: '#6366f1', color: '#fff', padding: '10px 18px', borderRadius: 10, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>📒 उधार बही / Credit Ledger</a>
       </div>
 
       {/* Low stock */}
@@ -237,14 +236,14 @@ export default function DashboardPage() {
         <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 16, padding: 20, marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 16 }}>⚠️</span>
-            <span style={{ fontWeight: 700, fontSize: 14, color: '#92400e' }}>Low Stock Alert</span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: '#92400e' }}>कम स्टॉक / Low Stock Alert</span>
             <span style={{ background: '#fcd34d', color: '#92400e', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{lowStock.length} items</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {lowStock.map(p => (
               <div key={p._id} style={{ background: '#fff', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 12px', fontSize: 13 }}>
                 <span style={{ fontWeight: 600, color: '#92400e' }}>{p.name}</span>
-                <span style={{ color: '#d97706', marginLeft: 8 }}>{p.quantity} left</span>
+                <span style={{ color: '#d97706', marginLeft: 8 }}>{p.quantity} बचा / left</span>
               </div>
             ))}
           </div>
@@ -254,9 +253,9 @@ export default function DashboardPage() {
       {/* Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
         <div className="card">
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 16 }}>📈 Sales Over Time</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 16 }}>📈 बिक्री / Sales Over Time</div>
           {salesData.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#d1d5db', padding: '40px 0', fontSize: 14 }}>No sales data yet</div>
+            <div style={{ textAlign: 'center', color: '#d1d5db', padding: '40px 0', fontSize: 14 }}>अभी कोई बिक्री नहीं / No sales data yet</div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={salesData}>
@@ -270,9 +269,9 @@ export default function DashboardPage() {
           )}
         </div>
         <div className="card">
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 16 }}>📉 Purchases Over Time</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 16 }}>📉 खरीद / Purchases Over Time</div>
           {purchaseData.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#d1d5db', padding: '40px 0', fontSize: 14 }}>No purchase data yet</div>
+            <div style={{ textAlign: 'center', color: '#d1d5db', padding: '40px 0', fontSize: 14 }}>अभी कोई खरीद नहीं / No purchase data yet</div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={purchaseData}>

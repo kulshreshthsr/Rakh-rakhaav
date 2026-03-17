@@ -80,7 +80,7 @@ export default function UdhaarPage() {
   };
 
   const settleUdhaar = async (customerId) => {
-    if (!confirm('Kya aap sure hain? Sab udhaar clear ho jaayega.')) return;
+    if (!confirm('Kya aap sure hain? Sab udhaar clear ho jaayega.\nAre you sure? All credit will be cleared.')) return;
     await fetch(`${API}/api/customers/${customerId}/settle`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${getToken()}` },
@@ -90,7 +90,7 @@ export default function UdhaarPage() {
   };
 
   const deleteCustomer = async (id) => {
-    if (!confirm('Customer delete karein?')) return;
+    if (!confirm('Customer delete karein?\nDelete this customer?')) return;
     await fetch(`${API}/api/customers/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${getToken()}` },
@@ -106,76 +106,92 @@ export default function UdhaarPage() {
 
   return (
     <Layout>
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div className="page-title" style={{ marginBottom: 0 }}>उधार बही 📒</div>
+          <div className="page-title" style={{ marginBottom: 2 }}>
+            उधार बही <span style={{ fontSize: 16, color: '#9ca3af', fontWeight: 500 }}>/ Credit Ledger</span>
+          </div>
           <div style={{ fontSize: 13, color: '#9ca3af' }}>
-            Total Udhaar: <span style={{ color: totalUdhaar > 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>₹{totalUdhaar.toFixed(2)}</span>
+            कुल उधार / Total Credit:{' '}
+            <span style={{ color: totalUdhaar > 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>₹{totalUdhaar.toFixed(2)}</span>
           </div>
         </div>
-        <button onClick={() => setShowAddCustomer(true)} className="btn-primary">+ Naya Customer</button>
+        <button onClick={() => setShowAddCustomer(true)} className="btn-primary">
+          + नया ग्राहक / New Customer
+        </button>
       </div>
 
       {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>{error}</div>}
 
+      {/* Search */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <input className="form-input" style={{ width: '100%' }} placeholder="Customer naam ya phone se dhundho..." value={search} onChange={e => setSearch(e.target.value)} />
+        <input
+          className="form-input" style={{ width: '100%' }}
+          placeholder="नाम या फ़ोन से खोजें / Search by name or phone..."
+          value={search} onChange={e => setSearch(e.target.value)}
+        />
       </div>
 
-      {loading ? <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>Loading...</div>
-        : filtered.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-            Koi customer nahi. "+ Naya Customer" se add karo.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filtered.map(c => (
-              <div key={c._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#6366f1', flexShrink: 0 }}>
-                    {c.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{c.phone || 'Phone nahi diya'}</div>
-                  </div>
+      {/* Customer List */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है... / Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📒</div>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>कोई ग्राहक नहीं / No customers yet</div>
+          <div style={{ fontSize: 13 }}>"+ नया ग्राहक" से जोड़ें / Add using "+ New Customer"</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {filtered.map(c => (
+            <div key={c._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #eef2ff, #e0e7ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#6366f1', flexShrink: 0 }}>
+                  {c.name.charAt(0).toUpperCase()}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>BAAKI UDHAAR</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: c.totalUdhaar > 0 ? '#ef4444' : '#10b981' }}>
-                      ₹{(c.totalUdhaar || 0).toFixed(2)}
-                    </div>
-                  </div>
-                  <button onClick={() => openUdhaar(c)} style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    Hisaab
-                  </button>
-                  <button onClick={() => deleteCustomer(c._id)} style={{ background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    ✕
-                  </button>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{c.name}</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af' }}>{c.phone || 'फ़ोन नहीं / No phone'}</div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase' }}>बाकी उधार / Balance</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: c.totalUdhaar > 0 ? '#ef4444' : '#10b981' }}>
+                    ₹{(c.totalUdhaar || 0).toFixed(2)}
+                  </div>
+                </div>
+                <button onClick={() => openUdhaar(c)} style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  हिसाब / Account
+                </button>
+                <button onClick={() => deleteCustomer(c._id)} style={{ background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Add Customer Modal */}
       {showAddCustomer && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: '#1a1a2e' }}>Naya Customer Jodo</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>नया ग्राहक जोड़ें</h3>
+            <p style={{ fontSize: 13, color: '#9ca3af', marginBottom: 20 }}>Add New Customer</p>
             <form onSubmit={addCustomer}>
               <div className="form-group">
-                <label className="form-label">Naam</label>
-                <input className="form-input" placeholder="Customer ka naam" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })} required />
+                <label className="form-label">नाम / Name *</label>
+                <input className="form-input" placeholder="ग्राहक का नाम / Customer name" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label className="form-label">Phone (optional)</label>
-                <input className="form-input" placeholder="Mobile number" value={customerForm.phone} onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })} />
+                <label className="form-label">फ़ोन / Phone (optional)</label>
+                <input className="form-input" placeholder="मोबाइल नंबर / Mobile number" value={customerForm.phone} onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })} />
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Jodo</button>
-                <button type="button" onClick={() => setShowAddCustomer(false)} style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>जोड़ें / Add</button>
+                <button type="button" onClick={() => setShowAddCustomer(false)} style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>रद्द / Cancel</button>
               </div>
             </form>
           </div>
@@ -189,55 +205,59 @@ export default function UdhaarPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e' }}>{selectedCustomer.name}</h3>
-                <div style={{ fontSize: 13, color: '#9ca3af' }}>{selectedCustomer.phone}</div>
+                <div style={{ fontSize: 13, color: '#9ca3af' }}>{selectedCustomer.phone || 'No phone'}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 11, color: '#9ca3af' }}>BAAKI</div>
+                <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>बाकी / Balance</div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: selectedCustomer.totalUdhaar > 0 ? '#ef4444' : '#10b981' }}>
                   ₹{(selectedCustomer.totalUdhaar || 0).toFixed(2)}
                 </div>
               </div>
             </div>
 
-            {/* Add entry form */}
+            {/* Entry form */}
             <form onSubmit={addUdhaarEntry} style={{ background: '#f9f9f7', borderRadius: 12, padding: 16, marginBottom: 20 }}>
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <button type="button" onClick={() => setUdhaarForm({ ...udhaarForm, type: 'diya' })} style={{ flex: 1, padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: udhaarForm.type === 'diya' ? '#ef4444' : '#f3f4f6', color: udhaarForm.type === 'diya' ? '#fff' : '#374151' }}>
-                  Diya (उधार दिया)
+                <button type="button" onClick={() => setUdhaarForm({ ...udhaarForm, type: 'diya' })} style={{ flex: 1, padding: '10px 8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: udhaarForm.type === 'diya' ? '#ef4444' : '#f3f4f6', color: udhaarForm.type === 'diya' ? '#fff' : '#374151', transition: 'all 0.15s' }}>
+                  दिया / Gave Credit
                 </button>
-                <button type="button" onClick={() => setUdhaarForm({ ...udhaarForm, type: 'liya' })} style={{ flex: 1, padding: '8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: udhaarForm.type === 'liya' ? '#10b981' : '#f3f4f6', color: udhaarForm.type === 'liya' ? '#fff' : '#374151' }}>
-                  Liya (वापस लिया)
+                <button type="button" onClick={() => setUdhaarForm({ ...udhaarForm, type: 'liya' })} style={{ flex: 1, padding: '10px 8px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: udhaarForm.type === 'liya' ? '#10b981' : '#f3f4f6', color: udhaarForm.type === 'liya' ? '#fff' : '#374151', transition: 'all 0.15s' }}>
+                  लिया / Got Back
                 </button>
               </div>
               <div className="grid-2" style={{ marginBottom: 8 }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Raqam (₹)</label>
+                  <label className="form-label">रकम / Amount (₹)</label>
                   <input className="form-input" type="number" placeholder="0" value={udhaarForm.amount} onChange={e => setUdhaarForm({ ...udhaarForm, amount: e.target.value })} required />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Tarikh</label>
+                  <label className="form-label">तारीख / Date</label>
                   <input className="form-input" type="date" value={udhaarForm.date} onChange={e => setUdhaarForm({ ...udhaarForm, date: e.target.value })} />
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Note (optional)</label>
-                <input className="form-input" placeholder="Kya liya/diya..." value={udhaarForm.note} onChange={e => setUdhaarForm({ ...udhaarForm, note: e.target.value })} />
+                <label className="form-label">नोट / Note (optional)</label>
+                <input className="form-input" placeholder="क्या लिया/दिया... / What for..." value={udhaarForm.note} onChange={e => setUdhaarForm({ ...udhaarForm, note: e.target.value })} />
               </div>
               <button type="submit" style={{ width: '100%', padding: '10px', background: udhaarForm.type === 'diya' ? '#ef4444' : '#10b981', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                {udhaarForm.type === 'diya' ? '+ Udhaar Diya' : '+ Wapas Liya'}
+                {udhaarForm.type === 'diya' ? '+ उधार दिया / Credit Given' : '+ वापस लिया / Payment Received'}
               </button>
             </form>
 
             {/* History */}
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 8 }}>Hisaab</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>
+                हिसाब / Transaction History
+              </div>
               {udhaarHistory.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20, fontSize: 13 }}>Koi entry nahi</div>
+                <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20, fontSize: 13 }}>कोई एंट्री नहीं / No entries yet</div>
               ) : (
                 udhaarHistory.map(u => (
                   <div key={u._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f3f3f0' }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>{u.note || (u.type === 'diya' ? 'Udhaar diya' : 'Wapas liya')}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>
+                        {u.note || (u.type === 'diya' ? 'उधार दिया / Credit given' : 'वापस लिया / Payment received')}
+                      </div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>{new Date(u.date).toLocaleDateString('en-IN')}</div>
                     </div>
                     <div style={{ fontWeight: 700, fontSize: 15, color: u.type === 'diya' ? '#ef4444' : '#10b981' }}>
@@ -250,12 +270,12 @@ export default function UdhaarPage() {
 
             {selectedCustomer.totalUdhaar > 0 && (
               <button onClick={() => settleUdhaar(selectedCustomer._id)} style={{ width: '100%', marginTop: 16, padding: '12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                ✓ Udhaar Clear Kar Do
+                ✓ उधार चुकता करें / Clear All Credit
               </button>
             )}
 
             <button onClick={() => setShowUdhaarModal(false)} style={{ width: '100%', marginTop: 8, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 13, cursor: 'pointer' }}>
-              Band Karo
+              बंद करें / Close
             </button>
           </div>
         </div>
