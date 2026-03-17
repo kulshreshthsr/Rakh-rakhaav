@@ -158,7 +158,7 @@ export default function SalesPage() {
         <td>1</td>
         <td style="text-align:left"><strong>${sale.product_name}</strong></td>
         <td>${sale.hsn_code || '—'}</td>
-        <td>1.00</td>
+        <td>${sale.quantity}</td>
         <td>${sale.price_per_unit}</td>
         <td>${sale.taxable_amount?.toFixed(2)}</td>
         ${isIGST
