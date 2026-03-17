@@ -5,15 +5,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, default: 'staff' },
-
-  // Email verification
   isVerified: { type: Boolean, default: false },
-  verificationToken: { type: String },
-  verificationTokenExpiry: { type: Date },
-
-  // Password reset
-  resetPasswordToken: { type: String },
-  resetPasswordExpiry: { type: Date },
+  otp: { type: String },
+  otpExpiry: { type: Date },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
