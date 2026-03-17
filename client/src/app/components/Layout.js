@@ -3,6 +3,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 const navItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: '▦' },
+  { href: '/product', label: 'Products', icon: '◈' },
+  { href: '/udhaar', label: 'उधार बही', icon: '₹' },
+  { href: '/sales', label: 'Sales', icon: '↑' },
+  { href: '/purchases', label: 'Purchases', icon: '↓' },
+  { href: '/expenses', label: 'Kharcha', icon: '−' },
+  { href: '/profile', label: 'Profile', icon: '◉' },
   { href: '/dashboard', label: 'Home', icon: (active) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? '#6366f1' : 'none'} stroke={active ? '#6366f1' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
