@@ -1,10 +1,12 @@
-const SibApiV3Sdk = require('@getbrevo/brevo');
+const Brevo = require('@getbrevo/brevo');
 
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-apiInstance.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
+const client = Brevo.ApiClient.instance;
+client.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+
+const apiInstance = new Brevo.TransactionalEmailsApi();
 
 const sendOTPEmail = async (email, name, otp) => {
-  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
   sendSmtpEmail.to = [{ email, name }];
   sendSmtpEmail.sender = { name: 'रखरखाव', email: 'kulshreshthasrivas@gmail.com' };
   sendSmtpEmail.subject = `${otp} is your रखरखाव verification code`;
@@ -26,7 +28,7 @@ const sendOTPEmail = async (email, name, otp) => {
 };
 
 const sendPasswordResetEmail = async (email, name, otp) => {
-  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
   sendSmtpEmail.to = [{ email, name }];
   sendSmtpEmail.sender = { name: 'रखरखाव', email: 'kulshreshthasrivas@gmail.com' };
   sendSmtpEmail.subject = `${otp} is your password reset code`;
@@ -53,7 +55,7 @@ const sendLowStockAlert = async (email, shopName, products) => {
     </tr>
   `).join('');
 
-  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
   sendSmtpEmail.to = [{ email }];
   sendSmtpEmail.sender = { name: 'रखरखाव', email: 'kulshreshthasrivas@gmail.com' };
   sendSmtpEmail.subject = `⚠️ Low Stock Alert — ${shopName}`;
