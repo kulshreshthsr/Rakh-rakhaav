@@ -3,38 +3,11 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '▦' },
-  { href: '/product', label: 'Products', icon: '◈' },
-  { href: '/udhaar', label: 'उधार बही', icon: '₹' },
-  { href: '/sales', label: 'Sales', icon: '↑' },
-  { href: '/purchases', label: 'Purchases', icon: '↓' },
-  { href: '/expenses', label: 'Kharcha', icon: '−' },
-  { href: '/profile', label: 'Profile', icon: '◉' },
-  { href: '/dashboard', label: 'Home', icon: (active) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? '#6366f1' : 'none'} stroke={active ? '#6366f1' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-  )},
-  { href: '/product', label: 'Products', icon: (active) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? '#6366f1' : 'none'} stroke={active ? '#6366f1' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-    </svg>
-  )},
-  { href: '/sales', label: 'Sales', icon: (active) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? '#6366f1' : 'none'} stroke={active ? '#6366f1' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
-    </svg>
-  )},
-  { href: '/purchases', label: 'Purchases', icon: (active) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? '#6366f1' : 'none'} stroke={active ? '#6366f1' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-    </svg>
-  )},
-  { href: '/profile', label: 'Profile', icon: (active) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? '#6366f1' : 'none'} stroke={active ? '#6366f1' : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-    </svg>
-  )},
+  { href: '/dashboard', label: 'Home', icon: '🏠' },
+  { href: '/product', label: 'Products', icon: '📦' },
+  { href: '/sales', label: 'Sales', icon: '📈' },
+  { href: '/purchases', label: 'Purchases', icon: '🛒' },
+  { href: '/profile', label: 'Profile', icon: '👤' },
 ];
 
 export default function Layout({ children }) {
@@ -105,7 +78,7 @@ export default function Layout({ children }) {
                 transition: 'all 0.15s',
                 borderLeft: active ? '3px solid #6366f1' : '3px solid transparent',
               }}>
-                {item.icon(active)}
+                <span style={{ fontSize: 18 }}>{item.icon}</span>
                 {item.label}
                 {active && <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#6366f1' }} />}
               </a>
@@ -122,10 +95,7 @@ export default function Layout({ children }) {
             fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
             transition: 'all 0.15s',
           }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Logout
+            🚪 Logout
           </button>
         </div>
       </aside>
@@ -170,14 +140,13 @@ export default function Layout({ children }) {
             return (
               <a key={item.href} href={item.href} style={{
                 flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: 3, textDecoration: 'none', padding: '6px 2px',
+                gap: 3, textDecoration: 'none', padding: '4px 2px',
                 position: 'relative',
               }}>
                 {active && (
                   <div style={{
-                    position: 'absolute', top: 2, left: '15%', right: '15%',
-                    height: '100%', borderRadius: 10,
-                    background: 'rgba(99,102,241,0.12)',
+                    position: 'absolute', top: 0, left: '10%', right: '10%', bottom: 0,
+                    background: 'rgba(99,102,241,0.12)', borderRadius: 10,
                     border: '1px solid rgba(99,102,241,0.2)',
                   }} />
                 )}
@@ -189,9 +158,11 @@ export default function Layout({ children }) {
                     boxShadow: '0 0 10px rgba(99,102,241,0.8)',
                   }} />
                 )}
-                <div style={{ position: 'relative', zIndex: 1, transform: active ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.15s' }}>
-                  {item.icon(active)}
-                </div>
+                <span style={{
+                  fontSize: 20, position: 'relative', zIndex: 1,
+                  transform: active ? 'scale(1.15)' : 'scale(1)',
+                  transition: 'transform 0.15s',
+                }}>{item.icon}</span>
                 <span style={{
                   fontSize: 9.5, fontWeight: active ? 700 : 500,
                   color: active ? '#a5b4fc' : 'rgba(255,255,255,0.35)',
@@ -221,7 +192,6 @@ export default function Layout({ children }) {
 
         a { transition: opacity 0.15s; }
         a:hover { opacity: 0.85; }
-
         * { -webkit-tap-highlight-color: transparent; }
       `}</style>
     </div>
