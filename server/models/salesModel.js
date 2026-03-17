@@ -10,6 +10,8 @@ const saleSchema = new mongoose.Schema({
   gst_rate: { type: Number, default: 0 },
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
   invoice_type: { type: String, enum: ['B2B', 'B2C'], default: 'B2C' },
+  payment_type: { type: String, enum: ['cash', 'credit'], default: 'cash' },
+  buyer_phone: { type: String },
 
   // Auto calculated
   taxable_amount: { type: Number }, // price_per_unit * quantity
@@ -27,5 +29,7 @@ const saleSchema = new mongoose.Schema({
   invoice_number: { type: String, unique: true },
   notes: { type: String },
 }, { timestamps: true });
+
+
 
 module.exports = mongoose.model('Sale', saleSchema);

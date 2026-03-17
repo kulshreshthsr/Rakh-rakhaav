@@ -2,6 +2,8 @@ const Sale = require('../models/salesModel');
 const Product = require('../models/productModel');
 const Shop = require('../models/shopModel');
 const Purchase = require('../models/purchaseModel');
+const Customer = require('../models/customerModel');
+const Udhaar = require('../models/udhaarModel');
 
 const getOrCreateShop = async (userId) => {
   let shop = await Shop.findOne({ owner: userId });
@@ -51,6 +53,7 @@ const getSales = async (req, res) => {
       buyer_address: s.buyer_address,
       invoice_number: s.invoice_number,
       invoice_type: s.invoice_type,
+      payment_type: s.payment_type,
       notes: s.notes,
       sold_at: s.createdAt,
     }));
@@ -61,19 +64,27 @@ const getSales = async (req, res) => {
 };
 
 const createSale = async (req, res) => {
-  const { product_id, quantity, price_per_unit, buyer_name, buyer_gstin, buyer_address, buyer_state, notes } = req.body;
+  const {
+    product_id, quantity, price_per_unit,
+    buyer_name, buyer_gstin, buyer_address, buyer_state, buyer_phone,
+    notes, payment_type = 'cash'
+  } = req.body;
+
   try {
     const shop = await getOrCreateShop(req.user.id);
     const product = await Product.findById(product_id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    // Credit sale requires buyer name
+    if (payment_type === 'credit' && !buyer_name) {
+      return res.status(400).json({ message: 'Credit sale ke liye customer ka naam zaroori hai!' });
+    }
 
     const taxable_amount = parseFloat((quantity * price_per_unit).toFixed(2));
     const gst_rate = product.gst_rate || 0;
     const gstCalc = calculateGST(taxable_amount, gst_rate, 'AUTO', shop.state, buyer_state);
     const total_amount = parseFloat((taxable_amount + gstCalc.total_gst).toFixed(2));
     const invoice_number = await generateInvoiceNumber(shop._id);
-
-    // ✅ Auto detect B2B or B2C
     const invoice_type = buyer_gstin ? 'B2B' : 'B2C';
 
     const sale = await Sale.create({
@@ -92,10 +103,52 @@ const createSale = async (req, res) => {
       buyer_address,
       invoice_number,
       invoice_type,
+      payment_type,
       notes,
     });
 
+    // ✅ Stock reduce
     await Product.findByIdAndUpdate(product_id, { $inc: { quantity: -quantity } });
+
+    // ✅ Credit sale — auto create customer + udhaar entry
+    if (payment_type === 'credit' && buyer_name) {
+      // Check if customer already exists
+      let customer = await Customer.findOne({
+        shop: shop._id,
+        $or: [
+          { name: { $regex: new RegExp(`^${buyer_name}$`, 'i') } },
+          ...(buyer_phone ? [{ phone: buyer_phone }] : [])
+        ]
+      });
+
+      // Create new customer if not exists
+      if (!customer) {
+        customer = await Customer.create({
+          shop: shop._id,
+          name: buyer_name,
+          phone: buyer_phone || '',
+          totalUdhaar: 0,
+        });
+      }
+
+      // Create udhaar debit entry
+      await Udhaar.create({
+        shop: shop._id,
+        customer: customer._id,
+        type: 'debit',
+        amount: total_amount,
+        note: `Credit Sale - ${product.name} (${invoice_number})`,
+        date: new Date(),
+        reference_id: invoice_number,
+        reference_type: 'sale',
+      });
+
+      // Update customer balance
+      await Customer.findByIdAndUpdate(customer._id, {
+        $inc: { totalUdhaar: total_amount }
+      });
+    }
+
     res.status(201).json(sale);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -106,7 +159,28 @@ const deleteSale = async (req, res) => {
   try {
     const sale = await Sale.findById(req.params.id);
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
+
+    // Restore stock
     await Product.findByIdAndUpdate(sale.product, { $inc: { quantity: sale.quantity } });
+
+    // If credit sale, reverse udhaar entry
+    if (sale.payment_type === 'credit' && sale.buyer_name) {
+      const shop = await getOrCreateShop(sale.shop);
+      const customer = await Customer.findOne({
+        shop: sale.shop,
+        name: { $regex: new RegExp(`^${sale.buyer_name}$`, 'i') }
+      });
+      if (customer) {
+        await Customer.findByIdAndUpdate(customer._id, {
+          $inc: { totalUdhaar: -sale.total_amount }
+        });
+        await Udhaar.deleteOne({
+          reference_id: sale.invoice_number,
+          reference_type: 'sale',
+        });
+      }
+    }
+
     await Sale.findByIdAndDelete(req.params.id);
     res.json({ message: 'Sale deleted' });
   } catch (err) {
