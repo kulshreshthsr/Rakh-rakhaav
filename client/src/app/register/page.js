@@ -61,11 +61,11 @@ export default function RegisterPage() {
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input className="form-input" type="text" placeholder="Tarun Gupta" value={name} onChange={e => setName(e.target.value)} required />
+                <input className="form-input" type="text" placeholder="Sona" value={name} onChange={e => setName(e.target.value)} required />
               </div>
               <div className="form-group">
                 <label className="form-label">Username</label>
-                <input className="form-input" type="text" placeholder="tarun_gupta" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))} required />
+                <input className="form-input" type="text" placeholder="sona_sona" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))} required />
                 <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>Only lowercase letters, numbers and underscores</span>
               </div>
               <div className="form-group">
