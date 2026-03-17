@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Layout from '@/components/Layout';
+import Layout from '../components/Layout';
 
 export default function UdhaarPage() {
   const [customers, setCustomers] = useState([]);
@@ -98,14 +98,17 @@ export default function UdhaarPage() {
     fetchCustomers();
   };
 
-  const filtered = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || (c.phone && c.phone.includes(search)));
+  const filtered = customers.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.phone && c.phone.includes(search))
+  );
   const totalUdhaar = customers.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
 
   return (
     <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div className="page-title" style={{ marginBottom: 0 }}>उधार बही</div>
+          <div className="page-title" style={{ marginBottom: 0 }}>उधार बही 📒</div>
           <div style={{ fontSize: 13, color: '#9ca3af' }}>
             Total Udhaar: <span style={{ color: totalUdhaar > 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>₹{totalUdhaar.toFixed(2)}</span>
           </div>
@@ -113,8 +116,10 @@ export default function UdhaarPage() {
         <button onClick={() => setShowAddCustomer(true)} className="btn-primary">+ Naya Customer</button>
       </div>
 
+      {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>{error}</div>}
+
       <div className="card" style={{ marginBottom: 16 }}>
-        <input className="form-input" placeholder="Customer naam ya phone se dhundho..." value={search} onChange={e => setSearch(e.target.value)} />
+        <input className="form-input" style={{ width: '100%' }} placeholder="Customer naam ya phone se dhundho..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
       {loading ? <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>Loading...</div>
@@ -127,7 +132,7 @@ export default function UdhaarPage() {
             {filtered.map(c => (
               <div key={c._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#6366f1' }}>
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#6366f1', flexShrink: 0 }}>
                     {c.name.charAt(0).toUpperCase()}
                   </div>
                   <div>

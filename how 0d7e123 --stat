@@ -1,0 +1,10 @@
+[33maede0cf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: Layout icons, build error fixed
+[33m8a7fe6d[m added Layout
+[33m9143d36[m fixed app.js route order
+[33m55c21a1[m latest changes
+[33mb87a1cf[m root page redirects to login or dashboard
+[33m0d7e123[m simple username password auth, removed email verification
+[33m0642d04[m fixed brevo api initialization
+[33md01c033[m updated sender email
+[33m415fc90[m added emailService
+[33m98bc6c8[m OTP verification system
