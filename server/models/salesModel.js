@@ -9,6 +9,7 @@ const saleSchema = new mongoose.Schema({
   price_per_unit: { type: Number, required: true }, // base price
   gst_rate: { type: Number, default: 0 },
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
+  invoice_type: { type: String, enum: ['B2B', 'B2C'], default: 'B2C' },
 
   // Auto calculated
   taxable_amount: { type: Number }, // price_per_unit * quantity

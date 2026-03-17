@@ -1,6 +1,7 @@
 const Sale = require('../models/salesModel');
 const Product = require('../models/productModel');
 const Shop = require('../models/shopModel');
+const Purchase = require('../models/purchaseModel');
 
 const getOrCreateShop = async (userId) => {
   let shop = await Shop.findOne({ owner: userId });
@@ -8,7 +9,6 @@ const getOrCreateShop = async (userId) => {
   return shop;
 };
 
-// Auto generate invoice number
 const generateInvoiceNumber = async (shopId) => {
   const count = await Sale.countDocuments({ shop: shopId });
   const date = new Date();
@@ -17,13 +17,9 @@ const generateInvoiceNumber = async (shopId) => {
   return `INV-${year}${month}-${String(count + 1).padStart(4, '0')}`;
 };
 
-// GST calculation helper
 const calculateGST = (taxable_amount, gst_rate, gst_type, shopState, buyerState) => {
   const gst = (taxable_amount * gst_rate) / 100;
-
-  // Auto detect IGST vs CGST/SGST based on states
   const isIGST = gst_type === 'IGST' || (buyerState && shopState && shopState !== buyerState);
-
   if (isIGST) {
     return { cgst_amount: 0, sgst_amount: 0, igst_amount: parseFloat(gst.toFixed(2)), total_gst: parseFloat(gst.toFixed(2)), gst_type: 'IGST' };
   } else {
@@ -54,6 +50,7 @@ const getSales = async (req, res) => {
       buyer_gstin: s.buyer_gstin,
       buyer_address: s.buyer_address,
       invoice_number: s.invoice_number,
+      invoice_type: s.invoice_type,
       notes: s.notes,
       sold_at: s.createdAt,
     }));
@@ -76,6 +73,9 @@ const createSale = async (req, res) => {
     const total_amount = parseFloat((taxable_amount + gstCalc.total_gst).toFixed(2));
     const invoice_number = await generateInvoiceNumber(shop._id);
 
+    // ✅ Auto detect B2B or B2C
+    const invoice_type = buyer_gstin ? 'B2B' : 'B2C';
+
     const sale = await Sale.create({
       shop: shop._id,
       product: product_id,
@@ -91,10 +91,10 @@ const createSale = async (req, res) => {
       buyer_gstin,
       buyer_address,
       invoice_number,
+      invoice_type,
       notes,
     });
 
-    // Reduce stock
     await Product.findByIdAndUpdate(product_id, { $inc: { quantity: -quantity } });
     res.status(201).json(sale);
   } catch (err) {
@@ -106,7 +106,7 @@ const deleteSale = async (req, res) => {
   try {
     const sale = await Sale.findById(req.params.id);
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
-    await Product.findByIdAndUpdate(sale.product, { $inc: { quantity: sale.quantity } }); // restore stock
+    await Product.findByIdAndUpdate(sale.product, { $inc: { quantity: sale.quantity } });
     await Sale.findByIdAndDelete(req.params.id);
     res.json({ message: 'Sale deleted' });
   } catch (err) {
@@ -114,4 +114,83 @@ const deleteSale = async (req, res) => {
   }
 };
 
-module.exports = { getSales, createSale, deleteSale };
+const getGSTSummary = async (req, res) => {
+  try {
+    const shop = await getOrCreateShop(req.user.id);
+    const { month, year } = req.query;
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    const sales = await Sale.find({
+      shop: shop._id,
+      createdAt: { $gte: startDate, $lte: endDate }
+    });
+
+    const purchases = await Purchase.find({
+      shop: shop._id,
+      createdAt: { $gte: startDate, $lte: endDate }
+    });
+
+    const b2b = sales.filter(s => s.invoice_type === 'B2B');
+    const b2c = sales.filter(s => s.invoice_type !== 'B2B');
+
+    const summary = {
+      month: parseInt(month),
+      year: parseInt(year),
+      sales: {
+        total: sales.length,
+        taxable_amount: sales.reduce((s, x) => s + (x.taxable_amount || 0), 0),
+        total_gst: sales.reduce((s, x) => s + (x.total_gst || 0), 0),
+        cgst: sales.reduce((s, x) => s + (x.cgst_amount || 0), 0),
+        sgst: sales.reduce((s, x) => s + (x.sgst_amount || 0), 0),
+        igst: sales.reduce((s, x) => s + (x.igst_amount || 0), 0),
+        total_amount: sales.reduce((s, x) => s + (x.total_amount || 0), 0),
+        b2b_count: b2b.length,
+        b2c_count: b2c.length,
+        b2b_taxable: b2b.reduce((s, x) => s + (x.taxable_amount || 0), 0),
+        b2c_taxable: b2c.reduce((s, x) => s + (x.taxable_amount || 0), 0),
+      },
+      purchases: {
+        total: purchases.length,
+        taxable_amount: purchases.reduce((s, x) => s + (x.taxable_amount || 0), 0),
+        total_gst: purchases.reduce((s, x) => s + (x.total_gst || 0), 0),
+        cgst: purchases.reduce((s, x) => s + (x.cgst_amount || 0), 0),
+        sgst: purchases.reduce((s, x) => s + (x.sgst_amount || 0), 0),
+        igst: purchases.reduce((s, x) => s + (x.igst_amount || 0), 0),
+      },
+      gstr1: {
+        b2b_invoices: b2b.map(s => ({
+          invoice_number: s.invoice_number,
+          date: s.createdAt,
+          buyer_name: s.buyer_name,
+          buyer_gstin: s.buyer_gstin,
+          taxable_amount: s.taxable_amount,
+          gst_rate: s.gst_rate,
+          cgst: s.cgst_amount,
+          sgst: s.sgst_amount,
+          igst: s.igst_amount,
+          total: s.total_amount,
+          gst_type: s.gst_type,
+        })),
+        b2c_summary: {
+          taxable_amount: b2c.reduce((s, x) => s + (x.taxable_amount || 0), 0),
+          total_gst: b2c.reduce((s, x) => s + (x.total_gst || 0), 0),
+          total_amount: b2c.reduce((s, x) => s + (x.total_amount || 0), 0),
+        }
+      },
+      gstr3b: {
+        outward_taxable: sales.reduce((s, x) => s + (x.taxable_amount || 0), 0),
+        output_gst: sales.reduce((s, x) => s + (x.total_gst || 0), 0),
+        input_gst: purchases.reduce((s, x) => s + (x.total_gst || 0), 0),
+        net_payable: sales.reduce((s, x) => s + (x.total_gst || 0), 0) - purchases.reduce((s, x) => s + (x.total_gst || 0), 0),
+      }
+    };
+
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { getSales, createSale, deleteSale, getGSTSummary };
