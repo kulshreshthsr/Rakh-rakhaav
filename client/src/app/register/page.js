@@ -44,7 +44,7 @@ export default function RegisterPage() {
           </div>
           <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 20 }}>Join smart shopkeepers of Kanpur</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {['✓ Free forever', '✓ No card needed', '✓ Works on mobile'].map((f, i) => (
+            {['✓ Easy to Use', '✓ No card needed', '✓ Works on mobile'].map((f, i) => (
               <div key={i} style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 20, padding: '5px 12px', fontSize: 12, color: '#6ee7b7', fontWeight: 500 }}>
                 {f}
               </div>
@@ -73,7 +73,7 @@ export default function RegisterPage() {
               <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Full Name</label>
               <input
                 type="text"
-                placeholder="Tarun Gupta"
+                placeholder="Sona"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
@@ -85,7 +85,7 @@ export default function RegisterPage() {
               <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Username</label>
               <input
                 type="text"
-                placeholder="tarun_gupta"
+                placeholder="sona_sona"
                 value={username}
                 onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))}
                 required
