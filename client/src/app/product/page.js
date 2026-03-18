@@ -86,12 +86,7 @@ export default function ProductsPage() {
     return <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>GST {rate}%</span>;
   };
 
-  const getMargin = (price, cost) => {
-    if (!cost || !price || cost <= 0) return null;
-    const margin = ((price - cost) / cost * 100).toFixed(1);
-    const profit = (price - cost).toFixed(0);
-    return { margin, profit, positive: price > cost };
-  };
+ 
 
   return (
     <Layout>
@@ -136,7 +131,7 @@ export default function ProductsPage() {
             <div className="table-container hidden-xs">
               <table>
                 <thead>
-                  <tr><th>नाम / Name</th><th>लागत / Cost</th><th>बिक्री / Price</th><th>मार्जिन</th><th>GST</th><th>मात्रा / Qty</th><th>Status</th><th>Actions</th></tr>
+                  <tr><th>नाम / Name</th><th>लागत / Cost</th><th>बिक्री / Price</th><th>GST</th><th>मात्रा / Qty</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                   {filtered.map(p => {
@@ -149,11 +144,7 @@ export default function ProductsPage() {
                         </td>
                         <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
                         <td style={{ fontWeight: 600 }}>₹{p.price}</td>
-                        <td>
-                          {m ? <span style={{ background: m.positive ? '#dcfce7' : '#fee2e2', color: m.positive ? '#166534' : '#991b1b', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
-                            {m.positive ? '+' : ''}₹{m.profit} ({m.margin}%)
-                          </span> : <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
-                        </td>
+                       
                         <td>{getGSTBadge(p.gst_rate)}</td>
                         <td>{p.quantity} {p.unit || ''}</td>
                         <td>{getStockBadge(p.quantity)}</td>
@@ -185,7 +176,7 @@ export default function ProductsPage() {
                       <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>लागत/COST</div><div style={{ fontWeight: 700 }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
                       <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>बिक्री/PRICE</div><div style={{ fontWeight: 700 }}>₹{p.price}</div></div>
                       <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>मात्रा/QTY</div><div style={{ fontWeight: 700 }}>{p.quantity}</div></div>
-                      {m && <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>मार्जिन</div><div style={{ fontWeight: 700, color: m.positive ? '#10b981' : '#ef4444' }}>{m.margin}%</div></div>}
+                    
                       <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><div>{getGSTBadge(p.gst_rate)}</div></div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
