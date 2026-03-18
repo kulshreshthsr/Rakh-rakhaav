@@ -86,8 +86,6 @@ export default function ProductsPage() {
     return <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>GST {rate}%</span>;
   };
 
- 
-
   return (
     <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
@@ -119,76 +117,77 @@ export default function ProductsPage() {
 
       {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>{error}</div>}
 
-      {loading ? <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
-        : filtered.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
-            {search || filterStock !== 'all' ? 'कोई उत्पाद नहीं मिला' : 'अभी कोई उत्पाद नहीं। "+ Add Product" से जोड़ें।'}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
+          {search || filterStock !== 'all' ? 'कोई उत्पाद नहीं मिला' : 'अभी कोई उत्पाद नहीं। "+ Add Product" से जोड़ें।'}
+        </div>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="table-container hidden-xs">
+            <table>
+              <thead>
+                <tr>
+                  <th>नाम / Name</th>
+                  <th>लागत / Cost</th>
+                  <th>बिक्री / Price</th>
+                  <th>GST</th>
+                  <th>मात्रा / Qty</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(p => (
+                  <tr key={p._id}>
+                    <td>
+                      <div style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.name}</div>
+                      <div style={{ color: '#9ca3af', fontSize: 11 }}>{p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}</div>
+                    </td>
+                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
+                    <td style={{ fontWeight: 600 }}>₹{p.price}</td>
+                    <td>{getGSTBadge(p.gst_rate)}</td>
+                    <td>{p.quantity} {p.unit || ''}</td>
+                    <td>{getStockBadge(p.quantity)}</td>
+                    <td>
+                      <button onClick={() => openEdit(p)} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginRight: 10 }}>Edit</button>
+                      <button onClick={() => handleDelete(p._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : (
-          <>
-            {/* Desktop table */}
-            <div className="table-container hidden-xs">
-              <table>
-                <thead>
-                  <tr><th>नाम / Name</th><th>लागत / Cost</th><th>बिक्री / Price</th><th>GST</th><th>मात्रा / Qty</th><th>Status</th><th>Actions</th></tr>
-                </thead>
-                <tbody>
-                  {filtered.map(p => {
-                    const m = getMargin(p.price, p.cost_price);
-                    return (
-                      <tr key={p._id}>
-                        <td>
-                          <div style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.name}</div>
-                          <div style={{ color: '#9ca3af', fontSize: 11 }}>{p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}</div>
-                        </td>
-                        <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
-                        <td style={{ fontWeight: 600 }}>₹{p.price}</td>
-                       
-                        <td>{getGSTBadge(p.gst_rate)}</td>
-                        <td>{p.quantity} {p.unit || ''}</td>
-                        <td>{getStockBadge(p.quantity)}</td>
-                        <td>
-                          <button onClick={() => openEdit(p)} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginRight: 10 }}>Edit</button>
-                          <button onClick={() => handleDelete(p._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Delete</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
 
-            {/* Mobile cards */}
-            <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {filtered.map(p => {
-                const m = getMargin(p.price, p.cost_price);
-                return (
-                  <div key={p._id} className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e' }}>{p.name}</div>
-                        <div style={{ color: '#9ca3af', fontSize: 12 }}>{p.description || '—'}</div>
-                      </div>
-                      {getStockBadge(p.quantity)}
-                    </div>
-                    <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                      <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>लागत/COST</div><div style={{ fontWeight: 700 }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
-                      <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>बिक्री/PRICE</div><div style={{ fontWeight: 700 }}>₹{p.price}</div></div>
-                      <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>मात्रा/QTY</div><div style={{ fontWeight: 700 }}>{p.quantity}</div></div>
-                    
-                      <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><div>{getGSTBadge(p.gst_rate)}</div></div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => openEdit(p)} style={{ flex: 1, padding: '8px', background: '#eef2ff', color: '#6366f1', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
-                      <button onClick={() => handleDelete(p._id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
-                    </div>
+          {/* Mobile cards */}
+          <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filtered.map(p => (
+              <div key={p._id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e' }}>{p.name}</div>
+                    <div style={{ color: '#9ca3af', fontSize: 12 }}>{p.description || '—'}</div>
                   </div>
-                );
-              })}
-            </div>
-          </>
-        )}
+                  {getStockBadge(p.quantity)}
+                </div>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>लागत/COST</div><div style={{ fontWeight: 700 }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>बिक्री/PRICE</div><div style={{ fontWeight: 700 }}>₹{p.price}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>मात्रा/QTY</div><div style={{ fontWeight: 700 }}>{p.quantity}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><div>{getGSTBadge(p.gst_rate)}</div></div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => openEdit(p)} style={{ flex: 1, padding: '8px', background: '#eef2ff', color: '#6366f1', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
+                  <button onClick={() => handleDelete(p._id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Modal */}
       {showModal && (
