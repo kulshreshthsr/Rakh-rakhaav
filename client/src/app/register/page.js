@@ -117,7 +117,7 @@ export default function RegisterPage() {
           {/* Full Name */}
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Full Name</label>
-            <input type="text" placeholder="Sona"
+            <input type="text" placeholder="Sonaa"
               value={name} onChange={e => setName(e.target.value)} required
               style={inputStyle}
               onFocus={e => { e.target.style.borderColor = '#059669'; e.target.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.12)'; }}
