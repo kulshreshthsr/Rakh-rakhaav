@@ -6,7 +6,16 @@ const supplierSchema = new mongoose.Schema({
   phone: { type: String },
   gstin: { type: String },
   address: { type: String },
-  totalUdhaar: { type: Number, default: 0 }, // supplier ko dena hai
+  state: { type: String },        // ← needed for IGST logic
+  companyName: { type: String },
+
+  // ── Ledger summary (auto-updated) ─────────────────────────────
+  totalPurchased: { type: Number, default: 0 }, // total credit purchases
+  totalPaid: { type: Number, default: 0 },      // total payments made
+  totalUdhaar: { type: Number, default: 0 },    // balance still owed = totalPurchased - totalPaid
+
+  isActive: { type: Boolean, default: true },
+  notes: { type: String },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Supplier', supplierSchema);

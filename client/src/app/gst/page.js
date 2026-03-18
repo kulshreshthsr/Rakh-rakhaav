@@ -3,58 +3,89 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_HI = ['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
 
+const API      = 'https://rakh-rakhaav.onrender.com';
+const getToken = () => localStorage.getItem('token');
+const fmt      = (n) => parseFloat(n || 0).toFixed(2);
+
 export default function GSTPage() {
+  const router  = useRouter();
+  const now     = new Date();
+
+  const [month,   setMonth]   = useState(now.getMonth() + 1);
+  const [year,    setYear]    = useState(now.getFullYear());
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const router = useRouter();
 
-  const getToken = () => localStorage.getItem('token');
-  const API = 'https://rakh-rakhaav.onrender.com';
-
-  const fetchSummary = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API}/api/sales/gst-summary?month=${month}&year=${year}`, {
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      if (res.status === 401) { router.push('/login'); return; }
-      setSummary(await res.json());
-    } catch { } finally { setLoading(false); }
-  };
+  // Drill-down state
+  const [drillType, setDrillType] = useState(null); // 'sales' | 'purchases' | null
+  const [drillData, setDrillData] = useState([]);
+  const [drillLoading, setDrillLoading] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     fetchSummary();
-  }, []);
+  }, [month, year]); // ← auto-fetch on month/year change
 
+  // ── Fetch GST summary ────────────────────────────────────────────────────────
+  const fetchSummary = async () => {
+    setLoading(true);
+    setDrillType(null);
+    try {
+      const res = await fetch(`${API}/api/sales/gst-summary?month=${month}&year=${year}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.status === 401) { router.push('/login'); return; }
+      setSummary(await res.json());
+    } catch {}
+    setLoading(false);
+  };
+
+  // ── Drill-down: fetch sales or purchases for this month ──────────────────────
+  const openDrill = async (type) => {
+    if (drillType === type) { setDrillType(null); return; } // toggle off
+    setDrillType(type);
+    setDrillLoading(true);
+
+    const from = new Date(year, month - 1, 1).toISOString();
+    const to   = new Date(year, month, 0, 23, 59, 59).toISOString();
+
+    try {
+      const url = type === 'sales'
+        ? `${API}/api/sales?from=${from}&to=${to}`
+        : `${API}/api/purchases?from=${from}&to=${to}`;
+
+      const res  = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const data = await res.json();
+      setDrillData(type === 'sales' ? (data.sales || data) : (data.purchases || data));
+    } catch {}
+    setDrillLoading(false);
+  };
+
+  // ── CSV Export ───────────────────────────────────────────────────────────────
   const exportCSV = (type) => {
     if (!summary) return;
     let rows, filename;
+
     if (type === 'gstr1') {
       rows = [
         ['GSTR-1 B2B Invoices'],
-        ['Invoice No', 'Date', 'Buyer Name', 'Buyer GSTIN', 'Taxable Amount', 'GST Rate%', 'CGST', 'SGST', 'IGST', 'Total'],
+        ['Invoice No','Date','Buyer Name','Buyer GSTIN','Taxable Amount','GST Rate%','CGST','SGST','IGST','Total'],
         ...summary.gstr1.b2b_invoices.map(i => [
           i.invoice_number,
           new Date(i.date).toLocaleDateString('en-IN'),
           i.buyer_name || '',
           i.buyer_gstin || '',
-          i.taxable_amount?.toFixed(2),
+          fmt(i.taxable_amount),
           i.gst_rate + '%',
-          i.cgst?.toFixed(2),
-          i.sgst?.toFixed(2),
-          i.igst?.toFixed(2),
-          i.total?.toFixed(2),
+          fmt(i.cgst), fmt(i.sgst), fmt(i.igst), fmt(i.total),
         ]),
         [''],
         ['GSTR-1 B2C Summary'],
-        ['Count', 'Taxable Amount', 'Total GST', 'Total Amount'],
-        [summary.gstr1.b2c_summary.count, summary.gstr1.b2c_summary.taxable_amount?.toFixed(2), summary.gstr1.b2c_summary.total_gst?.toFixed(2), summary.gstr1.b2c_summary.total_amount?.toFixed(2)],
+        ['Count','Taxable Amount','Total GST','Total Amount'],
+        [summary.gstr1.b2c_summary.count, fmt(summary.gstr1.b2c_summary.taxable_amount), fmt(summary.gstr1.b2c_summary.total_gst), fmt(summary.gstr1.b2c_summary.total_amount)],
       ];
       filename = `GSTR1_${year}_${String(month).padStart(2,'0')}.csv`;
     } else {
@@ -62,18 +93,31 @@ export default function GSTPage() {
         ['GSTR-3B Summary'],
         ['Month/Year', `${MONTHS[month-1]} ${year}`],
         [''],
-        ['Description', 'Amount (Rs)'],
-        ['GST Collected (Sales)', summary.gstr3b.output_gst?.toFixed(2)],
-        ['GST Paid on Purchase', summary.gstr3b.input_gst?.toFixed(2)],
-        ['Net GST Payable', summary.gstr3b.net_payable?.toFixed(2)],
-        ['Taxable Sales', summary.gstr3b.outward_taxable?.toFixed(2)],
+        ['Description','Amount (Rs)'],
+        ['GST Collected (Output)',    fmt(summary.gstr3b.output_gst)],
+        ['GST Input Credit (ITC)',    fmt(summary.gstr3b.input_gst)],
+        ['Net GST Payable',           fmt(summary.gstr3b.net_payable)],
+        ['Outward Taxable Sales',     fmt(summary.gstr3b.outward_taxable)],
+        [''],
+        ['Sales Breakup'],
+        ['Total Sales',               fmt(summary.sales.total_amount)],
+        ['CGST Collected',            fmt(summary.sales.cgst)],
+        ['SGST Collected',            fmt(summary.sales.sgst)],
+        ['IGST Collected',            fmt(summary.sales.igst)],
+        [''],
+        ['Purchase Breakup'],
+        ['Total Purchases',           fmt(summary.purchases.taxable_amount)],
+        ['CGST Input',                fmt(summary.purchases.cgst)],
+        ['SGST Input',                fmt(summary.purchases.sgst)],
+        ['IGST Input',                fmt(summary.purchases.igst)],
       ];
       filename = `GSTR3B_${year}_${String(month).padStart(2,'0')}.csv`;
     }
-    const csv = rows.map(r => r.join(',')).join('\n');
+
+    const csv  = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   };
@@ -81,88 +125,83 @@ export default function GSTPage() {
   const exportJSON = () => {
     if (!summary) return;
     const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
     a.href = url;
     a.download = `GST_${year}_${String(month).padStart(2,'0')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const netPayable = summary?.gstr3b?.net_payable || 0;
-  const gstCollected = summary?.gstr3b?.output_gst || 0;
-  const gstPaidOnPurchase = summary?.gstr3b?.input_gst || 0;
-  const monthHi = MONTHS_HI[month - 1];
-  const monthEn = MONTHS[month - 1];
+  // ── Derived values ───────────────────────────────────────────────────────────
+  const netPayable        = summary?.gstr3b?.net_payable   || 0;
+  const gstCollected      = summary?.gstr3b?.output_gst    || 0;
+  const gstITC            = summary?.gstr3b?.input_gst     || 0;
+  const monthHi           = MONTHS_HI[month - 1];
+  const monthEn           = MONTHS[month - 1];
+  const isPayable         = netPayable > 0;
+  const isRefund          = netPayable < 0;
 
-  // Return status
-  const getReturnStatus = () => {
-    if (!summary) return null;
-    const hasSales = summary.sales.total > 0;
-    const hasPurchases = summary.purchases.total > 0;
-    if (!hasSales && !hasPurchases) return { ok: false, msg: '⚠️ इस महीने कोई data नहीं / No data this month' };
-    if (hasSales) return { ok: true, msg: 'Return Status: दाखिल करने के लिए तैयार / Ready to file ✅' };
-    return { ok: false, msg: '⚠️ Incomplete data — check purchases or sales' };
-  };
-
-  const returnStatus = summary ? getReturnStatus() : null;
+  const returnStatus = summary
+    ? summary.sales.total > 0
+      ? { ok: true,  msg: '✅ Return दाखिल करने के लिए तैयार / Ready to file' }
+      : { ok: false, msg: '⚠️ इस महीने कोई sales नहीं / No sales this month' }
+    : null;
 
   return (
     <Layout>
       <div className="page-title">GST सारांश / GST Summary</div>
 
-      {/* ── Month/Year Selector ── */}
-      <div className="card" style={{ marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* ── Month / Year Selector ── */}
+      <div className="card" style={{ marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>महीना / Month:</div>
-        <select className="form-input" style={{ minWidth: 140 }} value={month} onChange={e => setMonth(parseInt(e.target.value))}>
-          {MONTHS.map((m, i) => <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>)}
+        <select className="form-input" style={{ minWidth: 150 }} value={month}
+          onChange={e => setMonth(parseInt(e.target.value))}>
+          {MONTHS.map((m, i) => (
+            <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>
+          ))}
         </select>
-        <select className="form-input" style={{ minWidth: 100 }} value={year} onChange={e => setYear(parseInt(e.target.value))}>
-          {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+        <select className="form-input" style={{ minWidth: 100 }} value={year}
+          onChange={e => setYear(parseInt(e.target.value))}>
+          {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
         </select>
-        <button onClick={fetchSummary} className="btn-primary" style={{ minWidth: 100 }}>
-          {loading ? '⏳ लोड...' : '🔍 देखें / View'}
-        </button>
+        {loading && (
+          <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 600 }}>⏳ लोड हो रहा है...</span>
+        )}
       </div>
 
       {!summary ? (
         <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>महीना चुनें और "देखें" पर क्लिक करें</div>
-          <div style={{ fontSize: 12 }}>Select month and click View</div>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>⏳ लोड हो रहा है...</div>
         </div>
       ) : (
         <>
-          {/* ── SECTION 1: TOP SUMMARY BANNER ── */}
+          {/* ── SECTION 1: NET PAYABLE BANNER ── */}
           <div style={{
-            background: netPayable > 0 ? '#fef2f2' : '#f0fdf4',
-            border: `2px solid ${netPayable > 0 ? '#fca5a5' : '#86efac'}`,
+            background: isPayable ? '#fef2f2' : isRefund ? '#f0fdf4' : '#f8fafc',
+            border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
             borderRadius: 16, padding: '20px 24px', marginBottom: 20,
           }}>
-            {/* Main message */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 12 }}>
-              <div style={{ fontSize: 36 }}>{netPayable > 0 ? '⚠️' : '✅'}</div>
+              <div style={{ fontSize: 36 }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
               <div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: netPayable > 0 ? '#991b1b' : '#065f46', lineHeight: 1.3 }}>
-                  {netPayable > 0
-                    ? `${monthHi} ${year}: ₹${netPayable.toFixed(2)} GST भरना है`
-                    : netPayable < 0
-                    ? `${monthHi} ${year}: ₹${Math.abs(netPayable).toFixed(2)} GST वापस मिलेगा 🎉`
-                    : `${monthHi} ${year}: कोई GST नहीं भरना ✅`
-                  }
+                <div style={{ fontSize: 20, fontWeight: 900, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151', lineHeight: 1.3 }}>
+                  {isPayable
+                    ? `${monthHi} ${year}: ₹${fmt(netPayable)} GST भरना है`
+                    : isRefund
+                    ? `${monthHi} ${year}: ₹${fmt(Math.abs(netPayable))} GST वापस मिलेगा`
+                    : `${monthHi} ${year}: कोई GST देय नहीं ✅`}
                 </div>
                 <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
-                  {netPayable > 0
-                    ? `${monthEn} ${year}: You need to pay ₹${netPayable.toFixed(2)} GST`
-                    : netPayable < 0
-                    ? `${monthEn} ${year}: GST refund of ₹${Math.abs(netPayable).toFixed(2)}`
-                    : `${monthEn} ${year}: No GST to pay ✅`
-                  }
+                  {isPayable
+                    ? `${monthEn} ${year}: Pay ₹${fmt(netPayable)} GST`
+                    : isRefund
+                    ? `${monthEn} ${year}: GST refund ₹${fmt(Math.abs(netPayable))}`
+                    : `${monthEn} ${year}: No GST payable`}
                 </div>
               </div>
             </div>
-
-            {/* Return Status Badge */}
             {returnStatus && (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -175,108 +214,255 @@ export default function GSTPage() {
             )}
           </div>
 
-          {/* ── SECTION 2: GST CALCULATION ── */}
+          {/* ── SECTION 2: GST CALCULATION (CLICKABLE drill-down) ── */}
           <div className="card" style={{ marginBottom: 20 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>
               🧮 GST हिसाब / Calculation
             </div>
 
-            {/* GST Collected */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#f0fdf4', borderRadius: 10, marginBottom: 10 }}>
+            {/* GST Collected — clickable */}
+            <div
+              onClick={() => openDrill('sales')}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 16px', background: drillType === 'sales' ? '#dcfce7' : '#f0fdf4',
+                borderRadius: 10, marginBottom: 10, cursor: 'pointer',
+                border: `1.5px solid ${drillType === 'sales' ? '#86efac' : 'transparent'}`,
+                transition: 'all 0.2s',
+              }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: '#065f46' }}>
-                  ✅ GST वसूला (Collected)
+                  ✅ GST वसूला (Output) &nbsp;
+                  <span style={{ fontSize: 11, background: '#bbf7d0', color: '#065f46', padding: '2px 8px', borderRadius: 20 }}>
+                    {drillType === 'sales' ? '▲ बंद करें' : '▼ Sales देखें'}
+                  </span>
                 </div>
                 <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                  Customers से बिक्री में लिया / Collected from customers in sales
+                  Customers से बिक्री में लिया • CGST ₹{fmt(summary.sales.cgst)} + SGST ₹{fmt(summary.sales.sgst)} + IGST ₹{fmt(summary.sales.igst)}
                 </div>
               </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#059669' }}>+₹{gstCollected.toFixed(2)}</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#059669' }}>+₹{fmt(gstCollected)}</div>
             </div>
 
-            {/* GST Paid */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#eff6ff', borderRadius: 10, marginBottom: 10 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>
-                  🛒 GST चुकाया (Paid on Purchase)
-                </div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                  Suppliers को खरीद में दिया / Paid to suppliers in purchases
-                </div>
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#2563eb' }}>−₹{gstPaidOnPurchase.toFixed(2)}</div>
-            </div>
-
-            {/* ITC Warning */}
-            {gstPaidOnPurchase === 0 && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: '#92400e' }}>
-                ⚠️ आपने खरीद पर GST claim नहीं किया — आप ज़्यादा tax भर सकते हैं
-                <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>You haven't claimed purchase GST — you may be paying more tax</div>
+            {/* ── Sales Drill-down ── */}
+            {drillType === 'sales' && (
+              <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                {drillLoading ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>⏳ लोड हो रहा है...</div>
+                ) : drillData.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>इस महीने कोई sales नहीं</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#dcfce7' }}>
+                          <th style={thStyle}>Invoice</th>
+                          <th style={thStyle}>Product</th>
+                          <th style={thStyle}>Taxable</th>
+                          <th style={thStyle}>GST</th>
+                          <th style={thStyle}>Total</th>
+                          <th style={thStyle}>Type</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {drillData.map((s, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <td style={tdStyle}>{s.invoice_number}</td>
+                            <td style={tdStyle}>{s.product_name || (s.items?.length > 1 ? `${s.items.length} items` : s.items?.[0]?.product_name)}</td>
+                            <td style={tdStyle}>₹{fmt(s.taxable_amount)}</td>
+                            <td style={{ ...tdStyle, color: '#059669', fontWeight: 700 }}>₹{fmt(s.total_gst)}</td>
+                            <td style={{ ...tdStyle, fontWeight: 700 }}>₹{fmt(s.total_amount)}</td>
+                            <td style={tdStyle}>
+                              <span style={{ background: s.invoice_type === 'B2B' ? '#ede9fe' : '#dcfce7', color: s.invoice_type === 'B2B' ? '#6d28d9' : '#065f46', padding: '1px 6px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>
+                                {s.invoice_type}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Divider */}
+            {/* GST Paid (ITC) — clickable */}
+            <div
+              onClick={() => openDrill('purchases')}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 16px', background: drillType === 'purchases' ? '#dbeafe' : '#eff6ff',
+                borderRadius: 10, marginBottom: 10, cursor: 'pointer',
+                border: `1.5px solid ${drillType === 'purchases' ? '#93c5fd' : 'transparent'}`,
+                transition: 'all 0.2s',
+              }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>
+                  🛒 GST Input Credit (ITC) &nbsp;
+                  <span style={{ fontSize: 11, background: '#bfdbfe', color: '#1e40af', padding: '2px 8px', borderRadius: 20 }}>
+                    {drillType === 'purchases' ? '▲ बंद करें' : '▼ Purchases देखें'}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                  Suppliers को खरीद में दिया • CGST ₹{fmt(summary.purchases.cgst)} + SGST ₹{fmt(summary.purchases.sgst)} + IGST ₹{fmt(summary.purchases.igst)}
+                </div>
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#2563eb' }}>−₹{fmt(gstITC)}</div>
+            </div>
+
+            {/* ── Purchases Drill-down ── */}
+            {drillType === 'purchases' && (
+              <div style={{ background: '#eff6ff', borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                {drillLoading ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>⏳ लोड हो रहा है...</div>
+                ) : drillData.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>इस महीने कोई purchases नहीं</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#dbeafe' }}>
+                          <th style={thStyle}>Bill No</th>
+                          <th style={thStyle}>Product</th>
+                          <th style={thStyle}>Supplier</th>
+                          <th style={thStyle}>Taxable</th>
+                          <th style={thStyle}>ITC</th>
+                          <th style={thStyle}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {drillData.map((p, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <td style={tdStyle}>{p.invoice_number}</td>
+                            <td style={tdStyle}>{p.product_name || (p.items?.length > 1 ? `${p.items.length} items` : p.items?.[0]?.product_name)}</td>
+                            <td style={tdStyle}>{p.supplier_name || '—'}</td>
+                            <td style={tdStyle}>₹{fmt(p.taxable_amount)}</td>
+                            <td style={{ ...tdStyle, color: '#2563eb', fontWeight: 700 }}>₹{fmt(p.total_gst)}</td>
+                            <td style={{ ...tdStyle, fontWeight: 700 }}>₹{fmt(p.total_amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ITC warning */}
+            {gstITC === 0 && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: '#92400e' }}>
+                ⚠️ कोई ITC claim नहीं — ज़्यादा tax भर रहे हैं / No ITC claimed — you may be overpaying tax
+              </div>
+            )}
+
             <div style={{ borderTop: '2px dashed #e5e7eb', margin: '8px 0 14px' }} />
 
-            {/* Net Payable — CTA Style */}
+            {/* Net Payable */}
             <div style={{
-              padding: '18px 20px',
-              background: netPayable > 0 ? '#fef2f2' : '#f0fdf4',
-              borderRadius: 12,
-              border: `2px solid ${netPayable > 0 ? '#fca5a5' : '#86efac'}`,
+              padding: '18px 20px', borderRadius: 12,
+              background: isPayable ? '#fef2f2' : isRefund ? '#f0fdf4' : '#f8fafc',
+              border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: netPayable > 0 ? '#991b1b' : '#065f46' }}>
-                    {netPayable >= 0 ? '💸 शुद्ध देय (Net Payable)' : '💰 वापसी (Refund)'}
+                  <div style={{ fontWeight: 800, fontSize: 16, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151' }}>
+                    {isRefund ? '💰 वापसी (Refund)' : '💸 शुद्ध देय (Net Payable)'}
                   </div>
                   <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                    ₹{gstCollected.toFixed(2)} − ₹{gstPaidOnPurchase.toFixed(2)} = ₹{netPayable.toFixed(2)}
+                    ₹{fmt(gstCollected)} − ₹{fmt(gstITC)} = ₹{fmt(netPayable)}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: netPayable > 0 ? '#ef4444' : '#059669' }}>
-                    ₹{Math.abs(netPayable).toFixed(2)}
+                  <div style={{ fontSize: 32, fontWeight: 900, color: isPayable ? '#ef4444' : isRefund ? '#059669' : '#374151' }}>
+                    ₹{fmt(Math.abs(netPayable))}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: netPayable > 0 ? '#ef4444' : '#059669' }}>
-                    {netPayable > 0 ? 'You Pay ↑' : netPayable < 0 ? 'You Get Back ↓' : 'All Clear ✅'}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: isPayable ? '#ef4444' : isRefund ? '#059669' : '#374151' }}>
+                    {isPayable ? '▲ भरना है / You Pay' : isRefund ? '▼ वापस मिलेगा / Refund' : 'All Clear ✅'}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ── SECTION 3: B2B / B2C BREAKDOWN ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-            <div className="card" style={{ borderLeft: '4px solid #6366f1' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 4 }}>🏢 B2B</div>
-              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>GSTIN वाले ग्राहक / Customers with GSTIN</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2b_count}</div>
-              <div style={{ fontSize: 12, color: '#9ca3af' }}>invoices</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>₹{summary.sales.b2b_taxable?.toFixed(2)}</div>
+          {/* ── SECTION 3: GSTR-3B TABLE ── */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 14 }}>
+              📋 GSTR-3B सारांश / Summary
             </div>
-            <div className="card" style={{ borderLeft: '4px solid #10b981' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#10b981', marginBottom: 4 }}>👤 B2C</div>
-              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>सामान्य ग्राहक / Normal customers (no GSTIN)</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2c_count}</div>
-              <div style={{ fontSize: 12, color: '#9ca3af' }}>invoices</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>₹{summary.sales.b2c_taxable?.toFixed(2)}</div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f3f4f6' }}>
+                    <th style={{ ...thStyle, textAlign: 'left' }}>विवरण / Description</th>
+                    <th style={thStyle}>CGST</th>
+                    <th style={thStyle}>SGST</th>
+                    <th style={thStyle}>IGST</th>
+                    <th style={thStyle}>कुल / Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ background: '#f0fdf4' }}>
+                    <td style={{ ...tdStyle, fontWeight: 700, color: '#065f46' }}>📈 Output (Sales)</td>
+                    <td style={tdStyle}>₹{fmt(summary.sales.cgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.sales.sgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.sales.igst)}</td>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: '#059669' }}>₹{fmt(summary.sales.total_gst)}</td>
+                  </tr>
+                  <tr style={{ background: '#eff6ff' }}>
+                    <td style={{ ...tdStyle, fontWeight: 700, color: '#1e40af' }}>🛒 Input / ITC (Purchase)</td>
+                    <td style={tdStyle}>₹{fmt(summary.purchases.cgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.purchases.sgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.purchases.igst)}</td>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: '#2563eb' }}>₹{fmt(summary.purchases.total_gst)}</td>
+                  </tr>
+                  <tr style={{ background: isPayable ? '#fef2f2' : '#f0fdf4', borderTop: '2px solid #e5e7eb' }}>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: isPayable ? '#991b1b' : '#065f46' }}>
+                      {isPayable ? '💸 Net Payable' : '💰 Net Refund'}
+                    </td>
+                    <td style={tdStyle}>₹{fmt((summary.sales.cgst || 0) - (summary.purchases.cgst || 0))}</td>
+                    <td style={tdStyle}>₹{fmt((summary.sales.sgst || 0) - (summary.purchases.sgst || 0))}</td>
+                    <td style={tdStyle}>₹{fmt((summary.sales.igst || 0) - (summary.purchases.igst || 0))}</td>
+                    <td style={{ ...tdStyle, fontWeight: 900, fontSize: 15, color: isPayable ? '#ef4444' : '#059669' }}>
+                      ₹{fmt(Math.abs(netPayable))}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* B2B Invoices */}
+          {/* ── SECTION 4: B2B / B2C CARDS ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+            <div className="card" style={{ borderLeft: '4px solid #6366f1' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 4 }}>🏢 B2B</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>GSTIN वाले ग्राहक</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2b_count}</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>invoices</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#6366f1' }}>₹{fmt(summary.sales.b2b_taxable)}</div>
+            </div>
+            <div className="card" style={{ borderLeft: '4px solid #10b981' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#10b981', marginBottom: 4 }}>👤 B2C</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>बिना GSTIN ग्राहक</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2c_count}</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>invoices</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#10b981' }}>₹{fmt(summary.sales.b2c_taxable)}</div>
+            </div>
+          </div>
+
+          {/* ── SECTION 5: B2B INVOICE LIST ── */}
           {summary.gstr1.b2b_invoices.length === 0 ? (
             <div className="card" style={{ marginBottom: 20, textAlign: 'center', padding: 24, color: '#9ca3af' }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>कोई B2B Invoice नहीं / No B2B Invoices</div>
               <div style={{ fontSize: 12 }}>💡 Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
-              <div style={{ fontSize: 11, marginTop: 2, color: '#b0b8c1' }}>Add GSTIN in sales to create B2B invoices</div>
             </div>
           ) : (
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 10 }}>
-                🧾 B2B Invoices (GSTR-1 के लिए / For GSTR-1 Filing)
+                🧾 B2B Invoices — GSTR-1 के लिए
               </div>
+
+              {/* Desktop */}
               <div className="table-container hidden-xs">
                 <table>
                   <thead>
@@ -286,7 +472,7 @@ export default function GSTPage() {
                       <th>GSTIN</th>
                       <th>Taxable ₹</th>
                       <th>GST%</th>
-                      <th>कुल / Total ₹</th>
+                      <th>कुल / Total</th>
                       <th>Type</th>
                     </tr>
                   </thead>
@@ -296,9 +482,9 @@ export default function GSTPage() {
                         <td style={{ color: '#6366f1', fontWeight: 600 }}>{inv.invoice_number}</td>
                         <td style={{ fontWeight: 600 }}>{inv.buyer_name || '—'}</td>
                         <td style={{ fontSize: 11, color: '#9ca3af' }}>{inv.buyer_gstin}</td>
-                        <td>₹{inv.taxable_amount?.toFixed(2)}</td>
+                        <td>₹{fmt(inv.taxable_amount)}</td>
                         <td>{inv.gst_rate}%</td>
-                        <td style={{ fontWeight: 700, color: '#10b981' }}>₹{inv.total?.toFixed(2)}</td>
+                        <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(inv.total)}</td>
                         <td>
                           <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
                             {inv.gst_type}
@@ -309,12 +495,14 @@ export default function GSTPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+              {/* Mobile */}
+              <div className="show-xs" style={{ flexDirection: 'column', gap: 10 }}>
                 {summary.gstr1.b2b_invoices.map((inv, i) => (
                   <div key={i} className="card" style={{ borderLeft: '3px solid #6366f1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <div style={{ fontWeight: 700, color: '#6366f1', fontSize: 13 }}>{inv.invoice_number}</div>
-                      <div style={{ fontWeight: 700, color: '#10b981' }}>₹{inv.total?.toFixed(2)}</div>
+                      <div style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(inv.total)}</div>
                     </div>
                     <div style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>{inv.buyer_name}</div>
                     <div style={{ fontSize: 11, color: '#9ca3af' }}>GSTIN: {inv.buyer_gstin} • GST {inv.gst_rate}%</div>
@@ -324,46 +512,44 @@ export default function GSTPage() {
             </div>
           )}
 
-          {/* B2C Summary */}
+          {/* ── SECTION 6: B2C SUMMARY ── */}
           <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #10b981' }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>👥 B2C सारांश / Summary</div>
-            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>सामान्य ग्राहक — बिना GSTIN / Normal customers without GSTIN</div>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>सामान्य ग्राहक — बिना GSTIN</div>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>INVOICES</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>{summary.gstr1.b2c_summary.count}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>TAXABLE</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>₹{summary.gstr1.b2c_summary.taxable_amount?.toFixed(2)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#6366f1' }}>₹{summary.gstr1.b2c_summary.total_gst?.toFixed(2)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>TOTAL</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#10b981' }}>₹{summary.gstr1.b2c_summary.total_amount?.toFixed(2)}</div>
-              </div>
+              {[
+                { label: 'INVOICES', value: summary.gstr1.b2c_summary.count, color: '#374151', isNum: true },
+                { label: 'TAXABLE', value: `₹${fmt(summary.gstr1.b2c_summary.taxable_amount)}`, color: '#374151' },
+                { label: 'GST', value: `₹${fmt(summary.gstr1.b2c_summary.total_gst)}`, color: '#6366f1' },
+                { label: 'TOTAL', value: `₹${fmt(summary.gstr1.b2c_summary.total_amount)}`, color: '#10b981' },
+              ].map((item, i) => (
+                <div key={i}>
+                  <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{item.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: item.color }}>{item.value}</div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* ── SECTION 4: EXPORT ── */}
+          {/* ── SECTION 7: EXPORT ── */}
           <div className="card">
             <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>
               📤 CA को दें / Export for CA
             </div>
             <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>
-              यह फ़ाइल अपने CA को दे सकते हैं / Share these files directly with your CA
+              यह फ़ाइल अपने CA को दे सकते हैं / Share directly with your CA
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button onClick={() => exportCSV('gstr1')} style={{ padding: '10px 16px', background: '#f0fdf4', color: '#059669', border: '1.5px solid #bbf7d0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={() => exportCSV('gstr1')}
+                style={{ padding: '10px 16px', background: '#f0fdf4', color: '#059669', border: '1.5px solid #bbf7d0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 📊 GSTR-1 CSV
               </button>
-              <button onClick={() => exportCSV('gstr3b')} style={{ padding: '10px 16px', background: '#ede9fe', color: '#6d28d9', border: '1.5px solid #c4b5fd', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={() => exportCSV('gstr3b')}
+                style={{ padding: '10px 16px', background: '#ede9fe', color: '#6d28d9', border: '1.5px solid #c4b5fd', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 📊 GSTR-3B CSV
               </button>
-              <button onClick={exportJSON} style={{ padding: '10px 16px', background: '#fff7ed', color: '#c2410c', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={exportJSON}
+                style={{ padding: '10px 16px', background: '#fff7ed', color: '#c2410c', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 📦 JSON
               </button>
             </div>
@@ -378,3 +564,20 @@ export default function GSTPage() {
     </Layout>
   );
 }
+
+// ── Table style helpers ──────────────────────────────────────────────────────
+const thStyle = {
+  padding: '8px 12px',
+  textAlign: 'right',
+  fontWeight: 700,
+  fontSize: 12,
+  color: '#6b7280',
+  whiteSpace: 'nowrap',
+};
+const tdStyle = {
+  padding: '8px 12px',
+  textAlign: 'right',
+  fontSize: 12,
+  color: '#374151',
+  whiteSpace: 'nowrap',
+};

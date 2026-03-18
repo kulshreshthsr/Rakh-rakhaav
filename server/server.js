@@ -1,10 +1,5 @@
-require('dotenv').config({ path: '../.env' });
-const app = require('./app');
-const connectDB = require('./config/db');
+// server.js — only used for local development
+// Production uses app.js directly (Render runs app.js)
+// connectDB is called inside app.js — do NOT call it here again
 
-connectDB();
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+require('./app');

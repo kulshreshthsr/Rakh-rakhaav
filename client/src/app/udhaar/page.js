@@ -3,332 +3,455 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
+const API = 'https://rakh-rakhaav.onrender.com';
+const getToken = () => localStorage.getItem('token');
+const fmt = (n) => parseFloat(n || 0).toFixed(2);
+
 export default function UdhaarPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('customers');
+
+  // Lists
   const [customers, setCustomers] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
-  const [customerLedger, setCustomerLedger] = useState([]);
-  const [supplierLedger, setSupplierLedger] = useState([]);
-  const [showSettleModal, setShowSettleModal] = useState(false);
-  const [settleType, setSettleType] = useState('customer');
-  const [settleForm, setSettleForm] = useState({ amount: '', note: '' });
+
+  // Selected + ledger
+  const [selected, setSelected] = useState(null);   // selected customer or supplier
+  const [ledger, setLedger] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+
+  // Settle modal
+  const [showSettle, setShowSettle] = useState(false);
+  const [settleAmount, setSettleAmount] = useState('');
+  const [settleNote, setSettleNote] = useState('');
+  const [settleLoading, setSettleLoading] = useState(false);
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const router = useRouter();
 
-  const getToken = () => localStorage.getItem('token');
-  const API = 'https://rakh-rakhaav.onrender.com';
+  useEffect(() => {
+    if (!localStorage.getItem('token')) { router.push('/login'); return; }
+    fetchAll();
+  }, []);
+
+  // Clear selection when tab changes
+  useEffect(() => {
+    setSelected(null);
+    setLedger([]);
+    setError('');
+    setSuccess('');
+  }, [activeTab]);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    await Promise.all([fetchCustomers(), fetchSuppliers()]);
+    setLoading(false);
+  };
 
   const fetchCustomers = async () => {
     try {
-      const res = await fetch(`${API}/api/customers`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(`${API}/api/customers`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
       if (res.status === 401) { router.push('/login'); return; }
-      setCustomers(await res.json());
+      const data = await res.json();
+      setCustomers(Array.isArray(data) ? data : []);
     } catch { setError('Customers load nahi hue'); }
   };
 
   const fetchSuppliers = async () => {
     try {
-      const res = await fetch(`${API}/api/suppliers`, { headers: { Authorization: `Bearer ${getToken()}` } });
-      setSuppliers(await res.json());
-    } catch { setError('Suppliers load nahi hue'); }
+      const res = await fetch(`${API}/api/suppliers`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      setSuppliers(Array.isArray(data) ? data : []);
+    } catch {}
   };
 
-  useEffect(() => {
-    if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    Promise.all([fetchCustomers(), fetchSuppliers()]).finally(() => setLoading(false));
-  }, []);
+  // ── Open ledger ──────────────────────────────────────────────────────────────
+  const openLedger = async (item) => {
+    // Toggle off if same item clicked
+    if (selected?._id === item._id) { setSelected(null); setLedger([]); return; }
 
-  const openCustomerLedger = async (customer) => {
-    setSelectedCustomer(customer);
-    setSelectedSupplier(null);
+    setSelected(item);
+    setLedger([]);
+    setLedgerLoading(true);
+    setError('');
+
     try {
-      const res = await fetch(`${API}/api/customers/${customer._id}/udhaar`, { headers: { Authorization: `Bearer ${getToken()}` } });
-      setCustomerLedger(await res.json());
+      // Customer: GET /api/customers/:id/udhaar
+      // Supplier: GET /api/suppliers/:id/udhaar  (supplierRoutes uses /udhaar)
+      const base = activeTab === 'customers' ? 'customers' : 'suppliers';
+      const res = await fetch(`${API}/api/${base}/${item._id}/udhaar`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+
+      // customerController returns { customer, entries }
+      // supplierController returns { supplier, ledger }
+      const entries = data.entries || data.ledger || (Array.isArray(data) ? data : []);
+      setLedger(entries);
     } catch { setError('Ledger load nahi hua'); }
+    setLedgerLoading(false);
   };
 
-  const openSupplierLedger = async (supplier) => {
-    setSelectedSupplier(supplier);
-    setSelectedCustomer(null);
-    try {
-      const res = await fetch(`${API}/api/suppliers/${supplier._id}/udhaar`, { headers: { Authorization: `Bearer ${getToken()}` } });
-      setSupplierLedger(await res.json());
-    } catch { setError('Ledger load nahi hua'); }
-  };
-
+  // ── Settle payment ───────────────────────────────────────────────────────────
   const handleSettle = async (e) => {
-    e.preventDefault(); setError(''); setSuccess('');
-    try {
-      const id = settleType === 'customer' ? selectedCustomer._id : selectedSupplier._id;
-      const url = settleType === 'customer'
-        ? `${API}/api/customers/${id}/settle`
-        : `${API}/api/suppliers/${id}/settle`;
+    e.preventDefault();
+    setError(''); setSuccess('');
+    if (!settleAmount || Number(settleAmount) <= 0) {
+      setError('Valid amount enter karo');
+      return;
+    }
+    setSettleLoading(true);
 
-      const res = await fetch(url, {
+    try {
+      const base = activeTab === 'customers' ? 'customers' : 'suppliers';
+      const res = await fetch(`${API}/api/${base}/${selected._id}/settle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(settleForm),
+        body: JSON.stringify({ amount: settleAmount, note: settleNote }),
       });
+      const data = await res.json();
+
       if (res.ok) {
-        setSuccess('Payment recorded! ✅');
-        setShowSettleModal(false);
-        setSettleForm({ amount: '', note: '' });
-        fetchCustomers();
-        fetchSuppliers();
-        if (settleType === 'customer' && selectedCustomer) openCustomerLedger(selectedCustomer);
-        if (settleType === 'supplier' && selectedSupplier) openSupplierLedger(selectedSupplier);
+        setSuccess(`₹${settleAmount} payment recorded ✅`);
+        setShowSettle(false);
+        setSettleAmount(''); setSettleNote('');
+
+        // ✅ Refresh lists + ledger with updated data
+        await fetchAll();
+
+        // Update selected item balance from response or re-fetch
+        if (data.customer) {
+          setSelected(data.customer);
+        } else if (data.balanceDue !== undefined) {
+          setSelected(prev => ({ ...prev, totalUdhaar: data.balanceDue }));
+        }
+
+        // Refresh ledger
+        const ledgerBase = activeTab === 'customers' ? 'customers' : 'suppliers';
+        const lRes = await fetch(`${API}/api/${ledgerBase}/${selected._id}/udhaar`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const lData = await lRes.json();
+        setLedger(lData.entries || lData.ledger || (Array.isArray(lData) ? lData : []));
       } else {
-        const data = await res.json();
-        setError(data.message || 'Failed');
+        setError(data.message || 'Payment failed');
       }
     } catch { setError('Server error'); }
+    setSettleLoading(false);
   };
 
+  // ── Computed totals ──────────────────────────────────────────────────────────
   const totalCustomerUdhaar = customers.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
   const totalSupplierUdhaar = suppliers.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
+  const list = activeTab === 'customers' ? customers : suppliers;
+  const isCustomer = activeTab === 'customers';
 
   return (
     <Layout>
       <div className="page-title">उधार बही / Credit Ledger</div>
 
-      {/* Summary Cards */}
+      {/* ── Summary Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
         <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 14, padding: '16px 20px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 4 }}>👥 Customer देना है</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#ef4444' }}>₹{totalCustomerUdhaar.toFixed(0)}</div>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{customers.length} customers</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 4 }}>
+            👥 Customer से लेना है
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#ef4444' }}>
+            ₹{totalCustomerUdhaar.toFixed(0)}
+          </div>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+            {customers.filter(c => c.totalUdhaar > 0).length} pending • {customers.length} total
+          </div>
         </div>
         <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 14, padding: '16px 20px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 4 }}>🏭 Supplier को देना है</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#f59e0b' }}>₹{totalSupplierUdhaar.toFixed(0)}</div>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{suppliers.length} suppliers</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 4 }}>
+            🏭 Supplier को देना है
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#f59e0b' }}>
+            ₹{totalSupplierUdhaar.toFixed(0)}
+          </div>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+            {suppliers.filter(s => s.totalUdhaar > 0).length} pending • {suppliers.length} total
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <button
-          onClick={() => { setActiveTab('customers'); setSelectedCustomer(null); setSelectedSupplier(null); }}
-          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: activeTab === 'customers' ? '#ef4444' : '#f3f4f6', color: activeTab === 'customers' ? '#fff' : '#374151' }}>
+          onClick={() => setActiveTab('customers')}
+          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: isCustomer ? '#ef4444' : '#f3f4f6', color: isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
           👥 Customers ({customers.length})
         </button>
         <button
-          onClick={() => { setActiveTab('suppliers'); setSelectedCustomer(null); setSelectedSupplier(null); }}
-          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: activeTab === 'suppliers' ? '#f59e0b' : '#f3f4f6', color: activeTab === 'suppliers' ? '#fff' : '#374151' }}>
+          onClick={() => setActiveTab('suppliers')}
+          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: !isCustomer ? '#f59e0b' : '#f3f4f6', color: !isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
           🏭 Suppliers ({suppliers.length})
         </button>
       </div>
 
-      {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
-      {success && <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{success}</div>}
+      {error && (
+        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
+          {success}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
-      ) : activeTab === 'customers' ? (
-        /* ── CUSTOMERS ── */
-        <div style={{ display: 'grid', gridTemplateColumns: selectedCustomer ? '1fr 1fr' : '1fr', gap: 16 }}>
-          {/* Customer List */}
-          <div>
-            {customers.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>👥</div>
-                <div style={{ fontWeight: 600 }}>कोई customer नहीं</div>
-                <div style={{ fontSize: 12, marginTop: 4 }}>Credit sale karo to auto-create hoga</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {customers.map(c => (
-                  <div
-                    key={c._id}
-                    onClick={() => openCustomerLedger(c)}
-                    style={{ background: '#fff', borderRadius: 12, padding: '14px 16px', border: `1.5px solid ${selectedCustomer?._id === c._id ? '#ef4444' : 'rgba(0,0,0,0.06)'}`, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{c.name}</div>
-                      {c.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {c.phone}</div>}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: c.totalUdhaar > 0 ? '#ef4444' : '#10b981' }}>
-                        ₹{(c.totalUdhaar || 0).toFixed(0)}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        {c.totalUdhaar > 0 ? 'बाकी है' : 'चुकता ✓'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      ) : (
+        /* ── Main layout: list + ledger panel ── */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Customer Ledger */}
-          {selectedCustomer && (
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: '#1a1a2e' }}>{selectedCustomer.name}</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Transaction History</div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {selectedCustomer.totalUdhaar > 0 && (
-                    <button
-                      onClick={() => { setSettleType('customer'); setShowSettleModal(true); }}
-                      style={{ padding: '8px 14px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                      💰 Payment लें
-                    </button>
-                  )}
-                  <button onClick={() => setSelectedCustomer(null)} style={{ padding: '6px 12px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>✕</button>
-                </div>
+          {/* List */}
+          {list.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>{isCustomer ? '👥' : '🏭'}</div>
+              <div style={{ fontWeight: 600 }}>
+                {isCustomer ? 'कोई customer नहीं' : 'कोई supplier नहीं'}
               </div>
-
-              {/* Balance */}
-              <div style={{ background: selectedCustomer.totalUdhaar > 0 ? '#fef2f2' : '#f0fdf4', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>कुल बाकी / Balance Due</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: selectedCustomer.totalUdhaar > 0 ? '#ef4444' : '#059669' }}>
-                  ₹{(selectedCustomer.totalUdhaar || 0).toFixed(2)}
-                </div>
-              </div>
-
-              {/* Ledger entries */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
-                {customerLedger.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>कोई entry नहीं</div>
-                ) : customerLedger.map((entry, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f9fafb', borderRadius: 8, borderLeft: `3px solid ${entry.type === 'debit' ? '#ef4444' : '#10b981'}` }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>{entry.note || (entry.type === 'debit' ? 'Credit Sale' : 'Payment Received')}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</div>
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: entry.type === 'debit' ? '#ef4444' : '#10b981' }}>
-                      {entry.type === 'debit' ? '+' : '-'}₹{entry.amount?.toFixed(2)}
-                    </div>
-                  </div>
-                ))}
+              <div style={{ fontSize: 12, marginTop: 4 }}>
+                {isCustomer ? 'Credit sale karo to auto-create hoga' : 'Credit purchase karo to auto-create hoga'}
               </div>
             </div>
-          )}
-        </div>
-      ) : (
-        /* ── SUPPLIERS ── */
-        <div style={{ display: 'grid', gridTemplateColumns: selectedSupplier ? '1fr 1fr' : '1fr', gap: 16 }}>
-          {/* Supplier List */}
-          <div>
-            {suppliers.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>🏭</div>
-                <div style={{ fontWeight: 600 }}>कोई supplier नहीं</div>
-                <div style={{ fontSize: 12, marginTop: 4 }}>Credit purchase karo to auto-create hoga</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {suppliers.map(s => (
-                  <div
-                    key={s._id}
-                    onClick={() => openSupplierLedger(s)}
-                    style={{ background: '#fff', borderRadius: 12, padding: '14px 16px', border: `1.5px solid ${selectedSupplier?._id === s._id ? '#f59e0b' : 'rgba(0,0,0,0.06)'}`, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
-                  >
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {list.map(item => (
+                <div
+                  key={item._id}
+                  onClick={() => openLedger(item)}
+                  style={{
+                    background: '#fff',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    border: `1.5px solid ${selected?._id === item._id
+                      ? (isCustomer ? '#ef4444' : '#f59e0b')
+                      : 'rgba(0,0,0,0.06)'}`,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    transition: 'border-color 0.2s',
+                  }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{item.name}</div>
+                    {item.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {item.phone}</div>}
+                    {item.gstin && <div style={{ fontSize: 11, color: '#6366f1' }}>GSTIN: {item.gstin}</div>}
+                  </div>
+                  <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{s.name}</div>
-                      {s.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {s.phone}</div>}
-                      {s.gstin && <div style={{ fontSize: 11, color: '#6366f1' }}>GSTIN: {s.gstin}</div>}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: s.totalUdhaar > 0 ? '#f59e0b' : '#10b981' }}>
-                        ₹{(s.totalUdhaar || 0).toFixed(0)}
+                      <div style={{ fontSize: 18, fontWeight: 800, color: item.totalUdhaar > 0 ? (isCustomer ? '#ef4444' : '#f59e0b') : '#10b981' }}>
+                        ₹{fmt(item.totalUdhaar)}
                       </div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        {s.totalUdhaar > 0 ? 'देना बाकी' : 'चुकता ✓'}
+                        {item.totalUdhaar > 0 ? (isCustomer ? 'लेना बाकी' : 'देना बाकी') : 'चुकता ✓'}
                       </div>
                     </div>
+                    <div style={{ fontSize: 16, color: '#9ca3af' }}>
+                      {selected?._id === item._id ? '▲' : '▼'}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-          {/* Supplier Ledger */}
-          {selectedSupplier && (
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          {/* ── Ledger Panel (expands below selected item) ── */}
+          {selected && (
+            <div className="card" style={{
+              border: `1.5px solid ${isCustomer ? '#fecaca' : '#fde68a'}`,
+              borderTop: `3px solid ${isCustomer ? '#ef4444' : '#f59e0b'}`,
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: '#1a1a2e' }}>{selectedSupplier.name}</div>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: '#1a1a2e' }}>{selected.name}</div>
+                  {selected.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {selected.phone}</div>}
                   <div style={{ fontSize: 12, color: '#9ca3af' }}>Transaction History</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {selectedSupplier.totalUdhaar > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {selected.totalUdhaar > 0 && (
                     <button
-                      onClick={() => { setSettleType('supplier'); setShowSettleModal(true); }}
-                      style={{ padding: '8px 14px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                      💰 Payment करें
+                      onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}
+                      style={{ padding: '8px 14px', background: isCustomer ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      💰 {isCustomer ? 'Payment लें' : 'Payment करें'}
                     </button>
                   )}
-                  <button onClick={() => setSelectedSupplier(null)} style={{ padding: '6px 12px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>✕</button>
+                  <button
+                    onClick={() => { setSelected(null); setLedger([]); }}
+                    style={{ padding: '8px 12px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+                    ✕ बंद करें
+                  </button>
                 </div>
               </div>
 
-              {/* Balance */}
-              <div style={{ background: selectedSupplier.totalUdhaar > 0 ? '#fffbeb' : '#f0fdf4', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>कुल देना / Amount Due</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: selectedSupplier.totalUdhaar > 0 ? '#f59e0b' : '#059669' }}>
-                  ₹{(selectedSupplier.totalUdhaar || 0).toFixed(2)}
-                </div>
+              {/* Balance summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+                {isCustomer ? (
+                  <>
+                    <BalanceTile label="कुल बिक्री / Total Sales" value={`₹${fmt(selected.totalSales)}`} color="#374151" bg="#f9fafb" />
+                    <BalanceTile label="कुल मिला / Received" value={`₹${fmt(selected.totalPaid)}`} color="#10b981" bg="#f0fdf4" />
+                    <BalanceTile label="बाकी / Due" value={`₹${fmt(selected.totalUdhaar)}`} color={selected.totalUdhaar > 0 ? '#ef4444' : '#10b981'} bg={selected.totalUdhaar > 0 ? '#fef2f2' : '#f0fdf4'} />
+                  </>
+                ) : (
+                  <>
+                    <BalanceTile label="कुल खरीद / Purchased" value={`₹${fmt(selected.totalPurchased)}`} color="#374151" bg="#f9fafb" />
+                    <BalanceTile label="कुल दिया / Paid" value={`₹${fmt(selected.totalPaid)}`} color="#10b981" bg="#f0fdf4" />
+                    <BalanceTile label="देना बाकी / Due" value={`₹${fmt(selected.totalUdhaar)}`} color={selected.totalUdhaar > 0 ? '#f59e0b' : '#10b981'} bg={selected.totalUdhaar > 0 ? '#fffbeb' : '#f0fdf4'} />
+                  </>
+                )}
               </div>
 
               {/* Ledger entries */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
-                {supplierLedger.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>कोई entry नहीं</div>
-                ) : supplierLedger.map((entry, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f9fafb', borderRadius: 8, borderLeft: `3px solid ${entry.type === 'debit' ? '#f59e0b' : '#10b981'}` }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>{entry.note || (entry.type === 'debit' ? 'Credit Purchase' : 'Payment Made')}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</div>
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: entry.type === 'debit' ? '#f59e0b' : '#10b981' }}>
-                      {entry.type === 'debit' ? '+' : '-'}₹{entry.amount?.toFixed(2)}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {ledgerLoading ? (
+                <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>⏳ लोड हो रहा है...</div>
+              ) : ledger.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>कोई entry नहीं</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                        <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>तारीख / Date</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>विवरण / Note</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Debit (+)</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Credit (−)</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...ledger].reverse().map((entry, i) => {
+                        // Support legacy 'diya'/'liya' types
+                        const isDebit = entry.type === 'debit' || entry.type === 'diya';
+                        return (
+                          <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                            <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>
+                              {new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}
+                            </td>
+                            <td style={{ padding: '10px 12px', color: '#374151', fontSize: 12 }}>
+                              {entry.note || (isDebit ? (isCustomer ? 'Credit Sale' : 'Credit Purchase') : 'Payment')}
+                              {entry.reference_id && (
+                                <div style={{ fontSize: 10, color: '#9ca3af' }}>{entry.reference_id}</div>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#ef4444' }}>
+                              {isDebit ? `₹${fmt(entry.amount)}` : '—'}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
+                              {!isDebit ? `₹${fmt(entry.amount)}` : '—'}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: (entry.running_balance ?? 0) > 0 ? (isCustomer ? '#ef4444' : '#f59e0b') : '#10b981' }}>
+                              ₹{fmt(entry.running_balance)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* ── SETTLE MODAL ── */}
-      {showSettleModal && (
+      {/* ── Settle Modal ── */}
+      {showSettle && selected && (
         <div className="modal-overlay">
           <div className="modal">
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>
-              {settleType === 'customer' ? '💰 Payment लें / Receive Payment' : '💰 Payment करें / Make Payment'}
+              {isCustomer ? '💰 Payment लें / Receive Payment' : '💰 Payment करें / Make Payment'}
             </h3>
-            <p style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>
-              {settleType === 'customer' ? `Customer: ${selectedCustomer?.name}` : `Supplier: ${selectedSupplier?.name}`}
+            <p style={{ fontSize: 13, color: '#9ca3af', marginBottom: 6 }}>
+              {isCustomer ? `Customer: ${selected.name}` : `Supplier: ${selected.name}`}
             </p>
-            {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+            {/* Outstanding balance */}
+            <div style={{ background: isCustomer ? '#fef2f2' : '#fffbeb', borderRadius: 8, padding: '10px 14px', marginBottom: 14, display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>बाकी राशि / Balance Due:</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: isCustomer ? '#ef4444' : '#f59e0b' }}>
+                ₹{fmt(selected.totalUdhaar)}
+              </span>
+            </div>
+
+            {error && (
+              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSettle}>
               <div className="form-group">
                 <label className="form-label">राशि / Amount ₹ *</label>
-                <input className="form-input" type="number" min="1" placeholder="Enter amount" value={settleForm.amount} onChange={e => setSettleForm({ ...settleForm, amount: e.target.value })} required />
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  max={selected.totalUdhaar}
+                  placeholder={`Max ₹${fmt(selected.totalUdhaar)}`}
+                  value={settleAmount}
+                  onChange={e => setSettleAmount(e.target.value)}
+                  required />
+                {/* Quick amount buttons */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                  {[25, 50, 75, 100].map(pct => {
+                    const val = parseFloat(((selected.totalUdhaar * pct) / 100).toFixed(2));
+                    return (
+                      <button key={pct} type="button"
+                        onClick={() => setSettleAmount(String(val))}
+                        style={{ padding: '4px 10px', fontSize: 11, fontWeight: 600, background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', color: '#374151' }}>
+                        {pct}% (₹{val})
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
               <div className="form-group">
                 <label className="form-label">नोट / Note</label>
-                <input className="form-input" placeholder="Payment note..." value={settleForm.note} onChange={e => setSettleForm({ ...settleForm, note: e.target.value })} />
+                <input
+                  className="form-input"
+                  placeholder="Payment note (optional)"
+                  value={settleNote}
+                  onChange={e => setSettleNote(e.target.value)} />
               </div>
+
               <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" style={{ flex: 1, padding: '10px', background: settleType === 'customer' ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  ✅ Confirm Payment
+                <button type="submit" disabled={settleLoading}
+                  style={{ flex: 1, padding: '10px', background: isCustomer ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                  {settleLoading ? '⏳ Processing...' : '✅ Confirm Payment'}
                 </button>
-                <button type="button" onClick={() => { setShowSettleModal(false); setError(''); }} style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>रद्द / Cancel</button>
+                <button type="button"
+                  onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); }}
+                  style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  रद्द / Cancel
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
     </Layout>
+  );
+}
+
+// ── Small reusable tile ──────────────────────────────────────────────────────
+function BalanceTile({ label, value, color, bg }) {
+  return (
+    <div style={{ background: bg, borderRadius: 8, padding: '10px 14px' }}>
+      <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 17, fontWeight: 800, color }}>{value}</div>
+    </div>
   );
 }
