@@ -18,11 +18,17 @@ const getProducts = async (req, res) => {
 };
 
 const createProduct = async (req, res) => {
-  const { name, description, price, quantity, unit, hsn_code, gst_rate } = req.body;
+  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate } = req.body;
   try {
     const shop = await getOrCreateShop(req.user.id);
     const product = await Product.create({
-      shop: shop._id, name, description, price, quantity, unit,
+      shop: shop._id,
+      name,
+      description,
+      price,
+      cost_price: cost_price || 0, // ✅ fix
+      quantity,
+      unit,
       hsn_code: hsn_code || '',
       gst_rate: gst_rate || 0,
     });
@@ -34,7 +40,11 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
     res.json(product);
   } catch (err) {
     res.status(500).json({ message: err.message });
