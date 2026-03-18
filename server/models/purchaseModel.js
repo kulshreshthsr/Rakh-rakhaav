@@ -62,7 +62,7 @@ const purchaseSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-set payment_status before save
-purchaseSchema.pre('save', function (next) {
+purchaseSchema.pre('save', async function () {
   if (this.amount_paid >= this.total_amount) {
     this.payment_status = 'paid';
     this.balance_due = 0;
@@ -73,7 +73,6 @@ purchaseSchema.pre('save', function (next) {
     this.payment_status = 'unpaid';
     this.balance_due = this.total_amount;
   }
-  next();
 });
 
 module.exports = mongoose.model('Purchase', purchaseSchema);
