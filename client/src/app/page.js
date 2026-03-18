@@ -38,7 +38,7 @@ export default function LoginPage() {
     <div style={{
       minHeight: '100vh',
       fontFamily: "'Inter', sans-serif",
-      background: '#0B1D35',
+      background: '#F1F5F9',
       display: 'flex',
       alignItems: 'stretch',
     }}>
@@ -92,11 +92,12 @@ export default function LoginPage() {
 
       {/* ── RIGHT PANEL (form) ── */}
       <div style={{
-        width: '100%', maxWidth: 440,
+        width: '100%', maxWidth: 480,
+        minWidth: 0,
         background: '#F1F5F9',
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center',
-        padding: '48px 40px',
+        padding: 'clamp(24px, 5vw, 48px) clamp(20px, 6vw, 40px)',
       }}>
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', marginBottom: 6, letterSpacing: -0.5 }}>
