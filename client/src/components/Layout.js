@@ -44,10 +44,7 @@ export default function Layout({ children }) {
   useEffect(() => {
     const stored = localStorage.getItem('user');
     const token  = localStorage.getItem('token');
-    if (!stored || !token) {
-      window.location.href = '/login';
-      return;
-    }
+    if (!stored || !token) { router.push('/login'); return; }
     setUser(JSON.parse(stored));
   }, []);
 

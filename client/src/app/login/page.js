@@ -25,7 +25,7 @@ export default function LoginPage() {
       if (data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        window.location.href = '/dashboard';
+        router.replace('/dashboard');
       } else {
         setError(data.message || 'Login failed. Check credentials.');
       }
