@@ -228,18 +228,6 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Margin Preview */}
-              {form.cost_price && form.price && (
-                <div style={{ background: parseFloat(form.price) > parseFloat(form.cost_price) ? '#f0fdf4' : '#fef2f2', border: `1px solid ${parseFloat(form.price) > parseFloat(form.cost_price) ? '#bbf7d0' : '#fecaca'}`, borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: parseFloat(form.price) > parseFloat(form.cost_price) ? '#059669' : '#ef4444', marginBottom: 2 }}>मार्जिन / Margin Preview</div>
-                  <div style={{ color: '#374151' }}>
-                    लाभ / Profit: ₹{(parseFloat(form.price) - parseFloat(form.cost_price)).toFixed(2)}
-                    {' • '}
-                    {(((parseFloat(form.price) - parseFloat(form.cost_price)) / parseFloat(form.cost_price)) * 100).toFixed(1)}%
-                  </div>
-                </div>
-              )}
-
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">मात्रा / Quantity *</label>
