@@ -10,6 +10,7 @@ const navItems = [
   { href: '/purchases', labelHi: 'खरीद',      labelEn: 'Purchases', icon: '🛒' },
   { href: '/udhaar',    labelHi: 'उधार',      labelEn: 'Udhaar',    icon: '🤝' },
   { href: '/gst',       labelHi: 'GST',       labelEn: 'GST',       icon: '🧾' },
+  { href: '/reports',   labelHi: 'रिपोर्ट',   labelEn: 'Reports',   icon: '📊' },
   { href: '/profile',   labelHi: 'प्रोफ़ाइल', labelEn: 'Profile',   icon: '👤' },
 ];
 
