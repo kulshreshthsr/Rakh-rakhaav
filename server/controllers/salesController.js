@@ -40,6 +40,7 @@ const getSales = async (req, res) => {
       hsn_code: s.hsn_code,
       quantity: s.quantity,
       price_per_unit: s.price_per_unit,
+      cost_price: s.cost_price || 0,        // ✅
       gst_rate: s.gst_rate,
       gst_type: s.gst_type,
       invoice_type: s.invoice_type,
@@ -78,11 +79,11 @@ const createSale = async (req, res) => {
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
     if (payment_type === 'credit' && !buyer_name) {
-      return res.status(400).json({ message: 'उधार बिक्री के लिए ग्राहक का नाम जरूरी है!' });
+      return res.status(400).json({ message: 'Credit sale ke liye customer ka naam zaroori hai!' });
     }
 
-    // ✅ GST classification — GSTIN pe based
     const invoice_type = (buyer_gstin && buyer_gstin.trim() !== '') ? 'B2B' : 'B2C';
+    const cost_price = product.cost_price || 0; // ✅ product ka cost price
 
     const taxable_amount = parseFloat((quantity * price_per_unit).toFixed(2));
     const gst_rate = product.gst_rate || 0;
@@ -97,11 +98,12 @@ const createSale = async (req, res) => {
       hsn_code: product.hsn_code,
       quantity,
       price_per_unit,
+      cost_price,         // ✅ save karo
       gst_rate,
       taxable_amount,
       ...gstCalc,
       total_amount,
-      buyer_name: buyer_name || 'Walk-in Customer',
+      buyer_name: buyer_name || (invoice_type === 'B2C' ? 'Walk-in Customer' : ''),
       buyer_phone,
       buyer_gstin,
       buyer_address,
@@ -111,10 +113,8 @@ const createSale = async (req, res) => {
       notes,
     });
 
-    // ✅ Stock reduce
     await Product.findByIdAndUpdate(product_id, { $inc: { quantity: -quantity } });
 
-    // ✅ Credit sale — udhaar entry
     if (payment_type === 'credit' && buyer_name) {
       let customer = await Customer.findOne({
         shop: shop._id,
@@ -144,9 +144,7 @@ const createSale = async (req, res) => {
         reference_type: 'sale',
       });
 
-      await Customer.findByIdAndUpdate(customer._id, {
-        $inc: { totalUdhaar: total_amount }
-      });
+      await Customer.findByIdAndUpdate(customer._id, { $inc: { totalUdhaar: total_amount } });
     }
 
     res.status(201).json(sale);

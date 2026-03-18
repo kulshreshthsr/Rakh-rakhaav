@@ -6,7 +6,7 @@ import Layout from '../../components/Layout';
 export default function DashboardPage() {
   const [stats, setStats] = useState({
     products: 0, sales: 0, purchases: 0,
-    revenue: 0, spent: 0,
+    revenue: 0, spent: 0, cogs: 0, grossProfit: 0,
     gstCollected: 0, gstPaid: 0, totalUdhaar: 0
   });
   const [lowStock, setLowStock] = useState([]);
@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const getToken = () => localStorage.getItem('token');
+  const API = 'https://rakh-rakhaav.onrender.com';
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
@@ -24,10 +25,10 @@ export default function DashboardPage() {
     try {
       const headers = { Authorization: `Bearer ${getToken()}` };
       const [pRes, sRes, puRes, cRes] = await Promise.all([
-        fetch('https://rakh-rakhaav.onrender.com/api/products', { headers }),
-        fetch('https://rakh-rakhaav.onrender.com/api/sales', { headers }),
-        fetch('https://rakh-rakhaav.onrender.com/api/purchases', { headers }),
-        fetch('https://rakh-rakhaav.onrender.com/api/customers', { headers }),
+        fetch(`${API}/api/products`, { headers }),
+        fetch(`${API}/api/sales`, { headers }),
+        fetch(`${API}/api/purchases`, { headers }),
+        fetch(`${API}/api/customers`, { headers }),
       ]);
       const products = await pRes.json();
       const sales = await sRes.json();
@@ -38,15 +39,24 @@ export default function DashboardPage() {
       const spent = purchases.reduce((s, x) => s + parseFloat(x.total_amount || 0), 0);
       const gstCollected = sales.reduce((s, x) => s + parseFloat(x.total_gst || 0), 0);
       const gstPaid = purchases.reduce((s, x) => s + parseFloat(x.total_gst || 0), 0);
-      const totalUdhaar = customers.reduce((s, x) => s + (x.totalUdhaar || 0), 0);
+      const totalUdhaar = Array.isArray(customers) ? customers.reduce((s, x) => s + (x.totalUdhaar || 0), 0) : 0;
 
-      setStats({ products: products.length, sales: sales.length, purchases: purchases.length, revenue, spent, gstCollected, gstPaid, totalUdhaar });
+      // ✅ Real profit = Revenue - COGS
+      const cogs = sales.reduce((s, x) => s + (parseFloat(x.cost_price || 0) * parseFloat(x.quantity || 0)), 0);
+      const grossProfit = revenue - cogs;
+
+      setStats({
+        products: products.length,
+        sales: sales.length,
+        purchases: purchases.length,
+        revenue, spent, cogs, grossProfit,
+        gstCollected, gstPaid, totalUdhaar
+      });
       setLowStock(products.filter(p => p.quantity <= 5));
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
 
-  const profit = stats.revenue - stats.spent;
   const netGST = stats.gstCollected - stats.gstPaid;
 
   if (loading) return (
@@ -66,34 +76,25 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
 
         {/* 1. Total Sales */}
-        <div
-          onClick={() => router.push('/sales')}
-          style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: '3px solid #10b981', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}
-        >
+        <div onClick={() => router.push('/sales')} style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: '3px solid #10b981', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#9ca3af', marginBottom: 6 }}>💰 कुल बिक्री / Sales</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#10b981', letterSpacing: -1 }}>₹{stats.revenue.toFixed(0)}</div>
           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>{stats.sales} invoices • देखें →</div>
         </div>
 
-        {/* 2. Profit */}
-        <div
-          onClick={() => router.push('/sales')}
-          style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${profit >= 0 ? '#6366f1' : '#ef4444'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}
-        >
+        {/* 2. Gross Profit */}
+        <div onClick={() => router.push('/sales')} style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${stats.grossProfit >= 0 ? '#6366f1' : '#ef4444'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#9ca3af', marginBottom: 6 }}>📊 शुद्ध लाभ / Profit</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: profit >= 0 ? '#6366f1' : '#ef4444', letterSpacing: -1 }}>
-            {profit >= 0 ? '+' : '-'}₹{Math.abs(profit).toFixed(0)}
+          <div style={{ fontSize: 28, fontWeight: 800, color: stats.grossProfit >= 0 ? '#6366f1' : '#ef4444', letterSpacing: -1 }}>
+            {stats.grossProfit >= 0 ? '+' : ''}₹{stats.grossProfit.toFixed(0)}
           </div>
           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
-            आय ₹{stats.revenue.toFixed(0)} − खर्च ₹{stats.spent.toFixed(0)}
+            आय ₹{stats.revenue.toFixed(0)} − लागत ₹{stats.cogs.toFixed(0)}
           </div>
         </div>
 
         {/* 3. Udhaar */}
-        <div
-          onClick={() => router.push('/udhaar')}
-          style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${stats.totalUdhaar > 0 ? '#ef4444' : '#10b981'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}
-        >
+        <div onClick={() => router.push('/udhaar')} style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${stats.totalUdhaar > 0 ? '#ef4444' : '#10b981'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#9ca3af', marginBottom: 6 }}>📒 कुल उधार / Credit</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: stats.totalUdhaar > 0 ? '#ef4444' : '#10b981', letterSpacing: -1 }}>
             ₹{stats.totalUdhaar.toFixed(0)}
@@ -104,10 +105,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 4. GST */}
-        <div
-          onClick={() => router.push('/gst')}
-          style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${netGST >= 0 ? '#f59e0b' : '#10b981'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}
-        >
+        <div onClick={() => router.push('/gst')} style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${netGST >= 0 ? '#f59e0b' : '#10b981'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#9ca3af', marginBottom: 6 }}>🧾 GST देय / Payable</div>
           <div style={{ fontSize: 28, fontWeight: 800, color: netGST >= 0 ? '#f59e0b' : '#10b981', letterSpacing: -1 }}>
             ₹{Math.abs(netGST).toFixed(0)}
@@ -124,10 +122,7 @@ export default function DashboardPage() {
 
       {/* ── LOW STOCK ALERT ── */}
       {lowStock.length > 0 && (
-        <div
-          onClick={() => router.push('/product')}
-          style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 14, padding: '14px 18px', marginBottom: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}
-        >
+        <div onClick={() => router.push('/product')} style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 14, padding: '14px 18px', marginBottom: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 20 }}>⚠️</span>
             <div>

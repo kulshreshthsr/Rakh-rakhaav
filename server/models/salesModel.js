@@ -7,24 +7,17 @@ const saleSchema = new mongoose.Schema({
   hsn_code: { type: String },
   quantity: { type: Number, required: true },
   price_per_unit: { type: Number, required: true },
+  cost_price: { type: Number, default: 0 },
   gst_rate: { type: Number, default: 0 },
-
-  // IGST ya CGST+SGST
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
-
-  // ✅ B2B = GSTIN hai, B2C = GSTIN nahi
   invoice_type: { type: String, enum: ['B2B', 'B2C'], default: 'B2C' },
-
-  // ✅ Cash ya Credit — sirf udhaar ke liye
   payment_type: { type: String, enum: ['cash', 'credit'], default: 'cash' },
-
   taxable_amount: { type: Number },
   cgst_amount: { type: Number, default: 0 },
   sgst_amount: { type: Number, default: 0 },
   igst_amount: { type: Number, default: 0 },
   total_gst: { type: Number, default: 0 },
   total_amount: { type: Number, required: true },
-
   buyer_name: { type: String },
   buyer_phone: { type: String },
   buyer_gstin: { type: String },
