@@ -19,9 +19,9 @@ const generateInvoiceNumber = async (shopId) => {
   return `INV-${year}${month}-${String(count + 1).padStart(4, '0')}`;
 };
 
-const calculateGST = (taxable_amount, gst_rate, gst_type, shopState, buyerState) => {
+const calculateGST = (taxable_amount, gst_rate, shopState, buyerState) => {
   const gst = (taxable_amount * gst_rate) / 100;
-  const isIGST = gst_type === 'IGST' || (buyerState && shopState && shopState !== buyerState);
+  const isIGST = buyerState && shopState && shopState !== buyerState;
   if (isIGST) {
     return { cgst_amount: 0, sgst_amount: 0, igst_amount: parseFloat(gst.toFixed(2)), total_gst: parseFloat(gst.toFixed(2)), gst_type: 'IGST' };
   } else {
@@ -42,6 +42,8 @@ const getSales = async (req, res) => {
       price_per_unit: s.price_per_unit,
       gst_rate: s.gst_rate,
       gst_type: s.gst_type,
+      invoice_type: s.invoice_type,
+      payment_type: s.payment_type,
       taxable_amount: s.taxable_amount,
       cgst_amount: s.cgst_amount,
       sgst_amount: s.sgst_amount,
@@ -49,11 +51,10 @@ const getSales = async (req, res) => {
       total_gst: s.total_gst,
       total_amount: s.total_amount,
       buyer_name: s.buyer_name,
+      buyer_phone: s.buyer_phone,
       buyer_gstin: s.buyer_gstin,
       buyer_address: s.buyer_address,
       invoice_number: s.invoice_number,
-      invoice_type: s.invoice_type,
-      payment_type: s.payment_type,
       notes: s.notes,
       sold_at: s.createdAt,
     }));
@@ -66,7 +67,8 @@ const getSales = async (req, res) => {
 const createSale = async (req, res) => {
   const {
     product_id, quantity, price_per_unit,
-    buyer_name, buyer_gstin, buyer_address, buyer_state, buyer_phone,
+    buyer_name, buyer_phone, buyer_gstin,
+    buyer_address, buyer_state,
     notes, payment_type = 'cash'
   } = req.body;
 
@@ -75,17 +77,18 @@ const createSale = async (req, res) => {
     const product = await Product.findById(product_id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Credit sale requires buyer name
     if (payment_type === 'credit' && !buyer_name) {
-      return res.status(400).json({ message: 'Credit sale ke liye customer ka naam zaroori hai!' });
+      return res.status(400).json({ message: 'उधार बिक्री के लिए ग्राहक का नाम जरूरी है!' });
     }
+
+    // ✅ GST classification — GSTIN pe based
+    const invoice_type = (buyer_gstin && buyer_gstin.trim() !== '') ? 'B2B' : 'B2C';
 
     const taxable_amount = parseFloat((quantity * price_per_unit).toFixed(2));
     const gst_rate = product.gst_rate || 0;
-    const gstCalc = calculateGST(taxable_amount, gst_rate, 'AUTO', shop.state, buyer_state);
+    const gstCalc = calculateGST(taxable_amount, gst_rate, shop.state, buyer_state);
     const total_amount = parseFloat((taxable_amount + gstCalc.total_gst).toFixed(2));
     const invoice_number = await generateInvoiceNumber(shop._id);
-    const invoice_type = buyer_gstin ? 'B2B' : 'B2C';
 
     const sale = await Sale.create({
       shop: shop._id,
@@ -98,7 +101,8 @@ const createSale = async (req, res) => {
       taxable_amount,
       ...gstCalc,
       total_amount,
-      buyer_name,
+      buyer_name: buyer_name || 'Walk-in Customer',
+      buyer_phone,
       buyer_gstin,
       buyer_address,
       invoice_number,
@@ -110,9 +114,8 @@ const createSale = async (req, res) => {
     // ✅ Stock reduce
     await Product.findByIdAndUpdate(product_id, { $inc: { quantity: -quantity } });
 
-    // ✅ Credit sale — auto create customer + udhaar entry
+    // ✅ Credit sale — udhaar entry
     if (payment_type === 'credit' && buyer_name) {
-      // Check if customer already exists
       let customer = await Customer.findOne({
         shop: shop._id,
         $or: [
@@ -121,7 +124,6 @@ const createSale = async (req, res) => {
         ]
       });
 
-      // Create new customer if not exists
       if (!customer) {
         customer = await Customer.create({
           shop: shop._id,
@@ -131,19 +133,17 @@ const createSale = async (req, res) => {
         });
       }
 
-      // Create udhaar debit entry
       await Udhaar.create({
         shop: shop._id,
         customer: customer._id,
         type: 'debit',
         amount: total_amount,
-        note: `Credit Sale - ${product.name} (${invoice_number})`,
+        note: `Credit Sale — ${product.name} (${invoice_number})`,
         date: new Date(),
         reference_id: invoice_number,
         reference_type: 'sale',
       });
 
-      // Update customer balance
       await Customer.findByIdAndUpdate(customer._id, {
         $inc: { totalUdhaar: total_amount }
       });
@@ -160,24 +160,16 @@ const deleteSale = async (req, res) => {
     const sale = await Sale.findById(req.params.id);
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
 
-    // Restore stock
     await Product.findByIdAndUpdate(sale.product, { $inc: { quantity: sale.quantity } });
 
-    // If credit sale, reverse udhaar entry
     if (sale.payment_type === 'credit' && sale.buyer_name) {
-      const shop = await getOrCreateShop(sale.shop);
       const customer = await Customer.findOne({
         shop: sale.shop,
         name: { $regex: new RegExp(`^${sale.buyer_name}$`, 'i') }
       });
       if (customer) {
-        await Customer.findByIdAndUpdate(customer._id, {
-          $inc: { totalUdhaar: -sale.total_amount }
-        });
-        await Udhaar.deleteOne({
-          reference_id: sale.invoice_number,
-          reference_type: 'sale',
-        });
+        await Customer.findByIdAndUpdate(customer._id, { $inc: { totalUdhaar: -sale.total_amount } });
+        await Udhaar.deleteOne({ reference_id: sale.invoice_number, reference_type: 'sale' });
       }
     }
 
@@ -196,18 +188,11 @@ const getGSTSummary = async (req, res) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    const sales = await Sale.find({
-      shop: shop._id,
-      createdAt: { $gte: startDate, $lte: endDate }
-    });
-
-    const purchases = await Purchase.find({
-      shop: shop._id,
-      createdAt: { $gte: startDate, $lte: endDate }
-    });
+    const sales = await Sale.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
+    const purchases = await Purchase.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
 
     const b2b = sales.filter(s => s.invoice_type === 'B2B');
-    const b2c = sales.filter(s => s.invoice_type !== 'B2B');
+    const b2c = sales.filter(s => s.invoice_type === 'B2C');
 
     const summary = {
       month: parseInt(month),
@@ -248,6 +233,7 @@ const getGSTSummary = async (req, res) => {
           gst_type: s.gst_type,
         })),
         b2c_summary: {
+          count: b2c.length,
           taxable_amount: b2c.reduce((s, x) => s + (x.taxable_amount || 0), 0),
           total_gst: b2c.reduce((s, x) => s + (x.total_gst || 0), 0),
           total_amount: b2c.reduce((s, x) => s + (x.total_amount || 0), 0),

@@ -465,8 +465,11 @@ export default function SalesPage() {
                     <input className="form-input" placeholder="Mobile number" value={form.buyer_phone} onChange={e => setForm({ ...form, buyer_phone: e.target.value })} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">GSTIN (B2B)</label>
-                    <input className="form-input" placeholder="GSTIN (if any)" value={form.buyer_gstin} onChange={e => setForm({ ...form, buyer_gstin: e.target.value })} />
+                    <label className="form-label">GSTIN (optional)</label>
+<input className="form-input" placeholder="GSTIN (if any)" value={form.buyer_gstin} onChange={e => setForm({ ...form, buyer_gstin: e.target.value })} />
+<div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+  GSTIN डालें तो B2B, खाली छोड़ें तो B2C / Enter GSTIN for B2B billing
+</div>
                   </div>
                 </div>
 
