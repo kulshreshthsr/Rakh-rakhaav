@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_HI = ['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
 
 export default function GSTPage() {
   const [summary, setSummary] = useState(null);
@@ -61,11 +62,10 @@ export default function GSTPage() {
         ['GSTR-3B Summary'],
         ['Month/Year', `${MONTHS[month-1]} ${year}`],
         [''],
-        ['Description', 'Amount (₹)'],
+        ['Description', 'Amount (Rs)'],
         ['GST Collected (Sales)', summary.gstr3b.output_gst?.toFixed(2)],
         ['GST Paid on Purchase', summary.gstr3b.input_gst?.toFixed(2)],
         ['Net GST Payable', summary.gstr3b.net_payable?.toFixed(2)],
-        [''],
         ['Taxable Sales', summary.gstr3b.outward_taxable?.toFixed(2)],
       ];
       filename = `GSTR3B_${year}_${String(month).padStart(2,'0')}.csv`;
@@ -92,190 +92,242 @@ export default function GSTPage() {
   const netPayable = summary?.gstr3b?.net_payable || 0;
   const gstCollected = summary?.gstr3b?.output_gst || 0;
   const gstPaidOnPurchase = summary?.gstr3b?.input_gst || 0;
-  const monthName = MONTHS[month - 1];
+  const monthHi = MONTHS_HI[month - 1];
+  const monthEn = MONTHS[month - 1];
+
+  // Return status
+  const getReturnStatus = () => {
+    if (!summary) return null;
+    const hasSales = summary.sales.total > 0;
+    const hasPurchases = summary.purchases.total > 0;
+    if (!hasSales && !hasPurchases) return { ok: false, msg: '⚠️ इस महीने कोई data नहीं / No data this month' };
+    if (hasSales) return { ok: true, msg: 'Return Status: दाखिल करने के लिए तैयार / Ready to file ✅' };
+    return { ok: false, msg: '⚠️ Incomplete data — check purchases or sales' };
+  };
+
+  const returnStatus = summary ? getReturnStatus() : null;
 
   return (
     <Layout>
       <div className="page-title">GST सारांश / GST Summary</div>
 
-      {/* Month/Year selector */}
+      {/* ── Month/Year Selector ── */}
       <div className="card" style={{ marginBottom: 20, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>महीना / Month:</div>
         <select className="form-input" style={{ minWidth: 140 }} value={month} onChange={e => setMonth(parseInt(e.target.value))}>
-          {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+          {MONTHS.map((m, i) => <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>)}
         </select>
         <select className="form-input" style={{ minWidth: 100 }} value={year} onChange={e => setYear(parseInt(e.target.value))}>
           {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
         </select>
         <button onClick={fetchSummary} className="btn-primary" style={{ minWidth: 100 }}>
-          {loading ? '⏳ लोड...' : '🔍 देखें'}
+          {loading ? '⏳ लोड...' : '🔍 देखें / View'}
         </button>
       </div>
 
       {!summary ? (
         <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🧾</div>
-          <div>महीना चुनें और "देखें" पर क्लिक करें</div>
-          <div style={{ fontSize: 12, marginTop: 4 }}>Select month and click View</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>महीना चुनें और "देखें" पर क्लिक करें</div>
+          <div style={{ fontSize: 12 }}>Select month and click View</div>
         </div>
       ) : (
         <>
-          {/* ── TOP SUMMARY LINE ── */}
+          {/* ── SECTION 1: TOP SUMMARY BANNER ── */}
           <div style={{
-            background: netPayable > 0 ? '#fef2f2' : netPayable < 0 ? '#f0fdf4' : '#f0fdf4',
-            border: `2px solid ${netPayable > 0 ? '#fecaca' : '#bbf7d0'}`,
+            background: netPayable > 0 ? '#fef2f2' : '#f0fdf4',
+            border: `2px solid ${netPayable > 0 ? '#fca5a5' : '#86efac'}`,
             borderRadius: 16, padding: '20px 24px', marginBottom: 20,
-            display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           }}>
-            <div style={{ fontSize: 28 }}>{netPayable > 0 ? '⚠️' : '✅'}</div>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: netPayable > 0 ? '#991b1b' : '#065f46' }}>
-                {netPayable > 0
-                  ? `${monthName} ${year}: आपको ₹${netPayable.toFixed(2)} GST भरना है`
-                  : netPayable < 0
-                  ? `${monthName} ${year}: आपको ₹${Math.abs(netPayable).toFixed(2)} GST वापस मिलेगा 🎉`
-                  : `${monthName} ${year}: कोई GST नहीं भरना ✅`
-                }
-              </div>
-              <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
-                {netPayable > 0
-                  ? `${monthName} ${year}: You need to pay ₹${netPayable.toFixed(2)} GST`
-                  : netPayable < 0
-                  ? `${monthName} ${year}: GST refund of ₹${Math.abs(netPayable).toFixed(2)}`
-                  : `${monthName} ${year}: No GST to pay ✅`
-                }
+            {/* Main message */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 36 }}>{netPayable > 0 ? '⚠️' : '✅'}</div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: netPayable > 0 ? '#991b1b' : '#065f46', lineHeight: 1.3 }}>
+                  {netPayable > 0
+                    ? `${monthHi} ${year}: ₹${netPayable.toFixed(2)} GST भरना है`
+                    : netPayable < 0
+                    ? `${monthHi} ${year}: ₹${Math.abs(netPayable).toFixed(2)} GST वापस मिलेगा 🎉`
+                    : `${monthHi} ${year}: कोई GST नहीं भरना ✅`
+                  }
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+                  {netPayable > 0
+                    ? `${monthEn} ${year}: You need to pay ₹${netPayable.toFixed(2)} GST`
+                    : netPayable < 0
+                    ? `${monthEn} ${year}: GST refund of ₹${Math.abs(netPayable).toFixed(2)}`
+                    : `${monthEn} ${year}: No GST to pay ✅`
+                  }
+                </div>
               </div>
             </div>
+
+            {/* Return Status Badge */}
+            {returnStatus && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: returnStatus.ok ? '#dcfce7' : '#fef9c3',
+                color: returnStatus.ok ? '#166534' : '#854d0e',
+                padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+              }}>
+                {returnStatus.msg}
+              </div>
+            )}
           </div>
 
-          {/* ── GSTR-3B: Simple Calculation ── */}
+          {/* ── SECTION 2: GST CALCULATION ── */}
           <div className="card" style={{ marginBottom: 20 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>
               🧮 GST हिसाब / Calculation
             </div>
 
             {/* GST Collected */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#f0fdf4', borderRadius: 10, marginBottom: 10 }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#065f46' }}>✅ GST वसूला / GST Collected</div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Sales mein jo GST aapne customers se liya</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#065f46' }}>
+                  ✅ GST वसूला (Collected)
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                  Customers से बिक्री में लिया / Collected from customers in sales
+                </div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#059669' }}>₹{gstCollected.toFixed(2)}</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#059669' }}>+₹{gstCollected.toFixed(2)}</div>
             </div>
 
-            {/* GST Paid on Purchase */}
+            {/* GST Paid */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#eff6ff', borderRadius: 10, marginBottom: 10 }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>🛒 खरीद पर GST / GST Paid on Purchase</div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Purchases mein aapne jo GST bhara (Input Credit)</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>
+                  🛒 GST चुकाया (Paid on Purchase)
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                  Suppliers को खरीद में दिया / Paid to suppliers in purchases
+                </div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#2563eb' }}>₹{gstPaidOnPurchase.toFixed(2)}</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#2563eb' }}>−₹{gstPaidOnPurchase.toFixed(2)}</div>
             </div>
 
             {/* ITC Warning */}
             {gstPaidOnPurchase === 0 && (
               <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: '#92400e' }}>
-                ⚠️ कोई खरीद GST नहीं मिली / No purchase GST claimed — आप ज्यादा tax भर रहे हो / You may be paying more tax
+                ⚠️ आपने खरीद पर GST claim नहीं किया — आप ज़्यादा tax भर सकते हैं
+                <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>You haven't claimed purchase GST — you may be paying more tax</div>
               </div>
             )}
 
             {/* Divider */}
-            <div style={{ borderTop: '2px dashed #e5e7eb', margin: '6px 0 12px' }} />
+            <div style={{ borderTop: '2px dashed #e5e7eb', margin: '8px 0 14px' }} />
 
-            {/* Net Payable */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: netPayable > 0 ? '#fef2f2' : '#f0fdf4', borderRadius: 12, border: `2px solid ${netPayable > 0 ? '#fecaca' : '#bbf7d0'}` }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: netPayable > 0 ? '#991b1b' : '#065f46' }}>
-                  {netPayable >= 0 ? '💸 सरकार को देना है / Net Payable' : '💰 वापसी मिलेगी / Refund'}
+            {/* Net Payable — CTA Style */}
+            <div style={{
+              padding: '18px 20px',
+              background: netPayable > 0 ? '#fef2f2' : '#f0fdf4',
+              borderRadius: 12,
+              border: `2px solid ${netPayable > 0 ? '#fca5a5' : '#86efac'}`,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: netPayable > 0 ? '#991b1b' : '#065f46' }}>
+                    {netPayable >= 0 ? '💸 शुद्ध देय (Net Payable)' : '💰 वापसी (Refund)'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                    ₹{gstCollected.toFixed(2)} − ₹{gstPaidOnPurchase.toFixed(2)} = ₹{netPayable.toFixed(2)}
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                  ₹{gstCollected.toFixed(2)} − ₹{gstPaidOnPurchase.toFixed(2)} = <strong style={{ color: netPayable > 0 ? '#ef4444' : '#059669' }}>₹{netPayable.toFixed(2)}</strong>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: netPayable > 0 ? '#ef4444' : '#059669' }}>
+                    ₹{Math.abs(netPayable).toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: netPayable > 0 ? '#ef4444' : '#059669' }}>
+                    {netPayable > 0 ? 'You Pay ↑' : netPayable < 0 ? 'You Get Back ↓' : 'All Clear ✅'}
+                  </div>
                 </div>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 900, color: netPayable > 0 ? '#ef4444' : '#059669' }}>
-                ₹{Math.abs(netPayable).toFixed(2)}
               </div>
             </div>
           </div>
 
-          {/* ── B2B vs B2C ── */}
+          {/* ── SECTION 3: B2B / B2C BREAKDOWN ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
             <div className="card" style={{ borderLeft: '4px solid #6366f1' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 8 }}>🏢 B2B (GSTIN वाले)</div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 4 }}>🏢 B2B</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>GSTIN वाले ग्राहक / Customers with GSTIN</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2b_count}</div>
-              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>invoices</div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>₹{summary.sales.b2b_taxable?.toFixed(2)}</div>
+              <div style={{ fontSize: 12, color: '#9ca3af' }}>invoices</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>₹{summary.sales.b2b_taxable?.toFixed(2)}</div>
             </div>
             <div className="card" style={{ borderLeft: '4px solid #10b981' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#10b981', marginBottom: 8 }}>👤 B2C (सामान्य ग्राहक)</div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#10b981', marginBottom: 4 }}>👤 B2C</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>सामान्य ग्राहक / Normal customers (no GSTIN)</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2c_count}</div>
-              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>invoices</div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>₹{summary.sales.b2c_taxable?.toFixed(2)}</div>
+              <div style={{ fontSize: 12, color: '#9ca3af' }}>invoices</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>₹{summary.sales.b2c_taxable?.toFixed(2)}</div>
             </div>
           </div>
 
-          {/* ── B2B Invoices ── */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 10 }}>
-              🧾 B2B Invoices (GSTR-1 के लिए)
+          {/* B2B Invoices */}
+          {summary.gstr1.b2b_invoices.length === 0 ? (
+            <div className="card" style={{ marginBottom: 20, textAlign: 'center', padding: 24, color: '#9ca3af' }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>कोई B2B Invoice नहीं / No B2B Invoices</div>
+              <div style={{ fontSize: 12 }}>💡 Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
+              <div style={{ fontSize: 11, marginTop: 2, color: '#b0b8c1' }}>Add GSTIN in sales to create B2B invoices</div>
             </div>
-            {summary.gstr1.b2b_invoices.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: 24, color: '#9ca3af' }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>कोई B2B Invoice नहीं</div>
-                <div style={{ fontSize: 12 }}>💡 Sales mein GSTIN add karo to B2B invoice banega / Add GSTIN in sales to create B2B invoices</div>
+          ) : (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 10 }}>
+                🧾 B2B Invoices (GSTR-1 के लिए / For GSTR-1 Filing)
               </div>
-            ) : (
-              <>
-                <div className="table-container hidden-xs">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Invoice No</th>
-                        <th>खरीदार / Buyer</th>
-                        <th>GSTIN</th>
-                        <th>Taxable ₹</th>
-                        <th>GST%</th>
-                        <th>कुल / Total ₹</th>
-                        <th>Type</th>
+              <div className="table-container hidden-xs">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Invoice No</th>
+                      <th>खरीदार / Buyer</th>
+                      <th>GSTIN</th>
+                      <th>Taxable ₹</th>
+                      <th>GST%</th>
+                      <th>कुल / Total ₹</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.gstr1.b2b_invoices.map((inv, i) => (
+                      <tr key={i}>
+                        <td style={{ color: '#6366f1', fontWeight: 600 }}>{inv.invoice_number}</td>
+                        <td style={{ fontWeight: 600 }}>{inv.buyer_name || '—'}</td>
+                        <td style={{ fontSize: 11, color: '#9ca3af' }}>{inv.buyer_gstin}</td>
+                        <td>₹{inv.taxable_amount?.toFixed(2)}</td>
+                        <td>{inv.gst_rate}%</td>
+                        <td style={{ fontWeight: 700, color: '#10b981' }}>₹{inv.total?.toFixed(2)}</td>
+                        <td>
+                          <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
+                            {inv.gst_type}
+                          </span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {summary.gstr1.b2b_invoices.map((inv, i) => (
-                        <tr key={i}>
-                          <td style={{ color: '#6366f1', fontWeight: 600 }}>{inv.invoice_number}</td>
-                          <td style={{ fontWeight: 600 }}>{inv.buyer_name || '—'}</td>
-                          <td style={{ fontSize: 11, color: '#9ca3af' }}>{inv.buyer_gstin}</td>
-                          <td>₹{inv.taxable_amount?.toFixed(2)}</td>
-                          <td>{inv.gst_rate}%</td>
-                          <td style={{ fontWeight: 700, color: '#10b981' }}>₹{inv.total?.toFixed(2)}</td>
-                          <td><span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{inv.gst_type}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {summary.gstr1.b2b_invoices.map((inv, i) => (
-                    <div key={i} className="card" style={{ borderLeft: '3px solid #6366f1' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <div style={{ fontWeight: 700, color: '#6366f1', fontSize: 13 }}>{inv.invoice_number}</div>
-                        <div style={{ fontWeight: 700, color: '#10b981' }}>₹{inv.total?.toFixed(2)}</div>
-                      </div>
-                      <div style={{ fontSize: 12, color: '#374151' }}>{inv.buyer_name}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>GSTIN: {inv.buyer_gstin} • GST {inv.gst_rate}%</div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {summary.gstr1.b2b_invoices.map((inv, i) => (
+                  <div key={i} className="card" style={{ borderLeft: '3px solid #6366f1' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div style={{ fontWeight: 700, color: '#6366f1', fontSize: 13 }}>{inv.invoice_number}</div>
+                      <div style={{ fontWeight: 700, color: '#10b981' }}>₹{inv.total?.toFixed(2)}</div>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* ── B2C Summary ── */}
-          <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #10b981' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 12 }}>
-              👥 B2C Summary (सामान्य ग्राहक)
+                    <div style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>{inv.buyer_name}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af' }}>GSTIN: {inv.buyer_gstin} • GST {inv.gst_rate}%</div>
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* B2C Summary */}
+          <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #10b981' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>👥 B2C सारांश / Summary</div>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>सामान्य ग्राहक — बिना GSTIN / Normal customers without GSTIN</div>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>INVOICES</div>
@@ -296,10 +348,13 @@ export default function GSTPage() {
             </div>
           </div>
 
-          {/* ── Export ── */}
+          {/* ── SECTION 4: EXPORT ── */}
           <div className="card">
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>
               📤 CA को दें / Export for CA
+            </div>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>
+              यह फ़ाइल अपने CA को दे सकते हैं / Share these files directly with your CA
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button onClick={() => exportCSV('gstr1')} style={{ padding: '10px 16px', background: '#f0fdf4', color: '#059669', border: '1.5px solid #bbf7d0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -311,9 +366,6 @@ export default function GSTPage() {
               <button onClick={exportJSON} style={{ padding: '10px 16px', background: '#fff7ed', color: '#c2410c', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 📦 JSON
               </button>
-            </div>
-            <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 10 }}>
-              💡 यह फ़ाइल अपने CA को दे सकते हैं / Share these files directly with your CA
             </div>
           </div>
         </>
