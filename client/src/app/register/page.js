@@ -2,20 +2,22 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const API = 'https://rakh-rakhaav.onrender.com';
+
 export default function RegisterPage() {
-  const [name, setName] = useState('');
+  const [name, setName]         = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/register', {
+      const res  = await fetch(`${API}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, username, password }),
@@ -26,7 +28,7 @@ export default function RegisterPage() {
         localStorage.setItem('user', JSON.stringify(data.user));
         router.push('/dashboard');
       } else {
-        setError(data.message || 'Registration failed');
+        setError(data.message || 'Registration failed. Try again.');
       }
     } catch {
       setError('Server error. Please try again.');
@@ -34,104 +36,192 @@ export default function RegisterPage() {
   };
 
   return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet" />
-      <div style={{ minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", background: '#f5f5f0', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      minHeight: '100vh',
+      fontFamily: "'Inter', sans-serif",
+      background: '#0B1D35',
+      display: 'flex',
+      alignItems: 'stretch',
+    }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-        <div style={{ background: '#1a1a2e', padding: '40px 32px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <div style={{ fontSize: 42, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6 }}>
-            रख<span style={{ color: '#6366f1' }}>रखाव</span>
+      {/* ── LEFT PANEL ── */}
+      <div className="register-left" style={{
+        flex: 1,
+        background: 'linear-gradient(145deg, #0B1D35 0%, #122D4F 50%, #1A3F6F 100%)',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        padding: '48px 40px',
+        borderRight: '1px solid rgba(5,150,105,0.15)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(5,150,105,0.06)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, borderRadius: '50%', background: 'rgba(5,150,105,0.04)', pointerEvents: 'none' }} />
+
+        <div style={{ marginBottom: 32, textAlign: 'center' }}>
+          <LogoMark size={64} />
+          <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', letterSpacing: -1, marginTop: 16, fontFamily: 'serif' }}>
+            रख<span style={{ color: '#10B981' }}>रखाव</span>
           </div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 20 }}>Join smart shopkeepers of Kanpur</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {['✓ Easy to Use', '✓ No card needed', '✓ Works on mobile'].map((f, i) => (
-              <div key={i} style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 20, padding: '5px 12px', fontSize: 12, color: '#6ee7b7', fontWeight: 500 }}>
-                {f}
-              </div>
-            ))}
+          <div style={{ fontSize: 13, color: 'rgba(52,211,153,0.5)', fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase', marginTop: 4 }}>
+            Business Manager
           </div>
         </div>
 
-        <div style={{ background: '#1a1a2e', marginBottom: -1 }}>
-          <svg viewBox="0 0 375 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
-            <path d="M0 0 C100 40 275 40 375 0 L375 40 L0 40 Z" fill="#f5f5f0"/>
-          </svg>
-        </div>
-
-        <div style={{ flex: 1, padding: '24px 24px 40px', maxWidth: 440, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1a1a2e', marginBottom: 4, letterSpacing: -0.5 }}>Create account 🚀</h1>
-          <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 28 }}>Start managing your inventory today</p>
-
-          {error && (
-            <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 12, fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>⚠️</span> {error}
+        {/* Why join */}
+        <div style={{ maxWidth: 280 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(52,211,153,0.4)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>
+            Why Rakhaav?
+          </div>
+          {[
+            '✓ Free to use — no card needed',
+            '✓ Works on mobile & desktop',
+            '✓ GST compliant billing',
+            '✓ Real profit tracking',
+            '✓ Customer udhaar management',
+            '✓ Made for Indian shopkeepers',
+          ].map((f, i) => (
+            <div key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span>
+              <span>{f.replace('✓ ', '')}</span>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Full Name</label>
-              <input
-                type="text"
-                placeholder="Sona"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-                style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #e5e7eb', borderRadius: 12, fontSize: 15, color: '#1a1a2e', background: '#fff', boxSizing: 'border-box', outline: 'none' }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 6 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Username</label>
-              <input
-                type="text"
-                placeholder="sona_sona"
-                value={username}
-                onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))}
-                required
-                style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #e5e7eb', borderRadius: 12, fontSize: 15, color: '#1a1a2e', background: '#fff', boxSizing: 'border-box', outline: 'none' }}
-              />
-            </div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 16, paddingLeft: 4 }}>
-              Only lowercase letters, numbers and underscores
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Password</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  placeholder="Min. 6 characters"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  style={{ width: '100%', padding: '14px 48px 14px 16px', border: '1.5px solid #e5e7eb', borderRadius: 12, fontSize: 15, color: '#1a1a2e', background: '#fff', boxSizing: 'border-box', outline: 'none' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 18, padding: 0 }}
-                >
-                  {showPass ? '🙈' : '👁️'}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ width: '100%', padding: '15px', background: loading ? '#9ca3af' : '#6366f1', color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: 0.3 }}
-            >
-              {loading ? 'Creating account...' : 'Create account →'}
-            </button>
-          </form>
-
-          <p style={{ textAlign: 'center', fontSize: 14, color: '#9ca3af', marginTop: 24 }}>
-            Already have an account?{' '}
-            <a href="/login" style={{ color: '#6366f1', fontWeight: 700, textDecoration: 'none' }}>Sign in</a>
-          </p>
+          ))}
         </div>
       </div>
-    </>
+
+      {/* ── RIGHT PANEL (form) ── */}
+      <div style={{
+        width: '100%', maxWidth: 440,
+        background: '#F1F5F9',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '48px 40px',
+      }}>
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', marginBottom: 6, letterSpacing: -0.5 }}>
+            Create account 🚀
+          </h1>
+          <p style={{ fontSize: 14, color: '#64748B' }}>
+            Start managing your business today
+          </p>
+        </div>
+
+        {error && (
+          <div style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', padding: '11px 14px', borderRadius: 10, fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          {/* Full Name */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Full Name</label>
+            <input type="text" placeholder="Ramesh Kumar"
+              value={name} onChange={e => setName(e.target.value)} required
+              style={inputStyle}
+              onFocus={e => { e.target.style.borderColor = '#059669'; e.target.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.12)'; }}
+              onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
+            />
+          </div>
+
+          {/* Username */}
+          <div style={{ marginBottom: 6 }}>
+            <label style={labelStyle}>Username</label>
+            <input type="text" placeholder="ramesh_shop"
+              value={username}
+              onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))}
+              required
+              style={inputStyle}
+              onFocus={e => { e.target.style.borderColor = '#059669'; e.target.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.12)'; }}
+              onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
+            />
+          </div>
+          <div style={{ fontSize: 11, color: '#94A3B8', marginBottom: 14, paddingLeft: 2 }}>
+            Lowercase letters, numbers & underscores only
+          </div>
+
+          {/* Password */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={labelStyle}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <input type={showPass ? 'text' : 'password'} placeholder="Min. 6 characters"
+                value={password} onChange={e => setPassword(e.target.value)} required
+                style={{ ...inputStyle, paddingRight: 46 }}
+                onFocus={e => { e.target.style.borderColor = '#059669'; e.target.style.boxShadow = '0 0 0 3px rgba(5,150,105,0.12)'; }}
+                onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
+              />
+              <button type="button" onClick={() => setShowPass(!showPass)}
+                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 17, padding: 0, color: '#94A3B8' }}>
+                {showPass ? '🙈' : '👁️'}
+              </button>
+            </div>
+          </div>
+
+          {/* Submit */}
+          <button type="submit" disabled={loading}
+            style={{
+              width: '100%', padding: '13px',
+              background: loading ? '#94A3B8' : 'linear-gradient(135deg, #059669, #047857)',
+              color: '#fff', border: 'none', borderRadius: 10,
+              fontSize: 15, fontWeight: 700,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              boxShadow: loading ? 'none' : '0 4px 14px rgba(5,150,105,0.35)',
+              transition: 'all 0.2s',
+              fontFamily: 'Inter, sans-serif',
+            }}>
+            {loading ? '⏳ Creating account...' : 'Create account →'}
+          </button>
+        </form>
+
+        <p style={{ textAlign: 'center', fontSize: 13.5, color: '#64748B', marginTop: 24 }}>
+          Already have an account?{' '}
+          <a href="/login" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>
+            Sign in
+          </a>
+        </p>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 28 }}>
+          {['🔒 Secure', '⚡ Fast', '📱 Mobile'].map((b, i) => (
+            <div key={i} style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{b}</div>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .register-left { display: none !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+const labelStyle = {
+  fontSize: 11, fontWeight: 600, color: '#64748B',
+  textTransform: 'uppercase', letterSpacing: 0.5,
+  display: 'block', marginBottom: 6,
+};
+
+const inputStyle = {
+  width: '100%', padding: '12px 14px',
+  border: '1.5px solid #E2E8F0', borderRadius: 10,
+  fontSize: 14, color: '#0F172A', background: '#fff',
+  outline: 'none', boxSizing: 'border-box',
+  transition: 'all 0.15s', fontFamily: 'Inter, sans-serif',
+};
+
+function LogoMark({ size = 40 }) {
+  const [err, setErr] = useState(false);
+  if (!err) {
+    return (
+      <img src="/logo.png" alt="Rakhaav" width={size} height={size}
+        style={{ borderRadius: size * 0.25, objectFit: 'contain', border: '1px solid rgba(5,150,105,0.3)' }}
+        onError={() => setErr(true)} />
+    );
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: size * 0.25, background: 'linear-gradient(135deg, #122D4F, #1A3F6F)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(5,150,105,0.3)' }}>
+      <span style={{ fontSize: size * 0.4, fontWeight: 800, color: '#10B981', fontFamily: 'serif' }}>र</span>
+    </div>
   );
 }
