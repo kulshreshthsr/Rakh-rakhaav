@@ -10,6 +10,8 @@ const salesRoutes = require('./routes/salesRoutes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const supplierRoutes = require('./routes/supplierRoutes');
+app.use('/api/suppliers', supplierRoutes);
 
 const app = express();
 

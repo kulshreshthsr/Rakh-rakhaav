@@ -6,11 +6,16 @@ const purchaseSchema = new mongoose.Schema({
   product_name: { type: String },
   hsn_code: { type: String },
   quantity: { type: Number, required: true },
-  price_per_unit: { type: Number, required: true }, // base price
+  price_per_unit: { type: Number, required: true },
   gst_rate: { type: Number, default: 0 },
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
 
-  // Auto calculated
+  // ✅ B2B = GSTIN hai, B2C = nahi
+  invoice_type: { type: String, enum: ['B2B', 'B2C'], default: 'B2C' },
+
+  // ✅ Cash ya Credit — credit pe supplier ledger
+  payment_type: { type: String, enum: ['cash', 'credit'], default: 'cash' },
+
   taxable_amount: { type: Number },
   cgst_amount: { type: Number, default: 0 },
   sgst_amount: { type: Number, default: 0 },
@@ -18,11 +23,10 @@ const purchaseSchema = new mongoose.Schema({
   total_gst: { type: Number, default: 0 },
   total_amount: { type: Number, required: true },
 
-  // Supplier details (optional)
   supplier_name: { type: String },
+  supplier_phone: { type: String },
   supplier_gstin: { type: String },
   supplier_address: { type: String },
-
   invoice_number: { type: String },
   notes: { type: String },
 }, { timestamps: true });
