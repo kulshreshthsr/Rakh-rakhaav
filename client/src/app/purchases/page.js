@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
+import SearchableProductSelect from '../../components/SearchableProductSelect';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -381,16 +382,12 @@ export default function PurchasesPage() {
                       {/* Product select */}
                       <div className="form-group">
                         <label className="form-label">Product *</label>
-                        <select className="form-input" value={item.product_id}
-                          onChange={e => updateItem(index, 'product_id', e.target.value)} required>
-                          <option value="">उत्पाद चुनें</option>
-                          {products.map(p => (
-                            <option key={p._id} value={p._id}>
-                              {p.name} (Stock: {p.quantity ?? p.stock ?? 0})
-                              {p.gst_rate > 0 ? ` • GST ${p.gst_rate}%` : ''}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchableProductSelect
+                          products={products}
+                          value={item.product_id}
+                          onChange={(id) => updateItem(index, 'product_id', id)}
+                          placeholder="उत्पाद खोजें / Search product..."
+                        />
                       </div>
 
                       <div className="grid-2">
