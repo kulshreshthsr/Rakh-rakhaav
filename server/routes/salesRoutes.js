@@ -1,7 +1,7 @@
 // server/routes/salesRoutes.js
 const express = require('express');
 const router  = express.Router();
-const auth    = require('../middleware/authMiddleware');
+const { protect: auth } = require('../middleware/authMiddleware');
 
 const {
   getSales,
@@ -9,7 +9,7 @@ const {
   deleteSale,
   getGSTSummary,
   getProfitSummary,
-  getWhatsAppPDF,     // ← NEW
+  getWhatsAppPDF,
 } = require('../controllers/salesController');
 
 // ── Summary routes (must be before /:id routes) ──────────────────────────────
@@ -21,7 +21,7 @@ router.get('/',    auth, getSales);
 router.post('/',   auth, createSale);
 router.delete('/:id', auth, deleteSale);
 
-// ── NEW: WhatsApp PDF ─────────────────────────────────────────────────────────
+// ── WhatsApp PDF ──────────────────────────────────────────────────────────────
 // GET /api/sales/:id/whatsapp-pdf
 router.get('/:id/whatsapp-pdf', auth, getWhatsAppPDF);
 
