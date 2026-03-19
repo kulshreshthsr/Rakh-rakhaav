@@ -1,16 +1,28 @@
+// server/routes/salesRoutes.js
 const express = require('express');
-const router = express.Router();
-const { getSales, createSale, deleteSale, getGSTSummary, getProfitSummary } = require('../controllers/salesController');
-const { protect } = require('../middleware/authMiddleware');
+const router  = express.Router();
+const auth    = require('../middleware/authMiddleware');
 
-// ⚠️ IMPORTANT: Static routes MUST come before dynamic /:id routes
-// Otherwise 'gst-summary' gets matched as an :id param
+const {
+  getSales,
+  createSale,
+  deleteSale,
+  getGSTSummary,
+  getProfitSummary,
+  getWhatsAppPDF,     // ← NEW
+} = require('../controllers/salesController');
 
-router.get('/gst-summary', protect, getGSTSummary);       // ← FIXED: was after /:id before
-router.get('/profit-summary', protect, getProfitSummary); // ← NEW: for dashboard
+// ── Summary routes (must be before /:id routes) ──────────────────────────────
+router.get('/profit-summary', auth, getProfitSummary);
+router.get('/gst-summary',    auth, getGSTSummary);
 
-router.get('/', protect, getSales);
-router.post('/', protect, createSale);
-router.delete('/:id', protect, deleteSale);
+// ── CRUD ─────────────────────────────────────────────────────────────────────
+router.get('/',    auth, getSales);
+router.post('/',   auth, createSale);
+router.delete('/:id', auth, deleteSale);
+
+// ── NEW: WhatsApp PDF ─────────────────────────────────────────────────────────
+// GET /api/sales/:id/whatsapp-pdf
+router.get('/:id/whatsapp-pdf', auth, getWhatsAppPDF);
 
 module.exports = router;

@@ -1,9 +1,14 @@
-const Sale = require('../models/salesModel');
-const Product = require('../models/productModel');
-const Shop = require('../models/shopModel');
+const Sale     = require('../models/salesModel');
+const Product  = require('../models/productModel');
+const Shop     = require('../models/shopModel');
 const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
-const Udhaar = require('../models/udhaarModel');
+const Udhaar   = require('../models/udhaarModel');
+
+// ── NEW: PDF + Cloudinary ────────────────────────────────────────────────────
+const cloudinary         = require('../config/cloudinary');
+const generateInvoicePDF = require('../utils/generateInvoicePDF');
+const { Readable }       = require('stream');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -17,28 +22,28 @@ const getOrCreateShop = async (userId) => {
 
 const generateInvoiceNumber = async (shopId) => {
   const count = await Sale.countDocuments({ shop: shopId });
-  const date = new Date();
-  const year = date.getFullYear().toString().slice(-2);
+  const date  = new Date();
+  const year  = date.getFullYear().toString().slice(-2);
   const month = String(date.getMonth() + 1).padStart(2, '0');
   return `INV-${year}${month}-${String(count + 1).padStart(4, '0')}`;
 };
 
 const calculateGST = (taxable_amount, gst_rate, shopState, buyerState) => {
-  const gst = (taxable_amount * gst_rate) / 100;
+  const gst    = (taxable_amount * gst_rate) / 100;
   const isIGST = buyerState && shopState && shopState !== buyerState;
   if (isIGST) {
     return {
       cgst_amount: 0, sgst_amount: 0,
       igst_amount: parseFloat(gst.toFixed(2)),
-      total_gst: parseFloat(gst.toFixed(2)),
-      gst_type: 'IGST',
+      total_gst:   parseFloat(gst.toFixed(2)),
+      gst_type:    'IGST',
     };
   } else {
     const half = parseFloat((gst / 2).toFixed(2));
     return {
       cgst_amount: half, sgst_amount: half, igst_amount: 0,
-      total_gst: parseFloat(gst.toFixed(2)),
-      gst_type: 'CGST_SGST',
+      total_gst:   parseFloat(gst.toFixed(2)),
+      gst_type:    'CGST_SGST',
     };
   }
 };
@@ -57,19 +62,18 @@ const getSales = async (req, res) => {
     if (from || to) {
       filter.createdAt = {};
       if (from) filter.createdAt.$gte = new Date(from);
-      if (to) filter.createdAt.$lte = new Date(to);
+      if (to)   filter.createdAt.$lte = new Date(to);
     }
 
     const sales = await Sale.find(filter)
       .populate('customer', 'name phone')
       .sort({ createdAt: -1 });
 
-    // Summary for the filtered set
     const summary = sales.reduce((acc, s) => {
-      acc.totalRevenue += s.total_amount || 0;
-      acc.totalGST += s.total_gst || 0;
-      acc.totalCOGS += s.total_cost || 0;
-      acc.totalProfit += s.gross_profit || 0;
+      acc.totalRevenue += s.total_amount  || 0;
+      acc.totalGST     += s.total_gst     || 0;
+      acc.totalCOGS    += s.total_cost    || 0;
+      acc.totalProfit  += s.gross_profit  || 0;
       return acc;
     }, { totalRevenue: 0, totalGST: 0, totalCOGS: 0, totalProfit: 0 });
 
@@ -80,7 +84,7 @@ const getSales = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CREATE SALE  (single-product + multi-item both supported)
+// CREATE SALE
 // ─────────────────────────────────────────────────────────────────────────────
 
 const createSale = async (req, res) => {
@@ -88,17 +92,10 @@ const createSale = async (req, res) => {
     const shop = await getOrCreateShop(req.user.id);
 
     const {
-      // Multi-item
       items,
-
-      // Legacy single-product
       product_id, quantity, price_per_unit,
-
-      // Buyer
       buyer_name, buyer_phone, buyer_gstin,
       buyer_address, buyer_state,
-
-      // Payment
       payment_type = 'cash',
       notes,
     } = req.body;
@@ -107,20 +104,17 @@ const createSale = async (req, res) => {
       return res.status(400).json({ message: 'Credit sale ke liye customer ka naam zaroori hai!' });
     }
 
-    // Normalise to items array
     const rawItems = items && items.length > 0
       ? items
       : [{ product_id, quantity, price_per_unit }];
 
-    // ── Build resolved items ──────────────────────────────────
     let totalTaxable = 0, totalCGST = 0, totalSGST = 0;
     let totalIGST = 0, totalGST = 0, grandTotal = 0;
     let totalCost = 0;
 
-    const invoice_type = (buyer_gstin && buyer_gstin.trim() !== '') ? 'B2B' : 'B2C';
+    const invoice_type   = (buyer_gstin && buyer_gstin.trim() !== '') ? 'B2B' : 'B2C';
     const invoice_number = await generateInvoiceNumber(shop._id);
-
-    const resolvedItems = [];
+    const resolvedItems  = [];
 
     for (const item of rawItems) {
       const product = await Product.findById(item.product_id);
@@ -128,93 +122,86 @@ const createSale = async (req, res) => {
         return res.status(404).json({ message: `Product not found: ${item.product_id}` });
       }
 
-      const qty = Number(item.quantity);
-      const ppu = Number(item.price_per_unit);
-      const cost = product.cost_price || 0;
-      const gst_rate = product.gst_rate || 0;
+      const qty      = Number(item.quantity);
+      const ppu      = Number(item.price_per_unit);
+      const cost     = product.cost_price || 0;
+      const gst_rate = product.gst_rate   || 0;
 
-      const taxable = parseFloat((qty * ppu).toFixed(2));
-      const gstCalc = calculateGST(taxable, gst_rate, shop.state, buyer_state);
+      const taxable   = parseFloat((qty * ppu).toFixed(2));
+      const gstCalc   = calculateGST(taxable, gst_rate, shop.state, buyer_state);
       const lineTotal = parseFloat((taxable + gstCalc.total_gst).toFixed(2));
-      const lineCost = parseFloat((cost * qty).toFixed(2));
+      const lineCost  = parseFloat((cost * qty).toFixed(2));
 
       totalTaxable += taxable;
-      totalCGST += gstCalc.cgst_amount;
-      totalSGST += gstCalc.sgst_amount;
-      totalIGST += gstCalc.igst_amount;
-      totalGST += gstCalc.total_gst;
-      grandTotal += lineTotal;
-      totalCost += lineCost;
+      totalCGST    += gstCalc.cgst_amount;
+      totalSGST    += gstCalc.sgst_amount;
+      totalIGST    += gstCalc.igst_amount;
+      totalGST     += gstCalc.total_gst;
+      grandTotal   += lineTotal;
+      totalCost    += lineCost;
 
       resolvedItems.push({
-        product: product._id,
-        product_name: product.name,
-        hsn_code: product.hsn_code,
-        quantity: qty,
+        product:        product._id,
+        product_name:   product.name,
+        hsn_code:       product.hsn_code,
+        quantity:       qty,
         price_per_unit: ppu,
-        cost_price: cost,
+        cost_price:     cost,
         gst_rate,
         taxable_amount: taxable,
         ...gstCalc,
-        total_amount: lineTotal,
+        total_amount:   lineTotal,
       });
 
-      // ✅ Reduce stock
       await Product.findByIdAndUpdate(product._id, { $inc: { quantity: -qty } });
     }
 
-    // Round totals
     totalTaxable = parseFloat(totalTaxable.toFixed(2));
-    totalGST = parseFloat(totalGST.toFixed(2));
-    grandTotal = parseFloat(grandTotal.toFixed(2));
-    totalCost = parseFloat(totalCost.toFixed(2));
+    totalGST     = parseFloat(totalGST.toFixed(2));
+    grandTotal   = parseFloat(grandTotal.toFixed(2));
+    totalCost    = parseFloat(totalCost.toFixed(2));
 
-    // ✅ Gross profit = revenue (excl GST) - cost of goods
-    // We use taxable_amount (not total_amount) because GST is not income
     const grossProfit = parseFloat((totalTaxable - totalCost).toFixed(2));
-
-    const firstItem = resolvedItems[0];
+    const firstItem   = resolvedItems[0];
 
     const sale = await Sale.create({
-      shop: shop._id,
-      items: resolvedItems,
+      shop:     shop._id,
+      items:    resolvedItems,
 
-      // Legacy top-level (single product backward compat)
-      product: firstItem.product,
-      product_name: firstItem.product_name,
-      hsn_code: firstItem.hsn_code,
-      quantity: firstItem.quantity,
+      product:        firstItem.product,
+      product_name:   firstItem.product_name,
+      hsn_code:       firstItem.hsn_code,
+      quantity:       firstItem.quantity,
       price_per_unit: firstItem.price_per_unit,
-      cost_price: firstItem.cost_price,
-      gst_rate: firstItem.gst_rate,
-      gst_type: firstItem.gst_type,
+      cost_price:     firstItem.cost_price,
+      gst_rate:       firstItem.gst_rate,
+      gst_type:       firstItem.gst_type,
 
       invoice_type,
       invoice_number,
 
       taxable_amount: totalTaxable,
-      cgst_amount: parseFloat(totalCGST.toFixed(2)),
-      sgst_amount: parseFloat(totalSGST.toFixed(2)),
-      igst_amount: parseFloat(totalIGST.toFixed(2)),
-      total_gst: totalGST,
-      total_amount: grandTotal,
-      total_cost: totalCost,       // ← COGS saved on sale
-      gross_profit: grossProfit,   // ← profit saved on sale
+      cgst_amount:    parseFloat(totalCGST.toFixed(2)),
+      sgst_amount:    parseFloat(totalSGST.toFixed(2)),
+      igst_amount:    parseFloat(totalIGST.toFixed(2)),
+      total_gst:      totalGST,
+      total_amount:   grandTotal,
+      total_cost:     totalCost,
+      gross_profit:   grossProfit,
 
       payment_type,
-      buyer_name: buyer_name || (invoice_type === 'B2C' ? 'Walk-in Customer' : ''),
+      buyer_name:    buyer_name || (invoice_type === 'B2C' ? 'Walk-in Customer' : ''),
       buyer_phone,
       buyer_gstin,
       buyer_address,
       notes,
     });
 
-    // ── Credit sale → customer ledger ─────────────────────────
     if (payment_type === 'credit' && buyer_name) {
       let customer = await Customer.findOne({
         shop: shop._id,
         $or: [
-          { name: { $regex: new RegExp(`^${buyer_name}$`, 'i') } },
+          { name:  { $regex: new RegExp(`^${buyer_name}$`, 'i') } },
           ...(buyer_phone ? [{ phone: buyer_phone }] : []),
         ],
       });
@@ -222,33 +209,27 @@ const createSale = async (req, res) => {
       if (!customer) {
         customer = await Customer.create({
           shop: shop._id,
-          name: buyer_name,
-          phone: buyer_phone || '',
-          gstin: buyer_gstin || '',
-          address: buyer_address || '',
+          name: buyer_name, phone: buyer_phone || '',
+          gstin: buyer_gstin || '', address: buyer_address || '',
           totalSales: 0, totalPaid: 0, totalUdhaar: 0,
         });
       }
 
-      // Update customer totals
-      customer.totalSales = parseFloat((customer.totalSales + grandTotal).toFixed(2));
+      customer.totalSales  = parseFloat((customer.totalSales + grandTotal).toFixed(2));
       customer.totalUdhaar = parseFloat((customer.totalSales - customer.totalPaid).toFixed(2));
       await customer.save();
-
-      // Link customer to sale
       await Sale.findByIdAndUpdate(sale._id, { customer: customer._id });
 
-      // Udhaar ledger entry
       await Udhaar.create({
-        shop: shop._id,
-        customer: customer._id,
-        type: 'debit',
-        amount: grandTotal,
+        shop:            shop._id,
+        customer:        customer._id,
+        type:            'debit',
+        amount:          grandTotal,
         running_balance: customer.totalUdhaar,
-        note: `Credit Sale — ${resolvedItems.map(i => i.product_name).join(', ')} (${invoice_number})`,
-        date: new Date(),
-        reference_id: invoice_number,
-        reference_type: 'sale',
+        note:            `Credit Sale — ${resolvedItems.map(i => i.product_name).join(', ')} (${invoice_number})`,
+        date:            new Date(),
+        reference_id:    invoice_number,
+        reference_type:  'sale',
       });
     }
 
@@ -260,7 +241,7 @@ const createSale = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DELETE SALE  (reverses stock + customer ledger)
+// DELETE SALE
 // ─────────────────────────────────────────────────────────────────────────────
 
 const deleteSale = async (req, res) => {
@@ -268,7 +249,6 @@ const deleteSale = async (req, res) => {
     const sale = await Sale.findById(req.params.id);
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
 
-    // ✅ Reverse stock for all items
     if (sale.items && sale.items.length > 0) {
       for (const item of sale.items) {
         await Product.findByIdAndUpdate(item.product, { $inc: { quantity: item.quantity } });
@@ -277,10 +257,9 @@ const deleteSale = async (req, res) => {
       await Product.findByIdAndUpdate(sale.product, { $inc: { quantity: sale.quantity } });
     }
 
-    // ✅ Reverse customer ledger (properly using ObjectId, not name match)
     if (sale.payment_type === 'credit') {
       const customerId = sale.customer;
-      const customer = customerId
+      const customer   = customerId
         ? await Customer.findById(customerId)
         : await Customer.findOne({
             shop: sale.shop,
@@ -288,7 +267,7 @@ const deleteSale = async (req, res) => {
           });
 
       if (customer) {
-        customer.totalSales = Math.max(0, customer.totalSales - sale.total_amount);
+        customer.totalSales  = Math.max(0, customer.totalSales - sale.total_amount);
         customer.totalUdhaar = parseFloat((customer.totalSales - customer.totalPaid).toFixed(2));
         await customer.save();
         await Udhaar.deleteMany({ reference_id: sale.invoice_number, reference_type: 'sale' });
@@ -303,17 +282,15 @@ const deleteSale = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PROFIT SUMMARY  (used by dashboard — single fast query)
+// PROFIT SUMMARY
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getProfitSummary = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop         = await getOrCreateShop(req.user.id);
     const { month, year } = req.query;
+    const filter       = { shop: shop._id };
 
-    const filter = { shop: shop._id };
-
-    // Optional monthly filter
     if (month && year) {
       filter.createdAt = {
         $gte: new Date(year, month - 1, 1),
@@ -321,18 +298,17 @@ const getProfitSummary = async (req, res) => {
       };
     }
 
-    // Use aggregation for performance — no need to fetch all docs
     const [salesAgg] = await Sale.aggregate([
       { $match: filter },
       {
         $group: {
-          _id: null,
-          totalRevenue: { $sum: '$total_amount' },
-          totalTaxable: { $sum: '$taxable_amount' },
-          totalGSTCollected: { $sum: '$total_gst' },
-          totalCOGS: { $sum: '$total_cost' },
-          totalGrossProfit: { $sum: '$gross_profit' },
-          salesCount: { $sum: 1 },
+          _id:                null,
+          totalRevenue:       { $sum: '$total_amount'  },
+          totalTaxable:       { $sum: '$taxable_amount' },
+          totalGSTCollected:  { $sum: '$total_gst'     },
+          totalCOGS:          { $sum: '$total_cost'    },
+          totalGrossProfit:   { $sum: '$gross_profit'  },
+          salesCount:         { $sum: 1                },
         },
       },
     ]);
@@ -341,39 +317,30 @@ const getProfitSummary = async (req, res) => {
       { $match: { shop: shop._id, ...(filter.createdAt ? { createdAt: filter.createdAt } : {}) } },
       {
         $group: {
-          _id: null,
-          totalSpent: { $sum: '$total_amount' },
-          totalITC: { $sum: '$total_gst' },
-          purchasesCount: { $sum: 1 },
+          _id:             null,
+          totalSpent:      { $sum: '$total_amount' },
+          totalITC:        { $sum: '$total_gst'    },
+          purchasesCount:  { $sum: 1               },
         },
       },
     ]);
 
-    const s = salesAgg || { totalRevenue: 0, totalTaxable: 0, totalGSTCollected: 0, totalCOGS: 0, totalGrossProfit: 0, salesCount: 0 };
+    const s = salesAgg    || { totalRevenue: 0, totalTaxable: 0, totalGSTCollected: 0, totalCOGS: 0, totalGrossProfit: 0, salesCount: 0 };
     const p = purchasesAgg || { totalSpent: 0, totalITC: 0, purchasesCount: 0 };
 
     const netGSTPayable = parseFloat((s.totalGSTCollected - p.totalITC).toFixed(2));
 
     res.json({
-      // Revenue
-      totalRevenue: parseFloat(s.totalRevenue.toFixed(2)),
-      totalTaxable: parseFloat(s.totalTaxable.toFixed(2)),
-      salesCount: s.salesCount,
-
-      // Profit
-      totalCOGS: parseFloat(s.totalCOGS.toFixed(2)),
-      grossProfit: parseFloat(s.totalGrossProfit.toFixed(2)),
-      // Net profit = gross profit - purchase expenses (non-inventory)
-      // For now same as gross; expense module will subtract later
-      netProfit: parseFloat(s.totalGrossProfit.toFixed(2)),
-
-      // GST
-      gstCollected: parseFloat(s.totalGSTCollected.toFixed(2)),
-      gstITC: parseFloat(p.totalITC.toFixed(2)),
+      totalRevenue:   parseFloat(s.totalRevenue.toFixed(2)),
+      totalTaxable:   parseFloat(s.totalTaxable.toFixed(2)),
+      salesCount:     s.salesCount,
+      totalCOGS:      parseFloat(s.totalCOGS.toFixed(2)),
+      grossProfit:    parseFloat(s.totalGrossProfit.toFixed(2)),
+      netProfit:      parseFloat(s.totalGrossProfit.toFixed(2)),
+      gstCollected:   parseFloat(s.totalGSTCollected.toFixed(2)),
+      gstITC:         parseFloat(p.totalITC.toFixed(2)),
       netGSTPayable,
-
-      // Purchases
-      totalSpent: parseFloat(p.totalSpent.toFixed(2)),
+      totalSpent:     parseFloat(p.totalSpent.toFixed(2)),
       purchasesCount: p.purchasesCount,
     });
   } catch (err) {
@@ -382,74 +349,74 @@ const getProfitSummary = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GST SUMMARY  (for GST page)
+// GST SUMMARY
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getGSTSummary = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop           = await getOrCreateShop(req.user.id);
     const { month, year } = req.query;
 
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const endDate   = new Date(year, month, 0, 23, 59, 59);
 
-    const sales = await Sale.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
+    const sales     = await Sale.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
     const purchases = await Purchase.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
 
     const b2b = sales.filter(s => s.invoice_type === 'B2B');
     const b2c = sales.filter(s => s.invoice_type === 'B2C');
 
     const summary = {
-      month: parseInt(month),
-      year: parseInt(year),
+      month:     parseInt(month),
+      year:      parseInt(year),
       sales: {
-        total: sales.length,
+        total:          sales.length,
         taxable_amount: parseFloat(sales.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
-        total_gst: parseFloat(sales.reduce((s, x) => s + (x.total_gst || 0), 0).toFixed(2)),
-        cgst: parseFloat(sales.reduce((s, x) => s + (x.cgst_amount || 0), 0).toFixed(2)),
-        sgst: parseFloat(sales.reduce((s, x) => s + (x.sgst_amount || 0), 0).toFixed(2)),
-        igst: parseFloat(sales.reduce((s, x) => s + (x.igst_amount || 0), 0).toFixed(2)),
-        total_amount: parseFloat(sales.reduce((s, x) => s + (x.total_amount || 0), 0).toFixed(2)),
-        b2b_count: b2b.length,
-        b2c_count: b2c.length,
-        b2b_taxable: parseFloat(b2b.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
-        b2c_taxable: parseFloat(b2c.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
+        total_gst:      parseFloat(sales.reduce((s, x) => s + (x.total_gst      || 0), 0).toFixed(2)),
+        cgst:           parseFloat(sales.reduce((s, x) => s + (x.cgst_amount    || 0), 0).toFixed(2)),
+        sgst:           parseFloat(sales.reduce((s, x) => s + (x.sgst_amount    || 0), 0).toFixed(2)),
+        igst:           parseFloat(sales.reduce((s, x) => s + (x.igst_amount    || 0), 0).toFixed(2)),
+        total_amount:   parseFloat(sales.reduce((s, x) => s + (x.total_amount   || 0), 0).toFixed(2)),
+        b2b_count:      b2b.length,
+        b2c_count:      b2c.length,
+        b2b_taxable:    parseFloat(b2b.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
+        b2c_taxable:    parseFloat(b2c.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
       },
       purchases: {
-        total: purchases.length,
+        total:          purchases.length,
         taxable_amount: parseFloat(purchases.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
-        total_gst: parseFloat(purchases.reduce((s, x) => s + (x.total_gst || 0), 0).toFixed(2)),
-        cgst: parseFloat(purchases.reduce((s, x) => s + (x.cgst_amount || 0), 0).toFixed(2)),
-        sgst: parseFloat(purchases.reduce((s, x) => s + (x.sgst_amount || 0), 0).toFixed(2)),
-        igst: parseFloat(purchases.reduce((s, x) => s + (x.igst_amount || 0), 0).toFixed(2)),
+        total_gst:      parseFloat(purchases.reduce((s, x) => s + (x.total_gst      || 0), 0).toFixed(2)),
+        cgst:           parseFloat(purchases.reduce((s, x) => s + (x.cgst_amount    || 0), 0).toFixed(2)),
+        sgst:           parseFloat(purchases.reduce((s, x) => s + (x.sgst_amount    || 0), 0).toFixed(2)),
+        igst:           parseFloat(purchases.reduce((s, x) => s + (x.igst_amount    || 0), 0).toFixed(2)),
       },
       gstr1: {
         b2b_invoices: b2b.map(s => ({
           invoice_number: s.invoice_number,
-          date: s.createdAt,
-          buyer_name: s.buyer_name,
-          buyer_gstin: s.buyer_gstin,
+          date:           s.createdAt,
+          buyer_name:     s.buyer_name,
+          buyer_gstin:    s.buyer_gstin,
           taxable_amount: s.taxable_amount,
-          gst_rate: s.gst_rate,
-          cgst: s.cgst_amount,
-          sgst: s.sgst_amount,
-          igst: s.igst_amount,
-          total: s.total_amount,
-          gst_type: s.gst_type,
+          gst_rate:       s.gst_rate,
+          cgst:           s.cgst_amount,
+          sgst:           s.sgst_amount,
+          igst:           s.igst_amount,
+          total:          s.total_amount,
+          gst_type:       s.gst_type,
         })),
         b2c_summary: {
-          count: b2c.length,
+          count:          b2c.length,
           taxable_amount: parseFloat(b2c.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
-          total_gst: parseFloat(b2c.reduce((s, x) => s + (x.total_gst || 0), 0).toFixed(2)),
-          total_amount: parseFloat(b2c.reduce((s, x) => s + (x.total_amount || 0), 0).toFixed(2)),
+          total_gst:      parseFloat(b2c.reduce((s, x) => s + (x.total_gst      || 0), 0).toFixed(2)),
+          total_amount:   parseFloat(b2c.reduce((s, x) => s + (x.total_amount   || 0), 0).toFixed(2)),
         },
       },
       gstr3b: {
         outward_taxable: parseFloat(sales.reduce((s, x) => s + (x.taxable_amount || 0), 0).toFixed(2)),
-        output_gst: parseFloat(sales.reduce((s, x) => s + (x.total_gst || 0), 0).toFixed(2)),
-        input_gst: parseFloat(purchases.reduce((s, x) => s + (x.total_gst || 0), 0).toFixed(2)),
-        net_payable: parseFloat((
-          sales.reduce((s, x) => s + (x.total_gst || 0), 0) -
+        output_gst:      parseFloat(sales.reduce((s, x) => s + (x.total_gst      || 0), 0).toFixed(2)),
+        input_gst:       parseFloat(purchases.reduce((s, x) => s + (x.total_gst  || 0), 0).toFixed(2)),
+        net_payable:     parseFloat((
+          sales.reduce((s, x) => s + (x.total_gst     || 0), 0) -
           purchases.reduce((s, x) => s + (x.total_gst || 0), 0)
         ).toFixed(2)),
       },
@@ -461,4 +428,71 @@ const getGSTSummary = async (req, res) => {
   }
 };
 
-module.exports = { getSales, createSale, deleteSale, getGSTSummary, getProfitSummary };
+// ─────────────────────────────────────────────────────────────────────────────
+// WHATSAPP PDF
+// Generate invoice PDF → upload to Cloudinary → return public URL
+// Route: GET /api/sales/:id/whatsapp-pdf
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getWhatsAppPDF = async (req, res) => {
+  try {
+    const shop = await getOrCreateShop(req.user.id);
+    const sale = await Sale.findById(req.params.id);
+
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    // 1. Generate PDF buffer
+    const pdfBuffer = await generateInvoicePDF(sale, shop);
+
+    // 2. Upload buffer to Cloudinary (resource_type: raw for PDFs)
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder:        'rakhaav_invoices',
+          public_id:     `Invoice_${sale.invoice_number}`,
+          format:        'pdf',
+          overwrite:     true,
+          invalidate:    true,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+
+      const readable = new Readable();
+      readable.push(pdfBuffer);
+      readable.push(null);
+      readable.pipe(uploadStream);
+    });
+
+    // 3. Return public URL + sale details for WhatsApp message
+    res.json({
+      success:     true,
+      pdf_url:     uploadResult.secure_url,
+      invoice_no:  sale.invoice_number,
+      buyer_phone: sale.buyer_phone || null,
+      buyer_name:  sale.buyer_name  || null,
+      total:       sale.total_amount,
+      payment_type: sale.payment_type,
+    });
+
+  } catch (err) {
+    console.error('getWhatsAppPDF error:', err);
+    res.status(500).json({ message: 'PDF generate karne mein error: ' + err.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+module.exports = {
+  getSales,
+  createSale,
+  deleteSale,
+  getGSTSummary,
+  getProfitSummary,
+  getWhatsAppPDF,       // ← NEW
+};
