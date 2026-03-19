@@ -227,7 +227,7 @@ export default function RegisterPage() {
 
               <div className="field-wrap">
                 <label className="field-label">Username</label>
-                <input className="input-box" type="text" placeholder="sona_shop" value={username}
+                <input className="input-box" type="text" placeholder="sona" value={username}
                   onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))} required />
                 <div className="hint">Sirf lowercase letters, numbers aur underscore</div>
               </div>

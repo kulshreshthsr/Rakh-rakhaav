@@ -3,354 +3,712 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
-const API = 'https://rakh-rakhaav.onrender.com';
+const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_HI = ['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
+
+const API      = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
-const fmt = (n) => parseFloat(n || 0).toFixed(2);
-const fmtN = (n) => '₹' + new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
-
-const QUARTERS = [
-  { label: 'Q1 (Apr–Jun)', from: '04-01', to: '06-30' },
-  { label: 'Q2 (Jul–Sep)', from: '07-01', to: '09-30' },
-  { label: 'Q3 (Oct–Dec)', from: '10-01', to: '12-31' },
-  { label: 'Q4 (Jan–Mar)', from: '01-01', to: '03-31' },
-];
-
-const getYearRange = (year, fromMD, toMD) => {
-  const actualYear = fromMD.startsWith('0') || fromMD.startsWith('1') ? year : year - 1;
-  const toYear = toMD.startsWith('0') || toMD.startsWith('1') ? year : year;
-  return { from: `${year}-${fromMD}`, to: `${toYear}-${toMD}` };
-};
+const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 
 export default function GSTPage() {
   const router = useRouter();
-  const [loading, setLoading]       = useState(false);
-  const [year, setYear]             = useState(new Date().getFullYear());
-  const [month, setMonth]           = useState(new Date().getMonth() + 1);
-  const [period, setPeriod]         = useState('monthly');
-  const [quarter, setQuarter]       = useState(0);
-  const [sales, setSales]           = useState([]);
-  const [purchases, setPurchases]   = useState([]);
-  const [shopInfo, setShopInfo]     = useState({});
-  const [error, setError]           = useState('');
+  const now    = new Date();
+
+  const [month,   setMonth]   = useState(now.getMonth() + 1);
+  const [year,    setYear]    = useState(now.getFullYear());
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [zipping, setZipping] = useState(false);
+
+  // Drill-down state
+  const [drillType,    setDrillType]    = useState(null);
+  const [drillData,    setDrillData]    = useState([]);
+  const [drillLoading, setDrillLoading] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetch(`${API}/api/auth/shop`, { headers: { Authorization: `Bearer ${getToken()}` } }).then(r => r.json()).then(d => setShopInfo(d || {})).catch(() => {});
-    fetchData();
-  }, []);
+    fetchSummary();
+  }, [month, year]);
 
-  useEffect(() => { fetchData(); }, [period, year, month, quarter]);
-
-  const fetchData = async () => {
-    setLoading(true); setError('');
-    let from, to;
-    if (period === 'monthly') { from = `${year}-${String(month).padStart(2, '0')}-01`; const lastDay = new Date(year, month, 0).getDate(); to = `${year}-${String(month).padStart(2, '0')}-${lastDay}`; }
-    else { const q = QUARTERS[quarter]; const { from: f, to: t } = getYearRange(year, q.from, q.to); from = f; to = t; }
-    const headers = { Authorization: `Bearer ${getToken()}` };
+  // ── Fetch GST summary ────────────────────────────────────────────────────────
+  const fetchSummary = async () => {
+    setLoading(true);
+    setDrillType(null);
     try {
-      const [sRes, pRes] = await Promise.all([fetch(`${API}/api/sales?from=${from}&to=${to}`, { headers }), fetch(`${API}/api/purchases?from=${from}&to=${to}`, { headers })]);
-      const sData = await sRes.json(); const pData = await pRes.json();
-      setSales(sData.sales || (Array.isArray(sData) ? sData : []));
-      setPurchases(pData.purchases || (Array.isArray(pData) ? pData : []));
-    } catch { setError('Data load nahi hua'); }
+      const res = await fetch(`${API}/api/sales/gst-summary?month=${month}&year=${year}`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.status === 401) { router.push('/login'); return; }
+      setSummary(await res.json());
+    } catch {}
     setLoading(false);
   };
 
-  // GST Output (from sales)
-  const gstOutput = (() => {
-    const map = {};
-    sales.forEach(sale => {
-      const items = sale.items?.length > 0 ? sale.items : [{ ...sale, gst_rate: sale.gst_rate || 0, cgst_amount: sale.cgst_amount, sgst_amount: sale.sgst_amount, igst_amount: sale.igst_amount, taxable_amount: sale.taxable_amount, gst_type: sale.gst_type }];
-      items.forEach(item => {
-        const rate = item.gst_rate || 0; const key = String(rate);
-        if (!map[key]) map[key] = { rate, taxable: 0, cgst: 0, sgst: 0, igst: 0, total_gst: 0, count: 0, b2b_taxable: 0, b2c_taxable: 0, b2b_gst: 0, b2c_gst: 0 };
-        const taxable = item.taxable_amount || ((item.quantity || 0) * (item.price_per_unit || 0));
-        const isIGST = item.gst_type === 'IGST';
-        map[key].taxable += taxable;
-        if (isIGST) { map[key].igst += item.igst_amount || 0; map[key].total_gst += item.igst_amount || 0; }
-        else { map[key].cgst += item.cgst_amount || 0; map[key].sgst += item.sgst_amount || 0; map[key].total_gst += (item.cgst_amount || 0) + (item.sgst_amount || 0); }
-        map[key].count += 1;
-        const isB2B = !!(sale.buyer_gstin || item.buyer_gstin);
-        if (isB2B) { map[key].b2b_taxable += taxable; map[key].b2b_gst += isIGST ? (item.igst_amount || 0) : (item.cgst_amount || 0) + (item.sgst_amount || 0); }
-        else { map[key].b2c_taxable += taxable; map[key].b2c_gst += isIGST ? (item.igst_amount || 0) : (item.cgst_amount || 0) + (item.sgst_amount || 0); }
-      });
-    });
-    return Object.values(map).sort((a, b) => a.rate - b.rate);
-  })();
+  // ── Drill-down ───────────────────────────────────────────────────────────────
+  const openDrill = async (type) => {
+    if (drillType === type) { setDrillType(null); return; }
+    setDrillType(type);
+    setDrillLoading(true);
 
-  // ITC (from purchases)
-  const itcSlabs = (() => {
-    const map = {};
-    purchases.forEach(purchase => {
-      const items = purchase.items?.length > 0 ? purchase.items : [{ ...purchase, gst_rate: purchase.gst_rate || 0, cgst_amount: purchase.cgst_amount, sgst_amount: purchase.sgst_amount, igst_amount: purchase.igst_amount, taxable_amount: purchase.taxable_amount }];
-      items.forEach(item => {
-        const rate = item.gst_rate || 0; const key = String(rate);
-        if (!map[key]) map[key] = { rate, taxable: 0, cgst: 0, sgst: 0, igst: 0, total_itc: 0 };
-        const taxable = item.taxable_amount || ((item.quantity || 0) * (item.price_per_unit || 0));
-        map[key].taxable += taxable;
-        map[key].cgst += item.cgst_amount || 0; map[key].sgst += item.sgst_amount || 0; map[key].igst += item.igst_amount || 0;
-        map[key].total_itc += (item.cgst_amount || 0) + (item.sgst_amount || 0) + (item.igst_amount || 0);
-      });
-    });
-    return Object.values(map).sort((a, b) => a.rate - b.rate);
-  })();
+    const from = new Date(year, month - 1, 1).toISOString();
+    const to   = new Date(year, month, 0, 23, 59, 59).toISOString();
 
-  const totalOutputGST = gstOutput.reduce((s, x) => s + x.total_gst, 0);
-  const totalTaxable = gstOutput.reduce((s, x) => s + x.taxable, 0);
-  const totalITC = itcSlabs.reduce((s, x) => s + x.total_itc, 0);
-  const netGSTPayable = Math.max(0, totalOutputGST - totalITC);
-  const totalCGST = gstOutput.reduce((s, x) => s + x.cgst, 0);
-  const totalSGST = gstOutput.reduce((s, x) => s + x.sgst, 0);
-  const totalIGST = gstOutput.reduce((s, x) => s + x.igst, 0);
+    try {
+      const url = type === 'sales'
+        ? `${API}/api/sales?from=${from}&to=${to}`
+        : `${API}/api/purchases?from=${from}&to=${to}`;
 
-  const periodLabel = period === 'monthly'
-    ? new Date(year, month - 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' })
-    : `${QUARTERS[quarter].label} ${year}`;
-
-  const exportGSTCSV = () => {
-    const rows = [
-      ['GST Report — ' + periodLabel],
-      ['Shop: ' + (shopInfo.name || '—'), 'GSTIN: ' + (shopInfo.gstin || '—')],
-      [],
-      ['OUTPUT TAX (from Sales)'],
-      ['GST Rate', 'Taxable Amount', 'CGST', 'SGST', 'IGST', 'Total GST', 'B2B Taxable', 'B2C Taxable'],
-      ...gstOutput.map(r => [r.rate + '%', fmt(r.taxable), fmt(r.cgst), fmt(r.sgst), fmt(r.igst), fmt(r.total_gst), fmt(r.b2b_taxable), fmt(r.b2c_taxable)]),
-      ['TOTAL', fmt(totalTaxable), fmt(totalCGST), fmt(totalSGST), fmt(totalIGST), fmt(totalOutputGST)],
-      [],
-      ['INPUT TAX CREDIT (from Purchases)'],
-      ['GST Rate', 'Taxable', 'CGST ITC', 'SGST ITC', 'IGST ITC', 'Total ITC'],
-      ...itcSlabs.map(r => [r.rate + '%', fmt(r.taxable), fmt(r.cgst), fmt(r.sgst), fmt(r.igst), fmt(r.total_itc)]),
-      ['TOTAL ITC', '', '', '', '', fmt(totalITC)],
-      [],
-      ['NET GST PAYABLE', '', '', '', '', fmt(netGSTPayable)],
-    ];
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `GST_Report_${periodLabel.replace(/ /g, '_')}.csv`; a.click(); URL.revokeObjectURL(url);
+      const res  = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const data = await res.json();
+      setDrillData(type === 'sales' ? (data.sales || data) : (data.purchases || data));
+    } catch {}
+    setDrillLoading(false);
   };
 
-  const IS = { width: '100%', padding: '12px 14px', border: '2px solid #E2E8F0', borderRadius: 10, fontSize: 14, color: '#0F172A', background: '#fff', outline: 'none', fontFamily: 'DM Sans,sans-serif', boxSizing: 'border-box', transition: 'border-color 0.2s,box-shadow 0.2s' };
-  const selStyle = { ...IS, backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%2394A3B8' d='M5 6L0 0h10z'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 32, appearance: 'none' };
+  // ── Helpers: build CSV string ─────────────────────────────────────────────────
+  const buildGSTR1CSV = () => {
+    const rows = [
+      ['GSTR-1 B2B Invoices'],
+      ['Invoice No','Date','Buyer Name','Buyer GSTIN','Taxable Amount','GST Rate%','CGST','SGST','IGST','Total'],
+      ...summary.gstr1.b2b_invoices.map(i => [
+        i.invoice_number,
+        new Date(i.date).toLocaleDateString('en-IN'),
+        i.buyer_name  || '',
+        i.buyer_gstin || '',
+        fmt(i.taxable_amount),
+        i.gst_rate + '%',
+        fmt(i.cgst), fmt(i.sgst), fmt(i.igst), fmt(i.total),
+      ]),
+      [''],
+      ['GSTR-1 B2C Summary'],
+      ['Count','Taxable Amount','Total GST','Total Amount'],
+      [
+        summary.gstr1.b2c_summary.count,
+        fmt(summary.gstr1.b2c_summary.taxable_amount),
+        fmt(summary.gstr1.b2c_summary.total_gst),
+        fmt(summary.gstr1.b2c_summary.total_amount),
+      ],
+    ];
+    return rows.map(r => r.join(',')).join('\n');
+  };
+
+  const buildGSTR3BCSV = () => {
+    const rows = [
+      ['GSTR-3B Summary'],
+      ['Month/Year', `${MONTHS[month - 1]} ${year}`],
+      [''],
+      ['Description', 'Amount (Rs)'],
+      ['GST Collected (Output)',  fmt(summary.gstr3b.output_gst)],
+      ['GST Input Credit (ITC)', fmt(summary.gstr3b.input_gst)],
+      ['Net GST Payable',        fmt(summary.gstr3b.net_payable)],
+      ['Outward Taxable Sales',  fmt(summary.gstr3b.outward_taxable)],
+      [''],
+      ['Sales Breakup'],
+      ['Total Sales',            fmt(summary.sales.total_amount)],
+      ['CGST Collected',         fmt(summary.sales.cgst)],
+      ['SGST Collected',         fmt(summary.sales.sgst)],
+      ['IGST Collected',         fmt(summary.sales.igst)],
+      [''],
+      ['Purchase Breakup'],
+      ['Total Purchases',        fmt(summary.purchases.taxable_amount)],
+      ['CGST Input',             fmt(summary.purchases.cgst)],
+      ['SGST Input',             fmt(summary.purchases.sgst)],
+      ['IGST Input',             fmt(summary.purchases.igst)],
+    ];
+    return rows.map(r => r.join(',')).join('\n');
+  };
+
+  // ── Individual CSV exports (unchanged behaviour) ─────────────────────────────
+  const exportCSV = (type) => {
+    if (!summary) return;
+    const csv      = type === 'gstr1' ? buildGSTR1CSV() : buildGSTR3BCSV();
+    const filename = type === 'gstr1'
+      ? `GSTR1_${year}_${String(month).padStart(2, '0')}.csv`
+      : `GSTR3B_${year}_${String(month).padStart(2, '0')}.csv`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportJSON = () => {
+    if (!summary) return;
+    const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `GST_${year}_${String(month).padStart(2, '0')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ── UPGRADE 3: ZIP Export ────────────────────────────────────────────────────
+  // Structure:
+  //   /GSTR1/gstr1.csv
+  //   /GSTR1/gstr1.json
+  //   /GSTR3B/gstr3b.csv
+  //   /GSTR3B/gstr3b.json
+  const exportZIP = async () => {
+    if (!summary) return;
+    setZipping(true);
+
+    try {
+      // Dynamically load JSZip from CDN (no install needed)
+      if (!window.JSZip) {
+        await new Promise((resolve, reject) => {
+          const script   = document.createElement('script');
+          script.src     = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+          script.onload  = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const zip        = new window.JSZip();
+      const monthPad   = String(month).padStart(2, '0');
+      const periodTag  = `${year}_${monthPad}`;
+
+      // ── GSTR1 folder ──────────────────────────────────────────────────────
+      const gstr1Folder = zip.folder('GSTR1');
+
+      // gstr1.csv
+      gstr1Folder.file('gstr1.csv', buildGSTR1CSV());
+
+      // gstr1.json — only GSTR1 slice of summary
+      const gstr1Json = {
+        period: { month: MONTHS[month - 1], year },
+        b2b_invoices: summary.gstr1.b2b_invoices,
+        b2c_summary:  summary.gstr1.b2c_summary,
+        sales_totals: {
+          total_amount:  summary.sales.total_amount,
+          taxable:       summary.sales.taxable_amount,
+          cgst:          summary.sales.cgst,
+          sgst:          summary.sales.sgst,
+          igst:          summary.sales.igst,
+          total_gst:     summary.sales.total_gst,
+          b2b_count:     summary.sales.b2b_count,
+          b2c_count:     summary.sales.b2c_count,
+          b2b_taxable:   summary.sales.b2b_taxable,
+          b2c_taxable:   summary.sales.b2c_taxable,
+        },
+      };
+      gstr1Folder.file('gstr1.json', JSON.stringify(gstr1Json, null, 2));
+
+      // ── GSTR3B folder ─────────────────────────────────────────────────────
+      const gstr3bFolder = zip.folder('GSTR3B');
+
+      // gstr3b.csv
+      gstr3bFolder.file('gstr3b.csv', buildGSTR3BCSV());
+
+      // gstr3b.json — only GSTR3B slice of summary
+      const gstr3bJson = {
+        period: { month: MONTHS[month - 1], year },
+        gstr3b: summary.gstr3b,
+        purchases: {
+          total_amount:  summary.purchases.total_amount,
+          taxable:       summary.purchases.taxable_amount,
+          cgst:          summary.purchases.cgst,
+          sgst:          summary.purchases.sgst,
+          igst:          summary.purchases.igst,
+          total_gst:     summary.purchases.total_gst,
+        },
+        net_payable:  summary.gstr3b.net_payable,
+        output_gst:   summary.gstr3b.output_gst,
+        input_gst:    summary.gstr3b.input_gst,
+      };
+      gstr3bFolder.file('gstr3b.json', JSON.stringify(gstr3bJson, null, 2));
+
+      // ── Generate and download ZIP ─────────────────────────────────────────
+      const blob    = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+      const url     = URL.createObjectURL(blob);
+      const a       = document.createElement('a');
+      a.href        = url;
+      a.download    = `GST_Export_${periodTag}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error('ZIP export failed:', err);
+      alert('ZIP export failed. Please try individual CSV/JSON exports.');
+    }
+
+    setZipping(false);
+  };
+
+  // ── Derived values ───────────────────────────────────────────────────────────
+  const netPayable   = summary?.gstr3b?.net_payable || 0;
+  const gstCollected = summary?.gstr3b?.output_gst  || 0;
+  const gstITC       = summary?.gstr3b?.input_gst   || 0;
+  const monthHi      = MONTHS_HI[month - 1];
+  const monthEn      = MONTHS[month - 1];
+  const isPayable    = netPayable > 0;
+  const isRefund     = netPayable < 0;
+
+  const returnStatus = summary
+    ? summary.sales.total > 0
+      ? { ok: true,  msg: '✅ Return दाखिल करने के लिए तैयार / Ready to file' }
+      : { ok: false, msg: '⚠️ इस महीने कोई sales नहीं / No sales this month' }
+    : null;
 
   return (
     <Layout>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
-        .gi:focus{border-color:#6366F1!important;box-shadow:0 0 0 3px rgba(99,102,241,0.08)!important;}
-        @keyframes spin{to{transform:rotate(360deg);}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-        @media(max-width:640px){.gst-filters{flex-direction:column!important;}}
-      `}</style>
+      <div className="page-title">GST सारांश / GST Summary</div>
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ fontFamily: 'Playfair Display,serif', fontSize: 26, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px', marginBottom: 4 }}>GST रिपोर्ट 🧾</div>
-          <div style={{ fontSize: 12, color: '#94A3B8' }}>{shopInfo.gstin ? `GSTIN: ${shopInfo.gstin}` : 'GST summary for filing'}</div>
-        </div>
-        <button onClick={exportGSTCSV} style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#6366F1,#4F46E5)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', boxShadow: '0 3px 12px rgba(99,102,241,0.3)', transition: 'all 0.2s' }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>📥 Export CSV</button>
-      </div>
-
-      {/* Filters */}
-      <div className="gst-filters" style={{ background: '#fff', borderRadius: 14, padding: '14px 16px', border: '1px solid #F1F5F9', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 10, padding: 3, gap: 3 }}>
-          {[{ val: 'monthly', label: '📅 Monthly' }, { val: 'quarterly', label: '📊 Quarterly' }].map(p => (
-            <button key={p.val} onClick={() => setPeriod(p.val)}
-              style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: period === p.val ? '#fff' : 'transparent', color: period === p.val ? '#6366F1' : '#94A3B8', fontSize: 12, fontWeight: period === p.val ? 700 : 500, cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', boxShadow: period === p.val ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.2s' }}>
-              {p.label}
-            </button>
+      {/* ── Month / Year Selector ── */}
+      <div className="card" style={{ marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>महीना / Month:</div>
+        <select className="form-input" style={{ minWidth: 150 }} value={month}
+          onChange={e => setMonth(parseInt(e.target.value))}>
+          {MONTHS.map((m, i) => (
+            <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>
           ))}
-        </div>
-        <select className="gi" style={{ ...selStyle, minWidth: 90, flex: 'none' }} value={year} onChange={e => setYear(parseInt(e.target.value))}>
-          {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => <option key={y} value={y}>{y}</option>)}
         </select>
-        {period === 'monthly' ? (
-          <select className="gi" style={{ ...selStyle, minWidth: 130 }} value={month} onChange={e => setMonth(parseInt(e.target.value))}>
-            {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => <option key={i + 1} value={i + 1}>{m} {year}</option>)}
-          </select>
-        ) : (
-          <select className="gi" style={{ ...selStyle, minWidth: 160 }} value={quarter} onChange={e => setQuarter(parseInt(e.target.value))}>
-            {QUARTERS.map((q, i) => <option key={i} value={i}>{q.label}</option>)}
-          </select>
-        )}
-        <div style={{ marginLeft: 'auto', fontSize: 13, color: '#6366F1', fontWeight: 700, background: '#EEF2FF', padding: '6px 14px', borderRadius: 9 }}>📅 {periodLabel}</div>
+        <select className="form-input" style={{ minWidth: 100 }} value={year}
+          onChange={e => setYear(parseInt(e.target.value))}>
+          {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        {loading && <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 600 }}>⏳ लोड हो रहा है...</span>}
       </div>
 
-      {error && <div style={{ background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>⚠️ {error}</div>}
-
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 80, gap: 12 }}>
-          <div style={{ width: 36, height: 36, border: '3px solid #E2E8F0', borderTopColor: '#6366F1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <div style={{ color: '#94A3B8', fontSize: 14 }}>GST data लोड हो रहा है...</div>
+      {!summary ? (
+        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>⏳ लोड हो रहा है...</div>
         </div>
       ) : (
         <>
-          {/* GST Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12, marginBottom: 20, animation: 'fadeUp 0.4s ease both' }}>
-            {[
-              { label: '📤 Output GST', value: fmtN(totalOutputGST), sub: `${sales.length} invoices`, color: '#DC2626', bg: '#FEF2F2' },
-              { label: '📥 ITC (Input)', value: fmtN(totalITC), sub: `${purchases.length} purchases`, color: '#059669', bg: '#F0FDF4' },
-              { label: '💰 Net Payable', value: fmtN(netGSTPayable), sub: 'Output − ITC', color: netGSTPayable > 0 ? '#6366F1' : '#059669', bg: '#EEF2FF', bold: true },
-              { label: '📊 CGST', value: fmtN(totalCGST), sub: 'Intra-state', color: '#D97706', bg: '#FFFBEB' },
-              { label: '📊 SGST', value: fmtN(totalSGST), sub: 'Intra-state', color: '#D97706', bg: '#FFFBEB' },
-              { label: '📊 IGST', value: fmtN(totalIGST), sub: 'Inter-state', color: '#7C3AED', bg: '#EDE9FE' },
-            ].map((card, i) => (
-              <div key={i} style={{ background: card.bg, borderRadius: 14, padding: '14px', border: `1.5px solid ${card.color}${card.bold ? '44' : '22'}`, animation: `fadeUp 0.3s ease ${i * 0.06}s both` }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>{card.label}</div>
-                <div style={{ fontFamily: 'Playfair Display,serif', fontSize: card.bold ? 22 : 18, fontWeight: 800, color: card.color, marginBottom: 3 }}>{card.value}</div>
-                <div style={{ fontSize: 11, color: '#94A3B8' }}>{card.sub}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Net GST Calculation */}
-          <div style={{ background: 'linear-gradient(135deg,#EDE9FE,#F5F3FF)', borderRadius: 16, padding: '18px 20px', border: '1.5px solid #C4B5FD', marginBottom: 20, animation: 'fadeUp 0.4s ease 0.2s both' }}>
-            <div style={{ fontFamily: 'Playfair Display,serif', fontSize: 16, fontWeight: 800, color: '#4C1D95', marginBottom: 14 }}>🧮 GST Calculation Summary</div>
-            {[
-              { label: 'Output GST (Collected from buyers)', value: totalOutputGST, color: '#DC2626' },
-              { label: '− ITC (Paid to suppliers)', value: -totalITC, color: '#059669', prefix: '−' },
-            ].map((row, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,255,255,0.6)', borderRadius: 10, marginBottom: 6 }}>
-                <span style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{row.label}</span>
-                <span style={{ fontWeight: 800, fontSize: 15, color: row.color }}>₹{fmt(Math.abs(row.value))}</span>
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: '#fff', borderRadius: 12, border: `2px solid ${netGSTPayable > 0 ? '#6366F1' : '#059669'}`, marginTop: 8 }}>
+          {/* ── SECTION 1: NET PAYABLE BANNER ── */}
+          <div style={{
+            background: isPayable ? '#fef2f2' : isRefund ? '#f0fdf4' : '#f8fafc',
+            border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
+            borderRadius: 16, padding: '20px 24px', marginBottom: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 12 }}>
+              <div style={{ fontSize: 36 }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>= Net GST Payable (GSTR-3B)</div>
-                {netGSTPayable === 0 && totalITC > 0 && <div style={{ fontSize: 11, color: '#059669', marginTop: 2 }}>✅ ITC covers full output tax!</div>}
+                <div style={{ fontSize: 20, fontWeight: 900, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151', lineHeight: 1.3 }}>
+                  {isPayable
+                    ? `${monthHi} ${year}: ₹${fmt(netPayable)} GST भरना है`
+                    : isRefund
+                    ? `${monthHi} ${year}: ₹${fmt(Math.abs(netPayable))} GST वापस मिलेगा`
+                    : `${monthHi} ${year}: कोई GST देय नहीं ✅`}
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+                  {isPayable
+                    ? `${monthEn} ${year}: Pay ₹${fmt(netPayable)} GST`
+                    : isRefund
+                    ? `${monthEn} ${year}: GST refund ₹${fmt(Math.abs(netPayable))}`
+                    : `${monthEn} ${year}: No GST payable`}
+                </div>
               </div>
-              <div style={{ fontFamily: 'Playfair Display,serif', fontSize: 26, fontWeight: 800, color: netGSTPayable > 0 ? '#6366F1' : '#059669' }}>{fmtN(netGSTPayable)}</div>
             </div>
-          </div>
-
-          {/* GST Output Table (GSTR-1) */}
-          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #F1F5F9', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: 20, animation: 'fadeUp 0.4s ease 0.3s both' }}>
-            <div style={{ padding: '16px 18px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontFamily: 'Playfair Display,serif', fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 2 }}>📤 Output GST (GSTR-1)</div>
-                <div style={{ fontSize: 12, color: '#94A3B8' }}>GST collected on sales</div>
-              </div>
-              <span style={{ background: '#FEE2E2', color: '#991B1B', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>{fmtN(totalOutputGST)}</span>
-            </div>
-            {gstOutput.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94A3B8', padding: 30, fontSize: 13 }}>इस period में GST वाली कोई sales नहीं</div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #F1F5F9' }}>
-                      {['GST Rate', 'Taxable', 'CGST', 'SGST', 'IGST', 'Total GST', 'B2B Taxable', 'B2C Taxable', 'Invoices'].map(h => (
-                        <th key={h} style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8, whiteSpace: 'nowrap' }}>{h === 'GST Rate' ? <span style={{ textAlign: 'left', display: 'block' }}>{h}</span> : h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {gstOutput.map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #F8FAFC' }}>
-                        <td style={{ padding: '12px', textAlign: 'left' }}><span style={{ background: '#EDE9FE', color: '#6D28D9', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700 }}>{r.rate}%</span></td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.taxable)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.cgst)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.sgst)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.igst)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#DC2626', fontSize: 13 }}>₹{fmt(r.total_gst)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 12, color: '#6366F1' }}>₹{fmt(r.b2b_taxable)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 12, color: '#064E3B' }}>₹{fmt(r.b2c_taxable)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 12, color: '#94A3B8' }}>{r.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: '#F8FAFC', borderTop: '2px solid #E2E8F0' }}>
-                      <td style={{ padding: '12px', fontWeight: 700, fontSize: 12, color: '#374151' }}>TOTAL</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>₹{fmt(totalTaxable)}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>₹{fmt(totalCGST)}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>₹{fmt(totalSGST)}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>₹{fmt(totalIGST)}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 800, color: '#DC2626', fontSize: 15 }}>₹{fmt(totalOutputGST)}</td>
-                      <td colSpan={3}></td>
-                    </tr>
-                  </tfoot>
-                </table>
+            {returnStatus && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: returnStatus.ok ? '#dcfce7' : '#fef9c3',
+                color: returnStatus.ok ? '#166534' : '#854d0e',
+                padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+              }}>
+                {returnStatus.msg}
               </div>
             )}
           </div>
 
-          {/* ITC Table */}
-          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #F1F5F9', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: 20, animation: 'fadeUp 0.4s ease 0.4s both' }}>
-            <div style={{ padding: '16px 18px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontFamily: 'Playfair Display,serif', fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 2 }}>📥 Input Tax Credit (GSTR-2)</div>
-                <div style={{ fontSize: 12, color: '#94A3B8' }}>GST paid on purchases (ITC claim)</div>
-              </div>
-              <span style={{ background: '#DCFCE7', color: '#166534', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>{fmtN(totalITC)}</span>
+          {/* ── SECTION 2: GST CALCULATION ── */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>
+              🧮 GST हिसाब / Calculation
             </div>
-            {itcSlabs.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#94A3B8', padding: 30, fontSize: 13 }}>इस period में कोई ITC नहीं</div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+
+            {/* GST Collected — clickable drill-down */}
+            <div
+              onClick={() => openDrill('sales')}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 16px', background: drillType === 'sales' ? '#dcfce7' : '#f0fdf4',
+                borderRadius: 10, marginBottom: 10, cursor: 'pointer',
+                border: `1.5px solid ${drillType === 'sales' ? '#86efac' : 'transparent'}`,
+                transition: 'all 0.2s',
+              }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#065f46' }}>
+                  ✅ GST वसूला (Output) &nbsp;
+                  <span style={{ fontSize: 11, background: '#bbf7d0', color: '#065f46', padding: '2px 8px', borderRadius: 20 }}>
+                    {drillType === 'sales' ? '▲ बंद करें' : '▼ Sales देखें'}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                  Customers से बिक्री में लिया • CGST ₹{fmt(summary.sales.cgst)} + SGST ₹{fmt(summary.sales.sgst)} + IGST ₹{fmt(summary.sales.igst)}
+                </div>
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#059669' }}>+₹{fmt(gstCollected)}</div>
+            </div>
+
+            {/* Sales Drill-down */}
+            {drillType === 'sales' && (
+              <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                {drillLoading ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>⏳ लोड हो रहा है...</div>
+                ) : drillData.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>इस महीने कोई sales नहीं</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#dcfce7' }}>
+                          <th style={thStyle}>Invoice</th>
+                          <th style={thStyle}>Product</th>
+                          <th style={thStyle}>Taxable</th>
+                          <th style={thStyle}>GST</th>
+                          <th style={thStyle}>Total</th>
+                          <th style={thStyle}>Type</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {drillData.map((s, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <td style={tdStyle}>{s.invoice_number}</td>
+                            <td style={tdStyle}>{s.product_name || (s.items?.length > 1 ? `${s.items.length} items` : s.items?.[0]?.product_name)}</td>
+                            <td style={tdStyle}>₹{fmt(s.taxable_amount)}</td>
+                            <td style={{ ...tdStyle, color: '#059669', fontWeight: 700 }}>₹{fmt(s.total_gst)}</td>
+                            <td style={{ ...tdStyle, fontWeight: 700 }}>₹{fmt(s.total_amount)}</td>
+                            <td style={tdStyle}>
+                              <span style={{ background: s.invoice_type === 'B2B' ? '#ede9fe' : '#dcfce7', color: s.invoice_type === 'B2B' ? '#6d28d9' : '#065f46', padding: '1px 6px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>
+                                {s.invoice_type}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* GST Input Credit (ITC) — clickable drill-down */}
+            <div
+              onClick={() => openDrill('purchases')}
+              style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 16px', background: drillType === 'purchases' ? '#dbeafe' : '#eff6ff',
+                borderRadius: 10, marginBottom: 10, cursor: 'pointer',
+                border: `1.5px solid ${drillType === 'purchases' ? '#93c5fd' : 'transparent'}`,
+                transition: 'all 0.2s',
+              }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1e40af' }}>
+                  🛒 GST Input Credit (ITC) &nbsp;
+                  <span style={{ fontSize: 11, background: '#bfdbfe', color: '#1e40af', padding: '2px 8px', borderRadius: 20 }}>
+                    {drillType === 'purchases' ? '▲ बंद करें' : '▼ Purchases देखें'}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                  Suppliers को खरीद में दिया • CGST ₹{fmt(summary.purchases.cgst)} + SGST ₹{fmt(summary.purchases.sgst)} + IGST ₹{fmt(summary.purchases.igst)}
+                </div>
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#2563eb' }}>−₹{fmt(gstITC)}</div>
+            </div>
+
+            {/* Purchases Drill-down */}
+            {drillType === 'purchases' && (
+              <div style={{ background: '#eff6ff', borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                {drillLoading ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>⏳ लोड हो रहा है...</div>
+                ) : drillData.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>इस महीने कोई purchases नहीं</div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#dbeafe' }}>
+                          <th style={thStyle}>Bill No</th>
+                          <th style={thStyle}>Product</th>
+                          <th style={thStyle}>Supplier</th>
+                          <th style={thStyle}>Taxable</th>
+                          <th style={thStyle}>ITC</th>
+                          <th style={thStyle}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {drillData.map((p, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <td style={tdStyle}>{p.invoice_number}</td>
+                            <td style={tdStyle}>{p.product_name || (p.items?.length > 1 ? `${p.items.length} items` : p.items?.[0]?.product_name)}</td>
+                            <td style={tdStyle}>{p.supplier_name || '—'}</td>
+                            <td style={tdStyle}>₹{fmt(p.taxable_amount)}</td>
+                            <td style={{ ...tdStyle, color: '#2563eb', fontWeight: 700 }}>₹{fmt(p.total_gst)}</td>
+                            <td style={{ ...tdStyle, fontWeight: 700 }}>₹{fmt(p.total_amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {gstITC === 0 && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: '#92400e' }}>
+                ⚠️ कोई ITC claim नहीं — ज़्यादा tax भर रहे हैं / No ITC claimed — you may be overpaying tax
+              </div>
+            )}
+
+            <div style={{ borderTop: '2px dashed #e5e7eb', margin: '8px 0 14px' }} />
+
+            {/* Net Payable */}
+            <div style={{
+              padding: '18px 20px', borderRadius: 12,
+              background: isPayable ? '#fef2f2' : isRefund ? '#f0fdf4' : '#f8fafc',
+              border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151' }}>
+                    {isRefund ? '💰 वापसी (Refund)' : '💸 शुद्ध देय (Net Payable)'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                    ₹{fmt(gstCollected)} − ₹{fmt(gstITC)} = ₹{fmt(netPayable)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: isPayable ? '#ef4444' : isRefund ? '#059669' : '#374151' }}>
+                    ₹{fmt(Math.abs(netPayable))}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: isPayable ? '#ef4444' : isRefund ? '#059669' : '#374151' }}>
+                    {isPayable ? '▲ भरना है / You Pay' : isRefund ? '▼ वापस मिलेगा / Refund' : 'All Clear ✅'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── SECTION 3: GSTR-3B TABLE ── */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 14 }}>
+              📋 GSTR-3B सारांश / Summary
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f3f4f6' }}>
+                    <th style={{ ...thStyle, textAlign: 'left' }}>विवरण / Description</th>
+                    <th style={thStyle}>CGST</th>
+                    <th style={thStyle}>SGST</th>
+                    <th style={thStyle}>IGST</th>
+                    <th style={thStyle}>कुल / Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ background: '#f0fdf4' }}>
+                    <td style={{ ...tdStyle, fontWeight: 700, color: '#065f46' }}>📈 Output (Sales)</td>
+                    <td style={tdStyle}>₹{fmt(summary.sales.cgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.sales.sgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.sales.igst)}</td>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: '#059669' }}>₹{fmt(summary.sales.total_gst)}</td>
+                  </tr>
+                  <tr style={{ background: '#eff6ff' }}>
+                    <td style={{ ...tdStyle, fontWeight: 700, color: '#1e40af' }}>🛒 Input / ITC (Purchase)</td>
+                    <td style={tdStyle}>₹{fmt(summary.purchases.cgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.purchases.sgst)}</td>
+                    <td style={tdStyle}>₹{fmt(summary.purchases.igst)}</td>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: '#2563eb' }}>₹{fmt(summary.purchases.total_gst)}</td>
+                  </tr>
+                  <tr style={{ background: isPayable ? '#fef2f2' : '#f0fdf4', borderTop: '2px solid #e5e7eb' }}>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: isPayable ? '#991b1b' : '#065f46' }}>
+                      {isPayable ? '💸 Net Payable' : '💰 Net Refund'}
+                    </td>
+                    <td style={tdStyle}>₹{fmt((summary.sales.cgst || 0) - (summary.purchases.cgst || 0))}</td>
+                    <td style={tdStyle}>₹{fmt((summary.sales.sgst || 0) - (summary.purchases.sgst || 0))}</td>
+                    <td style={tdStyle}>₹{fmt((summary.sales.igst || 0) - (summary.purchases.igst || 0))}</td>
+                    <td style={{ ...tdStyle, fontWeight: 900, fontSize: 15, color: isPayable ? '#ef4444' : '#059669' }}>
+                      ₹{fmt(Math.abs(netPayable))}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── SECTION 4: B2B / B2C CARDS ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+            <div className="card" style={{ borderLeft: '4px solid #6366f1' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 4 }}>🏢 B2B</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>GSTIN वाले ग्राहक</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2b_count}</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>invoices</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#6366f1' }}>₹{fmt(summary.sales.b2b_taxable)}</div>
+            </div>
+            <div className="card" style={{ borderLeft: '4px solid #10b981' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#10b981', marginBottom: 4 }}>👤 B2C</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>बिना GSTIN ग्राहक</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2c_count}</div>
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>invoices</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#10b981' }}>₹{fmt(summary.sales.b2c_taxable)}</div>
+            </div>
+          </div>
+
+          {/* ── SECTION 5: B2B INVOICE LIST ── */}
+          {summary.gstr1.b2b_invoices.length === 0 ? (
+            <div className="card" style={{ marginBottom: 20, textAlign: 'center', padding: 24, color: '#9ca3af' }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>कोई B2B Invoice नहीं / No B2B Invoices</div>
+              <div style={{ fontSize: 12 }}>💡 Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
+            </div>
+          ) : (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 10 }}>
+                🧾 B2B Invoices — GSTR-1 के लिए
+              </div>
+
+              {/* Desktop */}
+              <div className="table-container hidden-xs">
+                <table>
                   <thead>
-                    <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #F1F5F9' }}>
-                      {['GST Rate', 'Taxable Amount', 'CGST ITC', 'SGST ITC', 'IGST ITC', 'Total ITC'].map(h => (
-                        <th key={h} style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8 }}>{h === 'GST Rate' ? <span style={{ textAlign: 'left', display: 'block' }}>{h}</span> : h}</th>
-                      ))}
+                    <tr>
+                      <th>Invoice No</th>
+                      <th>खरीदार / Buyer</th>
+                      <th>GSTIN</th>
+                      <th>Taxable ₹</th>
+                      <th>GST%</th>
+                      <th>कुल / Total</th>
+                      <th>Type</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {itcSlabs.map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #F8FAFC' }}>
-                        <td style={{ padding: '12px' }}><span style={{ background: '#FEF9C3', color: '#92400E', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700 }}>{r.rate}%</span></td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.taxable)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.cgst)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.sgst)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontSize: 13, color: '#374151' }}>₹{fmt(r.igst)}</td>
-                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 800, color: '#059669', fontSize: 14 }}>₹{fmt(r.total_itc)}</td>
+                    {summary.gstr1.b2b_invoices.map((inv, i) => (
+                      <tr key={i}>
+                        <td style={{ color: '#6366f1', fontWeight: 600 }}>{inv.invoice_number}</td>
+                        <td style={{ fontWeight: 600 }}>{inv.buyer_name || '—'}</td>
+                        <td style={{ fontSize: 11, color: '#9ca3af' }}>{inv.buyer_gstin}</td>
+                        <td>₹{fmt(inv.taxable_amount)}</td>
+                        <td>{inv.gst_rate}%</td>
+                        <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(inv.total)}</td>
+                        <td>
+                          <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
+                            {inv.gst_type}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot>
-                    <tr style={{ background: '#F8FAFC', borderTop: '2px solid #E2E8F0' }}>
-                      <td colSpan={5} style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#374151' }}>TOTAL ITC</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 800, color: '#059669', fontSize: 15 }}>₹{fmt(totalITC)}</td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
-            )}
-          </div>
 
-          {/* GSTR-3B Summary */}
-          <div style={{ background: '#fff', borderRadius: 16, padding: '20px', border: '1px solid #F1F5F9', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', animation: 'fadeUp 0.4s ease 0.5s both' }}>
-            <div style={{ fontFamily: 'Playfair Display,serif', fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 14 }}>📝 GSTR-3B Filing Summary</div>
-            <div style={{ background: '#F8FAFC', borderRadius: 12, padding: '14px 16px', fontSize: 13, color: '#374151', lineHeight: 2 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {[
-                  { label: '3.1 Outward taxable supplies', value: `₹${fmt(totalTaxable)}`, sub: '' },
-                  { label: '3.1 Total output tax', value: `₹${fmt(totalOutputGST)}`, sub: '' },
-                  { label: '4 ITC available', value: `₹${fmt(totalITC)}`, sub: '', color: '#059669' },
-                  { label: '6.1 Net Tax Payable', value: `₹${fmt(netGSTPayable)}`, sub: '', color: netGSTPayable > 0 ? '#DC2626' : '#059669', bold: true },
-                  { label: '  — IGST', value: `₹${fmt(totalIGST)}`, sub: '' },
-                  { label: '  — CGST', value: `₹${fmt(totalCGST)}`, sub: '' },
-                  { label: '  — SGST', value: `₹${fmt(totalSGST)}`, sub: '' },
-                  { label: '4B ITC on purchases', value: `₹${fmt(totalITC)}`, sub: '' },
-                ].map((row, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #F1F5F9' }}>
-                    <span style={{ color: '#64748B' }}>{row.label}</span>
-                    <span style={{ fontWeight: row.bold ? 800 : 700, color: row.color || '#0F172A' }}>{row.value}</span>
+              {/* Mobile */}
+              <div className="show-xs" style={{ flexDirection: 'column', gap: 10 }}>
+                {summary.gstr1.b2b_invoices.map((inv, i) => (
+                  <div key={i} className="card" style={{ borderLeft: '3px solid #6366f1' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div style={{ fontWeight: 700, color: '#6366f1', fontSize: 13 }}>{inv.invoice_number}</div>
+                      <div style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(inv.total)}</div>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>{inv.buyer_name}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af' }}>GSTIN: {inv.buyer_gstin} • GST {inv.gst_rate}%</div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ marginTop: 14, padding: '12px 14px', background: '#FFFBEB', borderRadius: 10, border: '1px solid #FDE68A', fontSize: 12, color: '#92400E' }}>
-              ⚠️ <strong>Note:</strong> Ye summary approximate hai. Final filing ke liye CA ya GST portal se verify karein. Due date: 20th of next month (GSTR-3B)
+          )}
+
+          {/* ── SECTION 6: B2C SUMMARY ── */}
+          <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #10b981' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>👥 B2C सारांश / Summary</div>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>सामान्य ग्राहक — बिना GSTIN</div>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+              {[
+                { label: 'INVOICES', value: summary.gstr1.b2c_summary.count,          color: '#374151' },
+                { label: 'TAXABLE', value: `₹${fmt(summary.gstr1.b2c_summary.taxable_amount)}`, color: '#374151' },
+                { label: 'GST',     value: `₹${fmt(summary.gstr1.b2c_summary.total_gst)}`,      color: '#6366f1' },
+                { label: 'TOTAL',   value: `₹${fmt(summary.gstr1.b2c_summary.total_amount)}`,   color: '#10b981' },
+              ].map((item, i) => (
+                <div key={i}>
+                  <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{item.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: item.color }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── SECTION 7: EXPORT ── */}
+          <div className="card">
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>
+              📤 CA को दें / Export for CA
+            </div>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16 }}>
+              यह फ़ाइल अपने CA को दे सकते हैं / Share directly with your CA
+            </div>
+
+            {/* Individual exports (unchanged) */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+              <button onClick={() => exportCSV('gstr1')}
+                style={{ padding: '10px 16px', background: '#f0fdf4', color: '#059669', border: '1.5px solid #bbf7d0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                📊 GSTR-1 CSV
+              </button>
+              <button onClick={() => exportCSV('gstr3b')}
+                style={{ padding: '10px 16px', background: '#ede9fe', color: '#6d28d9', border: '1.5px solid #c4b5fd', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                📊 GSTR-3B CSV
+              </button>
+              <button onClick={exportJSON}
+                style={{ padding: '10px 16px', background: '#fff7ed', color: '#c2410c', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                📦 JSON
+              </button>
+            </div>
+
+            {/* ── ZIP Export button ── */}
+            <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 10 }}>
+                📁 <strong>ZIP में सब एक साथ:</strong> GSTR1 + GSTR3B, CSV और JSON दोनों
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>
+                  Structure: <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR1/gstr1.csv</code>,{' '}
+                  <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR1/gstr1.json</code>,{' '}
+                  <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR3B/gstr3b.csv</code>,{' '}
+                  <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR3B/gstr3b.json</code>
+                </div>
+              </div>
+              <button
+                onClick={exportZIP}
+                disabled={zipping}
+                style={{
+                  padding: '11px 22px',
+                  background: zipping ? '#f3f4f6' : 'linear-gradient(135deg, #1e40af, #6366f1)',
+                  color: zipping ? '#9ca3af' : '#fff',
+                  border: 'none', borderRadius: 9,
+                  fontSize: 13, fontWeight: 700, cursor: zipping ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  boxShadow: zipping ? 'none' : '0 2px 8px rgba(99,102,241,0.3)',
+                  transition: 'all 0.2s',
+                }}>
+                {zipping ? '⏳ बना रहे हैं...' : '🗜️ Download ZIP (GSTR1 + GSTR3B)'}
+              </button>
             </div>
           </div>
         </>
       )}
+
+      <style>{`
+        @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
+        @media (min-width: 641px) { .show-xs { display: none !important; } }
+      `}</style>
     </Layout>
   );
 }
+
+// ── Table style helpers (unchanged) ─────────────────────────────────────────
+const thStyle = {
+  padding: '8px 12px',
+  textAlign: 'right',
+  fontWeight: 700,
+  fontSize: 12,
+  color: '#6b7280',
+  whiteSpace: 'nowrap',
+};
+const tdStyle = {
+  padding: '8px 12px',
+  textAlign: 'right',
+  fontSize: 12,
+  color: '#374151',
+  whiteSpace: 'nowrap',
+};

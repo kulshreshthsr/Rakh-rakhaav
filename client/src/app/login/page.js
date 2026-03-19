@@ -34,318 +34,81 @@ export default function LoginPage() {
 
   return (
     <>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
-      <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #060D1A; }
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#0B1D35', display: 'flex', flexDirection: 'column' }}>
 
-        .login-root {
-          min-height: 100vh;
-          background: #060D1A;
-          display: flex;
-          flex-direction: column;
-          font-family: 'DM Sans', sans-serif;
-          position: relative;
-          overflow: hidden;
-        }
-
-        /* Animated background blobs */
-        .blob {
-          position: fixed;
-          border-radius: 50%;
-          filter: blur(80px);
-          opacity: 0.12;
-          pointer-events: none;
-          animation: blobFloat 8s ease-in-out infinite;
-        }
-        .blob-1 { width: 500px; height: 500px; background: #059669; top: -100px; left: -100px; animation-delay: 0s; }
-        .blob-2 { width: 400px; height: 400px; background: #0B1D35; top: 50%; right: -150px; animation-delay: -3s; }
-        .blob-3 { width: 300px; height: 300px; background: #10B981; bottom: -50px; left: 30%; animation-delay: -6s; }
-
-        @keyframes blobFloat {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(20px, -30px) scale(1.05); }
-          66% { transform: translate(-15px, 20px) scale(0.95); }
-        }
-
-        /* Grid pattern overlay */
-        .grid-overlay {
-          position: fixed; inset: 0; pointer-events: none;
-          background-image:
-            linear-gradient(rgba(5,150,105,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(5,150,105,0.04) 1px, transparent 1px);
-          background-size: 40px 40px;
-        }
-
-        /* Top section */
-        .top-section {
-          padding: 48px 24px 32px;
-          display: flex; flex-direction: column; align-items: center;
-          text-align: center; position: relative; z-index: 1;
-        }
-
-        .logo-mark {
-          width: 64px; height: 64px;
-          background: linear-gradient(135deg, #059669 0%, #0B1D35 100%);
-          border-radius: 18px;
-          display: flex; align-items: center; justify-content: center;
-          font-family: 'Playfair Display', serif;
-          font-size: 28px; color: #fff; font-weight: 800;
-          margin-bottom: 20px;
-          box-shadow: 0 0 0 1px rgba(5,150,105,0.3), 0 20px 40px rgba(5,150,105,0.2);
-          animation: logoAppear 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
-        }
-
-        @keyframes logoAppear {
-          from { opacity: 0; transform: scale(0.5) rotate(-10deg); }
-          to   { opacity: 1; transform: scale(1) rotate(0deg); }
-        }
-
-        .brand-name {
-          font-family: 'Playfair Display', serif;
-          font-size: 36px; font-weight: 800;
-          color: #fff;
-          letter-spacing: -1px;
-          margin-bottom: 6px;
-          animation: fadeUp 0.5s ease 0.2s both;
-        }
-        .brand-name span { color: #10B981; }
-
-        .brand-sub {
-          font-size: 13px; color: rgba(255,255,255,0.35);
-          font-weight: 400; letter-spacing: 2px; text-transform: uppercase;
-          margin-bottom: 28px;
-          animation: fadeUp 0.5s ease 0.3s both;
-        }
-
-        .feature-pills {
-          display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-          animation: fadeUp 0.5s ease 0.4s both;
-        }
-        .pill {
-          background: rgba(5,150,105,0.1);
-          border: 1px solid rgba(5,150,105,0.25);
-          border-radius: 100px; padding: 6px 14px;
-          font-size: 12px; color: #6EE7B7; font-weight: 500;
-          backdrop-filter: blur(8px);
-        }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Wave divider */
-        .wave-divider { position: relative; z-index: 1; line-height: 0; }
-
-        /* Card section */
-        .card-section {
-          flex: 1;
-          background: #F8FAFC;
-          padding: 36px 24px 48px;
-          position: relative; z-index: 1;
-          animation: cardSlide 0.5s ease 0.3s both;
-        }
-
-        @keyframes cardSlide {
-          from { opacity: 0; transform: translateY(30px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .card-inner { max-width: 420px; margin: 0 auto; }
-
-        .greeting { font-size: 28px; font-weight: 700; color: #0F172A; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .greeting-sub { font-size: 14px; color: #94A3B8; margin-bottom: 28px; font-weight: 400; }
-
-        /* Error */
-        .error-box {
-          background: #FEF2F2; border: 1px solid #FECACA;
-          border-radius: 12px; padding: 12px 16px;
-          font-size: 13px; color: #DC2626;
-          margin-bottom: 20px;
-          display: flex; align-items: center; gap: 8px;
-          animation: shake 0.4s ease;
-        }
-        @keyframes shake {
-          0%,100% { transform: translateX(0); }
-          20%,60% { transform: translateX(-4px); }
-          40%,80% { transform: translateX(4px); }
-        }
-
-        /* Form */
-        .field-label {
-          font-size: 11px; font-weight: 700; color: #64748B;
-          text-transform: uppercase; letter-spacing: 1px;
-          display: block; margin-bottom: 8px;
-        }
-
-        .field-wrap { margin-bottom: 18px; }
-
-        .input-box {
-          width: 100%; padding: 14px 16px;
-          border: 2px solid #E2E8F0; border-radius: 14px;
-          font-size: 15px; color: #0F172A;
-          background: #fff; outline: none;
-          font-family: 'DM Sans', sans-serif;
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .input-box:focus {
-          border-color: #059669;
-          box-shadow: 0 0 0 4px rgba(5,150,105,0.08);
-        }
-        .input-box::placeholder { color: #CBD5E1; }
-
-        .pass-wrap { position: relative; }
-        .pass-toggle {
-          position: absolute; right: 14px; top: 50%;
-          transform: translateY(-50%);
-          background: none; border: none; cursor: pointer;
-          font-size: 18px; padding: 0; color: #94A3B8;
-          transition: color 0.2s;
-        }
-        .pass-toggle:hover { color: #059669; }
-
-        .submit-btn {
-          width: 100%; padding: 15px;
-          background: linear-gradient(135deg, #059669 0%, #047857 100%);
-          color: #fff; border: none; border-radius: 14px;
-          font-size: 16px; font-weight: 700; cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          box-shadow: 0 4px 20px rgba(5,150,105,0.35);
-          transition: all 0.2s;
-          position: relative; overflow: hidden;
-        }
-        .submit-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 28px rgba(5,150,105,0.45);
-        }
-        .submit-btn:active:not(:disabled) { transform: translateY(0); }
-        .submit-btn:disabled {
-          background: #94A3B8; box-shadow: none; cursor: not-allowed;
-        }
-        .submit-btn::after {
-          content: '';
-          position: absolute; inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-          pointer-events: none;
-        }
-
-        .signup-link {
-          text-align: center; font-size: 14px; color: #64748B; margin-top: 24px;
-        }
-        .signup-link a { color: #059669; font-weight: 700; text-decoration: none; }
-        .signup-link a:hover { text-decoration: underline; }
-
-        .trust-badges {
-          display: flex; justify-content: center; gap: 24px; margin-top: 32px;
-          padding-top: 24px; border-top: 1px solid #F1F5F9;
-        }
-        .trust-item { font-size: 11px; color: #CBD5E1; font-weight: 500; display: flex; align-items: center; gap: 4px; }
-
-        /* Decorative dots */
-        .dots-deco {
-          position: absolute; right: 20px; top: 20px;
-          display: grid; grid-template-columns: repeat(5, 6px); gap: 5px;
-          opacity: 0.15; pointer-events: none;
-        }
-        .dot { width: 6px; height: 6px; border-radius: 50%; background: #059669; }
-
-        @media (min-width: 640px) {
-          .top-section { padding: 60px 32px 40px; }
-          .brand-name { font-size: 44px; }
-          .card-section { padding: 48px 32px 60px; }
-        }
-      `}</style>
-
-      <div className="login-root">
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        <div className="blob blob-3" />
-        <div className="grid-overlay" />
-
-        {/* Top Brand Section */}
-        <div className="top-section">
-          <div className="logo-mark">र</div>
-          <div className="brand-name">रख<span>रखाव</span></div>
-          <div className="brand-sub">Business Manager</div>
-          <div className="feature-pills">
-            {['📦 Stock Track', '💰 Sales & GST', '📊 Profit Reports', '📒 Udhaar'].map((f, i) => (
-              <div key={i} className="pill">{f}</div>
+        <div style={{ padding: '48px 32px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ fontSize: 42, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6, fontFamily: 'serif' }}>
+            रख<span style={{ color: '#10B981' }}>रखाव</span>
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>Smart Business Manager</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['📦 Stock Track', '💰 Sales & GST', '📊 Profit Reports'].map((f, i) => (
+              <div key={i} style={{ background: 'rgba(5,150,105,0.15)', border: '1px solid rgba(5,150,105,0.3)', borderRadius: 20, padding: '6px 14px', fontSize: 12, color: '#6EE7B7', fontWeight: 500 }}>
+                {f}
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Wave */}
-        <div className="wave-divider">
-          <svg viewBox="0 0 375 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
-            <path d="M0 0 C80 48 295 48 375 0 L375 48 L0 48 Z" fill="#F8FAFC"/>
+        <div style={{ background: '#0B1D35', marginBottom: -1 }}>
+          <svg viewBox="0 0 375 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
+            <path d="M0 0 C100 40 275 40 375 0 L375 40 L0 40 Z" fill="#F1F5F9"/>
           </svg>
         </div>
 
-        {/* Card */}
-        <div className="card-section">
-          <div className="card-inner" style={{ position: 'relative' }}>
-            {/* Decorative dots */}
-            <div className="dots-deco">
-              {Array(20).fill(0).map((_, i) => <div key={i} className="dot" />)}
+        <div style={{ flex: 1, background: '#F1F5F9', padding: '28px 24px 40px', maxWidth: 440, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#0F172A', marginBottom: 4, letterSpacing: -0.5 }}>Welcome back! 👋</h1>
+          <p style={{ color: '#64748B', fontSize: 14, marginBottom: 28 }}>Sign in to continue</p>
+
+          {error && (
+            <div style={{ background: '#FEF2F2', color: '#DC2626', padding: '12px 16px', borderRadius: 10, fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Username</label>
+              <input type="text" placeholder="your_username" value={username}
+                onChange={e => setUsername(e.target.value)} required
+                style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E2E8F0', borderRadius: 12, fontSize: 15, color: '#0F172A', background: '#fff', boxSizing: 'border-box', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                onFocus={e => e.target.style.borderColor = '#059669'}
+                onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+              />
             </div>
 
-            <div className="greeting">Welcome back! 👋</div>
-            <div className="greeting-sub">Sign in to your account</div>
-
-            {error && (
-              <div className="error-box">
-                <span>⚠️</span> {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="field-wrap">
-                <label className="field-label">Username</label>
-                <input
-                  className="input-box"
-                  type="text"
-                  placeholder="your_username"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  required
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Password</label>
+              <div style={{ position: 'relative' }}>
+                <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password}
+                  onChange={e => setPassword(e.target.value)} required
+                  style={{ width: '100%', padding: '14px 48px 14px 16px', border: '1.5px solid #E2E8F0', borderRadius: 12, fontSize: 15, color: '#0F172A', background: '#fff', boxSizing: 'border-box', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                  onFocus={e => e.target.style.borderColor = '#059669'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F0'}
                 />
+                <button type="button" onClick={() => setShowPass(!showPass)}
+                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 18, padding: 0 }}>
+                  {showPass ? '🙈' : '👁️'}
+                </button>
               </div>
-
-              <div className="field-wrap">
-                <label className="field-label">Password</label>
-                <div className="pass-wrap">
-                  <input
-                    className="input-box"
-                    type={showPass ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    style={{ paddingRight: 48 }}
-                  />
-                  <button type="button" className="pass-toggle" onClick={() => setShowPass(!showPass)}>
-                    {showPass ? '🙈' : '👁️'}
-                  </button>
-                </div>
-              </div>
-
-              <button type="submit" className="submit-btn" disabled={loading}>
-                {loading ? '⏳ Signing in...' : 'Sign in →'}
-              </button>
-            </form>
-
-            <div className="signup-link">
-              Don't have an account?{' '}
-              <a href="/register">Create one free</a>
             </div>
 
-            <div className="trust-badges">
-              <div className="trust-item">🔒 Secure</div>
-              <div className="trust-item">⚡ Fast</div>
-              <div className="trust-item">📱 Mobile Ready</div>
-              <div className="trust-item">🇮🇳 GST Ready</div>
-            </div>
+            <button type="submit" disabled={loading}
+              style={{ width: '100%', padding: '14px', background: loading ? '#94A3B8' : 'linear-gradient(135deg, #059669, #047857)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 14px rgba(5,150,105,0.35)', fontFamily: 'Inter, sans-serif' }}>
+              {loading ? '⏳ Signing in...' : 'Sign in →'}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: 14, color: '#64748B', marginTop: 24 }}>
+            Don't have an account?{' '}
+            <a href="/register" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Create one free</a>
+          </p>
+
+          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center', gap: 20 }}>
+            {['🔒 Secure', '⚡ Fast', '📱 Mobile Ready'].map((b, i) => (
+              <div key={i} style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{b}</div>
+            ))}
           </div>
         </div>
       </div>
