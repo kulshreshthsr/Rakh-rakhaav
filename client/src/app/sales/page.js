@@ -28,11 +28,64 @@ const numberToWords = (num) => {
   return convert(rupees) + ' Rupees' + (paise ? ' and '+convert(paise)+' Paise' : '') + ' Only';
 };
 
+// ── WhatsApp message builder ──────────────────────────────────────────────────
+const buildWhatsAppMessage = (sale, shopName) => {
+  const saleDate = new Date(sale.createdAt || sale.sold_at)
+    .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const payLabel =
+    sale.payment_type === 'cash'   ? '✅ Cash (Paid)'   :
+    sale.payment_type === 'upi'    ? '✅ UPI (Paid)'    :
+    sale.payment_type === 'bank'   ? '✅ Bank Transfer' : '📒 Udhaar (Credit)';
+
+  const itemLines = (sale.items && sale.items.length > 0)
+    ? sale.items.map((item, i) =>
+        `  ${i + 1}. ${item.product_name} × ${item.quantity} @ ₹${fmt(item.price_per_unit)} = ₹${fmt(item.total_amount)}`
+      ).join('\n')
+    : `  1. ${sale.product_name} × ${sale.quantity} @ ₹${fmt(sale.price_per_unit)} = ₹${fmt(sale.total_amount)}`;
+
+  const isIGST = sale.gst_type === 'IGST' ||
+    (sale.items && sale.items.some(i => i.gst_type === 'IGST'));
+
+  const gstLine = (sale.total_gst && sale.total_gst > 0)
+    ? isIGST
+      ? `🔹 IGST: ₹${fmt(sale.igst_amount)}`
+      : `🔹 CGST: ₹${fmt(sale.cgst_amount)}  |  SGST: ₹${fmt(sale.sgst_amount)}`
+    : `🔹 GST: NIL`;
+
+  const greeting = sale.buyer_name && sale.buyer_name !== 'Walk-in Customer'
+    ? `Namaste *${sale.buyer_name}* ji! 🙏\n\n`
+    : '';
+
+  return [
+    `${greeting}🧾 *Invoice / Bill Details*`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🏪 Shop: *${shopName || 'Rakhaav'}*`,
+    `📄 Invoice No: *${sale.invoice_number}*`,
+    `📅 Date: ${saleDate}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `📦 *Items:*`,
+    itemLines,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `💵 Taxable Amount: ₹${fmt(sale.taxable_amount)}`,
+    gstLine,
+    `💰 *Total Amount: ₹${fmt(sale.total_amount)}*`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `💳 Payment: ${payLabel}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🙏 Aapka business hamare liye bahut important hai!`,
+    `Thank you for choosing *${shopName || 'Rakhaav'}* 😊`,
+    ``,
+    `_Powered by Rakhaav Business Manager_`,
+  ].join('\n');
+};
+
 export default function SalesPage() {
   const router = useRouter();
   const [sales, setSales]           = useState([]);
   const [summary, setSummary]       = useState({});
   const [products, setProducts]     = useState([]);
+  const [shopName, setShopName]     = useState('');
   const [loading, setLoading]       = useState(true);
   const [showModal, setShowModal]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -72,6 +125,15 @@ export default function SalesPage() {
       setProducts(Array.isArray(data) ? data : data.products || []);
     } catch {}
   };
+
+  // fetch shop name once on load for WhatsApp message
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return;
+    fetch(`${API}/api/auth/shop`, { headers: { Authorization: `Bearer ${getToken()}` } })
+      .then(r => r.json())
+      .then(shop => setShopName(shop.name || ''))
+      .catch(() => {});
+  }, []);
 
   const updateItem = (index, field, value) => {
     const updated = [...items];
@@ -150,60 +212,15 @@ export default function SalesPage() {
     } catch { alert('Invoice generate nahi hua'); }
   };
 
-  // ── UPGRADE 2: WhatsApp PDF Share ───────────────────────────────────────────
-  // Fix: Browser blocks multiple window.open calls after async/setTimeout.
-  // Solution: Open WhatsApp FIRST (direct from user gesture via anchor click),
-  // then open invoice tab. Both happen synchronously before any await.
-  const shareWhatsApp = async (sale) => {
-    try {
-      // ── Step 1: Build WA message immediately (no async needed) ──────────────
-      const fileName = `Invoice_${sale.invoice_number}.pdf`;
-
-      const payLabel =
-        sale.payment_type === 'cash'  ? 'Paid (Cash)'    :
-        sale.payment_type === 'upi'   ? 'Paid (UPI)'     :
-        sale.payment_type === 'bank'  ? 'Paid (Bank)'    : 'Credit (Udhaar)';
-
-      const saleDate = new Date(sale.createdAt || sale.sold_at)
-        .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-      const waMsg = [
-        '🧾 *Invoice / बिल — रखरखाव*',
-        '━━━━━━━━━━━━━━━━━━━━',
-        `📄 Bill No: *${sale.invoice_number}*`,
-        `📅 Date: ${saleDate}`,
-        `💰 Total: *₹${fmt(sale.total_amount)}*`,
-        `🏷️ Payment: ${payLabel}`,
-        '━━━━━━━━━━━━━━━━━━━━',
-        `📎 PDF: *${fileName}*`,
-        '_Invoice tab mein Ctrl+P → Save as PDF → attach karo_',
-        '',
-        '_Powered by Rakhaav Business Manager_',
-      ].join('\n');
-
-      const phone = sale.buyer_phone
-        ? sale.buyer_phone.replace(/\D/g, '')
-        : '';
-      const waUrl = phone
-        ? `https://wa.me/91${phone}?text=${encodeURIComponent(waMsg)}`
-        : `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
-
-      // ── Step 2: Open WhatsApp FIRST — direct window.open, no delay ──────────
-      // This must happen before any await, otherwise browser blocks it
-      window.open(waUrl, '_blank');
-
-      // ── Step 3: Now fetch shop data and open invoice tab ────────────────────
-      const shopRes = await fetch(`${API}/api/auth/shop`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const shop = await shopRes.json();
-
-      // Open invoice in new tab with PDF save instructions banner
-      generateInvoiceHTML(sale, shop, false, fileName);
-
-    } catch {
-      alert('Invoice share karne mein error aaya. Please try again.');
-    }
+  // ── WhatsApp share — pure text, no API call, no PDF ──────────────────────
+  const shareWhatsApp = (sale) => {
+    const msg   = buildWhatsAppMessage(sale, shopName);
+    const phone = sale.buyer_phone ? sale.buyer_phone.replace(/\D/g, '') : '';
+    // If phone number exists → open direct chat, else → open WhatsApp contact picker
+    const waUrl = phone
+      ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
   };
 
   const PayBadge = ({ type }) => {
@@ -289,10 +306,9 @@ export default function SalesPage() {
                           style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                           🖨️ Print
                         </button>
-                        {/* WA button — now triggers PDF download + WhatsApp */}
                         <button
                           onClick={() => shareWhatsApp(s)}
-                          title="Download PDF & Share on WhatsApp"
+                          title="Share on WhatsApp"
                           style={{ color: '#25d366', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                           📲 WA
                         </button>
@@ -339,9 +355,9 @@ export default function SalesPage() {
                   </button>
                   <button
                     onClick={() => shareWhatsApp(s)}
-                    title="Download PDF & Share on WhatsApp"
+                    title="Share on WhatsApp"
                     style={{ flex: 1, padding: '8px', background: '#f0fdf4', color: '#25d366', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    📲 WA PDF
+                    📲 WhatsApp
                   </button>
                   <button onClick={() => handleDelete(s._id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                     Delete
@@ -379,7 +395,6 @@ export default function SalesPage() {
                         )}
                       </div>
 
-                      {/* ✅ SearchableProductSelect — NOT TOUCHED */}
                       <div className="form-group">
                         <label className="form-label">Product *</label>
                         <SearchableProductSelect
@@ -528,7 +543,7 @@ export default function SalesPage() {
   );
 }
 
-// ── Invoice HTML Generator (UNCHANGED — existing working logic) ──────────────
+// ── Invoice HTML Generator (UNCHANGED) ───────────────────────────────────────
 function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
   const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{
     product_name: sale.product_name,
@@ -592,7 +607,6 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     ? '<div style="margin-top:8px;background:#fee2e2;border-radius:6px;padding:6px 8px"><div style="font-size:10px;font-weight:700;color:#991b1b">📒 CREDIT SALE — उधार</div><div style="font-size:11px;color:#991b1b">Amount added to customer ledger</div></div>'
     : '';
 
-  // If called from shareWhatsApp: show a "Save as PDF" banner at the top
   const pdfBanner = suggestedFileName && !autoPrint
     ? '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px">'
       + '<span style="font-size:18px">📄</span>'

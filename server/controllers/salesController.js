@@ -5,11 +5,6 @@ const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Udhaar   = require('../models/udhaarModel');
 
-// ── NEW: PDF + Cloudinary ────────────────────────────────────────────────────
-const cloudinary         = require('../config/cloudinary');
-const generateInvoicePDF = require('../utils/generateInvoicePDF');
-const { Readable }       = require('stream');
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -429,64 +424,6 @@ const getGSTSummary = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WHATSAPP PDF
-// Generate invoice PDF → upload to Cloudinary → return public URL
-// Route: GET /api/sales/:id/whatsapp-pdf
-// ─────────────────────────────────────────────────────────────────────────────
-
-const getWhatsAppPDF = async (req, res) => {
-  try {
-    const shop = await getOrCreateShop(req.user.id);
-    const sale = await Sale.findById(req.params.id);
-
-    if (!sale) {
-      return res.status(404).json({ message: 'Sale not found' });
-    }
-
-    // 1. Generate PDF buffer
-    const pdfBuffer = await generateInvoicePDF(sale, shop);
-
-    // 2. Upload buffer to Cloudinary (resource_type: raw for PDFs)
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'raw',
-          folder:        'rakhaav_invoices',
-          public_id:     `Invoice_${sale.invoice_number}`,
-          format:        'pdf',
-          overwrite:     true,
-          invalidate:    true,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-
-      const readable = new Readable();
-      readable.push(pdfBuffer);
-      readable.push(null);
-      readable.pipe(uploadStream);
-    });
-
-    // 3. Return public URL + sale details for WhatsApp message
-    res.json({
-      success:     true,
-      pdf_url:     uploadResult.secure_url,
-      invoice_no:  sale.invoice_number,
-      buyer_phone: sale.buyer_phone || null,
-      buyer_name:  sale.buyer_name  || null,
-      total:       sale.total_amount,
-      payment_type: sale.payment_type,
-    });
-
-  } catch (err) {
-    console.error('getWhatsAppPDF error:', err);
-    res.status(500).json({ message: 'PDF generate karne mein error: ' + err.message });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
   getSales,
@@ -494,5 +431,4 @@ module.exports = {
   deleteSale,
   getGSTSummary,
   getProfitSummary,
-  getWhatsAppPDF,       // ← NEW
 };
