@@ -151,28 +151,18 @@ export default function SalesPage() {
   };
 
   // ── UPGRADE 2: WhatsApp PDF Share ───────────────────────────────────────────
-  // Strategy: Generate invoice HTML → open in new tab for user to Save as PDF
-  // Simultaneously open WhatsApp with a message + PDF file name to attach
+  // Fix: Browser blocks multiple window.open calls after async/setTimeout.
+  // Solution: Open WhatsApp FIRST (direct from user gesture via anchor click),
+  // then open invoice tab. Both happen synchronously before any await.
   const shareWhatsApp = async (sale) => {
     try {
-      // 1. Fetch shop details (same as printInvoice)
-      const shopRes = await fetch(`${API}/api/auth/shop`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const shop = await shopRes.json();
-
-      // 2. Build the PDF filename
+      // ── Step 1: Build WA message immediately (no async needed) ──────────────
       const fileName = `Invoice_${sale.invoice_number}.pdf`;
 
-      // 3. Open invoice in new tab — user can Ctrl+P / Save as PDF
-      //    We pass autoPrint=false so it doesn't auto-print, giving user control
-      generateInvoiceHTML(sale, shop, false, fileName);
-
-      // 4. Build WhatsApp message
       const payLabel =
-        sale.payment_type === 'cash'  ? 'Paid (Cash)' :
-        sale.payment_type === 'upi'   ? 'Paid (UPI)'  :
-        sale.payment_type === 'bank'  ? 'Paid (Bank)' : 'Credit (Udhaar)';
+        sale.payment_type === 'cash'  ? 'Paid (Cash)'    :
+        sale.payment_type === 'upi'   ? 'Paid (UPI)'     :
+        sale.payment_type === 'bank'  ? 'Paid (Bank)'    : 'Credit (Udhaar)';
 
       const saleDate = new Date(sale.createdAt || sale.sold_at)
         .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -185,22 +175,31 @@ export default function SalesPage() {
         `💰 Total: *₹${fmt(sale.total_amount)}*`,
         `🏷️ Payment: ${payLabel}`,
         '━━━━━━━━━━━━━━━━━━━━',
-        `📎 PDF saved as: *${fileName}*`,
-        '_Attach the PDF from your Downloads folder_',
+        `📎 PDF: *${fileName}*`,
+        '_Invoice tab mein Ctrl+P → Save as PDF → attach karo_',
         '',
         '_Powered by Rakhaav Business Manager_',
       ].join('\n');
 
-      // 5. Small delay so the invoice tab opens first, then WhatsApp
-      setTimeout(() => {
-        const phone = sale.buyer_phone
-          ? sale.buyer_phone.replace(/\D/g, '')
-          : '';
-        const waUrl = phone
-          ? `https://wa.me/91${phone}?text=${encodeURIComponent(waMsg)}`
-          : `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
-        window.open(waUrl, '_blank');
-      }, 600);
+      const phone = sale.buyer_phone
+        ? sale.buyer_phone.replace(/\D/g, '')
+        : '';
+      const waUrl = phone
+        ? `https://wa.me/91${phone}?text=${encodeURIComponent(waMsg)}`
+        : `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
+
+      // ── Step 2: Open WhatsApp FIRST — direct window.open, no delay ──────────
+      // This must happen before any await, otherwise browser blocks it
+      window.open(waUrl, '_blank');
+
+      // ── Step 3: Now fetch shop data and open invoice tab ────────────────────
+      const shopRes = await fetch(`${API}/api/auth/shop`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const shop = await shopRes.json();
+
+      // Open invoice in new tab with PDF save instructions banner
+      generateInvoiceHTML(sale, shop, false, fileName);
 
     } catch {
       alert('Invoice share karne mein error aaya. Please try again.');
