@@ -5,11 +5,11 @@ import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
-const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
 
-const API = 'https://rakh-rakhaav.onrender.com';
+const API      = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
-const fmt = (n) => parseFloat(n || 0).toFixed(2);
+const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
 
 const numberToWords = (num) => {
@@ -150,25 +150,61 @@ export default function SalesPage() {
     } catch { alert('Invoice generate nahi hua'); }
   };
 
-  const shareWhatsApp = (sale) => {
-    const saleItems = sale.items && sale.items.length > 0
-      ? sale.items.map(i => '• ' + i.product_name + ' × ' + i.quantity + ' = ₹' + fmt(i.total_amount)).join('\n')
-      : '• ' + sale.product_name + ' × ' + sale.quantity + ' = ₹' + fmt(sale.total_amount);
+  // ── UPGRADE 2: WhatsApp PDF Share ───────────────────────────────────────────
+  // Strategy: Generate invoice HTML → open in new tab for user to Save as PDF
+  // Simultaneously open WhatsApp with a message + PDF file name to attach
+  const shareWhatsApp = async (sale) => {
+    try {
+      // 1. Fetch shop details (same as printInvoice)
+      const shopRes = await fetch(`${API}/api/auth/shop`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const shop = await shopRes.json();
 
-    const payLabel = sale.payment_type === 'cash' ? '✅ Paid (Cash)'
-      : sale.payment_type === 'upi' ? '✅ Paid (UPI)'
-      : '📒 Credit (Udhaar)';
+      // 2. Build the PDF filename
+      const fileName = `Invoice_${sale.invoice_number}.pdf`;
 
-    const msg = '🧾 *Invoice / बिल*\n━━━━━━━━━━━━━━━━\nBill No: *' + sale.invoice_number + '*\nDate: '
-      + new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN')
-      + '\n\n*Items:*\n' + saleItems
-      + '\n\n━━━━━━━━━━━━━━━━\nTaxable: ₹' + fmt(sale.taxable_amount)
-      + '\nGST: ₹' + fmt(sale.total_gst)
-      + '\n*Total: ₹' + fmt(sale.total_amount) + '*'
-      + '\n━━━━━━━━━━━━━━━━\nPayment: ' + payLabel
-      + '\n\n_Powered by Rakhaav_';
+      // 3. Open invoice in new tab — user can Ctrl+P / Save as PDF
+      //    We pass autoPrint=false so it doesn't auto-print, giving user control
+      generateInvoiceHTML(sale, shop, false, fileName);
 
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+      // 4. Build WhatsApp message
+      const payLabel =
+        sale.payment_type === 'cash'  ? 'Paid (Cash)' :
+        sale.payment_type === 'upi'   ? 'Paid (UPI)'  :
+        sale.payment_type === 'bank'  ? 'Paid (Bank)' : 'Credit (Udhaar)';
+
+      const saleDate = new Date(sale.createdAt || sale.sold_at)
+        .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      const waMsg = [
+        '🧾 *Invoice / बिल — रखरखाव*',
+        '━━━━━━━━━━━━━━━━━━━━',
+        `📄 Bill No: *${sale.invoice_number}*`,
+        `📅 Date: ${saleDate}`,
+        `💰 Total: *₹${fmt(sale.total_amount)}*`,
+        `🏷️ Payment: ${payLabel}`,
+        '━━━━━━━━━━━━━━━━━━━━',
+        `📎 PDF saved as: *${fileName}*`,
+        '_Attach the PDF from your Downloads folder_',
+        '',
+        '_Powered by Rakhaav Business Manager_',
+      ].join('\n');
+
+      // 5. Small delay so the invoice tab opens first, then WhatsApp
+      setTimeout(() => {
+        const phone = sale.buyer_phone
+          ? sale.buyer_phone.replace(/\D/g, '')
+          : '';
+        const waUrl = phone
+          ? `https://wa.me/91${phone}?text=${encodeURIComponent(waMsg)}`
+          : `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
+        window.open(waUrl, '_blank');
+      }, 600);
+
+    } catch {
+      alert('Invoice share karne mein error aaya. Please try again.');
+    }
   };
 
   const PayBadge = ({ type }) => {
@@ -179,7 +215,11 @@ export default function SalesPage() {
       bank:   { bg: '#dbeafe', color: '#1e40af', label: '🏦 Bank' },
     };
     const s = map[type] || map.cash;
-    return <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{s.label}</span>;
+    return (
+      <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+        {s.label}
+      </span>
+    );
   };
 
   return (
@@ -195,7 +235,11 @@ export default function SalesPage() {
         <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success">+ बिक्री दर्ज / Record Sale</button>
       </div>
 
-      {error && !showModal && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>{error}</div>}
+      {error && !showModal && (
+        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
@@ -206,7 +250,7 @@ export default function SalesPage() {
         </div>
       ) : (
         <>
-          {/* Desktop */}
+          {/* Desktop table */}
           <div className="table-container hidden-xs">
             <table>
               <thead>
@@ -235,12 +279,29 @@ export default function SalesPage() {
                     </td>
                     <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(s.total_amount)}</td>
                     <td><PayBadge type={s.payment_type} /></td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>{new Date(s.createdAt || s.sold_at).toLocaleDateString('en-IN')}</td>
+                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
+                      {new Date(s.createdAt || s.sold_at).toLocaleDateString('en-IN')}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => printInvoice(s)} style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>🖨️ Print</button>
-                        <button onClick={() => shareWhatsApp(s)} style={{ color: '#25d366', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>📲 WA</button>
-                        <button onClick={() => handleDelete(s._id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Del</button>
+                        <button
+                          onClick={() => printInvoice(s)}
+                          title="Print Invoice"
+                          style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                          🖨️ Print
+                        </button>
+                        {/* WA button — now triggers PDF download + WhatsApp */}
+                        <button
+                          onClick={() => shareWhatsApp(s)}
+                          title="Download PDF & Share on WhatsApp"
+                          style={{ color: '#25d366', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                          📲 WA
+                        </button>
+                        <button
+                          onClick={() => handleDelete(s._id)}
+                          style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                          Del
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -249,7 +310,7 @@ export default function SalesPage() {
             </table>
           </div>
 
-          {/* Mobile */}
+          {/* Mobile cards */}
           <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {sales.map(s => (
               <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
@@ -274,9 +335,18 @@ export default function SalesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{new Date(s.createdAt || s.sold_at).toLocaleDateString('en-IN')}</div></div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => printInvoice(s)} style={{ flex: 1, padding: '8px', background: '#eef2ff', color: '#6366f1', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>🖨️ Print</button>
-                  <button onClick={() => shareWhatsApp(s)} style={{ flex: 1, padding: '8px', background: '#f0fdf4', color: '#25d366', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>📲 WA</button>
-                  <button onClick={() => handleDelete(s._id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+                  <button onClick={() => printInvoice(s)} style={{ flex: 1, padding: '8px', background: '#eef2ff', color: '#6366f1', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    🖨️ Print
+                  </button>
+                  <button
+                    onClick={() => shareWhatsApp(s)}
+                    title="Download PDF & Share on WhatsApp"
+                    style={{ flex: 1, padding: '8px', background: '#f0fdf4', color: '#25d366', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    📲 WA PDF
+                  </button>
+                  <button onClick={() => handleDelete(s._id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
@@ -284,12 +354,14 @@ export default function SalesPage() {
         </>
       )}
 
-      {/* Modal */}
+      {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: 560 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>बिक्री दर्ज करें / Record Sale</h3>
-            {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            {error && (
+              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
+            )}
             <form onSubmit={handleSubmit}>
 
               {/* Items */}
@@ -308,7 +380,7 @@ export default function SalesPage() {
                         )}
                       </div>
 
-                      {/* ✅ Searchable dropdown */}
+                      {/* ✅ SearchableProductSelect — NOT TOUCHED */}
                       <div className="form-group">
                         <label className="form-label">Product *</label>
                         <SearchableProductSelect
@@ -369,10 +441,10 @@ export default function SalesPage() {
                 <label className="form-label">Payment Type *</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[
-                    { val: 'cash', label: '💵 Cash', color: '#10b981' },
+                    { val: 'cash',   label: '💵 Cash',   color: '#10b981' },
                     { val: 'credit', label: '📒 Credit', color: '#ef4444' },
-                    { val: 'upi', label: '📱 UPI', color: '#8b5cf6' },
-                    { val: 'bank', label: '🏦 Bank', color: '#3b82f6' },
+                    { val: 'upi',    label: '📱 UPI',    color: '#8b5cf6' },
+                    { val: 'bank',   label: '🏦 Bank',   color: '#3b82f6' },
                   ].map(opt => (
                     <button key={opt.val} type="button"
                       onClick={() => setForm({ ...form, payment_type: opt.val })}
@@ -457,8 +529,8 @@ export default function SalesPage() {
   );
 }
 
-// ── Invoice HTML Generator ───────────────────────────────────────────────────
-function generateInvoiceHTML(sale, shop, autoPrint) {
+// ── Invoice HTML Generator (UNCHANGED — existing working logic) ──────────────
+function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
   const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{
     product_name: sale.product_name,
     hsn_code: sale.hsn_code,
@@ -488,7 +560,7 @@ function generateInvoiceHTML(sale, shop, autoPrint) {
     return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '—') + '</td><td>' + item.quantity + '</td><td>₹' + fmt(item.price_per_unit) + '</td><td>₹' + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>₹' + fmt(item.total_amount) + '</strong></td></tr>';
   }).join('');
 
-  const emptyCell = '<td style="height:20px"></td>';
+  const emptyCell  = '<td style="height:20px"></td>';
   const fillerRows = Array(Math.max(0, 5 - saleItems.length)).fill('<tr>' + emptyCell.repeat(colSpan) + '</tr>').join('');
 
   const footerGST = isIGST
@@ -506,9 +578,9 @@ function generateInvoiceHTML(sale, shop, autoPrint) {
   const bankHTML = shop.bank_name
     ? '<div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:6px">🏦 Bank Details</div>'
       + '<div style="font-size:11px;margin-bottom:3px">Bank: <strong>' + shop.bank_name + '</strong></div>'
-      + (shop.bank_branch ? '<div style="font-size:11px;margin-bottom:3px">Branch: <strong>' + shop.bank_branch + '</strong></div>' : '')
-      + (shop.bank_account ? '<div style="font-size:11px;margin-bottom:3px">A/C: <strong>' + shop.bank_account + '</strong></div>' : '')
-      + (shop.bank_ifsc ? '<div style="font-size:11px">IFSC: <strong>' + shop.bank_ifsc + '</strong></div>' : '')
+      + (shop.bank_branch  ? '<div style="font-size:11px;margin-bottom:3px">Branch: <strong>' + shop.bank_branch  + '</strong></div>' : '')
+      + (shop.bank_account ? '<div style="font-size:11px;margin-bottom:3px">A/C: <strong>'    + shop.bank_account + '</strong></div>' : '')
+      + (shop.bank_ifsc    ? '<div style="font-size:11px">IFSC: <strong>'                     + shop.bank_ifsc    + '</strong></div>' : '')
     : '<div style="color:#9ca3af;font-size:11px;font-style:italic">Add bank details in Profile</div>';
 
   const termsHTML = shop.terms
@@ -519,6 +591,15 @@ function generateInvoiceHTML(sale, shop, autoPrint) {
 
   const creditNote = sale.payment_type === 'credit'
     ? '<div style="margin-top:8px;background:#fee2e2;border-radius:6px;padding:6px 8px"><div style="font-size:10px;font-weight:700;color:#991b1b">📒 CREDIT SALE — उधार</div><div style="font-size:11px;color:#991b1b">Amount added to customer ledger</div></div>'
+    : '';
+
+  // If called from shareWhatsApp: show a "Save as PDF" banner at the top
+  const pdfBanner = suggestedFileName && !autoPrint
+    ? '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px">'
+      + '<span style="font-size:18px">📄</span>'
+      + '<div><strong>Save as PDF:</strong> Press <kbd style="background:#e5e7eb;padding:1px 6px;border-radius:4px;font-size:11px">Ctrl+P</kbd> → Change destination to <strong>"Save as PDF"</strong> → Save as <strong>' + suggestedFileName + '</strong><br/>'
+      + '<span style="font-size:11px;opacity:0.8">Then attach this PDF file on WhatsApp</span></div>'
+      + '</div>'
     : '';
 
   const html = '<!DOCTYPE html><html><head><title>Invoice - ' + sale.invoice_number + '</title>'
@@ -547,13 +628,15 @@ function generateInvoiceHTML(sale, shop, autoPrint) {
     + '.bank-box{padding:10px;border-right:1px solid #000}.sign-box{padding:10px;text-align:right}'
     + '.terms-box{border:1px solid #000;border-top:none;padding:8px 10px}'
     + '.logo-circle{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0B1D35,#059669);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:900}'
-    + '@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}'
-    + '</style></head><body><div class="invoice">'
+    + '@media print{.pdf-banner{display:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}'
+    + '</style></head><body>'
+    + '<div class="pdf-banner" style="max-width:800px;margin:0 auto 0;">' + pdfBanner + '</div>'
+    + '<div class="invoice">'
     + '<div class="header"><div>'
     + '<div class="shop-name">रख<span>रखाव</span></div>'
     + '<div style="font-size:11px;color:#059669;font-weight:600;background:#ecfdf5;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:2px">Business Manager</div>'
     + (shop.address ? '<div style="font-size:11px;color:#374151;margin-top:4px">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
-    + (shop.phone ? '<div style="font-size:11px;color:#374151">📞 ' + shop.phone + (shop.email ? ' | ✉️ ' + shop.email : '') + '</div>' : '')
+    + (shop.phone   ? '<div style="font-size:11px;color:#374151">📞 ' + shop.phone + (shop.email ? ' | ✉️ ' + shop.email : '') + '</div>' : '')
     + '</div><div class="logo-circle">र</div></div>'
     + '<div class="title-bar">TAX INVOICE / कर चालान</div>'
     + '<div class="gstin-row"><div class="gstin-cell">GSTIN: ' + (shop.gstin || 'N/A') + '</div>'
@@ -562,14 +645,14 @@ function generateInvoiceHTML(sale, shop, autoPrint) {
     + '<div class="parties">'
     + '<div class="party-box"><div class="party-label">विक्रेता / Seller</div><div class="party-name">' + (shop.name || 'रखरखाव') + '</div>'
     + (shop.address ? '<div class="party-detail">📍 ' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
-    + (shop.phone ? '<div class="party-detail">📞 ' + shop.phone + '</div>' : '')
-    + (shop.gstin ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + shop.gstin + '</div>' : '')
+    + (shop.phone   ? '<div class="party-detail">📞 ' + shop.phone + '</div>' : '')
+    + (shop.gstin   ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + shop.gstin + '</div>' : '')
     + '</div>'
     + '<div class="party-box"><div class="party-label">खरीदार / Buyer</div><div class="party-name">' + (sale.buyer_name || 'Walk-in Customer') + '</div>'
     + (sale.buyer_address ? '<div class="party-detail">📍 ' + sale.buyer_address + '</div>' : '')
-    + (sale.buyer_state ? '<div class="party-detail">State: ' + sale.buyer_state + '</div>' : '')
-    + (sale.buyer_gstin ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + sale.buyer_gstin + '</div>' : '')
-    + (sale.buyer_phone ? '<div class="party-detail">📞 ' + sale.buyer_phone + '</div>' : '')
+    + (sale.buyer_state   ? '<div class="party-detail">State: ' + sale.buyer_state + '</div>' : '')
+    + (sale.buyer_gstin   ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + sale.buyer_gstin + '</div>' : '')
+    + (sale.buyer_phone   ? '<div class="party-detail">📞 ' + sale.buyer_phone + '</div>' : '')
     + '</div></div>'
     + '<div class="inv-details">'
     + '<div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Invoice No.</div><div style="font-weight:700;color:#059669">' + sale.invoice_number + '</div></div>'

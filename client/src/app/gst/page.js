@@ -11,23 +11,24 @@ const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 
 export default function GSTPage() {
-  const router  = useRouter();
-  const now     = new Date();
+  const router = useRouter();
+  const now    = new Date();
 
   const [month,   setMonth]   = useState(now.getMonth() + 1);
   const [year,    setYear]    = useState(now.getFullYear());
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [zipping, setZipping] = useState(false);
 
   // Drill-down state
-  const [drillType, setDrillType] = useState(null); // 'sales' | 'purchases' | null
-  const [drillData, setDrillData] = useState([]);
+  const [drillType,    setDrillType]    = useState(null);
+  const [drillData,    setDrillData]    = useState([]);
   const [drillLoading, setDrillLoading] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     fetchSummary();
-  }, [month, year]); // ← auto-fetch on month/year change
+  }, [month, year]);
 
   // ── Fetch GST summary ────────────────────────────────────────────────────────
   const fetchSummary = async () => {
@@ -43,9 +44,9 @@ export default function GSTPage() {
     setLoading(false);
   };
 
-  // ── Drill-down: fetch sales or purchases for this month ──────────────────────
+  // ── Drill-down ───────────────────────────────────────────────────────────────
   const openDrill = async (type) => {
-    if (drillType === type) { setDrillType(null); return; } // toggle off
+    if (drillType === type) { setDrillType(null); return; }
     setDrillType(type);
     setDrillLoading(true);
 
@@ -64,57 +65,67 @@ export default function GSTPage() {
     setDrillLoading(false);
   };
 
-  // ── CSV Export ───────────────────────────────────────────────────────────────
+  // ── Helpers: build CSV string ─────────────────────────────────────────────────
+  const buildGSTR1CSV = () => {
+    const rows = [
+      ['GSTR-1 B2B Invoices'],
+      ['Invoice No','Date','Buyer Name','Buyer GSTIN','Taxable Amount','GST Rate%','CGST','SGST','IGST','Total'],
+      ...summary.gstr1.b2b_invoices.map(i => [
+        i.invoice_number,
+        new Date(i.date).toLocaleDateString('en-IN'),
+        i.buyer_name  || '',
+        i.buyer_gstin || '',
+        fmt(i.taxable_amount),
+        i.gst_rate + '%',
+        fmt(i.cgst), fmt(i.sgst), fmt(i.igst), fmt(i.total),
+      ]),
+      [''],
+      ['GSTR-1 B2C Summary'],
+      ['Count','Taxable Amount','Total GST','Total Amount'],
+      [
+        summary.gstr1.b2c_summary.count,
+        fmt(summary.gstr1.b2c_summary.taxable_amount),
+        fmt(summary.gstr1.b2c_summary.total_gst),
+        fmt(summary.gstr1.b2c_summary.total_amount),
+      ],
+    ];
+    return rows.map(r => r.join(',')).join('\n');
+  };
+
+  const buildGSTR3BCSV = () => {
+    const rows = [
+      ['GSTR-3B Summary'],
+      ['Month/Year', `${MONTHS[month - 1]} ${year}`],
+      [''],
+      ['Description', 'Amount (Rs)'],
+      ['GST Collected (Output)',  fmt(summary.gstr3b.output_gst)],
+      ['GST Input Credit (ITC)', fmt(summary.gstr3b.input_gst)],
+      ['Net GST Payable',        fmt(summary.gstr3b.net_payable)],
+      ['Outward Taxable Sales',  fmt(summary.gstr3b.outward_taxable)],
+      [''],
+      ['Sales Breakup'],
+      ['Total Sales',            fmt(summary.sales.total_amount)],
+      ['CGST Collected',         fmt(summary.sales.cgst)],
+      ['SGST Collected',         fmt(summary.sales.sgst)],
+      ['IGST Collected',         fmt(summary.sales.igst)],
+      [''],
+      ['Purchase Breakup'],
+      ['Total Purchases',        fmt(summary.purchases.taxable_amount)],
+      ['CGST Input',             fmt(summary.purchases.cgst)],
+      ['SGST Input',             fmt(summary.purchases.sgst)],
+      ['IGST Input',             fmt(summary.purchases.igst)],
+    ];
+    return rows.map(r => r.join(',')).join('\n');
+  };
+
+  // ── Individual CSV exports (unchanged behaviour) ─────────────────────────────
   const exportCSV = (type) => {
     if (!summary) return;
-    let rows, filename;
+    const csv      = type === 'gstr1' ? buildGSTR1CSV() : buildGSTR3BCSV();
+    const filename = type === 'gstr1'
+      ? `GSTR1_${year}_${String(month).padStart(2, '0')}.csv`
+      : `GSTR3B_${year}_${String(month).padStart(2, '0')}.csv`;
 
-    if (type === 'gstr1') {
-      rows = [
-        ['GSTR-1 B2B Invoices'],
-        ['Invoice No','Date','Buyer Name','Buyer GSTIN','Taxable Amount','GST Rate%','CGST','SGST','IGST','Total'],
-        ...summary.gstr1.b2b_invoices.map(i => [
-          i.invoice_number,
-          new Date(i.date).toLocaleDateString('en-IN'),
-          i.buyer_name || '',
-          i.buyer_gstin || '',
-          fmt(i.taxable_amount),
-          i.gst_rate + '%',
-          fmt(i.cgst), fmt(i.sgst), fmt(i.igst), fmt(i.total),
-        ]),
-        [''],
-        ['GSTR-1 B2C Summary'],
-        ['Count','Taxable Amount','Total GST','Total Amount'],
-        [summary.gstr1.b2c_summary.count, fmt(summary.gstr1.b2c_summary.taxable_amount), fmt(summary.gstr1.b2c_summary.total_gst), fmt(summary.gstr1.b2c_summary.total_amount)],
-      ];
-      filename = `GSTR1_${year}_${String(month).padStart(2,'0')}.csv`;
-    } else {
-      rows = [
-        ['GSTR-3B Summary'],
-        ['Month/Year', `${MONTHS[month-1]} ${year}`],
-        [''],
-        ['Description','Amount (Rs)'],
-        ['GST Collected (Output)',    fmt(summary.gstr3b.output_gst)],
-        ['GST Input Credit (ITC)',    fmt(summary.gstr3b.input_gst)],
-        ['Net GST Payable',           fmt(summary.gstr3b.net_payable)],
-        ['Outward Taxable Sales',     fmt(summary.gstr3b.outward_taxable)],
-        [''],
-        ['Sales Breakup'],
-        ['Total Sales',               fmt(summary.sales.total_amount)],
-        ['CGST Collected',            fmt(summary.sales.cgst)],
-        ['SGST Collected',            fmt(summary.sales.sgst)],
-        ['IGST Collected',            fmt(summary.sales.igst)],
-        [''],
-        ['Purchase Breakup'],
-        ['Total Purchases',           fmt(summary.purchases.taxable_amount)],
-        ['CGST Input',                fmt(summary.purchases.cgst)],
-        ['SGST Input',                fmt(summary.purchases.sgst)],
-        ['IGST Input',                fmt(summary.purchases.igst)],
-      ];
-      filename = `GSTR3B_${year}_${String(month).padStart(2,'0')}.csv`;
-    }
-
-    const csv  = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -127,20 +138,113 @@ export default function GSTPage() {
     const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href = url;
-    a.download = `GST_${year}_${String(month).padStart(2,'0')}.json`;
+    a.href     = url;
+    a.download = `GST_${year}_${String(month).padStart(2, '0')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  // ── UPGRADE 3: ZIP Export ────────────────────────────────────────────────────
+  // Structure:
+  //   /GSTR1/gstr1.csv
+  //   /GSTR1/gstr1.json
+  //   /GSTR3B/gstr3b.csv
+  //   /GSTR3B/gstr3b.json
+  const exportZIP = async () => {
+    if (!summary) return;
+    setZipping(true);
+
+    try {
+      // Dynamically load JSZip from CDN (no install needed)
+      if (!window.JSZip) {
+        await new Promise((resolve, reject) => {
+          const script   = document.createElement('script');
+          script.src     = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+          script.onload  = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const zip        = new window.JSZip();
+      const monthPad   = String(month).padStart(2, '0');
+      const periodTag  = `${year}_${monthPad}`;
+
+      // ── GSTR1 folder ──────────────────────────────────────────────────────
+      const gstr1Folder = zip.folder('GSTR1');
+
+      // gstr1.csv
+      gstr1Folder.file('gstr1.csv', buildGSTR1CSV());
+
+      // gstr1.json — only GSTR1 slice of summary
+      const gstr1Json = {
+        period: { month: MONTHS[month - 1], year },
+        b2b_invoices: summary.gstr1.b2b_invoices,
+        b2c_summary:  summary.gstr1.b2c_summary,
+        sales_totals: {
+          total_amount:  summary.sales.total_amount,
+          taxable:       summary.sales.taxable_amount,
+          cgst:          summary.sales.cgst,
+          sgst:          summary.sales.sgst,
+          igst:          summary.sales.igst,
+          total_gst:     summary.sales.total_gst,
+          b2b_count:     summary.sales.b2b_count,
+          b2c_count:     summary.sales.b2c_count,
+          b2b_taxable:   summary.sales.b2b_taxable,
+          b2c_taxable:   summary.sales.b2c_taxable,
+        },
+      };
+      gstr1Folder.file('gstr1.json', JSON.stringify(gstr1Json, null, 2));
+
+      // ── GSTR3B folder ─────────────────────────────────────────────────────
+      const gstr3bFolder = zip.folder('GSTR3B');
+
+      // gstr3b.csv
+      gstr3bFolder.file('gstr3b.csv', buildGSTR3BCSV());
+
+      // gstr3b.json — only GSTR3B slice of summary
+      const gstr3bJson = {
+        period: { month: MONTHS[month - 1], year },
+        gstr3b: summary.gstr3b,
+        purchases: {
+          total_amount:  summary.purchases.total_amount,
+          taxable:       summary.purchases.taxable_amount,
+          cgst:          summary.purchases.cgst,
+          sgst:          summary.purchases.sgst,
+          igst:          summary.purchases.igst,
+          total_gst:     summary.purchases.total_gst,
+        },
+        net_payable:  summary.gstr3b.net_payable,
+        output_gst:   summary.gstr3b.output_gst,
+        input_gst:    summary.gstr3b.input_gst,
+      };
+      gstr3bFolder.file('gstr3b.json', JSON.stringify(gstr3bJson, null, 2));
+
+      // ── Generate and download ZIP ─────────────────────────────────────────
+      const blob    = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+      const url     = URL.createObjectURL(blob);
+      const a       = document.createElement('a');
+      a.href        = url;
+      a.download    = `GST_Export_${periodTag}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error('ZIP export failed:', err);
+      alert('ZIP export failed. Please try individual CSV/JSON exports.');
+    }
+
+    setZipping(false);
+  };
+
   // ── Derived values ───────────────────────────────────────────────────────────
-  const netPayable        = summary?.gstr3b?.net_payable   || 0;
-  const gstCollected      = summary?.gstr3b?.output_gst    || 0;
-  const gstITC            = summary?.gstr3b?.input_gst     || 0;
-  const monthHi           = MONTHS_HI[month - 1];
-  const monthEn           = MONTHS[month - 1];
-  const isPayable         = netPayable > 0;
-  const isRefund          = netPayable < 0;
+  const netPayable   = summary?.gstr3b?.net_payable || 0;
+  const gstCollected = summary?.gstr3b?.output_gst  || 0;
+  const gstITC       = summary?.gstr3b?.input_gst   || 0;
+  const monthHi      = MONTHS_HI[month - 1];
+  const monthEn      = MONTHS[month - 1];
+  const isPayable    = netPayable > 0;
+  const isRefund     = netPayable < 0;
 
   const returnStatus = summary
     ? summary.sales.total > 0
@@ -165,9 +269,7 @@ export default function GSTPage() {
           onChange={e => setYear(parseInt(e.target.value))}>
           {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
         </select>
-        {loading && (
-          <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 600 }}>⏳ लोड हो रहा है...</span>
-        )}
+        {loading && <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 600 }}>⏳ लोड हो रहा है...</span>}
       </div>
 
       {!summary ? (
@@ -214,13 +316,13 @@ export default function GSTPage() {
             )}
           </div>
 
-          {/* ── SECTION 2: GST CALCULATION (CLICKABLE drill-down) ── */}
+          {/* ── SECTION 2: GST CALCULATION ── */}
           <div className="card" style={{ marginBottom: 20 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>
               🧮 GST हिसाब / Calculation
             </div>
 
-            {/* GST Collected — clickable */}
+            {/* GST Collected — clickable drill-down */}
             <div
               onClick={() => openDrill('sales')}
               style={{
@@ -244,7 +346,7 @@ export default function GSTPage() {
               <div style={{ fontSize: 24, fontWeight: 900, color: '#059669' }}>+₹{fmt(gstCollected)}</div>
             </div>
 
-            {/* ── Sales Drill-down ── */}
+            {/* Sales Drill-down */}
             {drillType === 'sales' && (
               <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 12, marginBottom: 10 }}>
                 {drillLoading ? (
@@ -286,7 +388,7 @@ export default function GSTPage() {
               </div>
             )}
 
-            {/* GST Paid (ITC) — clickable */}
+            {/* GST Input Credit (ITC) — clickable drill-down */}
             <div
               onClick={() => openDrill('purchases')}
               style={{
@@ -310,7 +412,7 @@ export default function GSTPage() {
               <div style={{ fontSize: 24, fontWeight: 900, color: '#2563eb' }}>−₹{fmt(gstITC)}</div>
             </div>
 
-            {/* ── Purchases Drill-down ── */}
+            {/* Purchases Drill-down */}
             {drillType === 'purchases' && (
               <div style={{ background: '#eff6ff', borderRadius: 10, padding: 12, marginBottom: 10 }}>
                 {drillLoading ? (
@@ -348,7 +450,6 @@ export default function GSTPage() {
               </div>
             )}
 
-            {/* ITC warning */}
             {gstITC === 0 && (
               <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: '#92400e' }}>
                 ⚠️ कोई ITC claim नहीं — ज़्यादा tax भर रहे हैं / No ITC claimed — you may be overpaying tax
@@ -518,10 +619,10 @@ export default function GSTPage() {
             <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>सामान्य ग्राहक — बिना GSTIN</div>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               {[
-                { label: 'INVOICES', value: summary.gstr1.b2c_summary.count, color: '#374151', isNum: true },
+                { label: 'INVOICES', value: summary.gstr1.b2c_summary.count,          color: '#374151' },
                 { label: 'TAXABLE', value: `₹${fmt(summary.gstr1.b2c_summary.taxable_amount)}`, color: '#374151' },
-                { label: 'GST', value: `₹${fmt(summary.gstr1.b2c_summary.total_gst)}`, color: '#6366f1' },
-                { label: 'TOTAL', value: `₹${fmt(summary.gstr1.b2c_summary.total_amount)}`, color: '#10b981' },
+                { label: 'GST',     value: `₹${fmt(summary.gstr1.b2c_summary.total_gst)}`,      color: '#6366f1' },
+                { label: 'TOTAL',   value: `₹${fmt(summary.gstr1.b2c_summary.total_amount)}`,   color: '#10b981' },
               ].map((item, i) => (
                 <div key={i}>
                   <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{item.label}</div>
@@ -536,10 +637,12 @@ export default function GSTPage() {
             <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>
               📤 CA को दें / Export for CA
             </div>
-            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 16 }}>
               यह फ़ाइल अपने CA को दे सकते हैं / Share directly with your CA
             </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+
+            {/* Individual exports (unchanged) */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
               <button onClick={() => exportCSV('gstr1')}
                 style={{ padding: '10px 16px', background: '#f0fdf4', color: '#059669', border: '1.5px solid #bbf7d0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 📊 GSTR-1 CSV
@@ -551,6 +654,34 @@ export default function GSTPage() {
               <button onClick={exportJSON}
                 style={{ padding: '10px 16px', background: '#fff7ed', color: '#c2410c', border: '1.5px solid #fed7aa', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 📦 JSON
+              </button>
+            </div>
+
+            {/* ── ZIP Export button ── */}
+            <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 10 }}>
+                📁 <strong>ZIP में सब एक साथ:</strong> GSTR1 + GSTR3B, CSV और JSON दोनों
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>
+                  Structure: <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR1/gstr1.csv</code>,{' '}
+                  <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR1/gstr1.json</code>,{' '}
+                  <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR3B/gstr3b.csv</code>,{' '}
+                  <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>GSTR3B/gstr3b.json</code>
+                </div>
+              </div>
+              <button
+                onClick={exportZIP}
+                disabled={zipping}
+                style={{
+                  padding: '11px 22px',
+                  background: zipping ? '#f3f4f6' : 'linear-gradient(135deg, #1e40af, #6366f1)',
+                  color: zipping ? '#9ca3af' : '#fff',
+                  border: 'none', borderRadius: 9,
+                  fontSize: 13, fontWeight: 700, cursor: zipping ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  boxShadow: zipping ? 'none' : '0 2px 8px rgba(99,102,241,0.3)',
+                  transition: 'all 0.2s',
+                }}>
+                {zipping ? '⏳ बना रहे हैं...' : '🗜️ Download ZIP (GSTR1 + GSTR3B)'}
               </button>
             </div>
           </div>
@@ -565,7 +696,7 @@ export default function GSTPage() {
   );
 }
 
-// ── Table style helpers ──────────────────────────────────────────────────────
+// ── Table style helpers (unchanged) ─────────────────────────────────────────
 const thStyle = {
   padding: '8px 12px',
   textAlign: 'right',

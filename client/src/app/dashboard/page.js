@@ -3,23 +3,23 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
-const API = 'https://rakh-rakhaav.onrender.com';
+const API      = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function DashboardPage() {
   const router = useRouter();
-  const now = new Date();
+  const now    = new Date();
 
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedYear,  setSelectedYear]  = useState(now.getFullYear());
 
-  const [stats, setStats] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const [stats,       setStats]       = useState(null);
+  const [products,    setProducts]    = useState([]);
+  const [customers,   setCustomers]   = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,     setLoading]     = useState(true);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
@@ -30,41 +30,42 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${getToken()}` };
-      const params = `?month=${selectedMonth}&year=${selectedYear}`;
+      const params  = `?month=${selectedMonth}&year=${selectedYear}`;
 
       const [profitRes, productsRes, customersRes, salesRes] = await Promise.all([
         fetch(`${API}/api/sales/profit-summary${params}`, { headers }),
-        fetch(`${API}/api/products`, { headers }),
-        fetch(`${API}/api/customers`, { headers }),
-        fetch(`${API}/api/sales${params}`, { headers }),
+        fetch(`${API}/api/products`,                      { headers }),
+        fetch(`${API}/api/customers`,                     { headers }),
+        fetch(`${API}/api/sales${params}`,                { headers }),
       ]);
 
-      const profitData = await profitRes.json();
-      const productsData = await productsRes.json();
+      const profitData    = await profitRes.json();
+      const productsData  = await productsRes.json();
       const customersData = await customersRes.json();
-      const salesData = await salesRes.json();
+      const salesData     = await salesRes.json();
 
       setStats(profitData);
 
-      const productList = Array.isArray(productsData) ? productsData : productsData.products || [];
+      const productList  = Array.isArray(productsData) ? productsData : productsData.products || [];
       setProducts(productList);
 
       const customerList = Array.isArray(customersData) ? customersData : [];
       setCustomers(customerList);
 
       // Top selling products this month
-      const salesList = salesData.sales || salesData || [];
+      const salesList       = salesData.sales || salesData || [];
       const productSalesMap = {};
       salesList.forEach(sale => {
         const items = sale.items?.length > 0 ? sale.items : [{
           product_name: sale.product_name,
-          quantity: sale.quantity,
+          quantity:     sale.quantity,
           total_amount: sale.total_amount,
         }];
         items.forEach(item => {
           const key = item.product_name;
+          if (!key) return;
           if (!productSalesMap[key]) productSalesMap[key] = { name: key, qty: 0, revenue: 0 };
-          productSalesMap[key].qty += item.quantity || 0;
+          productSalesMap[key].qty     += item.quantity     || 0;
           productSalesMap[key].revenue += item.total_amount || 0;
         });
       });
@@ -77,7 +78,7 @@ export default function DashboardPage() {
     setLoading(false);
   };
 
-  const lowStock = products.filter(p => (p.quantity ?? p.stock ?? 0) <= 5);
+  const lowStock            = products.filter(p => (p.quantity ?? p.stock ?? 0) <= 5);
   const totalCustomerUdhaar = customers.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
 
   const fmt = (n) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
@@ -91,8 +92,10 @@ export default function DashboardPage() {
     </Layout>
   );
 
-  const netGST = (stats?.netGSTPayable ?? 0);
-  const grossProfit = stats?.grossProfit ?? 0;
+  const netGST     = stats?.netGSTPayable ?? 0;
+  // UPGRADE 4: Profit = Selling Price - Cost Price (from API grossProfit)
+  // COGS display removed — profit is just the net profit from API
+  const profit     = stats?.grossProfit ?? 0;
 
   return (
     <Layout>
@@ -126,15 +129,18 @@ export default function DashboardPage() {
           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{stats?.salesCount || 0} invoices • देखें →</div>
         </div>
 
-        {/* Profit */}
-        <div onClick={() => router.push('/sales')}
-          style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${grossProfit >= 0 ? '#6366f1' : '#ef4444'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+        {/* Profit — COGS subtitle removed, clean profit display */}
+        <div onClick={() => router.push('/reports')}
+          style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(0,0,0,0.06)', borderTop: `3px solid ${profit >= 0 ? '#6366f1' : '#ef4444'}`, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#9ca3af', marginBottom: 6 }}>📊 मुनाफ़ा / Profit</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: grossProfit >= 0 ? '#6366f1' : '#ef4444', letterSpacing: -1 }}>
-            {grossProfit >= 0 ? '+' : ''}₹{fmt(grossProfit)}
+          <div style={{ fontSize: 26, fontWeight: 800, color: profit >= 0 ? '#6366f1' : '#ef4444', letterSpacing: -1 }}>
+            {profit >= 0 ? '+' : ''}₹{fmt(profit)}
           </div>
+          {/* ── UPGRADE 4: Removed COGS subtitle. Show simple margin instead ── */}
           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-            बिक्री ₹{fmt(stats?.totalTaxable)} − लागत ₹{fmt(stats?.totalCOGS)}
+            {(stats?.totalRevenue || 0) > 0
+              ? `Margin: ${((profit / (stats?.totalRevenue || 1)) * 100).toFixed(1)}%`
+              : 'रिपोर्ट देखें →'}
           </div>
         </div>
 
@@ -167,19 +173,19 @@ export default function DashboardPage() {
       </div>
 
       {/* ── PROFIT BREAKDOWN ── */}
+      {/* UPGRADE 4: COGS row removed. Breakdown now shows: Revenue → Profit → GST */}
       {(stats?.totalRevenue || 0) > 0 && (
         <div style={{ background: '#fff', borderRadius: 16, padding: '16px 20px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 14 }}>
             📊 मुनाफ़ा विवरण / Profit Breakdown
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
             {[
-              { label: 'कुल बिक्री (Taxable)', value: stats?.totalTaxable, color: '#10b981' },
-              { label: 'माल लागत (COGS)', value: stats?.totalCOGS, color: '#ef4444', prefix: '−' },
-              { label: 'सकल मुनाफ़ा (Gross)', value: grossProfit, color: grossProfit >= 0 ? '#6366f1' : '#ef4444', prefix: grossProfit >= 0 ? '+' : '' },
-              { label: 'GST वसूला', value: stats?.gstCollected, color: '#f59e0b' },
-              { label: 'ITC (Input GST)', value: stats?.gstITC, color: '#8b5cf6', prefix: '−' },
-              { label: 'Net GST देय', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981' },
+              { label: 'कुल बिक्री (Revenue)',  value: stats?.totalRevenue,  color: '#10b981' },
+              { label: 'मुनाफ़ा (Profit)',       value: profit,               color: profit >= 0 ? '#6366f1' : '#ef4444', prefix: profit >= 0 ? '+' : '' },
+              { label: 'GST वसूला',             value: stats?.gstCollected,  color: '#f59e0b' },
+              { label: 'ITC (Input GST)',        value: stats?.gstITC,        color: '#8b5cf6', prefix: '−' },
+              { label: 'Net GST देय',            value: netGST,               color: netGST >= 0 ? '#f59e0b' : '#10b981' },
             ].map((item, i) => (
               <div key={i} style={{ minWidth: 130 }}>
                 <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginBottom: 2 }}>{item.label}</div>
@@ -191,19 +197,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Profit margin bar */}
-          {(stats?.totalTaxable || 0) > 0 && (
-            <div style={{ marginTop: 14 }}>
+          {(stats?.totalRevenue || 0) > 0 && (
+            <div style={{ marginTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>
                 <span>Profit Margin</span>
-                <span style={{ fontWeight: 700, color: grossProfit >= 0 ? '#6366f1' : '#ef4444' }}>
-                  {((grossProfit / (stats?.totalTaxable || 1)) * 100).toFixed(1)}%
+                <span style={{ fontWeight: 700, color: profit >= 0 ? '#6366f1' : '#ef4444' }}>
+                  {((profit / (stats?.totalRevenue || 1)) * 100).toFixed(1)}%
                 </span>
               </div>
               <div style={{ height: 6, background: '#f3f4f6', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{
                   height: '100%',
-                  width: `${Math.min(100, Math.abs((grossProfit / (stats?.totalTaxable || 1)) * 100))}%`,
-                  background: grossProfit >= 0 ? '#6366f1' : '#ef4444',
+                  width: `${Math.min(100, Math.abs((profit / (stats?.totalRevenue || 1)) * 100))}%`,
+                  background: profit >= 0 ? '#6366f1' : '#ef4444',
                   borderRadius: 99,
                   transition: 'width 0.5s ease',
                 }} />
@@ -247,10 +253,10 @@ export default function DashboardPage() {
           <div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
             🏆 टॉप उत्पाद / Top Products — {MONTHS[selectedMonth - 1]} {selectedYear}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {topProducts.map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: ['#10b981','#6366f1','#f59e0b','#ef4444','#8b5cf6'][i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: ['#10b981','#6366f1','#f59e0b','#ef4444','#8b5cf6'][i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
                   {i + 1}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -271,11 +277,11 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
           {[
-            { href: '/sales', bg: '#10b981', shadow: 'rgba(16,185,129,0.25)', icon: '📈', hi: 'बिक्री', en: 'Sale', sub: 'Record sale' },
-            { href: '/purchases', bg: '#f59e0b', shadow: 'rgba(245,158,11,0.25)', icon: '🛒', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase' },
-            { href: '/udhaar', bg: '#ef4444', shadow: 'rgba(239,68,68,0.25)', icon: '📒', hi: 'उधार', en: 'Credit', sub: 'Manage udhaar' },
-            { href: '/product', bg: '#6366f1', shadow: 'rgba(99,102,241,0.25)', icon: '📦', hi: 'उत्पाद', en: 'Product', sub: 'Add product' },
-            { href: '/gst', bg: '#8b5cf6', shadow: 'rgba(139,92,246,0.25)', icon: '🧾', hi: 'GST', en: 'GST', sub: 'Tax summary' },
+            { href: '/sales',     bg: '#10b981', shadow: 'rgba(16,185,129,0.25)',  icon: '📈', hi: 'बिक्री',  en: 'Sale',     sub: 'Record sale'     },
+            { href: '/purchases', bg: '#f59e0b', shadow: 'rgba(245,158,11,0.25)',  icon: '🛒', hi: 'खरीद',   en: 'Purchase', sub: 'Record purchase' },
+            { href: '/udhaar',    bg: '#ef4444', shadow: 'rgba(239,68,68,0.25)',   icon: '📒', hi: 'उधार',   en: 'Credit',   sub: 'Manage udhaar'   },
+            { href: '/product',   bg: '#6366f1', shadow: 'rgba(99,102,241,0.25)', icon: '📦', hi: 'उत्पाद', en: 'Product',  sub: 'Add product'     },
+            { href: '/gst',       bg: '#8b5cf6', shadow: 'rgba(139,92,246,0.25)', icon: '🧾', hi: 'GST',    en: 'GST',      sub: 'Tax summary'     },
           ].map(({ href, bg, shadow, icon, hi, en, sub }) => (
             <a key={href} href={href}
               style={{ background: bg, color: '#fff', padding: '14px 16px', borderRadius: 12, textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 4, boxShadow: `0 3px 10px ${shadow}` }}>

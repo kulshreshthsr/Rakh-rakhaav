@@ -3,53 +3,44 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
-const API = 'https://rakh-rakhaav.onrender.com';
+const API      = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
-const fmt = (n) => parseFloat(n || 0).toFixed(2);
-const fmtN = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
+const fmt      = (n) => parseFloat(n || 0).toFixed(2);
+const fmtN     = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
 
-// ── Date range helpers ───────────────────────────────────────────────────────
+// ── Date range helpers (unchanged) ───────────────────────────────────────────
 const getRange = (filter) => {
-  const now = new Date();
+  const now   = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   if (filter === 'today') {
     return {
-      from: today.toISOString(),
-      to: new Date(today.getTime() + 86400000 - 1).toISOString(),
+      from:  today.toISOString(),
+      to:    new Date(today.getTime() + 86400000 - 1).toISOString(),
       label: 'Today',
     };
   }
   if (filter === 'week') {
     const start = new Date(today);
     start.setDate(today.getDate() - today.getDay());
-    return {
-      from: start.toISOString(),
-      to: new Date().toISOString(),
-      label: 'This Week',
-    };
+    return { from: start.toISOString(), to: new Date().toISOString(), label: 'This Week' };
   }
   if (filter === 'month') {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return {
-      from: start.toISOString(),
-      to: new Date().toISOString(),
-      label: 'This Month',
-    };
+    return { from: start.toISOString(), to: new Date().toISOString(), label: 'This Month' };
   }
   return { from: null, to: null, label: 'All Time' };
 };
 
 export default function ReportsPage() {
   const router = useRouter();
-  const [filter, setFilter] = useState('month');
+  const [filter,  setFilter]  = useState('month');
   const [loading, setLoading] = useState(false);
 
-  // Data
-  const [sales, setSales]         = useState([]);
+  const [sales,     setSales]     = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [summary, setSummary]     = useState({});
+  const [summary,   setSummary]   = useState({});
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
@@ -59,21 +50,21 @@ export default function ReportsPage() {
   const fetchAll = async () => {
     setLoading(true);
     const { from, to } = getRange(filter);
-    const headers = { Authorization: `Bearer ${getToken()}` };
-    const params = from ? `?from=${from}&to=${to}` : '';
+    const headers      = { Authorization: `Bearer ${getToken()}` };
+    const params       = from ? `?from=${from}&to=${to}` : '';
 
     try {
       const [sRes, pRes, cRes] = await Promise.all([
-        fetch(`${API}/api/sales${params}`, { headers }),
+        fetch(`${API}/api/sales${params}`,     { headers }),
         fetch(`${API}/api/purchases${params}`, { headers }),
-        fetch(`${API}/api/customers`, { headers }),
+        fetch(`${API}/api/customers`,          { headers }),
       ]);
 
       const sData = await sRes.json();
       const pData = await pRes.json();
       const cData = await cRes.json();
 
-      const salesList     = sData.sales || (Array.isArray(sData) ? sData : []);
+      const salesList     = sData.sales     || (Array.isArray(sData) ? sData : []);
       const purchasesList = pData.purchases || (Array.isArray(pData) ? pData : []);
       const customersList = Array.isArray(cData) ? cData : [];
 
@@ -81,21 +72,22 @@ export default function ReportsPage() {
       setPurchases(purchasesList);
       setCustomers(customersList);
 
-      // Compute summary
+      // UPGRADE 4: totalCOGS removed from summary computation
+      // grossProfit from API kept — it represents Selling Price - Cost Price
       const totalRevenue  = salesList.reduce((s, x) => s + (x.total_amount || 0), 0);
-      const totalGST      = salesList.reduce((s, x) => s + (x.total_gst || 0), 0);
-      const totalCOGS     = salesList.reduce((s, x) => s + (x.total_cost || 0), 0);
+      const totalGST      = salesList.reduce((s, x) => s + (x.total_gst    || 0), 0);
       const grossProfit   = salesList.reduce((s, x) => s + (x.gross_profit || 0), 0);
       const totalPurchase = purchasesList.reduce((s, x) => s + (x.total_amount || 0), 0);
-      const totalITC      = purchasesList.reduce((s, x) => s + (x.total_gst || 0), 0);
-      const totalUdhaar   = customersList.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
-      const margin        = totalRevenue > 0 ? ((grossProfit / (totalRevenue - totalGST)) * 100) : 0;
+      const totalITC      = purchasesList.reduce((s, x) => s + (x.total_gst    || 0), 0);
+      const totalUdhaar   = customersList.reduce((s, c) => s + (c.totalUdhaar  || 0), 0);
+      const taxableRev    = totalRevenue - totalGST;
+      const margin        = taxableRev > 0 ? ((grossProfit / taxableRev) * 100) : 0;
 
       setSummary({
-        totalRevenue, totalGST, totalCOGS, grossProfit,
+        totalRevenue, totalGST, grossProfit,
         totalPurchase, totalITC, totalUdhaar, margin,
         salesCount: salesList.length,
-        netGST: totalGST - totalITC,
+        netGST:     totalGST - totalITC,
       });
     } catch (err) {
       console.error(err);
@@ -103,13 +95,13 @@ export default function ReportsPage() {
     setLoading(false);
   };
 
-  // ── Top Products ─────────────────────────────────────────────────────────────
+  // ── Top Products (unchanged) ─────────────────────────────────────────────────
   const topProducts = (() => {
     const map = {};
     sales.forEach(sale => {
       const items = sale.items?.length > 0 ? sale.items : [{
         product_name: sale.product_name,
-        quantity: sale.quantity || 0,
+        quantity:     sale.quantity     || 0,
         total_amount: sale.total_amount || 0,
         gross_profit: sale.gross_profit || 0,
       }];
@@ -117,7 +109,7 @@ export default function ReportsPage() {
         const k = item.product_name;
         if (!k) return;
         if (!map[k]) map[k] = { name: k, qty: 0, revenue: 0, profit: 0, count: 0 };
-        map[k].qty     += item.quantity || 0;
+        map[k].qty     += item.quantity     || 0;
         map[k].revenue += item.total_amount || 0;
         map[k].profit  += item.gross_profit || 0;
         map[k].count   += 1;
@@ -126,7 +118,7 @@ export default function ReportsPage() {
     return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
   })();
 
-  // ── Top Customers ────────────────────────────────────────────────────────────
+  // ── Top Customers (unchanged) ────────────────────────────────────────────────
   const topCustomers = (() => {
     const map = {};
     sales.forEach(sale => {
@@ -136,14 +128,13 @@ export default function ReportsPage() {
       map[k].revenue += sale.total_amount || 0;
       map[k].count   += 1;
     });
-    // Merge udhaar from customers list
     customers.forEach(c => {
       if (map[c.name]) map[c.name].udhaar = c.totalUdhaar || 0;
     });
     return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
   })();
 
-  // ── Daily sales breakdown ────────────────────────────────────────────────────
+  // ── Daily sales breakdown (unchanged) ────────────────────────────────────────
   const dailySales = (() => {
     const map = {};
     sales.forEach(sale => {
@@ -177,24 +168,29 @@ export default function ReportsPage() {
           s.payment_type,
         ]),
         [],
-        ['Total', '', '', '', fmt(summary.totalRevenue - summary.totalGST), fmt(summary.totalGST), fmt(summary.totalRevenue), fmt(summary.grossProfit)],
+        ['Total', '', '', '',
+          fmt((summary.totalRevenue || 0) - (summary.totalGST || 0)),
+          fmt(summary.totalGST),
+          fmt(summary.totalRevenue),
+          fmt(summary.grossProfit),
+        ],
       ];
       filename = `Sales_Report_${label.replace(' ', '_')}.csv`;
     }
 
+    // UPGRADE 4: COGS row removed from profit CSV. Profit = Revenue - GST - Profit (from API)
     if (type === 'profit') {
       rows = [
         [`Profit Report — ${label}`],
         ['Metric', 'Amount'],
-        ['Total Revenue', `₹${fmt(summary.totalRevenue)}`],
-        ['Total GST Collected', `₹${fmt(summary.totalGST)}`],
-        ['Net Revenue (Taxable)', `₹${fmt(summary.totalRevenue - summary.totalGST)}`],
-        ['Cost of Goods Sold (COGS)', `₹${fmt(summary.totalCOGS)}`],
-        ['Gross Profit', `₹${fmt(summary.grossProfit)}`],
-        ['Profit Margin', `${fmt(summary.margin)}%`],
-        ['Total Purchases', `₹${fmt(summary.totalPurchase)}`],
-        ['GST Input Credit (ITC)', `₹${fmt(summary.totalITC)}`],
-        ['Net GST Payable', `₹${fmt(summary.netGST)}`],
+        ['Total Revenue',           `₹${fmt(summary.totalRevenue)}`],
+        ['Total GST Collected',     `₹${fmt(summary.totalGST)}`],
+        ['Net Revenue (Taxable)',   `₹${fmt((summary.totalRevenue || 0) - (summary.totalGST || 0))}`],
+        ['Profit',                  `₹${fmt(summary.grossProfit)}`],
+        ['Profit Margin',           `${fmt(summary.margin)}%`],
+        ['Total Purchases',         `₹${fmt(summary.totalPurchase)}`],
+        ['GST Input Credit (ITC)',  `₹${fmt(summary.totalITC)}`],
+        ['Net GST Payable',         `₹${fmt(summary.netGST)}`],
         [],
         ['Daily Breakdown'],
         ['Date', 'Revenue', 'Profit', 'Orders'],
@@ -229,7 +225,7 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const { label } = getRange(filter);
+  const { label }   = getRange(filter);
   const marginColor = summary.margin >= 20 ? '#059669' : summary.margin >= 10 ? '#d97706' : '#ef4444';
 
   return (
@@ -240,20 +236,18 @@ export default function ReportsPage() {
           <div className="page-title" style={{ marginBottom: 4 }}>रिपोर्ट / Reports</div>
           <div style={{ fontSize: 13, color: '#9ca3af' }}>{label} का डेटा / Data</div>
         </div>
-
-        {/* Filter buttons */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
-            { val: 'today', label: 'आज / Today' },
-            { val: 'week',  label: 'इस हफ्ते / Week' },
-            { val: 'month', label: 'इस महीने / Month' },
+            { val: 'today', label: 'आज / Today'        },
+            { val: 'week',  label: 'इस हफ्ते / Week'   },
+            { val: 'month', label: 'इस महीने / Month'  },
           ].map(f => (
             <button key={f.val} onClick={() => setFilter(f.val)}
               style={{
                 padding: '8px 16px', borderRadius: 10, border: '1.5px solid',
                 borderColor: filter === f.val ? '#6366f1' : '#e5e7eb',
-                background: filter === f.val ? '#6366f1' : '#fff',
-                color: filter === f.val ? '#fff' : '#374151',
+                background:  filter === f.val ? '#6366f1' : '#fff',
+                color:       filter === f.val ? '#fff' : '#374151',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.15s',
               }}>
@@ -271,13 +265,14 @@ export default function ReportsPage() {
       ) : (
         <>
           {/* ── SUMMARY CARDS ── */}
+          {/* UPGRADE 4: COGS card removed. Gross Profit → renamed to Profit */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
             {[
-              { label: '💰 Revenue', value: `₹${fmtN(summary.totalRevenue)}`, sub: `${summary.salesCount} invoices`, color: '#10b981', bg: '#f0fdf4' },
-              { label: '📊 Gross Profit', value: `₹${fmtN(summary.grossProfit)}`, sub: `Margin: ${fmt(summary.margin)}%`, color: marginColor, bg: '#f8fafc' },
-              { label: '🧾 GST Payable', value: `₹${fmtN(summary.netGST)}`, sub: `Collected ₹${fmtN(summary.totalGST)}`, color: '#f59e0b', bg: '#fffbeb' },
-              { label: '📒 Udhaar', value: `₹${fmtN(summary.totalUdhaar)}`, sub: 'Total pending', color: '#ef4444', bg: '#fef2f2' },
-              { label: '🛒 Purchases', value: `₹${fmtN(summary.totalPurchase)}`, sub: `ITC: ₹${fmtN(summary.totalITC)}`, color: '#6366f1', bg: '#eef2ff' },
+              { label: '💰 Revenue',      value: `₹${fmtN(summary.totalRevenue)}`,  sub: `${summary.salesCount} invoices`,      color: '#10b981', bg: '#f0fdf4' },
+              { label: '📊 मुनाफ़ा',      value: `₹${fmtN(summary.grossProfit)}`,   sub: `Margin: ${fmt(summary.margin)}%`,     color: marginColor, bg: '#f8fafc' },
+              { label: '🧾 GST Payable',  value: `₹${fmtN(summary.netGST)}`,        sub: `Collected ₹${fmtN(summary.totalGST)}`, color: '#f59e0b', bg: '#fffbeb' },
+              { label: '📒 Udhaar',       value: `₹${fmtN(summary.totalUdhaar)}`,   sub: 'Total pending',                        color: '#ef4444', bg: '#fef2f2' },
+              { label: '🛒 Purchases',    value: `₹${fmtN(summary.totalPurchase)}`, sub: `ITC: ₹${fmtN(summary.totalITC)}`,     color: '#6366f1', bg: '#eef2ff' },
             ].map((card, i) => (
               <div key={i} style={{ background: card.bg, borderRadius: 14, padding: '14px 16px', border: `1px solid ${card.color}22` }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{card.label}</div>
@@ -288,6 +283,7 @@ export default function ReportsPage() {
           </div>
 
           {/* ── PROFIT BREAKDOWN ── */}
+          {/* UPGRADE 4: COGS row removed. Layout: Revenue → −GST → =Taxable → =Profit */}
           <div className="card" style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>📊 मुनाफ़ा विवरण / Profit Breakdown</div>
@@ -299,21 +295,41 @@ export default function ReportsPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
-                { label: 'कुल बिक्री / Total Revenue', value: summary.totalRevenue, color: '#10b981', prefix: '' },
-                { label: 'GST वसूला / GST Collected', value: summary.totalGST, color: '#6366f1', prefix: '−', sub: 'not your income' },
-                { label: 'Taxable Revenue', value: (summary.totalRevenue || 0) - (summary.totalGST || 0), color: '#374151', prefix: '=' },
-                { label: 'माल लागत / COGS', value: summary.totalCOGS, color: '#ef4444', prefix: '−' },
-                { label: 'सकल मुनाफ़ा / Gross Profit', value: summary.grossProfit, color: marginColor, prefix: '=', bold: true },
+                {
+                  label: 'कुल बिक्री / Total Revenue',
+                  value: summary.totalRevenue,
+                  color: '#10b981', prefix: '',
+                },
+                {
+                  label: 'GST वसूला / GST Collected',
+                  value: summary.totalGST,
+                  color: '#6366f1', prefix: '−',
+                  sub: 'सरकार का हिस्सा / not your income',
+                },
+                {
+                  label: 'Taxable Revenue (बिक्री − GST)',
+                  value: (summary.totalRevenue || 0) - (summary.totalGST || 0),
+                  color: '#374151', prefix: '=',
+                },
+                {
+                  label: 'मुनाफ़ा / Profit',
+                  value: summary.grossProfit,
+                  color: marginColor, prefix: '=', bold: true,
+                },
               ].map((row, i) => (
                 <div key={i} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '10px 14px', borderRadius: 10,
-                  background: row.bold ? (summary.grossProfit >= 0 ? '#f0fdf4' : '#fef2f2') : '#f9fafb',
-                  border: row.bold ? `1px solid ${marginColor}33` : 'none',
+                  background: row.bold
+                    ? (summary.grossProfit >= 0 ? '#f0fdf4' : '#fef2f2')
+                    : '#f9fafb',
+                  border: row.bold ? `1.5px solid ${marginColor}33` : 'none',
                 }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: row.bold ? 700 : 500, color: '#374151' }}>
-                      {row.prefix && <span style={{ color: row.color, marginRight: 6, fontWeight: 800 }}>{row.prefix}</span>}
+                      {row.prefix && (
+                        <span style={{ color: row.color, marginRight: 6, fontWeight: 800 }}>{row.prefix}</span>
+                      )}
                       {row.label}
                     </div>
                     {row.sub && <div style={{ fontSize: 11, color: '#9ca3af' }}>{row.sub}</div>}
@@ -327,7 +343,7 @@ export default function ReportsPage() {
 
             {/* Margin bar */}
             {(summary.totalRevenue || 0) > 0 && (
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>
                   <span>Profit Margin</span>
                   <span style={{ fontWeight: 700, color: marginColor }}>{fmt(summary.margin)}%</span>
@@ -345,7 +361,7 @@ export default function ReportsPage() {
             )}
           </div>
 
-          {/* ── DAILY SALES ── */}
+          {/* ── DAILY SALES (unchanged) ── */}
           {dailySales.length > 0 && (
             <div className="card" style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
@@ -374,7 +390,9 @@ export default function ReportsPage() {
                           <td style={tdS}>{d.date}</td>
                           <td style={tdS}>{d.count}</td>
                           <td style={{ ...tdS, fontWeight: 700, color: '#10b981' }}>₹{fmtN(d.revenue)}</td>
-                          <td style={{ ...tdS, fontWeight: 700, color: d.profit >= 0 ? '#6366f1' : '#ef4444' }}>₹{fmtN(d.profit)}</td>
+                          <td style={{ ...tdS, fontWeight: 700, color: d.profit >= 0 ? '#6366f1' : '#ef4444' }}>
+                            ₹{fmtN(d.profit)}
+                          </td>
                           <td style={tdS}>
                             <span style={{ background: m >= 20 ? '#dcfce7' : m >= 10 ? '#fef9c3' : '#fee2e2', color: m >= 20 ? '#15803d' : m >= 10 ? '#854d0e' : '#991b1b', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
                               {m.toFixed(1)}%
@@ -389,7 +407,7 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* ── TOP PRODUCTS + TOP CUSTOMERS ── */}
+          {/* ── TOP PRODUCTS + TOP CUSTOMERS (unchanged) ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
 
             {/* Top Products */}
@@ -404,7 +422,7 @@ export default function ReportsPage() {
               {topProducts.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20, fontSize: 13 }}>कोई data नहीं</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {topProducts.map((p, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{
@@ -441,7 +459,7 @@ export default function ReportsPage() {
               {topCustomers.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20, fontSize: 13 }}>कोई data नहीं</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {topCustomers.map((c, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{
@@ -489,5 +507,10 @@ export default function ReportsPage() {
   );
 }
 
-const thS = { padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid #f3f4f6' };
+// ── Table style helpers (unchanged) ─────────────────────────────────────────
+const thS = {
+  padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11,
+  color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5,
+  borderBottom: '1px solid #f3f4f6',
+};
 const tdS = { padding: '10px 12px', fontSize: 13, color: '#374151' };
