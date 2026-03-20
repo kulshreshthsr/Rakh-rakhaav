@@ -28,56 +28,22 @@ const numberToWords = (num) => {
   return convert(rupees) + ' Rupees' + (paise ? ' and '+convert(paise)+' Paise' : '') + ' Only';
 };
 
-// ── WhatsApp message builder ──────────────────────────────────────────────────
 const buildWhatsAppMessage = (sale, shopName) => {
   const saleDate = new Date(sale.createdAt || sale.sold_at)
     .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
   const payLabel =
     sale.payment_type === 'cash'   ? '✅ Cash (Paid)'   :
     sale.payment_type === 'upi'    ? '✅ UPI (Paid)'    :
     sale.payment_type === 'bank'   ? '✅ Bank Transfer' : '📒 Udhaar (Credit)';
-
   const itemLines = (sale.items && sale.items.length > 0)
-    ? sale.items.map((item, i) =>
-        `  ${i + 1}. ${item.product_name} × ${item.quantity} @ ₹${fmt(item.price_per_unit)} = ₹${fmt(item.total_amount)}`
-      ).join('\n')
+    ? sale.items.map((item, i) => `  ${i + 1}. ${item.product_name} × ${item.quantity} @ ₹${fmt(item.price_per_unit)} = ₹${fmt(item.total_amount)}`).join('\n')
     : `  1. ${sale.product_name} × ${sale.quantity} @ ₹${fmt(sale.price_per_unit)} = ₹${fmt(sale.total_amount)}`;
-
-  const isIGST = sale.gst_type === 'IGST' ||
-    (sale.items && sale.items.some(i => i.gst_type === 'IGST'));
-
+  const isIGST = sale.gst_type === 'IGST' || (sale.items && sale.items.some(i => i.gst_type === 'IGST'));
   const gstLine = (sale.total_gst && sale.total_gst > 0)
-    ? isIGST
-      ? `🔹 IGST: ₹${fmt(sale.igst_amount)}`
-      : `🔹 CGST: ₹${fmt(sale.cgst_amount)}  |  SGST: ₹${fmt(sale.sgst_amount)}`
+    ? isIGST ? `🔹 IGST: ₹${fmt(sale.igst_amount)}` : `🔹 CGST: ₹${fmt(sale.cgst_amount)}  |  SGST: ₹${fmt(sale.sgst_amount)}`
     : `🔹 GST: NIL`;
-
-  const greeting = sale.buyer_name && sale.buyer_name !== 'Walk-in Customer'
-    ? `Namaste *${sale.buyer_name}* ji! 🙏\n\n`
-    : '';
-
-  return [
-    `${greeting}🧾 *Invoice / Bill Details*`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `🏪 Shop: *${shopName || 'Rakhaav'}*`,
-    `📄 Invoice No: *${sale.invoice_number}*`,
-    `📅 Date: ${saleDate}`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `📦 *Items:*`,
-    itemLines,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `💵 Taxable Amount: ₹${fmt(sale.taxable_amount)}`,
-    gstLine,
-    `💰 *Total Amount: ₹${fmt(sale.total_amount)}*`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `💳 Payment: ${payLabel}`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `🙏 Aapka business hamare liye bahut important hai!`,
-    `Thank you for choosing *${shopName || 'Rakhaav'}* 😊`,
-    ``,
-    `_Powered by Rakhaav Business Manager_`,
-  ].join('\n');
+  const greeting = sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' ? `Namaste *${sale.buyer_name}* ji! 🙏\n\n` : '';
+  return [`${greeting}🧾 *Invoice / Bill Details*`,`━━━━━━━━━━━━━━━━━━━━`,`🏪 Shop: *${shopName || 'Rakhaav'}*`,`📄 Invoice No: *${sale.invoice_number}*`,`📅 Date: ${saleDate}`,`━━━━━━━━━━━━━━━━━━━━`,`📦 *Items:*`,itemLines,`━━━━━━━━━━━━━━━━━━━━`,`💵 Taxable Amount: ₹${fmt(sale.taxable_amount)}`,gstLine,`💰 *Total Amount: ₹${fmt(sale.total_amount)}*`,`━━━━━━━━━━━━━━━━━━━━`,`💳 Payment: ${payLabel}`,`━━━━━━━━━━━━━━━━━━━━`,`🙏 Aapka business hamare liye bahut important hai!`,`Thank you for choosing *${shopName || 'Rakhaav'}* 😊`,``,`_Powered by Rakhaav Business Manager_`].join('\n');
 };
 
 export default function SalesPage() {
@@ -126,13 +92,10 @@ export default function SalesPage() {
     } catch {}
   };
 
-  // fetch shop name once on load for WhatsApp message
   useEffect(() => {
     if (!localStorage.getItem('token')) return;
     fetch(`${API}/api/auth/shop`, { headers: { Authorization: `Bearer ${getToken()}` } })
-      .then(r => r.json())
-      .then(shop => setShopName(shop.name || ''))
-      .catch(() => {});
+      .then(r => r.json()).then(shop => setShopName(shop.name || '')).catch(() => {});
   }, []);
 
   const updateItem = (index, field, value) => {
@@ -212,57 +175,72 @@ export default function SalesPage() {
     } catch { alert('Invoice generate nahi hua'); }
   };
 
-  // ── WhatsApp share — pure text, no API call, no PDF ──────────────────────
   const shareWhatsApp = (sale) => {
     const msg   = buildWhatsAppMessage(sale, shopName);
     const phone = sale.buyer_phone ? sale.buyer_phone.replace(/\D/g, '') : '';
-    // If phone number exists → open direct chat, else → open WhatsApp contact picker
-    const waUrl = phone
-      ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    const waUrl = phone ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, '_blank');
   };
 
   const PayBadge = ({ type }) => {
     const map = {
-      cash:   { bg: '#dcfce7', color: '#166534', label: '💵 नकद' },
-      credit: { bg: '#fee2e2', color: '#991b1b', label: '📒 उधार' },
-      upi:    { bg: '#ede9fe', color: '#5b21b6', label: '📱 UPI' },
-      bank:   { bg: '#dbeafe', color: '#1e40af', label: '🏦 Bank' },
+      cash:   { bg: '#ECFDF5', color: '#065F46', label: '💵 Cash' },
+      credit: { bg: '#FEF2F2', color: '#991B1B', label: '📒 Credit' },
+      upi:    { bg: '#F5F3FF', color: '#5B21B6', label: '📱 UPI' },
+      bank:   { bg: '#EFF6FF', color: '#1E40AF', label: '🏦 Bank' },
     };
     const s = map[type] || map.cash;
-    return (
-      <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
-        {s.label}
-      </span>
-    );
+    return <span style={{ background: s.bg, color: s.color, padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>{s.label}</span>;
   };
+
+  const payBtnStyles = (opt, selected) => ({
+    flex: 1, minWidth: 70, padding: '10px 6px', borderRadius: 'var(--radius-sm)',
+    border: '2px solid', borderColor: selected ? opt.color : 'var(--border)',
+    background: selected ? opt.color : 'var(--surface-2)',
+    color: selected ? '#fff' : 'var(--text-2)',
+    cursor: 'pointer', fontWeight: 700, fontSize: 12.5,
+    fontFamily: 'var(--font-body)', transition: 'all 0.15s',
+  });
 
   return (
     <Layout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div className="page-title" style={{ marginBottom: 4 }}>बिक्री / Sales</div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <span style={{ color: '#10b981', fontSize: 13, fontWeight: 600 }}>Revenue: ₹{fmt(summary.totalRevenue)}</span>
-            {(summary.totalGST || 0) > 0 && <span style={{ color: '#6366f1', fontSize: 13, fontWeight: 600 }}>GST: ₹{fmt(summary.totalGST)}</span>}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#059669', background: 'var(--emerald-dim)', padding: '3px 10px', borderRadius: 100 }}>
+              ₹{fmt(summary.totalRevenue)} Revenue
+            </span>
+            {(summary.totalGST || 0) > 0 && (
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5', background: 'var(--primary-dim)', padding: '3px 10px', borderRadius: 100 }}>
+                GST ₹{fmt(summary.totalGST)}
+              </span>
+            )}
           </div>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success">+ बिक्री दर्ज / Record Sale</button>
+        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success">
+          + बिक्री दर्ज करें
+        </button>
       </div>
 
       {error && !showModal && (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
-          {error}
+        <div style={{ background: '#FEF2F2', color: '#991B1B', padding: '12px 16px', borderRadius: 'var(--radius-sm)', marginBottom: 16, fontSize: 13, fontWeight: 500, border: '1px solid #FECACA' }}>
+          ⚠️ {error}
         </div>
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 60, color: 'var(--text-4)' }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid var(--border)', borderTopColor: '#4F46E5', animation: 'spin 0.7s linear infinite', marginBottom: 12 }} />
+          लोड हो रहा है...
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
       ) : sales.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📈</div>
-          <div>अभी कोई बिक्री नहीं / No sales yet.</div>
+        <div className="card" style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--text-4)' }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>📈</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-2)', marginBottom: 4 }}>अभी कोई बिक्री नहीं</div>
+          <div style={{ fontSize: 13 }}>पहली बिक्री दर्ज करें!</div>
         </div>
       ) : (
         <>
@@ -271,52 +249,42 @@ export default function SalesPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Invoice</th><th>Items</th><th>Taxable</th><th>GST</th>
+                  <th>Invoice</th><th>Items / Buyer</th><th>Taxable</th><th>GST</th>
                   <th>Total</th><th>Payment</th><th>Date</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {sales.map(s => (
                   <tr key={s._id}>
-                    <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#1a1a2e', fontSize: 13 }}>
-                        {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
+                      <span style={{ color: '#4F46E5', fontWeight: 700, fontSize: 12, background: 'var(--primary-dim)', padding: '2px 8px', borderRadius: 6 }}>
+                        {s.invoice_number}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 13.5 }}>
+                        {s.items && s.items.length > 1 ? `${s.items.length} items` : s.product_name}
                       </div>
                       {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>को: {s.buyer_name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 2 }}>→ {s.buyer_name}</div>
                       )}
                     </td>
-                    <td>₹{fmt(s.taxable_amount)}</td>
+                    <td style={{ fontWeight: 500 }}>₹{fmt(s.taxable_amount)}</td>
                     <td>
                       {(s.total_gst || 0) > 0
-                        ? <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{fmt(s.total_gst)}</span>
-                        : <span style={{ color: '#9ca3af' }}>—</span>}
+                        ? <span style={{ background: '#F5F3FF', color: '#6D28D9', padding: '2px 9px', borderRadius: 100, fontSize: 11, fontWeight: 700 }}>₹{fmt(s.total_gst)}</span>
+                        : <span style={{ color: 'var(--text-5)' }}>—</span>}
                     </td>
-                    <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(s.total_amount)}</td>
+                    <td style={{ fontWeight: 800, color: '#059669', fontSize: 14 }}>₹{fmt(s.total_amount)}</td>
                     <td><PayBadge type={s.payment_type} /></td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
+                    <td style={{ color: 'var(--text-4)', fontSize: 12 }}>
                       {new Date(s.createdAt || s.sold_at).toLocaleDateString('en-IN')}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => printInvoice(s)}
-                          title="Print Invoice"
-                          style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                          🖨️ Print
-                        </button>
-                        <button
-                          onClick={() => shareWhatsApp(s)}
-                          title="Share on WhatsApp"
-                          style={{ color: '#25d366', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                          📲 WA
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s._id)}
-                          style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                          Del
-                        </button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => printInvoice(s)} style={{ color: '#4F46E5', background: '#EEF2FF', border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 700, padding: '5px 10px', borderRadius: 7, fontFamily: 'var(--font-body)' }}>🖨️ Print</button>
+                        <button onClick={() => shareWhatsApp(s)} style={{ color: '#059669', background: '#ECFDF5', border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 700, padding: '5px 10px', borderRadius: 7, fontFamily: 'var(--font-body)' }}>📲 WA</button>
+                        <button onClick={() => handleDelete(s._id)} style={{ color: '#EF4444', background: '#FEF2F2', border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 700, padding: '5px 10px', borderRadius: 7, fontFamily: 'var(--font-body)' }}>Del</button>
                       </div>
                     </td>
                   </tr>
@@ -328,40 +296,31 @@ export default function SalesPage() {
           {/* Mobile cards */}
           <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {sales.map(s => (
-              <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div key={s._id} className="card" style={{ borderLeft: `4px solid ${s.payment_type === 'credit' ? '#EF4444' : '#059669'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>
-                      {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
+                    <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--text)' }}>
+                      {s.items && s.items.length > 1 ? `${s.items.length} products` : s.product_name}
                     </div>
-                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
+                    <div style={{ fontSize: 11, color: '#4F46E5', fontWeight: 700, marginTop: 2 }}>{s.invoice_number}</div>
                     {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>को: {s.buyer_name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-4)' }}>→ {s.buyer_name}</div>
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: 16 }}>₹{fmt(s.total_amount)}</div>
-                    <PayBadge type={s.payment_type} />
+                    <div style={{ fontWeight: 800, color: '#059669', fontSize: 17 }}>₹{fmt(s.total_amount)}</div>
+                    <div style={{ marginTop: 4 }}><PayBadge type={s.payment_type} /></div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600 }}>₹{fmt(s.taxable_amount)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>₹{fmt(s.total_gst)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{new Date(s.createdAt || s.sold_at).toLocaleDateString('en-IN')}</div></div>
+                <div style={{ display: 'flex', gap: 14, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <div><div style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 700, textTransform: 'uppercase' }}>Taxable</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{fmt(s.taxable_amount)}</div></div>
+                  <div><div style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 700, textTransform: 'uppercase' }}>GST</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6D28D9' }}>₹{fmt(s.total_gst)}</div></div>
+                  <div><div style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 700, textTransform: 'uppercase' }}>Date</div><div style={{ fontWeight: 600, fontSize: 13 }}>{new Date(s.createdAt || s.sold_at).toLocaleDateString('en-IN')}</div></div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => printInvoice(s)} style={{ flex: 1, padding: '8px', background: '#eef2ff', color: '#6366f1', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    🖨️ Print
-                  </button>
-                  <button
-                    onClick={() => shareWhatsApp(s)}
-                    title="Share on WhatsApp"
-                    style={{ flex: 1, padding: '8px', background: '#f0fdf4', color: '#25d366', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    📲 WhatsApp
-                  </button>
-                  <button onClick={() => handleDelete(s._id)} style={{ flex: 1, padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    Delete
-                  </button>
+                  <button onClick={() => printInvoice(s)} style={{ flex: 1, padding: '9px', background: '#EEF2FF', color: '#4F46E5', border: 'none', borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>🖨️ Print</button>
+                  <button onClick={() => shareWhatsApp(s)} style={{ flex: 1, padding: '9px', background: '#ECFDF5', color: '#059669', border: 'none', borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>📲 WhatsApp</button>
+                  <button onClick={() => handleDelete(s._id)} style={{ flex: 1, padding: '9px', background: '#FEF2F2', color: '#EF4444', border: 'none', borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Delete</button>
                 </div>
               </div>
             ))}
@@ -372,78 +331,80 @@ export default function SalesPage() {
       {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: 560 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>बिक्री दर्ज करें / Record Sale</h3>
-            {error && (
-              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
-            )}
-            <form onSubmit={handleSubmit}>
+          <div className="modal" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: 580 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <h3 style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>बिक्री दर्ज करें</h3>
+                <div style={{ fontSize: 12, color: 'var(--text-4)', marginTop: 2 }}>Record new sale / नई बिक्री</div>
+              </div>
+              <button onClick={() => { setShowModal(false); resetForm(); }} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)' }}>✕</button>
+            </div>
 
-              {/* Items */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>🛍️ Items</div>
+            {error && (
+              <div style={{ background: '#FEF2F2', color: '#991B1B', padding: '10px 14px', borderRadius: 'var(--radius-sm)', fontSize: 13, marginBottom: 14, border: '1px solid #FECACA' }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              {/* ── Items section ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>🛍️ Items</div>
                 {items.map((item, index) => {
                   const g    = rowGST(item);
                   const prod = products.find(p => p._id === item.product_id);
                   return (
-                    <div key={index} style={{ background: '#f9fafb', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e5e7eb' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
+                    <div key={index} style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius-sm)', padding: 14, marginBottom: 10, border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Item {index + 1}</span>
                         {items.length > 1 && (
                           <button type="button" onClick={() => removeItem(index)}
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
+                            style={{ background: '#FEF2F2', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: 16, width: 26, height: 26, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                         )}
                       </div>
-
                       <div className="form-group">
                         <label className="form-label">Product *</label>
-                        <SearchableProductSelect
-                          products={products}
-                          value={item.product_id}
-                          onChange={(id) => updateItem(index, 'product_id', id)}
-                        />
+                        <SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} />
                       </div>
-
                       <div className="grid-2">
                         <div className="form-group">
                           <label className="form-label">Quantity *</label>
-                          <input className="form-input" type="number" min="1"
-                            max={prod ? prod.quantity : undefined}
-                            value={item.quantity}
-                            onChange={e => updateItem(index, 'quantity', e.target.value)} required />
-                          {prod && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Available: {prod.quantity}</div>}
+                          <input className="form-input" type="number" min="1" max={prod ? prod.quantity : undefined}
+                            value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} required />
+                          {prod && <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>Available: {prod.quantity}</div>}
                         </div>
                         <div className="form-group">
                           <label className="form-label">Price/Unit ₹ *</label>
                           <input className="form-input" type="number" step="0.01"
-                            value={item.price_per_unit}
-                            onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
+                            value={item.price_per_unit} onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
                         </div>
                       </div>
                       {g && (
-                        <div style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ede9fe' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-3)', background: g.gst_rate > 0 ? '#F5F3FF' : '#F0FDF4', borderRadius: 8, padding: '7px 12px', display: 'flex', gap: 16, flexWrap: 'wrap', border: `1px solid ${g.gst_rate > 0 ? '#DDD6FE' : '#BBF7D0'}` }}>
                           <span>Taxable: <strong>₹{fmt(g.taxable)}</strong></span>
                           {g.gst_rate > 0 && <span>GST {g.gst_rate}%: <strong>₹{fmt(g.gst)}</strong></span>}
-                          <span>Total: <strong>₹{fmt(g.total)}</strong></span>
+                          <span>Total: <strong style={{ color: g.gst_rate > 0 ? '#6D28D9' : '#059669' }}>₹{fmt(g.total)}</strong></span>
                         </div>
                       )}
                     </div>
                   );
                 })}
                 <button type="button" onClick={addItem}
-                  style={{ width: '100%', padding: '9px', background: '#fff', border: '1.5px dashed #d1d5db', borderRadius: 8, color: '#6b7280', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ width: '100%', padding: '10px', background: 'var(--surface)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-3)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#4F46E5'; e.currentTarget.style.color = '#4F46E5'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-3)'; }}>
                   + Add Another Product
                 </button>
               </div>
 
               {/* Bill Summary */}
               {billTotals.total > 0 && (
-                <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: '#6d28d9', marginBottom: 6 }}>📋 Bill Summary</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, color: '#7c3aed' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Taxable:</span><strong>₹{fmt(billTotals.taxable)}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>GST:</span><strong>₹{fmt(billTotals.gst)}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 4, marginTop: 2 }}>
+                <div style={{ background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, color: '#6D28D9', marginBottom: 8, fontSize: 13 }}>📋 Bill Summary</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7C3AED' }}><span>Taxable Amount:</span><strong>₹{fmt(billTotals.taxable)}</strong></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7C3AED' }}><span>GST:</span><strong>₹{fmt(billTotals.gst)}</strong></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15.5, borderTop: '1px solid #C4B5FD', paddingTop: 6, marginTop: 4, color: '#5B21B6' }}>
                       <span>Total:</span><span>₹{fmt(billTotals.total)}</span>
                     </div>
                   </div>
@@ -455,38 +416,32 @@ export default function SalesPage() {
                 <label className="form-label">Payment Type *</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[
-                    { val: 'cash',   label: '💵 Cash',   color: '#10b981' },
-                    { val: 'credit', label: '📒 Credit', color: '#ef4444' },
-                    { val: 'upi',    label: '📱 UPI',    color: '#8b5cf6' },
-                    { val: 'bank',   label: '🏦 Bank',   color: '#3b82f6' },
+                    { val: 'cash',   label: '💵 Cash',   color: '#059669' },
+                    { val: 'credit', label: '📒 Credit', color: '#EF4444' },
+                    { val: 'upi',    label: '📱 UPI',    color: '#8B5CF6' },
+                    { val: 'bank',   label: '🏦 Bank',   color: '#3B82F6' },
                   ].map(opt => (
                     <button key={opt.val} type="button"
                       onClick={() => setForm({ ...form, payment_type: opt.val })}
-                      style={{
-                        flex: 1, minWidth: 70, padding: '9px 4px', borderRadius: 8, border: '2px solid',
-                        borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
-                        background: form.payment_type === opt.val ? opt.color : '#f9fafb',
-                        color: form.payment_type === opt.val ? '#fff' : '#374151',
-                        cursor: 'pointer', fontWeight: 700, fontSize: 12,
-                      }}>
+                      style={payBtnStyles(opt, form.payment_type === opt.val)}>
                       {opt.label}
                     </button>
                   ))}
                 </div>
                 {form.payment_type === 'credit' && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 8, fontSize: 12, color: '#991b1b' }}>
+                  <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '9px 13px', marginTop: 8, fontSize: 12.5, color: '#991B1B', fontWeight: 500 }}>
                     ⚠️ उधार बही में entry अपने आप होगी
                   </div>
                 )}
               </div>
 
               {/* Buyer Details */}
-              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginBottom: 16 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: form.payment_type === 'credit' ? '#EF4444' : 'var(--text-4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
                   👤 {form.payment_type === 'credit' ? 'Customer Details (जरूरी *)' : 'Buyer Details (वैकल्पिक)'}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">नाम / Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                  <label className="form-label">नाम / Name {form.payment_type === 'credit' && <span style={{ color: '#EF4444' }}>*</span>}</label>
                   <input className="form-input" placeholder="ग्राहक का नाम"
                     value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })}
                     required={form.payment_type === 'credit'} />
@@ -523,10 +478,10 @@ export default function SalesPage() {
 
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="submit" className="btn-success" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? '⏳ दर्ज हो रहा है...' : form.payment_type === 'credit' ? '📒 Credit Sale' : '💵 बिक्री दर्ज'}
+                  {submitting ? '⏳ दर्ज हो रहा है...' : form.payment_type === 'credit' ? '📒 Credit Sale दर्ज' : '💵 बिक्री दर्ज करें'}
                 </button>
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
-                  style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: 'var(--surface-2)', color: 'var(--text-2)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                   रद्द / Cancel
                 </button>
               </div>
@@ -538,6 +493,7 @@ export default function SalesPage() {
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </Layout>
   );
@@ -545,156 +501,24 @@ export default function SalesPage() {
 
 // ── Invoice HTML Generator (UNCHANGED) ───────────────────────────────────────
 function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
-  const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{
-    product_name: sale.product_name,
-    hsn_code: sale.hsn_code,
-    quantity: sale.quantity,
-    price_per_unit: sale.price_per_unit,
-    gst_rate: sale.gst_rate,
-    taxable_amount: sale.taxable_amount,
-    cgst_amount: sale.cgst_amount,
-    sgst_amount: sale.sgst_amount,
-    igst_amount: sale.igst_amount,
-    gst_type: sale.gst_type,
-    total_amount: sale.total_amount,
-  }];
-
+  const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{ product_name: sale.product_name, hsn_code: sale.hsn_code, quantity: sale.quantity, price_per_unit: sale.price_per_unit, gst_rate: sale.gst_rate, taxable_amount: sale.taxable_amount, cgst_amount: sale.cgst_amount, sgst_amount: sale.sgst_amount, igst_amount: sale.igst_amount, gst_type: sale.gst_type, total_amount: sale.total_amount }];
   const isIGST   = sale.gst_type === 'IGST' || saleItems.some(i => i.gst_type === 'IGST');
   const saleDate = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const colSpan  = isIGST ? 8 : 10;
-
-  const gstCols = isIGST
-    ? '<th>IGST%</th><th>IGST ₹</th>'
-    : '<th>CGST%</th><th>CGST ₹</th><th>SGST%</th><th>SGST ₹</th>';
-
-  const itemRows = saleItems.map((item, idx) => {
-    const gstCells = isIGST
-      ? '<td>' + (item.gst_rate || 0) + '%</td><td>₹' + fmt(item.igst_amount) + '</td>'
-      : '<td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.cgst_amount) + '</td><td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.sgst_amount) + '</td>';
-    return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '—') + '</td><td>' + item.quantity + '</td><td>₹' + fmt(item.price_per_unit) + '</td><td>₹' + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>₹' + fmt(item.total_amount) + '</strong></td></tr>';
-  }).join('');
-
+  const gstCols = isIGST ? '<th>IGST%</th><th>IGST ₹</th>' : '<th>CGST%</th><th>CGST ₹</th><th>SGST%</th><th>SGST ₹</th>';
+  const itemRows = saleItems.map((item, idx) => { const gstCells = isIGST ? '<td>' + (item.gst_rate || 0) + '%</td><td>₹' + fmt(item.igst_amount) + '</td>' : '<td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.cgst_amount) + '</td><td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.sgst_amount) + '</td>'; return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '—') + '</td><td>' + item.quantity + '</td><td>₹' + fmt(item.price_per_unit) + '</td><td>₹' + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>₹' + fmt(item.total_amount) + '</strong></td></tr>'; }).join('');
   const emptyCell  = '<td style="height:20px"></td>';
   const fillerRows = Array(Math.max(0, 5 - saleItems.length)).fill('<tr>' + emptyCell.repeat(colSpan) + '</tr>').join('');
-
-  const footerGST = isIGST
-    ? '<td></td><td>₹' + fmt(sale.igst_amount) + '</td>'
-    : '<td></td><td>₹' + fmt(sale.cgst_amount) + '</td><td></td><td>₹' + fmt(sale.sgst_amount) + '</td>';
-
-  const amountGSTRows = isIGST
-    ? '<div class="amount-row"><span>IGST @' + (sale.gst_rate || 0) + '%</span><span>₹' + fmt(sale.igst_amount) + '</span></div>'
-    : '<div class="amount-row"><span>CGST @' + ((sale.gst_rate || 0) / 2).toFixed(1) + '%</span><span>₹' + fmt(sale.cgst_amount) + '</span></div><div class="amount-row"><span>SGST @' + ((sale.gst_rate || 0) / 2).toFixed(1) + '%</span><span>₹' + fmt(sale.sgst_amount) + '</span></div>';
-
+  const footerGST = isIGST ? '<td></td><td>₹' + fmt(sale.igst_amount) + '</td>' : '<td></td><td>₹' + fmt(sale.cgst_amount) + '</td><td></td><td>₹' + fmt(sale.sgst_amount) + '</td>';
+  const amountGSTRows = isIGST ? '<div class="amount-row"><span>IGST @' + (sale.gst_rate || 0) + '%</span><span>₹' + fmt(sale.igst_amount) + '</span></div>' : '<div class="amount-row"><span>CGST @' + ((sale.gst_rate || 0) / 2).toFixed(1) + '%</span><span>₹' + fmt(sale.cgst_amount) + '</span></div><div class="amount-row"><span>SGST @' + ((sale.gst_rate || 0) / 2).toFixed(1) + '%</span><span>₹' + fmt(sale.sgst_amount) + '</span></div>';
   const payBg    = sale.payment_type === 'cash' ? '#dcfce7' : sale.payment_type === 'upi' ? '#ede9fe' : '#fee2e2';
   const payColor = sale.payment_type === 'cash' ? '#166534' : sale.payment_type === 'upi' ? '#5b21b6' : '#991b1b';
   const payLabel = sale.payment_type === 'cash' ? '💵 CASH' : sale.payment_type === 'upi' ? '📱 UPI' : sale.payment_type === 'bank' ? '🏦 BANK' : '📒 CREDIT';
-
-  const bankHTML = shop.bank_name
-    ? '<div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:6px">🏦 Bank Details</div>'
-      + '<div style="font-size:11px;margin-bottom:3px">Bank: <strong>' + shop.bank_name + '</strong></div>'
-      + (shop.bank_branch  ? '<div style="font-size:11px;margin-bottom:3px">Branch: <strong>' + shop.bank_branch  + '</strong></div>' : '')
-      + (shop.bank_account ? '<div style="font-size:11px;margin-bottom:3px">A/C: <strong>'    + shop.bank_account + '</strong></div>' : '')
-      + (shop.bank_ifsc    ? '<div style="font-size:11px">IFSC: <strong>'                     + shop.bank_ifsc    + '</strong></div>' : '')
-    : '<div style="color:#9ca3af;font-size:11px;font-style:italic">Add bank details in Profile</div>';
-
-  const termsHTML = shop.terms
-    ? '<div class="terms-box"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Terms & Conditions</div><div style="font-size:10px;color:#374151">'
-      + shop.terms.split('\n').map((t, i) => (i + 1) + '. ' + t).join('<br/>')
-      + '</div></div>'
-    : '';
-
-  const creditNote = sale.payment_type === 'credit'
-    ? '<div style="margin-top:8px;background:#fee2e2;border-radius:6px;padding:6px 8px"><div style="font-size:10px;font-weight:700;color:#991b1b">📒 CREDIT SALE — उधार</div><div style="font-size:11px;color:#991b1b">Amount added to customer ledger</div></div>'
-    : '';
-
-  const pdfBanner = suggestedFileName && !autoPrint
-    ? '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px">'
-      + '<span style="font-size:18px">📄</span>'
-      + '<div><strong>Save as PDF:</strong> Press <kbd style="background:#e5e7eb;padding:1px 6px;border-radius:4px;font-size:11px">Ctrl+P</kbd> → Change destination to <strong>"Save as PDF"</strong> → Save as <strong>' + suggestedFileName + '</strong><br/>'
-      + '<span style="font-size:11px;opacity:0.8">Then attach this PDF file on WhatsApp</span></div>'
-      + '</div>'
-    : '';
-
-  const html = '<!DOCTYPE html><html><head><title>Invoice - ' + sale.invoice_number + '</title>'
-    + '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;color:#000;background:#fff}'
-    + '.invoice{max-width:800px;margin:0 auto;padding:20px;border:2px solid #000}'
-    + '.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;border-bottom:3px solid #0B1D35;padding-bottom:10px}'
-    + '.shop-name{font-size:26px;font-weight:900;color:#0B1D35}.shop-name span{color:#059669}'
-    + '.title-bar{background:#0B1D35;color:white;text-align:center;padding:6px;font-size:16px;font-weight:700;letter-spacing:2px;margin-bottom:8px}'
-    + '.gstin-row{display:flex;justify-content:space-between;align-items:center;border:1px solid #000;margin-bottom:8px}'
-    + '.gstin-cell{padding:5px 10px;font-weight:700;font-size:12px;border-right:1px solid #000}'
-    + '.parties{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;margin-bottom:0}'
-    + '.party-box{padding:8px}.party-box:first-child{border-right:1px solid #000}'
-    + '.party-label{font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:4px;border-bottom:1px solid #e5e7eb;padding-bottom:3px}'
-    + '.party-name{font-size:14px;font-weight:700;color:#0B1D35}.party-detail{font-size:11px;color:#374151;margin-top:2px}'
-    + '.inv-details{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid #000;border-top:none;margin-bottom:8px}'
-    + '.inv-detail-box{padding:5px 8px;border-right:1px solid #e5e7eb;font-size:11px}'
-    + 'table{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:0}'
-    + 'th{background:#0B1D35;color:white;padding:6px 8px;text-align:center;font-size:10px;text-transform:uppercase;border:1px solid #374151}'
-    + 'td{padding:6px 8px;border:1px solid #d1d5db;text-align:center;font-size:11px}'
-    + 'td:nth-child(2){text-align:left}tr:nth-child(even){background:#f9fafb}'
-    + '.totals-section{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:none}'
-    + '.words-box{padding:10px;border-right:1px solid #000}.amounts-box{padding:6px 10px}'
-    + '.amount-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid #f3f4f6}'
-    + '.amount-total{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;font-weight:900;color:#0B1D35;border-top:2px solid #0B1D35;margin-top:4px}'
-    + '.footer-section{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:none}'
-    + '.bank-box{padding:10px;border-right:1px solid #000}.sign-box{padding:10px;text-align:right}'
-    + '.terms-box{border:1px solid #000;border-top:none;padding:8px 10px}'
-    + '.logo-circle{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0B1D35,#059669);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:900}'
-    + '@media print{.pdf-banner{display:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}'
-    + '</style></head><body>'
-    + '<div class="pdf-banner" style="max-width:800px;margin:0 auto 0;">' + pdfBanner + '</div>'
-    + '<div class="invoice">'
-    + '<div class="header"><div>'
-    + '<div class="shop-name">रख<span>रखाव</span></div>'
-    + '<div style="font-size:11px;color:#059669;font-weight:600;background:#ecfdf5;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:2px">Business Manager</div>'
-    + (shop.address ? '<div style="font-size:11px;color:#374151;margin-top:4px">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
-    + (shop.phone   ? '<div style="font-size:11px;color:#374151">📞 ' + shop.phone + (shop.email ? ' | ✉️ ' + shop.email : '') + '</div>' : '')
-    + '</div><div class="logo-circle">र</div></div>'
-    + '<div class="title-bar">TAX INVOICE / कर चालान</div>'
-    + '<div class="gstin-row"><div class="gstin-cell">GSTIN: ' + (shop.gstin || 'N/A') + '</div>'
-    + '<div style="flex:1;text-align:center;padding:5px;font-size:11px"><span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:' + payBg + ';color:' + payColor + '">' + payLabel + '</span></div>'
-    + '<div style="padding:5px 10px;font-size:10px;font-weight:700;color:#059669;border-left:1px solid #000">ORIGINAL FOR RECIPIENT</div></div>'
-    + '<div class="parties">'
-    + '<div class="party-box"><div class="party-label">विक्रेता / Seller</div><div class="party-name">' + (shop.name || 'रखरखाव') + '</div>'
-    + (shop.address ? '<div class="party-detail">📍 ' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
-    + (shop.phone   ? '<div class="party-detail">📞 ' + shop.phone + '</div>' : '')
-    + (shop.gstin   ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + shop.gstin + '</div>' : '')
-    + '</div>'
-    + '<div class="party-box"><div class="party-label">खरीदार / Buyer</div><div class="party-name">' + (sale.buyer_name || 'Walk-in Customer') + '</div>'
-    + (sale.buyer_address ? '<div class="party-detail">📍 ' + sale.buyer_address + '</div>' : '')
-    + (sale.buyer_state   ? '<div class="party-detail">State: ' + sale.buyer_state + '</div>' : '')
-    + (sale.buyer_gstin   ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + sale.buyer_gstin + '</div>' : '')
-    + (sale.buyer_phone   ? '<div class="party-detail">📞 ' + sale.buyer_phone + '</div>' : '')
-    + '</div></div>'
-    + '<div class="inv-details">'
-    + '<div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Invoice No.</div><div style="font-weight:700;color:#059669">' + sale.invoice_number + '</div></div>'
-    + '<div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Date</div><div style="font-weight:700">' + saleDate + '</div></div>'
-    + '<div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Type</div><div style="font-weight:700">' + (sale.invoice_type || 'B2C') + ' | ' + (isIGST ? 'IGST' : 'CGST+SGST') + '</div></div>'
-    + '</div>'
-    + '<table><thead><tr><th style="width:28px">Sr.</th><th style="text-align:left">Product</th><th>HSN</th><th>Qty</th><th>Rate ₹</th><th>Taxable ₹</th>' + gstCols + '<th>Total ₹</th></tr></thead>'
-    + '<tbody>' + itemRows + fillerRows + '</tbody>'
-    + '<tfoot><tr style="background:#f3f4f6;font-weight:700"><td colspan="5" style="text-align:right">कुल / Total</td><td>₹' + fmt(sale.taxable_amount) + '</td>' + footerGST + '<td><strong>₹' + fmt(sale.total_amount) + '</strong></td></tr></tfoot></table>'
-    + '<div class="totals-section">'
-    + '<div class="words-box"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Amount in Words</div>'
-    + '<div style="font-size:11px;font-weight:600;color:#0B1D35;font-style:italic">' + numberToWords(parseFloat(sale.total_amount)) + '</div>' + creditNote + '</div>'
-    + '<div class="amounts-box">'
-    + '<div class="amount-row"><span>Taxable Amount</span><span>₹' + fmt(sale.taxable_amount) + '</span></div>'
-    + amountGSTRows
-    + '<div class="amount-row"><span>Total GST</span><span>₹' + fmt(sale.total_gst) + '</span></div>'
-    + '<div class="amount-total"><span>GRAND TOTAL</span><span>₹' + fmt(sale.total_amount) + '</span></div>'
-    + '</div></div>'
-    + '<div class="footer-section"><div class="bank-box">' + bankHTML + '</div>'
-    + '<div class="sign-box"><div style="font-size:12px;font-weight:700;margin-bottom:40px">For <strong>' + (shop.name || 'रखरखाव') + '</strong></div>'
-    + '<div style="border-top:1px solid #000;padding-top:4px;font-size:11px;font-weight:700">Authorised Signatory</div>'
-    + '<div style="font-size:10px;color:#9ca3af;margin-top:6px">Computer generated invoice<br/>No signature required.</div>'
-    + '</div></div>'
-    + termsHTML
-    + '<div style="text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;font-style:italic">~ Rakhaav Business Manager ~</div>'
-    + '</div>'
-    + (autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : '')
-    + '</body></html>';
-
+  const bankHTML = shop.bank_name ? '<div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:6px">🏦 Bank Details</div>' + '<div style="font-size:11px;margin-bottom:3px">Bank: <strong>' + shop.bank_name + '</strong></div>' + (shop.bank_branch ? '<div style="font-size:11px;margin-bottom:3px">Branch: <strong>' + shop.bank_branch + '</strong></div>' : '') + (shop.bank_account ? '<div style="font-size:11px;margin-bottom:3px">A/C: <strong>' + shop.bank_account + '</strong></div>' : '') + (shop.bank_ifsc ? '<div style="font-size:11px">IFSC: <strong>' + shop.bank_ifsc + '</strong></div>' : '') : '<div style="color:#9ca3af;font-size:11px;font-style:italic">Add bank details in Profile</div>';
+  const termsHTML = shop.terms ? '<div class="terms-box"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Terms & Conditions</div><div style="font-size:10px;color:#374151">' + shop.terms.split('\n').map((t, i) => (i + 1) + '. ' + t).join('<br/>') + '</div></div>' : '';
+  const creditNote = sale.payment_type === 'credit' ? '<div style="margin-top:8px;background:#fee2e2;border-radius:6px;padding:6px 8px"><div style="font-size:10px;font-weight:700;color:#991b1b">📒 CREDIT SALE — उधार</div><div style="font-size:11px;color:#991b1b">Amount added to customer ledger</div></div>' : '';
+  const pdfBanner = suggestedFileName && !autoPrint ? '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px"><span style="font-size:18px">📄</span><div><strong>Save as PDF:</strong> Press <kbd style="background:#e5e7eb;padding:1px 6px;border-radius:4px;font-size:11px">Ctrl+P</kbd> → Change destination to <strong>"Save as PDF"</strong> → Save as <strong>' + suggestedFileName + '</strong><br/><span style="font-size:11px;opacity:0.8">Then attach this PDF file on WhatsApp</span></div></div>' : '';
+  const html = '<!DOCTYPE html><html><head><title>Invoice - ' + sale.invoice_number + '</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;color:#000;background:#fff}.invoice{max-width:800px;margin:0 auto;padding:20px;border:2px solid #000}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;border-bottom:3px solid #0B1D35;padding-bottom:10px}.shop-name{font-size:26px;font-weight:900;color:#0B1D35}.shop-name span{color:#059669}.title-bar{background:#0B1D35;color:white;text-align:center;padding:6px;font-size:16px;font-weight:700;letter-spacing:2px;margin-bottom:8px}.gstin-row{display:flex;justify-content:space-between;align-items:center;border:1px solid #000;margin-bottom:8px}.gstin-cell{padding:5px 10px;font-weight:700;font-size:12px;border-right:1px solid #000}.parties{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;margin-bottom:0}.party-box{padding:8px}.party-box:first-child{border-right:1px solid #000}.party-label{font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:4px;border-bottom:1px solid #e5e7eb;padding-bottom:3px}.party-name{font-size:14px;font-weight:700;color:#0B1D35}.party-detail{font-size:11px;color:#374151;margin-top:2px}.inv-details{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid #000;border-top:none;margin-bottom:8px}.inv-detail-box{padding:5px 8px;border-right:1px solid #e5e7eb;font-size:11px}table{width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:0}th{background:#0B1D35;color:white;padding:6px 8px;text-align:center;font-size:10px;text-transform:uppercase;border:1px solid #374151}td{padding:6px 8px;border:1px solid #d1d5db;text-align:center;font-size:11px}td:nth-child(2){text-align:left}tr:nth-child(even){background:#f9fafb}.totals-section{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:none}.words-box{padding:10px;border-right:1px solid #000}.amounts-box{padding:6px 10px}.amount-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid #f3f4f6}.amount-total{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;font-weight:900;color:#0B1D35;border-top:2px solid #0B1D35;margin-top:4px}.footer-section{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;border-top:none}.bank-box{padding:10px;border-right:1px solid #000}.sign-box{padding:10px;text-align:right}.terms-box{border:1px solid #000;border-top:none;padding:8px 10px}.logo-circle{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0B1D35,#059669);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:900}@media print{.pdf-banner{display:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}</style></head><body><div class="pdf-banner" style="max-width:800px;margin:0 auto 0;">' + pdfBanner + '</div><div class="invoice"><div class="header"><div><div class="shop-name">रख<span>रखाव</span></div><div style="font-size:11px;color:#059669;font-weight:600;background:#ecfdf5;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:2px">Business Manager</div>' + (shop.address ? '<div style="font-size:11px;color:#374151;margin-top:4px">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '') + (shop.phone ? '<div style="font-size:11px;color:#374151">📞 ' + shop.phone + (shop.email ? ' | ✉️ ' + shop.email : '') + '</div>' : '') + '</div><div class="logo-circle">र</div></div><div class="title-bar">TAX INVOICE / कर चालान</div><div class="gstin-row"><div class="gstin-cell">GSTIN: ' + (shop.gstin || 'N/A') + '</div><div style="flex:1;text-align:center;padding:5px;font-size:11px"><span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:' + payBg + ';color:' + payColor + '">' + payLabel + '</span></div><div style="padding:5px 10px;font-size:10px;font-weight:700;color:#059669;border-left:1px solid #000">ORIGINAL FOR RECIPIENT</div></div><div class="parties"><div class="party-box"><div class="party-label">विक्रेता / Seller</div><div class="party-name">' + (shop.name || 'रखरखाव') + '</div>' + (shop.address ? '<div class="party-detail">📍 ' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '') + (shop.phone ? '<div class="party-detail">📞 ' + shop.phone + '</div>' : '') + (shop.gstin ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + shop.gstin + '</div>' : '') + '</div><div class="party-box"><div class="party-label">खरीदार / Buyer</div><div class="party-name">' + (sale.buyer_name || 'Walk-in Customer') + '</div>' + (sale.buyer_address ? '<div class="party-detail">📍 ' + sale.buyer_address + '</div>' : '') + (sale.buyer_state ? '<div class="party-detail">State: ' + sale.buyer_state + '</div>' : '') + (sale.buyer_gstin ? '<div class="party-detail" style="font-weight:700">GSTIN: ' + sale.buyer_gstin + '</div>' : '') + (sale.buyer_phone ? '<div class="party-detail">📞 ' + sale.buyer_phone + '</div>' : '') + '</div></div><div class="inv-details"><div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Invoice No.</div><div style="font-weight:700;color:#059669">' + sale.invoice_number + '</div></div><div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Date</div><div style="font-weight:700">' + saleDate + '</div></div><div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Type</div><div style="font-weight:700">' + (sale.invoice_type || 'B2C') + ' | ' + (isIGST ? 'IGST' : 'CGST+SGST') + '</div></div></div><table><thead><tr><th style="width:28px">Sr.</th><th style="text-align:left">Product</th><th>HSN</th><th>Qty</th><th>Rate ₹</th><th>Taxable ₹</th>' + gstCols + '<th>Total ₹</th></tr></thead><tbody>' + itemRows + fillerRows + '</tbody><tfoot><tr style="background:#f3f4f6;font-weight:700"><td colspan="5" style="text-align:right">कुल / Total</td><td>₹' + fmt(sale.taxable_amount) + '</td>' + footerGST + '<td><strong>₹' + fmt(sale.total_amount) + '</strong></td></tr></tfoot></table><div class="totals-section"><div class="words-box"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Amount in Words</div><div style="font-size:11px;font-weight:600;color:#0B1D35;font-style:italic">' + numberToWords(parseFloat(sale.total_amount)) + '</div>' + creditNote + '</div><div class="amounts-box"><div class="amount-row"><span>Taxable Amount</span><span>₹' + fmt(sale.taxable_amount) + '</span></div>' + amountGSTRows + '<div class="amount-row"><span>Total GST</span><span>₹' + fmt(sale.total_gst) + '</span></div><div class="amount-total"><span>GRAND TOTAL</span><span>₹' + fmt(sale.total_amount) + '</span></div></div></div><div class="footer-section"><div class="bank-box">' + bankHTML + '</div><div class="sign-box"><div style="font-size:12px;font-weight:700;margin-bottom:40px">For <strong>' + (shop.name || 'रखरखाव') + '</strong></div><div style="border-top:1px solid #000;padding-top:4px;font-size:11px;font-weight:700">Authorised Signatory</div><div style="font-size:10px;color:#9ca3af;margin-top:6px">Computer generated invoice<br/>No signature required.</div></div></div>' + termsHTML + '<div style="text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;font-style:italic">~ Rakhaav Business Manager ~</div></div>' + (autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : '') + '</body></html>';
   const win = window.open('', '_blank');
   win.document.write(html);
   win.document.close();
