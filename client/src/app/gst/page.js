@@ -256,24 +256,42 @@ export default function GSTPage() {
     <Layout>
       <div className="page-shell">
         <section className="hero-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
-            <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1 }}>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST सारांश / GST Summary</div>
             </div>
-            <div className="toolbar-card" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)', minWidth: 260 }}>
-              <div className="toolbar">
-                <select className="form-input" style={{ minWidth: 150 }} value={month}
-                  onChange={e => setMonth(parseInt(e.target.value))}>
-                  {MONTHS.map((m, i) => (
-                    <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>
-                  ))}
-                </select>
-                <select className="form-input" style={{ minWidth: 100 }} value={year}
-                  onChange={e => setYear(parseInt(e.target.value))}>
-                  {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-              {loading && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', marginTop: 10 }}>⏳ लोड हो रहा है...</div>}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                className="form-input"
+                style={{
+                  minWidth: 138,
+                  height: 44,
+                  background: 'rgba(255,255,255,0.92)',
+                  borderColor: 'rgba(255,255,255,0.28)',
+                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                }}
+                value={month}
+                onChange={e => setMonth(parseInt(e.target.value))}
+              >
+                {MONTHS.map((m, i) => (
+                  <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>
+                ))}
+              </select>
+              <select
+                className="form-input"
+                style={{
+                  minWidth: 104,
+                  height: 44,
+                  background: 'rgba(255,255,255,0.92)',
+                  borderColor: 'rgba(255,255,255,0.28)',
+                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                }}
+                value={year}
+                onChange={e => setYear(parseInt(e.target.value))}
+              >
+                {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              {loading && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)' }}>⏳ लोड हो रहा है...</div>}
             </div>
           </div>
         </section>
@@ -289,37 +307,40 @@ export default function GSTPage() {
           <div style={{
             background: isPayable ? '#fef2f2' : isRefund ? '#f0fdf4' : '#f8fafc',
             border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
-            borderRadius: 16, padding: '20px 24px', marginBottom: 20,
+            borderRadius: 16, padding: '16px 18px', marginBottom: 20,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 12 }}>
-              <div style={{ fontSize: 36 }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
-              <div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151', lineHeight: 1.3 }}>
-                  {isPayable
-                    ? `${monthHi} ${year}: ₹${fmt(netPayable)} GST भरना है`
-                    : isRefund
-                    ? `${monthHi} ${year}: ₹${fmt(Math.abs(netPayable))} GST वापस मिलेगा`
-                    : `${monthHi} ${year}: कोई GST देय नहीं ✅`}
-                </div>
-                <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
-                  {isPayable
-                    ? `${monthEn} ${year}: Pay ₹${fmt(netPayable)} GST`
-                    : isRefund
-                    ? `${monthEn} ${year}: GST refund ₹${fmt(Math.abs(netPayable))}`
-                    : `${monthEn} ${year}: No GST payable`}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 28, flexShrink: 0 }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151', lineHeight: 1.25 }}>
+                    {isPayable
+                      ? `${monthHi} ${year}: ₹${fmt(netPayable)} GST भरना है`
+                      : isRefund
+                      ? `${monthHi} ${year}: ₹${fmt(Math.abs(netPayable))} GST वापस मिलेगा`
+                      : `${monthHi} ${year}: कोई GST देय नहीं ✅`}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#6b7280', marginTop: 3 }}>
+                    {isPayable
+                      ? `${monthEn} ${year}: Pay ₹${fmt(netPayable)} GST`
+                      : isRefund
+                      ? `${monthEn} ${year}: GST refund ₹${fmt(Math.abs(netPayable))}`
+                      : `${monthEn} ${year}: No GST payable`}
+                  </div>
                 </div>
               </div>
+              {returnStatus && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: returnStatus.ok ? '#dcfce7' : '#fef9c3',
+                  color: returnStatus.ok ? '#166534' : '#854d0e',
+                  padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {returnStatus.msg}
+                </div>
+              )}
             </div>
-            {returnStatus && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                background: returnStatus.ok ? '#dcfce7' : '#fef9c3',
-                color: returnStatus.ok ? '#166534' : '#854d0e',
-                padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-              }}>
-                {returnStatus.msg}
-              </div>
-            )}
           </div>
 
           {/* ── SECTION 2: GST CALCULATION ── */}
@@ -698,6 +719,12 @@ export default function GSTPage() {
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
+
+        @media (max-width: 640px) {
+          .hero-panel {
+            padding: 16px !important;
+          }
+        }
       `}</style>
     </Layout>
   );

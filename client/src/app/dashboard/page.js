@@ -166,37 +166,44 @@ export default function DashboardPage() {
     <Layout>
       <div className="page-shell">
         <section className="hero-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <div style={{ maxWidth: 680 }}>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 8 }}>डैशबोर्ड / Dashboard</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ maxWidth: 680, flex: 1 }}>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>डैशबोर्ड / Dashboard</div>
             </div>
 
-            <div className="toolbar-card" style={{ minWidth: 216, background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.54)', marginBottom: 10 }}>
-                Active Period
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="form-input"
-                  style={{ background: 'rgba(255,255,255,0.9) !important' }}
-                >
-                  {MONTHS.map((month, index) => (
-                    <option key={month} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="form-input"
-                  style={{ background: 'rgba(255,255,255,0.9) !important' }}
-                >
-                  {[2023, 2024, 2025, 2026].map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="form-input"
+                style={{
+                  minWidth: 104,
+                  height: 44,
+                  background: 'rgba(255,255,255,0.92)',
+                  borderColor: 'rgba(255,255,255,0.28)',
+                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                }}
+              >
+                {MONTHS.map((month, index) => (
+                  <option key={month} value={index + 1}>{month}</option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="form-input"
+                style={{
+                  minWidth: 112,
+                  height: 44,
+                  background: 'rgba(255,255,255,0.92)',
+                  borderColor: 'rgba(255,255,255,0.28)',
+                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                }}
+              >
+                {[2023, 2024, 2025, 2026].map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
           </div>
         </section>
@@ -330,8 +337,39 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <section className="dashboard-two-col" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 18 }}>
-          <div className="card">
+        <section className="card" style={{ paddingBottom: 18 }}>
+          <div style={{ marginBottom: 14 }}>
+            <div className="section-title">त्वरित कार्य / Quick Actions</div>
+            <div className="section-subtitle">Fast access to your most-used screens</div>
+          </div>
+          <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
+            {quickActions.map((action) => (
+              <a
+                key={action.href}
+                href={action.href}
+                style={{
+                  textDecoration: 'none',
+                  borderRadius: 18,
+                  padding: '12px 12px',
+                  background: action.bg,
+                  color: '#fff',
+                  boxShadow: '0 14px 28px rgba(15,23,42,0.1)',
+                  minHeight: 88,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3 }}>{action.hi} / {action.en}</div>
+                    <div style={{ fontSize: 11, opacity: 0.82, marginTop: 4, lineHeight: 1.45 }}>{action.sub}</div>
+                  </div>
+                  <div style={{ fontSize: 20, flexShrink: 0 }}>{action.icon}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section className="card">
             <div style={{ marginBottom: 16 }}>
               <div className="section-title">🏆 टॉप उत्पाद / Top Products</div>
               <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
@@ -342,25 +380,26 @@ export default function DashboardPage() {
                 <div>No top products yet for this period.</div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="top-products-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
                 {topProducts.map((product, index) => (
                   <div
                     key={product.name}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 12,
+                      gap: 10,
                       padding: 14,
                       borderRadius: 18,
                       background: 'rgba(248,250,252,0.72)',
                       border: '1px solid rgba(226,232,240,0.84)',
+                      minWidth: 0,
                     }}
                   >
                     <div
                       style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 14,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 12,
                         background: [
                           'linear-gradient(135deg, #10b981, #34d399)',
                           'linear-gradient(135deg, #2563eb, #38bdf8)',
@@ -378,54 +417,45 @@ export default function DashboardPage() {
                     >
                       {index + 1}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{product.name}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
                       <div style={{ fontSize: 12, color: '#64748b' }}>{product.qty} units sold</div>
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: '#059669' }}>₹{fmt(product.revenue)}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="card">
-            <div style={{ marginBottom: 16 }}>
-              <div className="section-title">त्वरित कार्य / Quick Actions</div>
-              <div className="section-subtitle">Fast access to your most-used screens</div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
-              {quickActions.map((action) => (
-                <a
-                  key={action.href}
-                  href={action.href}
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: 20,
-                    padding: '16px 16px',
-                    background: action.bg,
-                    color: '#fff',
-                    boxShadow: '0 18px 34px rgba(15,23,42,0.12)',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 800 }}>{action.hi} / {action.en}</div>
-                      <div style={{ fontSize: 11.5, opacity: 0.82, marginTop: 3 }}>{action.sub}</div>
-                    </div>
-                    <div style={{ fontSize: 24 }}>{action.icon}</div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
         </section>
       </div>
 
       <style>{`
+        .top-products-row,
+        .quick-actions-row {
+          overflow-x: auto;
+        }
+
         @media (max-width: 900px) {
-          .dashboard-two-col {
-            grid-template-columns: 1fr;
+          .quick-actions-row {
+            grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
+          }
+
+          .top-products-row {
+            grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-panel {
+            padding: 16px !important;
+          }
+
+          .quick-actions-row {
+            grid-template-columns: repeat(3, minmax(160px, 1fr)) !important;
+          }
+
+          .top-products-row {
+            grid-template-columns: repeat(4, minmax(210px, 1fr)) !important;
           }
         }
       `}</style>

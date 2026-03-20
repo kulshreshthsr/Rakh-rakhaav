@@ -150,6 +150,98 @@ export default function UdhaarPage() {
   const totalSupplierUdhaar = suppliers.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
   const list = activeTab === 'customers' ? customers : suppliers;
   const isCustomer = activeTab === 'customers';
+  const renderLedgerPanel = () => (
+    <div className="card" style={{
+      border: `1.5px solid ${isCustomer ? '#fecaca' : '#fde68a'}`,
+      borderTop: `4px solid ${isCustomer ? '#ef4444' : '#f59e0b'}`,
+      marginTop: 8,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: '#1a1a2e' }}>{selected.name}</div>
+          {selected.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {selected.phone}</div>}
+          <div style={{ fontSize: 12, color: '#9ca3af' }}>Transaction History</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {selected.totalUdhaar > 0 && (
+            <button
+              onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}
+              style={{ padding: '8px 14px', background: isCustomer ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              💰 {isCustomer ? 'Payment लें' : 'Payment करें'}
+            </button>
+          )}
+          <button
+            onClick={() => { setSelected(null); setLedger([]); }}
+            style={{ padding: '8px 12px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+            ✕ बंद करें
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+        {isCustomer ? (
+          <>
+            <BalanceTile label="कुल बिक्री / Total Sales" value={`₹${fmt(selected.totalSales)}`} color="#374151" bg="#f9fafb" />
+            <BalanceTile label="कुल मिला / Received" value={`₹${fmt(selected.totalPaid)}`} color="#10b981" bg="#f0fdf4" />
+            <BalanceTile label="बाकी / Due" value={`₹${fmt(selected.totalUdhaar)}`} color={selected.totalUdhaar > 0 ? '#ef4444' : '#10b981'} bg={selected.totalUdhaar > 0 ? '#fef2f2' : '#f0fdf4'} />
+          </>
+        ) : (
+          <>
+            <BalanceTile label="कुल खरीद / Purchased" value={`₹${fmt(selected.totalPurchased)}`} color="#374151" bg="#f9fafb" />
+            <BalanceTile label="कुल दिया / Paid" value={`₹${fmt(selected.totalPaid)}`} color="#10b981" bg="#f0fdf4" />
+            <BalanceTile label="देना बाकी / Due" value={`₹${fmt(selected.totalUdhaar)}`} color={selected.totalUdhaar > 0 ? '#f59e0b' : '#10b981'} bg={selected.totalUdhaar > 0 ? '#fffbeb' : '#f0fdf4'} />
+          </>
+        )}
+      </div>
+
+      {ledgerLoading ? (
+        <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>⏳ लोड हो रहा है...</div>
+      ) : ledger.length === 0 ? (
+        <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>कोई entry नहीं</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>तारीख / Date</th>
+                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>विवरण / Note</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Debit (+)</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Credit (−)</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...ledger].reverse().map((entry, i) => {
+                const isDebit = entry.type === 'debit' || entry.type === 'diya';
+                return (
+                  <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>
+                      {new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}
+                    </td>
+                    <td style={{ padding: '10px 12px', color: '#374151', fontSize: 12 }}>
+                      {entry.note || (isDebit ? (isCustomer ? 'Credit Sale' : 'Credit Purchase') : 'Payment')}
+                      {entry.reference_id && (
+                        <div style={{ fontSize: 10, color: '#9ca3af' }}>{entry.reference_id}</div>
+                      )}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#ef4444' }}>
+                      {isDebit ? `₹${fmt(entry.amount)}` : '—'}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
+                      {!isDebit ? `₹${fmt(entry.amount)}` : '—'}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: (entry.running_balance ?? 0) > 0 ? (isCustomer ? '#ef4444' : '#f59e0b') : '#10b981' }}>
+                      ₹{fmt(entry.running_balance)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <Layout>
@@ -219,140 +311,45 @@ export default function UdhaarPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {list.map(item => (
-                <div
-                  key={item._id}
-                  onClick={() => openLedger(item)}
-                  style={{
-                    background: selected?._id === item._id ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.92))' : 'rgba(255,255,255,0.9)',
-                    borderRadius: 18,
-                    padding: '16px 18px',
-                    border: `1.5px solid ${selected?._id === item._id
-                      ? (isCustomer ? '#ef4444' : '#f59e0b')
-                      : 'rgba(0,0,0,0.06)'}`,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    boxShadow: selected?._id === item._id ? '0 18px 40px rgba(15,23,42,0.08)' : '0 10px 22px rgba(15,23,42,0.05)',
-                    transition: 'border-color 0.2s',
-                  }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{item.name}</div>
-                    {item.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {item.phone}</div>}
-                    {item.gstin && <div style={{ fontSize: 11, color: '#6366f1' }}>GSTIN: {item.gstin}</div>}
-                  </div>
-                  <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div key={item._id}>
+                  <div
+                    onClick={() => openLedger(item)}
+                    style={{
+                      background: selected?._id === item._id ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.92))' : 'rgba(255,255,255,0.9)',
+                      borderRadius: 18,
+                      padding: '16px 18px',
+                      border: `1.5px solid ${selected?._id === item._id
+                        ? (isCustomer ? '#ef4444' : '#f59e0b')
+                        : 'rgba(0,0,0,0.06)'}`,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      boxShadow: selected?._id === item._id ? '0 18px 40px rgba(15,23,42,0.08)' : '0 10px 22px rgba(15,23,42,0.05)',
+                      transition: 'border-color 0.2s',
+                    }}>
                     <div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: item.totalUdhaar > 0 ? (isCustomer ? '#ef4444' : '#f59e0b') : '#10b981' }}>
-                        ₹{fmt(item.totalUdhaar)}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        {item.totalUdhaar > 0 ? (isCustomer ? 'लेना बाकी' : 'देना बाकी') : 'चुकता ✓'}
-                      </div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{item.name}</div>
+                      {item.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {item.phone}</div>}
+                      {item.gstin && <div style={{ fontSize: 11, color: '#6366f1' }}>GSTIN: {item.gstin}</div>}
                     </div>
-                    <div style={{ fontSize: 16, color: '#9ca3af' }}>
-                      {selected?._id === item._id ? '▲' : '▼'}
+                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: item.totalUdhaar > 0 ? (isCustomer ? '#ef4444' : '#f59e0b') : '#10b981' }}>
+                          ₹{fmt(item.totalUdhaar)}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                          {item.totalUdhaar > 0 ? (isCustomer ? 'लेना बाकी' : 'देना बाकी') : 'चुकता ✓'}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 16, color: '#9ca3af' }}>
+                        {selected?._id === item._id ? '▲' : '▼'}
+                      </div>
                     </div>
                   </div>
+                  {selected?._id === item._id && renderLedgerPanel()}
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* ── Ledger Panel (expands below selected item) ── */}
-          {selected && (
-            <div className="card" style={{
-              border: `1.5px solid ${isCustomer ? '#fecaca' : '#fde68a'}`,
-              borderTop: `4px solid ${isCustomer ? '#ef4444' : '#f59e0b'}`,
-            }}>
-              {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: '#1a1a2e' }}>{selected.name}</div>
-                  {selected.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {selected.phone}</div>}
-                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Transaction History</div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {selected.totalUdhaar > 0 && (
-                    <button
-                      onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}
-                      style={{ padding: '8px 14px', background: isCustomer ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                      💰 {isCustomer ? 'Payment लें' : 'Payment करें'}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setSelected(null); setLedger([]); }}
-                    style={{ padding: '8px 12px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
-                    ✕ बंद करें
-                  </button>
-                </div>
-              </div>
-
-              {/* Balance summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
-                {isCustomer ? (
-                  <>
-                    <BalanceTile label="कुल बिक्री / Total Sales" value={`₹${fmt(selected.totalSales)}`} color="#374151" bg="#f9fafb" />
-                    <BalanceTile label="कुल मिला / Received" value={`₹${fmt(selected.totalPaid)}`} color="#10b981" bg="#f0fdf4" />
-                    <BalanceTile label="बाकी / Due" value={`₹${fmt(selected.totalUdhaar)}`} color={selected.totalUdhaar > 0 ? '#ef4444' : '#10b981'} bg={selected.totalUdhaar > 0 ? '#fef2f2' : '#f0fdf4'} />
-                  </>
-                ) : (
-                  <>
-                    <BalanceTile label="कुल खरीद / Purchased" value={`₹${fmt(selected.totalPurchased)}`} color="#374151" bg="#f9fafb" />
-                    <BalanceTile label="कुल दिया / Paid" value={`₹${fmt(selected.totalPaid)}`} color="#10b981" bg="#f0fdf4" />
-                    <BalanceTile label="देना बाकी / Due" value={`₹${fmt(selected.totalUdhaar)}`} color={selected.totalUdhaar > 0 ? '#f59e0b' : '#10b981'} bg={selected.totalUdhaar > 0 ? '#fffbeb' : '#f0fdf4'} />
-                  </>
-                )}
-              </div>
-
-              {/* Ledger entries */}
-              {ledgerLoading ? (
-                <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>⏳ लोड हो रहा है...</div>
-              ) : ledger.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20 }}>कोई entry नहीं</div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>तारीख / Date</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>विवरण / Note</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Debit (+)</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Credit (−)</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#6b7280', fontSize: 11, textTransform: 'uppercase' }}>Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...ledger].reverse().map((entry, i) => {
-                        // Support legacy 'diya'/'liya' types
-                        const isDebit = entry.type === 'debit' || entry.type === 'diya';
-                        return (
-                          <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                            <td style={{ padding: '10px 12px', color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap' }}>
-                              {new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}
-                            </td>
-                            <td style={{ padding: '10px 12px', color: '#374151', fontSize: 12 }}>
-                              {entry.note || (isDebit ? (isCustomer ? 'Credit Sale' : 'Credit Purchase') : 'Payment')}
-                              {entry.reference_id && (
-                                <div style={{ fontSize: 10, color: '#9ca3af' }}>{entry.reference_id}</div>
-                              )}
-                            </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#ef4444' }}>
-                              {isDebit ? `₹${fmt(entry.amount)}` : '—'}
-                            </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
-                              {!isDebit ? `₹${fmt(entry.amount)}` : '—'}
-                            </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: (entry.running_balance ?? 0) > 0 ? (isCustomer ? '#ef4444' : '#f59e0b') : '#10b981' }}>
-                              ₹{fmt(entry.running_balance)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
           )}
         </div>
