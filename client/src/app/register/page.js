@@ -13,7 +13,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError('');
+    setLoading(true);
     try {
       const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/register', {
         method: 'POST',
@@ -30,251 +31,603 @@ export default function RegisterPage() {
       }
     } catch {
       setError('Server error. Please try again.');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
-  const strengthColor = ['#E2E8F0', '#EF4444', '#F59E0B', '#10B981'][strength];
+  const strengthColor = ['#E2E8F0', '#EF4444', '#F59E0B', '#22C55E'][strength];
   const strengthLabel = ['', 'Weak', 'Medium', 'Strong'][strength];
 
   return (
     <>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"
+        rel="stylesheet"
+      />
+
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #060D1A; }
 
-        .reg-root {
+        body {
+          background:
+            radial-gradient(circle at top left, rgba(79,70,229,0.18), transparent 26%),
+            radial-gradient(circle at bottom right, rgba(34,197,94,0.14), transparent 22%),
+            #F8FAFC;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .register-root {
           min-height: 100vh;
-          background: #060D1A;
-          display: flex; flex-direction: column;
-          font-family: 'DM Sans', sans-serif;
-          position: relative; overflow: hidden;
+          display: grid;
+          grid-template-columns: 0.98fr 1.02fr;
+          background:
+            radial-gradient(circle at top left, rgba(79,70,229,0.14), transparent 22%),
+            radial-gradient(circle at bottom left, rgba(34,197,94,0.10), transparent 18%),
+            #F8FAFC;
         }
 
-        .blob { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.1; pointer-events: none; animation: blobFloat 10s ease-in-out infinite; }
-        .blob-1 { width: 450px; height: 450px; background: #059669; top: -80px; right: -80px; animation-delay: 0s; }
-        .blob-2 { width: 350px; height: 350px; background: #1E40AF; bottom: 100px; left: -100px; animation-delay: -4s; }
-        .blob-3 { width: 250px; height: 250px; background: #10B981; top: 40%; left: 40%; animation-delay: -7s; }
-
-        @keyframes blobFloat {
-          0%,100% { transform: translate(0,0) scale(1); }
-          33% { transform: translate(-20px, 30px) scale(1.06); }
-          66% { transform: translate(15px, -20px) scale(0.94); }
+        .register-panel {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 28px;
         }
 
-        .grid-overlay {
-          position: fixed; inset: 0; pointer-events: none;
-          background-image: linear-gradient(rgba(5,150,105,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(5,150,105,0.03) 1px, transparent 1px);
-          background-size: 40px 40px;
+        .register-card {
+          width: 100%;
+          max-width: 480px;
+          background: rgba(255,255,255,0.92);
+          border: 1px solid rgba(226,232,240,0.92);
+          border-radius: 30px;
+          padding: 30px;
+          box-shadow: 0 34px 80px rgba(15,23,42,0.12);
+          backdrop-filter: blur(16px);
         }
 
-        .top-section {
-          padding: 40px 24px 28px;
-          display: flex; flex-direction: column; align-items: center;
-          text-align: center; position: relative; z-index: 1;
-        }
-
-        .logo-mark {
-          width: 56px; height: 56px;
-          background: linear-gradient(135deg, #059669, #0B1D35);
-          border-radius: 16px;
-          display: flex; align-items: center; justify-content: center;
-          font-family: 'Playfair Display', serif;
-          font-size: 24px; color: #fff; font-weight: 800;
+        .card-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 12px;
+          border-radius: 999px;
+          background: #EEF2FF;
+          color: #4338CA;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
           margin-bottom: 16px;
-          box-shadow: 0 0 0 1px rgba(5,150,105,0.3), 0 16px 32px rgba(5,150,105,0.2);
-          animation: logoIn 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
         }
-        @keyframes logoIn {
-          from { opacity: 0; transform: scale(0.4) rotate(15deg); }
-          to   { opacity: 1; transform: scale(1) rotate(0deg); }
+
+        .card-title {
+          font-size: 30px;
+          font-weight: 800;
+          color: #0F172A;
+          letter-spacing: -0.05em;
+          line-height: 1.05;
+          font-family: 'Sora', sans-serif;
+          margin-bottom: 8px;
+        }
+
+        .card-sub {
+          font-size: 14px;
+          color: #64748B;
+          margin-bottom: 24px;
+          line-height: 1.7;
+        }
+
+        .error-box {
+          background: #FEF2F2;
+          color: #991B1B;
+          border: 1px solid #FECACA;
+          border-radius: 16px;
+          padding: 12px 14px;
+          font-size: 13px;
+          font-weight: 700;
+          margin-bottom: 18px;
+        }
+
+        .field-wrap { margin-bottom: 16px; }
+
+        .field-label {
+          display: block;
+          margin-bottom: 7px;
+          font-size: 11px;
+          font-weight: 800;
+          color: #64748B;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .input-box {
+          width: 100%;
+          min-height: 48px;
+          padding: 12px 14px;
+          border: 1.5px solid rgba(226,232,240,0.96);
+          border-radius: 16px;
+          font-size: 14px;
+          color: #0F172A;
+          background: rgba(255,255,255,0.95);
+          outline: none;
+          transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .input-box:focus {
+          border-color: rgba(79,70,229,0.44);
+          box-shadow: 0 0 0 4px rgba(79,70,229,0.10);
+          background: #fff;
+        }
+
+        .input-box::placeholder { color: #94A3B8; }
+
+        .hint {
+          font-size: 11.5px;
+          color: #94A3B8;
+          margin-top: 6px;
+          font-weight: 600;
+        }
+
+        .pass-wrap { position: relative; }
+
+        .pass-toggle {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 16px;
+          color: #94A3B8;
+        }
+
+        .strength-wrap { margin-top: 8px; }
+        .strength-track {
+          height: 6px;
+          background: #E2E8F0;
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        .strength-fill {
+          height: 100%;
+          border-radius: 999px;
+          transition: width 0.28s ease, background 0.28s ease;
+        }
+        .strength-label {
+          font-size: 11.5px;
+          font-weight: 700;
+          margin-top: 6px;
+        }
+
+        .signup-btn {
+          width: 100%;
+          min-height: 50px;
+          border: none;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 800;
+          cursor: pointer;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          box-shadow: 0 18px 34px rgba(79,70,229,0.24);
+          transition: transform 0.16s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        }
+
+        .signup-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 22px 40px rgba(79,70,229,0.30);
+        }
+
+        .signup-btn:disabled {
+          opacity: 0.68;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .register-footer {
+          margin-top: 22px;
+          font-size: 14px;
+          color: #64748B;
+          text-align: center;
+        }
+
+        .register-footer a {
+          color: #4338CA;
+          font-weight: 800;
+          text-decoration: none;
+        }
+
+        .register-footer a:hover { text-decoration: underline; }
+
+        .trust-row {
+          margin-top: 24px;
+          padding-top: 20px;
+          border-top: 1px solid rgba(226,232,240,0.95);
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .trust-item {
+          padding: 13px 12px;
+          border-radius: 16px;
+          background: #F8FAFC;
+        }
+
+        .trust-title {
+          font-size: 12.5px;
+          font-weight: 800;
+          color: #0F172A;
+          margin-bottom: 4px;
+        }
+
+        .trust-sub {
+          font-size: 11.5px;
+          color: #64748B;
+          line-height: 1.55;
+        }
+
+        .register-brand {
+          position: relative;
+          overflow: hidden;
+          padding: 40px;
+          background:
+            linear-gradient(135deg, #0F172A 0%, #1E293B 38%, #4338CA 100%);
+          color: #fff;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+
+        .brand-orb {
+          position: absolute;
+          border-radius: 50%;
+          pointer-events: none;
+        }
+
+        .brand-orb.one {
+          width: 280px;
+          height: 280px;
+          top: -70px;
+          right: -40px;
+          background: radial-gradient(circle, rgba(255,255,255,0.16), transparent 68%);
+        }
+
+        .brand-orb.two {
+          width: 240px;
+          height: 240px;
+          bottom: -70px;
+          left: 40px;
+          background: radial-gradient(circle, rgba(34,197,94,0.20), transparent 70%);
+        }
+
+        .brand-grid {
+          position: absolute;
+          inset: 0;
+          opacity: 0.08;
+          background-image:
+            linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px);
+          background-size: 34px 34px;
+          pointer-events: none;
+        }
+
+        .brand-top,
+        .brand-bottom {
+          position: relative;
+          z-index: 1;
+        }
+
+        .brand-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 12px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.12);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          margin-bottom: 18px;
+        }
+
+        .brand-logo-wrap {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 22px;
+        }
+
+        .brand-logo {
+          width: 56px;
+          height: 56px;
+          border-radius: 18px;
+          background: linear-gradient(135deg, #4F46E5 0%, #22C55E 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          font-size: 24px;
+          font-weight: 800;
+          font-family: 'Sora', sans-serif;
+          box-shadow: 0 18px 34px rgba(79,70,229,0.28);
+          flex-shrink: 0;
         }
 
         .brand-name {
-          font-family: 'Playfair Display', serif;
-          font-size: 30px; font-weight: 800; color: #fff; letter-spacing: -0.5px;
-          margin-bottom: 4px;
-          animation: fadeUp 0.5s ease 0.2s both;
-        }
-        .brand-name span { color: #10B981; }
-        .brand-sub { font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; animation: fadeUp 0.5s ease 0.3s both; }
-
-        .feature-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; animation: fadeUp 0.5s ease 0.4s both; }
-        .feat-chip {
-          background: rgba(5,150,105,0.1); border: 1px solid rgba(5,150,105,0.2);
-          border-radius: 100px; padding: 5px 12px;
-          font-size: 11px; color: #6EE7B7; font-weight: 500;
+          font-size: 30px;
+          font-weight: 800;
+          font-family: 'Sora', sans-serif;
+          letter-spacing: -0.04em;
+          line-height: 1;
         }
 
-        @keyframes fadeUp { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform: translateY(0); } }
+        .brand-name span { color: #22C55E; }
 
-        .wave-divider { position: relative; z-index: 1; line-height: 0; }
-
-        .card-section {
-          flex: 1; background: #F8FAFC;
-          padding: 32px 24px 48px;
-          position: relative; z-index: 1;
-          animation: cardIn 0.5s ease 0.3s both;
+        .brand-sub {
+          margin-top: 6px;
+          font-size: 11px;
+          color: rgba(255,255,255,0.58);
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          font-weight: 700;
         }
-        @keyframes cardIn { from { opacity:0; transform: translateY(24px); } to { opacity:1; transform: translateY(0); } }
 
-        .card-inner { max-width: 420px; margin: 0 auto; }
-
-        .greeting { font-size: 26px; font-weight: 700; color: #0F172A; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .greeting-sub { font-size: 14px; color: #94A3B8; margin-bottom: 24px; }
-
-        .error-box {
-          background: #FEF2F2; border: 1px solid #FECACA; border-radius: 12px;
-          padding: 12px 16px; font-size: 13px; color: #DC2626;
-          margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
-          animation: shake 0.4s ease;
+        .brand-heading {
+          font-size: 44px;
+          line-height: 1.03;
+          letter-spacing: -0.05em;
+          font-weight: 800;
+          font-family: 'Sora', sans-serif;
+          max-width: 520px;
+          margin-bottom: 16px;
         }
-        @keyframes shake { 0%,100% { transform:translateX(0); } 20%,60% { transform:translateX(-4px); } 40%,80% { transform:translateX(4px); } }
 
-        .field-label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 7px; }
-        .field-wrap { margin-bottom: 16px; }
-        .hint { font-size: 11px; color: #CBD5E1; margin-top: 5px; padding-left: 2px; }
-
-        .input-box {
-          width: 100%; padding: 13px 16px;
-          border: 2px solid #E2E8F0; border-radius: 13px;
-          font-size: 15px; color: #0F172A; background: #fff; outline: none;
-          font-family: 'DM Sans', sans-serif;
-          transition: border-color 0.2s, box-shadow 0.2s;
+        .brand-text {
+          max-width: 540px;
+          font-size: 15px;
+          line-height: 1.75;
+          color: rgba(255,255,255,0.78);
         }
-        .input-box:focus { border-color: #059669; box-shadow: 0 0 0 4px rgba(5,150,105,0.08); }
-        .input-box::placeholder { color: #CBD5E1; }
 
-        .pass-wrap { position: relative; }
-        .pass-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #94A3B8; padding: 0; transition: color 0.2s; }
-        .pass-toggle:hover { color: #059669; }
-
-        .strength-bar { margin-top: 8px; }
-        .strength-track { height: 4px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
-        .strength-fill { height: 100%; border-radius: 99px; transition: width 0.3s ease, background 0.3s; }
-        .strength-label { font-size: 11px; margin-top: 4px; font-weight: 600; }
-
-        .submit-btn {
-          width: 100%; padding: 15px;
-          background: linear-gradient(135deg, #059669, #047857);
-          color: #fff; border: none; border-radius: 14px;
-          font-size: 16px; font-weight: 700; cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          box-shadow: 0 4px 20px rgba(5,150,105,0.35);
-          transition: all 0.2s; position: relative; overflow: hidden;
-          margin-top: 4px;
+        .brand-feature-row {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-top: 26px;
         }
-        .submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(5,150,105,0.45); }
-        .submit-btn:disabled { background: #94A3B8; box-shadow: none; cursor: not-allowed; }
-        .submit-btn::after { content:''; position:absolute; inset:0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); pointer-events:none; }
 
-        .login-link { text-align: center; font-size: 14px; color: #64748B; margin-top: 22px; }
-        .login-link a { color: #059669; font-weight: 700; text-decoration: none; }
-        .login-link a:hover { text-decoration: underline; }
+        .brand-feature {
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.12);
+          font-size: 12px;
+          color: rgba(255,255,255,0.90);
+          font-weight: 700;
+        }
 
-        .benefits-row {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-          margin-top: 28px; padding-top: 24px; border-top: 1px solid #F1F5F9;
+        .brand-metrics {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
         }
-        .benefit-item {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 12px; color: #94A3B8; font-weight: 500;
+
+        .brand-metric {
+          padding: 16px;
+          border-radius: 20px;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.12);
+          backdrop-filter: blur(10px);
         }
-        .benefit-icon {
-          width: 28px; height: 28px; border-radius: 8px;
-          background: #F1F5F9;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; flex-shrink: 0;
+
+        .brand-metric-label {
+          font-size: 11px;
+          color: rgba(255,255,255,0.56);
+          text-transform: uppercase;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          margin-bottom: 8px;
+        }
+
+        .brand-metric-value {
+          font-size: 22px;
+          font-weight: 800;
+          color: #fff;
+          letter-spacing: -0.04em;
+        }
+
+        .brand-metric-sub {
+          font-size: 12px;
+          color: rgba(255,255,255,0.72);
+          margin-top: 6px;
+        }
+
+        @media (max-width: 980px) {
+          .register-root { grid-template-columns: 1fr; }
+          .register-brand { min-height: 420px; padding: 28px 24px; }
+          .register-panel { padding: 22px 14px 28px; margin-top: -40px; position: relative; z-index: 2; }
+          .brand-heading { font-size: 34px; max-width: 100%; }
+          .brand-metrics { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+          .register-card { padding: 22px 18px; border-radius: 24px; }
+          .brand-heading { font-size: 28px; }
+          .card-title { font-size: 24px; }
+          .trust-row { grid-template-columns: 1fr; }
         }
       `}</style>
 
-      <div className="reg-root">
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        <div className="blob blob-3" />
-        <div className="grid-overlay" />
+      <div className="register-root">
+        <section className="register-panel">
+          <div className="register-card">
+            <div className="card-badge">
+              <span>🚀</span>
+              <span>Create your workspace</span>
+            </div>
 
-        <div className="top-section">
-          <div className="logo-mark">र</div>
-          <div className="brand-name">रख<span>रखाव</span></div>
-          <div className="brand-sub">Smart Business Manager</div>
-          <div className="feature-row">
-            {['✓ Free Forever', '✓ GST Ready', '✓ Mobile First', '✓ Instant Setup'].map((f, i) => (
-              <div key={i} className="feat-chip">{f}</div>
-            ))}
-          </div>
-        </div>
+            <div className="card-title">Start with Rakhaav</div>
+            <div className="card-sub">
+              Create your account to unlock inventory control, GST billing, supplier purchases, udhaar, and premium business reporting.
+            </div>
 
-        <div className="wave-divider">
-          <svg viewBox="0 0 375 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
-            <path d="M0 0 C80 48 295 48 375 0 L375 48 L0 48 Z" fill="#F8FAFC"/>
-          </svg>
-        </div>
-
-        <div className="card-section">
-          <div className="card-inner">
-            <div className="greeting">Create account 🚀</div>
-            <div className="greeting-sub">Start managing your business today — free</div>
-
-            {error && <div className="error-box"><span>⚠️</span> {error}</div>}
+            {error && <div className="error-box">⚠️ {error}</div>}
 
             <form onSubmit={handleSubmit}>
               <div className="field-wrap">
                 <label className="field-label">Full Name</label>
-                <input className="input-box" type="text" placeholder="Sonaa" value={name} onChange={e => setName(e.target.value)} required />
+                <input
+                  className="input-box"
+                  type="text"
+                  placeholder="Sonaa"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
               </div>
 
               <div className="field-wrap">
                 <label className="field-label">Username</label>
-                <input className="input-box" type="text" placeholder="sona" value={username}
-                  onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))} required />
+                <input
+                  className="input-box"
+                  type="text"
+                  placeholder="sona"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))}
+                  required
+                />
                 <div className="hint">Sirf lowercase letters, numbers aur underscore</div>
               </div>
 
               <div className="field-wrap">
                 <label className="field-label">Password</label>
                 <div className="pass-wrap">
-                  <input className="input-box" type={showPass ? 'text' : 'password'} placeholder="Min. 6 characters"
-                    value={password} onChange={e => setPassword(e.target.value)} required style={{ paddingRight: 48 }} />
-                  <button type="button" className="pass-toggle" onClick={() => setShowPass(!showPass)}>
+                  <input
+                    className="input-box"
+                    type={showPass ? 'text' : 'password'}
+                    placeholder="Min. 6 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{ paddingRight: 44 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="pass-toggle"
+                  >
                     {showPass ? '🙈' : '👁️'}
                   </button>
                 </div>
+
                 {password.length > 0 && (
-                  <div className="strength-bar">
+                  <div className="strength-wrap">
                     <div className="strength-track">
-                      <div className="strength-fill" style={{ width: `${[0, 33, 66, 100][strength]}%`, background: strengthColor }} />
+                      <div
+                        className="strength-fill"
+                        style={{
+                          width: `${[0, 33, 66, 100][strength]}%`,
+                          background: strengthColor,
+                        }}
+                      />
                     </div>
-                    <div className="strength-label" style={{ color: strengthColor }}>{strengthLabel}</div>
+                    <div className="strength-label" style={{ color: strengthColor }}>
+                      {strengthLabel}
+                    </div>
                   </div>
                 )}
               </div>
 
-              <button type="submit" className="submit-btn" disabled={loading}>
-                {loading ? '⏳ Creating account...' : 'Create account →'}
+              <button type="submit" className="signup-btn" disabled={loading}>
+                {loading ? '⏳ Creating account...' : 'Create account and continue'}
               </button>
             </form>
 
-            <div className="login-link">
+            <div className="register-footer">
               Already have an account? <a href="/login">Sign in</a>
             </div>
 
-            <div className="benefits-row">
+            <div className="trust-row">
               {[
-                { icon: '📦', text: 'Stock Management' },
-                { icon: '🧾', text: 'GST Invoices' },
-                { icon: '📒', text: 'Udhaar Ledger' },
-                { icon: '📊', text: 'Profit Reports' },
-              ].map((b, i) => (
-                <div key={i} className="benefit-item">
-                  <div className="benefit-icon">{b.icon}</div>
-                  <span>{b.text}</span>
+                { title: 'Inventory Ready', sub: 'Add products, pricing, GST, and stock instantly.' },
+                { title: 'Billing Ready', sub: 'Start sales invoices and purchase flows on day one.' },
+                { title: 'GST Ready', sub: 'Track output tax and ITC without extra setup.' },
+                { title: 'Mobile Ready', sub: 'Smooth experience across desktop and phone.' },
+              ].map((item, i) => (
+                <div key={i} className="trust-item">
+                  <div className="trust-title">{item.title}</div>
+                  <div className="trust-sub">{item.sub}</div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </section>
+
+        <section className="register-brand">
+          <div className="brand-orb one" />
+          <div className="brand-orb two" />
+          <div className="brand-grid" />
+
+          <div className="brand-top">
+            <div className="brand-chip">
+              <span>💎</span>
+              <span>Premium SaaS for Indian businesses</span>
+            </div>
+
+            <div className="brand-logo-wrap">
+              <div className="brand-logo">र</div>
+              <div>
+                <div className="brand-name">
+                  रख<span>रखाव</span>
+                </div>
+                <div className="brand-sub">Business Manager</div>
+              </div>
+            </div>
+
+            <div className="brand-heading">
+              Build your business control center in minutes.
+            </div>
+
+            <div className="brand-text">
+              Create your workspace once and start running billing, inventory, GST, purchases, reports, and customer credit from a single premium dashboard.
+            </div>
+
+            <div className="brand-feature-row">
+              {['🧾 GST Invoices', '📦 Stock Control', '📊 Reports', '🤝 Credit Tracking'].map((f, i) => (
+                <div key={i} className="brand-feature">
+                  {f}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="brand-bottom">
+            <div className="brand-metrics">
+              <div className="brand-metric">
+                <div className="brand-metric-label">Setup</div>
+                <div className="brand-metric-value">Fast</div>
+                <div className="brand-metric-sub">Create account and start quickly</div>
+              </div>
+
+              <div className="brand-metric">
+                <div className="brand-metric-label">Billing</div>
+                <div className="brand-metric-value">Live</div>
+                <div className="brand-metric-sub">Sales and purchases from day one</div>
+              </div>
+
+              <div className="brand-metric">
+                <div className="brand-metric-label">Reports</div>
+                <div className="brand-metric-value">Clear</div>
+                <div className="brand-metric-sub">Revenue, GST, and profit visibility</div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </>
   );
