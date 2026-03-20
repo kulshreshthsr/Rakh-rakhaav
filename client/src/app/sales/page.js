@@ -240,32 +240,56 @@ export default function SalesPage() {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div className="page-title" style={{ marginBottom: 4 }}>बिक्री / Sales</div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <span style={{ color: '#10b981', fontSize: 13, fontWeight: 600 }}>Revenue: ₹{fmt(summary.totalRevenue)}</span>
-            {(summary.totalGST || 0) > 0 && <span style={{ color: '#6366f1', fontSize: 13, fontWeight: 600 }}>GST: ₹{fmt(summary.totalGST)}</span>}
+      <div className="page-shell">
+        <section className="hero-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+            <div>
+              <div className="kicker" style={{ marginBottom: 12 }}>Billing flow</div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>बिक्री / Sales</div>
+              <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 560 }}>
+                Faster invoice tracking, cleaner payment visibility and a stronger sales screen without changing your workflow.
+              </div>
+            </div>
+            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success" style={{ width: 'auto' }}>+ बिक्री दर्ज / Record Sale</button>
           </div>
-        </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success">+ बिक्री दर्ज / Record Sale</button>
-      </div>
+        </section>
 
-      {error && !showModal && (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
+        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Revenue</div>
+            <div className="metric-value" style={{ color: '#10b981' }}>₹{fmt(summary.totalRevenue)}</div>
+            <div className="metric-note">Total billed amount</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">GST</div>
+            <div className="metric-value" style={{ color: '#6366f1' }}>₹{fmt(summary.totalGST)}</div>
+            <div className="metric-note">Collected in sales</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Invoices</div>
+            <div className="metric-value" style={{ color: '#2563eb' }}>{sales.length}</div>
+            <div className="metric-note">Recorded sales entries</div>
+          </div>
+        </section>
+
+        {error && !showModal && (
+          <div className="alert-error">
           {error}
-        </div>
-      )}
+          </div>
+        )}
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
-      ) : sales.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📈</div>
-          <div>अभी कोई बिक्री नहीं / No sales yet.</div>
-        </div>
-      ) : (
-        <>
+        {loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📈</div>
+            <div>लोड हो रहा है...</div>
+          </div>
+        ) : sales.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📈</div>
+            <div>अभी कोई बिक्री नहीं / No sales yet.</div>
+          </div>
+        ) : (
+          <>
           {/* Desktop table */}
           <div className="table-container hidden-xs">
             <table>
@@ -367,7 +391,8 @@ export default function SalesPage() {
             ))}
           </div>
         </>
-      )}
+        )}
+      </div>
 
       {/* ── Modal ── */}
       {showModal && (

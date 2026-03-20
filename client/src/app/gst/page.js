@@ -254,26 +254,36 @@ export default function GSTPage() {
 
   return (
     <Layout>
-      <div className="page-title">GST सारांश / GST Summary</div>
-
-      {/* ── Month / Year Selector ── */}
-      <div className="card" style={{ marginBottom: 20, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>महीना / Month:</div>
-        <select className="form-input" style={{ minWidth: 150 }} value={month}
-          onChange={e => setMonth(parseInt(e.target.value))}>
-          {MONTHS.map((m, i) => (
-            <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>
-          ))}
-        </select>
-        <select className="form-input" style={{ minWidth: 100 }} value={year}
-          onChange={e => setYear(parseInt(e.target.value))}>
-          {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        {loading && <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 600 }}>⏳ लोड हो रहा है...</span>}
-      </div>
+      <div className="page-shell">
+        <section className="hero-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+            <div>
+              <div className="kicker" style={{ marginBottom: 12 }}>GST control</div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>GST सारांश / GST Summary</div>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)' }}>
+                Clear tax view for filing, payment planning and CA-ready export.
+              </div>
+            </div>
+            <div className="toolbar-card" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)', minWidth: 260 }}>
+              <div className="toolbar">
+                <select className="form-input" style={{ minWidth: 150 }} value={month}
+                  onChange={e => setMonth(parseInt(e.target.value))}>
+                  {MONTHS.map((m, i) => (
+                    <option key={i} value={i + 1}>{MONTHS_HI[i]} / {m}</option>
+                  ))}
+                </select>
+                <select className="form-input" style={{ minWidth: 100 }} value={year}
+                  onChange={e => setYear(parseInt(e.target.value))}>
+                  {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              {loading && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', marginTop: 10 }}>⏳ लोड हो रहा है...</div>}
+            </div>
+          </div>
+        </section>
 
       {!summary ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
+        <div className="empty-state">
           <div style={{ fontSize: 40, marginBottom: 12 }}>🧾</div>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>⏳ लोड हो रहा है...</div>
         </div>
@@ -687,6 +697,7 @@ export default function GSTPage() {
           </div>
         </>
       )}
+      </div>
 
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

@@ -12,7 +12,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError('');
+    setLoading(true);
     try {
       const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/login', {
         method: 'POST',
@@ -29,89 +30,145 @@ export default function LoginPage() {
       }
     } catch {
       setError('Server error. Please try again.');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#0B1D35', display: 'flex', flexDirection: 'column' }}>
-
-        <div style={{ padding: '48px 32px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <div style={{ fontSize: 42, fontWeight: 800, color: '#fff', letterSpacing: -1, marginBottom: 6, fontFamily: 'serif' }}>
-            रख<span style={{ color: '#10B981' }}>रखाव</span>
-          </div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>Smart Business Manager</div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {['📦 Stock Track', '💰 Sales & GST', '📊 Profit Reports'].map((f, i) => (
-              <div key={i} style={{ background: 'rgba(5,150,105,0.15)', border: '1px solid rgba(5,150,105,0.3)', borderRadius: 20, padding: '6px 14px', fontSize: 12, color: '#6EE7B7', fontWeight: 500 }}>
-                {f}
+    <div className="auth-root">
+      <div className="auth-shell">
+        <section className="auth-showcase">
+          <div>
+            <div className="auth-brand">
+              <div className="auth-logo">र</div>
+              <div>
+                <div className="auth-brand-name">
+                  रख<span style={{ color: '#6ee7b7' }}>रखाव</span>
+                </div>
+                <div className="auth-brand-sub">Smart Business Manager</div>
               </div>
-            ))}
+            </div>
+
+            <div style={{ marginTop: 34, maxWidth: 520 }}>
+              <div className="kicker" style={{ marginBottom: 16 }}>Premium business control</div>
+              <h1 style={{ fontSize: 44, lineHeight: 1.08, letterSpacing: '-0.05em', fontWeight: 800 }}>
+                Inventory, billing and GST in one sharp bilingual workspace.
+              </h1>
+              <p style={{ marginTop: 16, color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.7 }}>
+                Built for Indian businesses that want speed, clarity and trust from the first screen.
+              </p>
+            </div>
+
+            <div className="auth-meta">
+              <div className="feature-chip">📦 Stock Track</div>
+              <div className="feature-chip">🧾 GST Billing</div>
+              <div className="feature-chip">📒 Udhaar Ledger</div>
+              <div className="feature-chip">📊 Profit Reports</div>
+            </div>
           </div>
-        </div>
 
-        <div style={{ background: '#0B1D35', marginBottom: -1 }}>
-          <svg viewBox="0 0 375 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
-            <path d="M0 0 C100 40 275 40 375 0 L375 40 L0 40 Z" fill="#F1F5F9"/>
-          </svg>
-        </div>
-
-        <div style={{ flex: 1, background: '#F1F5F9', padding: '28px 24px 40px', maxWidth: 440, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#0F172A', marginBottom: 4, letterSpacing: -0.5 }}>Welcome back! 👋</h1>
-          <p style={{ color: '#64748B', fontSize: 14, marginBottom: 28 }}>Sign in to continue</p>
-
-          {error && (
-            <div style={{ background: '#FEF2F2', color: '#DC2626', padding: '12px 16px', borderRadius: 10, fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              ⚠️ {error}
+          <div className="feature-panel">
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.58)', marginBottom: 14 }}>
+              Why teams trust Rakhaav
             </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Username</label>
-              <input type="text" placeholder="your_username" value={username}
-                onChange={e => setUsername(e.target.value)} required
-                style={{ width: '100%', padding: '14px 16px', border: '1.5px solid #E2E8F0', borderRadius: 12, fontSize: 15, color: '#0F172A', background: '#fff', boxSizing: 'border-box', outline: 'none', fontFamily: 'Inter, sans-serif' }}
-                onFocus={e => e.target.style.borderColor = '#059669'}
-                onBlur={e => e.target.style.borderColor = '#E2E8F0'}
-              />
+            <div className="feature-grid">
+              {[
+                { icon: '⚡', title: 'Fast workflows', text: 'Daily sales and stock updates feel instant.' },
+                { icon: '🔒', title: 'Secure access', text: 'Private account-based dashboard for your business.' },
+                { icon: '🌐', title: 'Bilingual ready', text: 'Hindi + English labels built into the product.' },
+                { icon: '📱', title: 'Mobile friendly', text: 'Smooth usage from shop counter to on-the-go.' },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  style={{
+                    padding: 16,
+                    borderRadius: 20,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <div style={{ fontSize: 24, marginBottom: 10 }}>{item.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{item.title}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', marginTop: 6, lineHeight: 1.6 }}>{item.text}</div>
+                </div>
+              ))}
             </div>
+          </div>
+        </section>
 
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.6, display: 'block', marginBottom: 6 }}>Password</label>
-              <div style={{ position: 'relative' }}>
-                <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password}
-                  onChange={e => setPassword(e.target.value)} required
-                  style={{ width: '100%', padding: '14px 48px 14px 16px', border: '1.5px solid #E2E8F0', borderRadius: 12, fontSize: 15, color: '#0F172A', background: '#fff', boxSizing: 'border-box', outline: 'none', fontFamily: 'Inter, sans-serif' }}
-                  onFocus={e => e.target.style.borderColor = '#059669'}
-                  onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+        <section className="auth-card-wrap">
+          <div className="auth-card">
+            <div className="auth-title">Welcome back</div>
+            <div className="auth-subtitle">Sign in to continue managing your business.</div>
+
+            {error && <div className="alert-error">{error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label className="form-label">Username</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="your_username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)}
-                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 18, padding: 0 }}>
-                  {showPass ? '🙈' : '👁️'}
-                </button>
               </div>
+
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    className="form-input"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{ paddingRight: 48 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    style={{
+                      position: 'absolute',
+                      right: 14,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                      fontSize: 18,
+                    }}
+                  >
+                    {showPass ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="btn-success" style={{ width: '100%', marginTop: 6 }}>
+                {loading ? '⏳ Signing in...' : 'Sign in / लॉगिन'}
+              </button>
+            </form>
+
+            <div className="auth-note">
+              Don&apos;t have an account?{' '}
+              <a href="/register" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>
+                Create one free
+              </a>
             </div>
 
-            <button type="submit" disabled={loading}
-              style={{ width: '100%', padding: '14px', background: loading ? '#94A3B8' : 'linear-gradient(135deg, #059669, #047857)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 14px rgba(5,150,105,0.35)', fontFamily: 'Inter, sans-serif' }}>
-              {loading ? '⏳ Signing in...' : 'Sign in →'}
-            </button>
-          </form>
-
-          <p style={{ textAlign: 'center', fontSize: 14, color: '#64748B', marginTop: 24 }}>
-            Don't have an account?{' '}
-            <a href="/register" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none' }}>Create one free</a>
-          </p>
-
-          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center', gap: 20 }}>
-            {['🔒 Secure', '⚡ Fast', '📱 Mobile Ready'].map((b, i) => (
-              <div key={i} style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{b}</div>
-            ))}
+            <div className="auth-meta" style={{ justifyContent: 'center' }}>
+              {['Secure', 'Fast', 'Mobile Ready'].map((item) => (
+                <div key={item} className="auth-meta-item">{item}</div>
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
       </div>
-    </>
+    </div>
   );
 }

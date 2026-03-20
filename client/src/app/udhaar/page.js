@@ -153,36 +153,33 @@ export default function UdhaarPage() {
 
   return (
     <Layout>
-      <div className="page-title">उधार बही / Credit Ledger</div>
+      <div className="page-shell">
+        <section className="hero-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+            <div>
+              <div className="kicker" style={{ marginBottom: 12 }}>Ledger overview</div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>उधार बही / Credit Ledger</div>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)' }}>
+                Track who should pay you and who you need to pay, with clear transaction history.
+              </div>
+            </div>
+          </div>
+        </section>
 
-      {/* ── Summary Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-        <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 14, padding: '16px 20px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 4 }}>
-            👥 Customer से लेना है
+        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+          <div className="metric-card" style={{ cursor: 'default', background: 'linear-gradient(180deg, rgba(255,241,242,0.96), rgba(255,255,255,0.92))' }}>
+            <div className="metric-label">Customer Due</div>
+            <div className="metric-value" style={{ color: '#ef4444' }}>₹{totalCustomerUdhaar.toFixed(0)}</div>
+            <div className="metric-note">{customers.filter(c => c.totalUdhaar > 0).length} pending • {customers.length} total</div>
           </div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#ef4444' }}>
-            ₹{totalCustomerUdhaar.toFixed(0)}
+          <div className="metric-card" style={{ cursor: 'default', background: 'linear-gradient(180deg, rgba(255,251,235,0.96), rgba(255,255,255,0.92))' }}>
+            <div className="metric-label">Supplier Due</div>
+            <div className="metric-value" style={{ color: '#f59e0b' }}>₹{totalSupplierUdhaar.toFixed(0)}</div>
+            <div className="metric-note">{suppliers.filter(s => s.totalUdhaar > 0).length} pending • {suppliers.length} total</div>
           </div>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-            {customers.filter(c => c.totalUdhaar > 0).length} pending • {customers.length} total
-          </div>
-        </div>
-        <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 14, padding: '16px 20px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 4 }}>
-            🏭 Supplier को देना है
-          </div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#f59e0b' }}>
-            ₹{totalSupplierUdhaar.toFixed(0)}
-          </div>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-            {suppliers.filter(s => s.totalUdhaar > 0).length} pending • {suppliers.length} total
-          </div>
-        </div>
-      </div>
+        </section>
 
-      {/* ── Tabs ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <button
           onClick={() => setActiveTab('customers')}
           style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: isCustomer ? '#ef4444' : '#f3f4f6', color: isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
@@ -193,28 +190,28 @@ export default function UdhaarPage() {
           style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: !isCustomer ? '#f59e0b' : '#f3f4f6', color: !isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
           🏭 Suppliers ({suppliers.length})
         </button>
-      </div>
+        </div>
 
       {error && (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
+        <div className="alert-error">
           {error}
         </div>
       )}
       {success && (
-        <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
+        <div className="alert-success">
           {success}
         </div>
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
+        <div className="empty-state">लोड हो रहा है...</div>
       ) : (
         /* ── Main layout: list + ledger panel ── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* List */}
           {list.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: 40, color: '#9ca3af' }}>
+            <div className="empty-state">
               <div style={{ fontSize: 32, marginBottom: 8 }}>{isCustomer ? '👥' : '🏭'}</div>
               <div style={{ fontWeight: 600 }}>
                 {isCustomer ? 'कोई customer नहीं' : 'कोई supplier नहीं'}
@@ -230,9 +227,9 @@ export default function UdhaarPage() {
                   key={item._id}
                   onClick={() => openLedger(item)}
                   style={{
-                    background: '#fff',
-                    borderRadius: 12,
-                    padding: '14px 16px',
+                    background: selected?._id === item._id ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.92))' : 'rgba(255,255,255,0.9)',
+                    borderRadius: 18,
+                    padding: '16px 18px',
                     border: `1.5px solid ${selected?._id === item._id
                       ? (isCustomer ? '#ef4444' : '#f59e0b')
                       : 'rgba(0,0,0,0.06)'}`,
@@ -240,7 +237,7 @@ export default function UdhaarPage() {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    boxShadow: selected?._id === item._id ? '0 18px 40px rgba(15,23,42,0.08)' : '0 10px 22px rgba(15,23,42,0.05)',
                     transition: 'border-color 0.2s',
                   }}>
                   <div>
@@ -270,7 +267,7 @@ export default function UdhaarPage() {
           {selected && (
             <div className="card" style={{
               border: `1.5px solid ${isCustomer ? '#fecaca' : '#fde68a'}`,
-              borderTop: `3px solid ${isCustomer ? '#ef4444' : '#f59e0b'}`,
+              borderTop: `4px solid ${isCustomer ? '#ef4444' : '#f59e0b'}`,
             }}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
@@ -442,6 +439,7 @@ export default function UdhaarPage() {
           </div>
         </div>
       )}
+      </div>
     </Layout>
   );
 }

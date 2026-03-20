@@ -194,47 +194,58 @@ export default function PurchasesPage() {
 
   return (
     <Layout>
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div className="page-title" style={{ marginBottom: 4 }}>खरीद / Purchases</div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <span style={{ color: '#f59e0b', fontSize: 13, fontWeight: 600 }}>
-              कुल खर्च: ₹{(summary.totalPurchaseValue || 0).toFixed(2)}
-            </span>
-            {(summary.totalITC || 0) > 0 && (
-              <span style={{ color: '#6366f1', fontSize: 13, fontWeight: 600 }}>
-                ITC (Input GST): ₹{(summary.totalITC || 0).toFixed(2)}
-              </span>
-            )}
-            {(summary.totalDue || 0) > 0 && (
-              <span style={{ color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
-                बाकी उधार: ₹{(summary.totalDue || 0).toFixed(2)}
-              </span>
-            )}
+      <div className="page-shell">
+        <section className="hero-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+            <div>
+              <div className="kicker" style={{ marginBottom: 12 }}>Purchase control</div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>खरीद / Purchases</div>
+              <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 560 }}>
+                Supplier purchases, due tracking and ITC visibility in a cleaner, more modern purchase dashboard.
+              </div>
+            </div>
+            <button onClick={() => setShowModal(true)} className="btn-warning" style={{ width: 'auto' }}>
+              + खरीद दर्ज / Record Purchase
+            </button>
           </div>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-warning">
-          + खरीद दर्ज / Record Purchase
-        </button>
-      </div>
+        </section>
 
-      {error && !showModal && (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
+        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Total Spend</div>
+            <div className="metric-value" style={{ color: '#f59e0b' }}>₹{(summary.totalPurchaseValue || 0).toFixed(2)}</div>
+            <div className="metric-note">Purchase outflow</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Input GST</div>
+            <div className="metric-value" style={{ color: '#6366f1' }}>₹{(summary.totalITC || 0).toFixed(2)}</div>
+            <div className="metric-note">ITC available</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Balance Due</div>
+            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#ef4444' : '#10b981' }}>₹{(summary.totalDue || 0).toFixed(2)}</div>
+            <div className="metric-note">Supplier credit outstanding</div>
+          </div>
+        </section>
+
+        {error && !showModal && (
+          <div className="alert-error">
           {error}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* ── List ── */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
-      ) : purchases.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🛒</div>
-          <div>अभी कोई खरीद नहीं / No purchases yet.</div>
-        </div>
-      ) : (
-        <>
+        {loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">🛒</div>
+            <div>लोड हो रहा है...</div>
+          </div>
+        ) : purchases.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">🛒</div>
+            <div>अभी कोई खरीद नहीं / No purchases yet.</div>
+          </div>
+        ) : (
+          <>
           {/* Desktop table */}
           <div className="table-container hidden-xs">
             <table>
@@ -341,7 +352,8 @@ export default function PurchasesPage() {
             ))}
           </div>
         </>
-      )}
+        )}
+      </div>
 
       {/* ── Modal ── */}
       {showModal && (

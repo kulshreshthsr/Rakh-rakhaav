@@ -1,64 +1,107 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
-// ── Profile removed from navItems — accessible via user avatar dropdown ──────
 const navItems = [
-  { href: '/dashboard', labelHi: 'होम',       labelEn: 'Dashboard', icon: '🏠' },
-  { href: '/product',   labelHi: 'उत्पाद',    labelEn: 'Products',  icon: '📦' },
-  { href: '/sales',     labelHi: 'बिक्री',    labelEn: 'Sales',     icon: '📈' },
-  { href: '/purchases', labelHi: 'खरीद',      labelEn: 'Purchases', icon: '🛒' },
-  { href: '/udhaar',    labelHi: 'उधार',      labelEn: 'Udhaar',    icon: '🤝' },
-  { href: '/gst',       labelHi: 'GST',        labelEn: 'GST',       icon: '🧾' },
-  { href: '/reports',   labelHi: 'रिपोर्ट',   labelEn: 'Reports',   icon: '📊' },
+  { href: '/dashboard', labelHi: 'होम', labelEn: 'Dashboard', icon: '🏠' },
+  { href: '/product', labelHi: 'उत्पाद', labelEn: 'Products', icon: '📦' },
+  { href: '/sales', labelHi: 'बिक्री', labelEn: 'Sales', icon: '📈' },
+  { href: '/purchases', labelHi: 'खरीद', labelEn: 'Purchases', icon: '🛒' },
+  { href: '/udhaar', labelHi: 'उधार', labelEn: 'Udhaar', icon: '🤝' },
+  { href: '/gst', labelHi: 'GST', labelEn: 'GST', icon: '🧾' },
+  { href: '/reports', labelHi: 'रिपोर्ट', labelEn: 'Reports', icon: '📊' },
 ];
 
 function Logo({ size = 'md' }) {
   const [err, setErr] = useState(false);
-  const dim = size === 'sm' ? 28 : size === 'lg' ? 48 : 36;
-  const r   = size === 'sm' ? 8  : size === 'lg' ? 14 : 10;
-  const fs  = size === 'sm' ? 12 : size === 'lg' ? 20 : 15;
+  const dim = size === 'sm' ? 34 : size === 'lg' ? 54 : 42;
+  const radius = size === 'sm' ? 12 : size === 'lg' ? 18 : 15;
+  const fontSize = size === 'sm' ? 14 : size === 'lg' ? 22 : 18;
 
   if (!err) {
     return (
-      <div style={{ width: dim, height: dim, borderRadius: r, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #122D4F, #05966922)', border: '1px solid rgba(5,150,105,0.3)' }}>
-        <img src="/logo.png" alt="Logo" width={dim} height={dim}
+      <div
+        style={{
+          width: dim,
+          height: dim,
+          borderRadius: radius,
+          overflow: 'hidden',
+          flexShrink: 0,
+          background: 'linear-gradient(135deg, rgba(16,37,68,0.95), rgba(16,185,129,0.2))',
+          border: '1px solid rgba(110,231,183,0.2)',
+          boxShadow: '0 10px 28px rgba(5,150,105,0.18)',
+        }}
+      >
+        <img
+          src="/logo.png"
+          alt="Logo"
+          width={dim}
+          height={dim}
           style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          onError={() => setErr(true)} />
+          onError={() => setErr(true)}
+        />
       </div>
     );
   }
+
   return (
-    <div style={{ width: dim, height: dim, borderRadius: r, flexShrink: 0, background: 'linear-gradient(135deg, #0B1D35, #1A3F6F)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(5,150,105,0.3)' }}>
-      <span style={{ fontSize: fs, fontWeight: 800, color: '#10B981', fontFamily: 'serif' }}>र</span>
+    <div
+      style={{
+        width: dim,
+        height: dim,
+        borderRadius: radius,
+        flexShrink: 0,
+        background: 'linear-gradient(135deg, #0b1d35, #10b981)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '1px solid rgba(110,231,183,0.24)',
+        boxShadow: '0 14px 30px rgba(5,150,105,0.18)',
+      }}
+    >
+      <span style={{ fontSize, fontWeight: 800, color: '#f8fafc', fontFamily: 'serif' }}>र</span>
     </div>
   );
 }
 
+const linkBase = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  padding: '12px 12px',
+  borderRadius: 16,
+  textDecoration: 'none',
+  transition: 'all 0.18s ease',
+  position: 'relative',
+};
+
 export default function Layout({ children }) {
-  const [user, setUser]                   = useState(null);
-  const [scrolled, setScrolled]           = useState(false);
-  const [dropdownOpen, setDropdownOpen]   = useState(false);     // desktop sidebar
-  const [mobileDropOpen, setMobileDropOpen] = useState(false);   // mobile topbar
-  const dropdownRef   = useRef(null);
+  const [user] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [scrolled, setScrolled] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileDropOpen, setMobileDropOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const mobileDropRef = useRef(null);
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    const token  = localStorage.getItem('token');
-    if (!stored || !token) { router.push('/login'); return; }
-    setUser(JSON.parse(stored));
-  }, []);
+    const token = localStorage.getItem('token');
+    if (!user || !token) {
+      router.push('/login');
+    }
+  }, [router, user]);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // ── Close dropdowns when clicking outside ───────────────────────────────────
   useEffect(() => {
     const handleOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -87,369 +130,538 @@ export default function Layout({ children }) {
   };
 
   const isActive = (href) => pathname === href;
-  const initial  = user?.name?.charAt(0)?.toUpperCase() || '?';
+  const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
+  const firstName = user?.name?.split(' ')?.[0] || 'Profile';
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Inter', sans-serif" }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'transparent',
+        fontFamily: "'Inter', sans-serif",
+      }}
+    >
+      <aside
+        className="desktop-sidebar"
+        style={{
+          width: 274,
+          padding: '18px 14px 16px',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            borderRadius: 30,
+            background:
+              'linear-gradient(180deg, rgba(8,21,40,0.98), rgba(14,33,58,0.96) 48%, rgba(8,21,40,0.98))',
+            border: '1px solid rgba(110,231,183,0.08)',
+            boxShadow: '0 28px 80px rgba(8,21,40,0.3)',
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              top: -70,
+              right: -50,
+              width: 170,
+              height: 170,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(16,185,129,0.26), transparent 65%)',
+              pointerEvents: 'none',
+            }}
+          />
 
-      {/* ══════════════════════════════════════════
-          DESKTOP SIDEBAR
-      ══════════════════════════════════════════ */}
-      <aside className="desktop-sidebar" style={{
-        width: 244,
-        background: 'var(--navy)',
-        display: 'flex', flexDirection: 'column',
-        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50,
-        borderRight: '1px solid rgba(5,150,105,0.1)',
-        boxShadow: '4px 0 20px rgba(0,0,0,0.2)',
-      }}>
-
-        {/* Brand */}
-        <div style={{ padding: '20px 18px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px 16px' }}>
             <Logo size="md" />
             <div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px', fontFamily: 'serif' }}>
-                रख<span style={{ color: '#10B981' }}>रखाव</span>
+              <div
+                style={{
+                  fontSize: 21,
+                  fontWeight: 800,
+                  color: '#fff',
+                  letterSpacing: '-0.04em',
+                  fontFamily: 'serif',
+                }}
+              >
+                रख<span style={{ color: '#6ee7b7' }}>रखाव</span>
               </div>
-              <div style={{ fontSize: 9, color: 'rgba(52,211,153,0.45)', fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 1 }}>
-                Business Manager
+              <div
+                style={{
+                  fontSize: 10,
+                  color: 'rgba(226,232,240,0.46)',
+                  fontWeight: 700,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  marginTop: 2,
+                }}
+              >
+                Smart Business Control
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Emerald divider */}
-        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(5,150,105,0.35), transparent)', margin: '0 16px' }} />
-
-        {/* ── USER CARD — now clickable, opens dropdown ── */}
-        <div style={{ padding: '12px 12px 6px', position: 'relative' }} ref={dropdownRef}>
           <div
-            onClick={() => setDropdownOpen(v => !v)}
-            title="Click to view profile or logout"
             style={{
-              display: 'flex', alignItems: 'center', gap: 9,
-              background: dropdownOpen ? 'rgba(5,150,105,0.12)' : 'rgba(255,255,255,0.04)',
-              borderRadius: 10, padding: '9px 11px',
-              border: `1px solid ${dropdownOpen ? 'rgba(5,150,105,0.3)' : 'rgba(255,255,255,0.06)'}`,
-              cursor: 'pointer', transition: 'all 0.18s ease',
-              userSelect: 'none',
+              padding: '14px',
+              borderRadius: 22,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+              border: '1px solid rgba(255,255,255,0.08)',
+              marginBottom: 14,
             }}
-            onMouseEnter={e => { if (!dropdownOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(5,150,105,0.15)'; }}}
-            onMouseLeave={e => { if (!dropdownOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}}
           >
-            {/* Avatar */}
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, #059669, #1A3F6F)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0,
-              boxShadow: dropdownOpen ? '0 0 10px rgba(5,150,105,0.55)' : 'none',
-              transition: 'box-shadow 0.18s',
-            }}>
-              {initial}
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 6, fontWeight: 600 }}>
+              Bilingual business workspace
             </div>
-
-            {/* Name + email */}
-            <div style={{ overflow: 'hidden', flex: 1 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user?.name || '—'}
-              </div>
-              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user?.email || 'Shopkeeper'}
-              </div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55 }}>
+              Stock, billing, GST and udhaar in one premium dashboard.
             </div>
-
-            {/* Animated chevron */}
-            <span style={{
-              fontSize: 9, color: 'rgba(52,211,153,0.5)', flexShrink: 0,
-              transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease',
-            }}>▼</span>
           </div>
 
-          {/* ── Desktop Dropdown ── */}
-          {dropdownOpen && (
-            <div style={{
-              position: 'absolute',
-              top: 'calc(100% - 4px)',
-              left: 12, right: 12,
-              background: '#0d2240',
-              border: '1px solid rgba(5,150,105,0.28)',
-              borderRadius: 10,
-              boxShadow: '0 10px 28px rgba(0,0,0,0.45)',
-              zIndex: 100,
-              overflow: 'hidden',
-              animation: 'dropFadeIn 0.15s ease',
-            }}>
-              {/* Profile option */}
-              <button
-                onClick={goToProfile}
+          <div ref={dropdownRef} style={{ position: 'relative', marginBottom: 10 }}>
+            <button
+              type="button"
+              onClick={() => setDropdownOpen((value) => !value)}
+              style={{
+                width: '100%',
+                border: '1px solid rgba(110,231,183,0.1)',
+                background: dropdownOpen
+                  ? 'linear-gradient(180deg, rgba(16,185,129,0.18), rgba(16,185,129,0.08))'
+                  : 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+                borderRadius: 20,
+                padding: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                cursor: 'pointer',
+                color: '#fff',
+                textAlign: 'left',
+              }}
+            >
+              <div
                 style={{
-                  width: '100%', padding: '11px 14px',
-                  background: 'none', border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.82)', cursor: 'pointer',
-                  fontSize: 12.5, fontWeight: 600, textAlign: 'left',
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  transition: 'background 0.12s',
+                  width: 42,
+                  height: 42,
+                  borderRadius: 14,
+                  background: 'linear-gradient(135deg, #10b981, #1d4ed8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 15,
+                  fontWeight: 800,
+                  flexShrink: 0,
+                  boxShadow: '0 12px 26px rgba(16,185,129,0.22)',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(5,150,105,0.13)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                <span style={{ fontSize: 16 }}>👤</span>
-                <div>
-                  <div style={{ lineHeight: 1.3 }}>Profile / प्रोफाइल</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', marginTop: 1 }}>
-                    Shop &amp; account settings
-                  </div>
+                {initial}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {user?.name || 'Shopkeeper'}
                 </div>
-              </button>
-
-              {/* Logout option */}
-              <button
-                onClick={logout}
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'rgba(255,255,255,0.46)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {user?.email || 'Business account'}
+                </div>
+              </div>
+              <span
                 style={{
-                  width: '100%', padding: '11px 14px',
-                  background: 'none', border: 'none',
-                  color: 'rgba(252,165,165,0.85)', cursor: 'pointer',
-                  fontSize: 12.5, fontWeight: 600, textAlign: 'left',
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  transition: 'background 0.12s',
+                  color: 'rgba(110,231,183,0.72)',
+                  transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.18s ease',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.12)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                <span style={{ fontSize: 16 }}>🚪</span>
-                <div style={{ lineHeight: 1.3 }}>Logout / निकलें</div>
-              </button>
-            </div>
-          )}
-        </div>
+                ▼
+              </span>
+            </button>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '8px 10px', overflowY: 'auto' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(52,211,153,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, padding: '6px 8px 10px' }}>
+            {dropdownOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  left: 0,
+                  right: 0,
+                  borderRadius: 18,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(110,231,183,0.16)',
+                  background: 'linear-gradient(180deg, rgba(10,28,50,0.98), rgba(8,21,40,0.98))',
+                  boxShadow: '0 24px 48px rgba(0,0,0,0.35)',
+                  zIndex: 20,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={goToProfile}
+                  style={{
+                    width: '100%',
+                    padding: '13px 14px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    color: 'rgba(255,255,255,0.86)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>👤</span>
+                  <span>Profile / प्रोफाइल</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={logout}
+                  style={{
+                    width: '100%',
+                    padding: '13px 14px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#fca5a5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>🚪</span>
+                  <span>Logout / निकलें</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'rgba(226,232,240,0.34)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.16em',
+              padding: '10px 8px 8px',
+            }}
+          >
             Main Menu
           </div>
-          {navItems.map(item => {
-            const active = isActive(item.href);
-            return (
-              <a key={item.href} href={item.href} style={{
-                display: 'flex', alignItems: 'center', gap: 11,
-                padding: '9px 10px', borderRadius: 9, marginBottom: 3,
-                textDecoration: 'none',
-                background: active ? 'rgba(5,150,105,0.15)' : 'transparent',
-                color: active ? '#34D399' : 'rgba(255,255,255,0.45)',
-                transition: 'all 0.16s ease',
-                borderLeft: `2px solid ${active ? '#059669' : 'transparent'}`,
-              }}
-              onMouseEnter={e => {
-                if (!active) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.78)';
-                  e.currentTarget.style.borderLeftColor = 'rgba(5,150,105,0.28)';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.45)';
-                  e.currentTarget.style.borderLeftColor = 'transparent';
-                }
-              }}
-              >
-                <span style={{ fontSize: 17, width: 22, textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: active ? 700 : 400, lineHeight: 1.2, color: 'inherit' }}>
-                    {item.labelEn}
-                  </div>
-                  <div style={{ fontSize: 9.5, opacity: 0.42, lineHeight: 1.2 }}>{item.labelHi}</div>
-                </div>
-                {active && (
-                  <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: '#059669',
-                    boxShadow: '0 0 8px rgba(5,150,105,0.9), 0 0 18px rgba(5,150,105,0.4)',
-                    flexShrink: 0,
-                  }} />
-                )}
-              </a>
-            );
-          })}
-        </nav>
 
-        {/* Bottom logout button */}
-        <div style={{ padding: '8px 10px 16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <button onClick={logout} style={{
-            width: '100%', padding: '9px 12px', borderRadius: 8,
-            background: 'rgba(220,38,38,0.08)', color: 'rgba(252,165,165,0.75)',
-            border: '1px solid rgba(220,38,38,0.12)',
-            cursor: 'pointer', fontSize: 12.5, fontWeight: 600,
-            display: 'flex', alignItems: 'center', gap: 8,
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.16)'; e.currentTarget.style.color = '#fca5a5'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.08)'; e.currentTarget.style.color = 'rgba(252,165,165,0.75)'; }}
+          <nav style={{ flex: 1, overflowY: 'auto', paddingRight: 2 }}>
+            {navItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  style={{
+                    ...linkBase,
+                    marginBottom: 6,
+                    color: active ? '#f8fafc' : 'rgba(226,232,240,0.62)',
+                    background: active
+                      ? 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(37,99,235,0.14))'
+                      : 'transparent',
+                    border: `1px solid ${active ? 'rgba(110,231,183,0.12)' : 'transparent'}`,
+                    boxShadow: active ? '0 20px 34px rgba(8,21,40,0.24)' : 'none',
+                  }}
+                >
+                  {active && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 10,
+                        bottom: 10,
+                        width: 4,
+                        borderRadius: '0 999px 999px 0',
+                        background: 'linear-gradient(180deg, #6ee7b7, #38bdf8)',
+                      }}
+                    />
+                  )}
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: active ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.04)',
+                      fontSize: 18,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {item.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.15 }}>{item.labelEn}</div>
+                    <div style={{ fontSize: 10.5, color: active ? 'rgba(226,232,240,0.78)' : 'rgba(226,232,240,0.4)' }}>
+                      {item.labelHi}
+                    </div>
+                  </div>
+                  {active && (
+                    <div
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: '50%',
+                        background: '#6ee7b7',
+                        boxShadow: '0 0 12px rgba(110,231,183,0.9)',
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                </a>
+              );
+            })}
+          </nav>
+
+          <button
+            type="button"
+            onClick={logout}
+            style={{
+              marginTop: 10,
+              width: '100%',
+              borderRadius: 18,
+              border: '1px solid rgba(248,113,113,0.14)',
+              background: 'linear-gradient(180deg, rgba(127,29,29,0.24), rgba(127,29,29,0.14))',
+              color: '#fecaca',
+              padding: '12px 14px',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
           >
-            🚪 <span>Logout / निकलें</span>
+            Logout / निकलें
           </button>
         </div>
       </aside>
 
-      {/* ══════════════════════════════════════════
-          MOBILE TOP BAR
-      ══════════════════════════════════════════ */}
-      <div className="mobile-topbar" style={{
-        position: 'fixed', top: 0, left: 0, right: 0,
-        background: scrolled ? 'rgba(11,29,53,0.97)' : 'var(--navy)',
-        backdropFilter: scrolled ? 'blur(12px)' : 'none',
-        padding: '10px 16px', zIndex: 50,
-        alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(5,150,105,0.18)',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.2)',
-        transition: 'all 0.2s',
-      }}>
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div
+        className="mobile-topbar"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 60,
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          padding: '14px 14px 12px',
+          background: scrolled ? 'rgba(8,21,40,0.92)' : 'rgba(8,21,40,0.84)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(110,231,183,0.12)',
+          boxShadow: '0 12px 32px rgba(8,21,40,0.18)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Logo size="sm" />
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'serif' }}>
-            रख<span style={{ color: '#10B981' }}>रखाव</span>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', fontFamily: 'serif' }}>
+              रख<span style={{ color: '#6ee7b7' }}>रखाव</span>
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>Business Manager</div>
           </div>
         </div>
 
-        {/* ── Mobile Avatar — clickable ── */}
-        <div style={{ position: 'relative' }} ref={mobileDropRef}>
-          <div
-            onClick={() => setMobileDropOpen(v => !v)}
-            title="Profile / Logout"
+        <div ref={mobileDropRef} style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setMobileDropOpen((value) => !value)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              cursor: 'pointer', padding: '4px 8px 4px 6px', borderRadius: 20,
-              background: mobileDropOpen ? 'rgba(5,150,105,0.18)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${mobileDropOpen ? 'rgba(5,150,105,0.35)' : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.15s',
+              border: '1px solid rgba(110,231,183,0.12)',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: 999,
+              padding: '6px 8px 6px 6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              color: '#fff',
+              cursor: 'pointer',
             }}
           >
-            <div style={{
-              width: 28, height: 28, borderRadius: 7,
-              background: 'linear-gradient(135deg, #059669, #1A3F6F)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700, color: '#fff',
-              boxShadow: mobileDropOpen ? '0 0 8px rgba(5,150,105,0.5)' : 'none',
-              transition: 'box-shadow 0.15s',
-            }}>
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #10b981, #1d4ed8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 800,
+              }}
+            >
               {initial}
             </div>
-            <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
-              {user?.name?.split(' ')[0]}
+            <span style={{ fontSize: 12, fontWeight: 700 }}>{firstName}</span>
+            <span
+              style={{
+                fontSize: 10,
+                transform: mobileDropOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.18s ease',
+                color: '#6ee7b7',
+              }}
+            >
+              ▼
             </span>
-            <span style={{
-              fontSize: 8, color: 'rgba(52,211,153,0.5)',
-              transform: mobileDropOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.18s',
-            }}>▼</span>
-          </div>
+          </button>
 
-          {/* Mobile Dropdown */}
           {mobileDropOpen && (
-            <div style={{
-              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-              width: 210,
-              background: '#0d2240',
-              border: '1px solid rgba(5,150,105,0.28)',
-              borderRadius: 12,
-              boxShadow: '0 12px 32px rgba(0,0,0,0.55)',
-              zIndex: 200,
-              overflow: 'hidden',
-              animation: 'dropFadeIn 0.15s ease',
-            }}>
-              {/* User info header */}
-              <div style={{
-                padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(5,150,105,0.08)',
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{user?.name}</div>
-                <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{user?.email}</div>
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 220,
+                borderRadius: 18,
+                overflow: 'hidden',
+                border: '1px solid rgba(110,231,183,0.16)',
+                background: 'linear-gradient(180deg, rgba(10,28,50,0.98), rgba(8,21,40,0.98))',
+                boxShadow: '0 24px 50px rgba(0,0,0,0.34)',
+              }}
+            >
+              <div
+                style={{
+                  padding: '14px',
+                  background: 'rgba(16,185,129,0.1)',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <div style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>{user?.name}</div>
+                <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 11, marginTop: 2 }}>{user?.email}</div>
               </div>
-
-              {/* Profile */}
               <button
+                type="button"
                 onClick={goToProfile}
                 style={{
-                  width: '100%', padding: '12px 14px',
-                  background: 'none', border: 'none',
+                  width: '100%',
+                  padding: '13px 14px',
+                  border: 'none',
                   borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.82)', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600, textAlign: 'left',
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  transition: 'background 0.12s',
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.86)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textAlign: 'left',
+                  cursor: 'pointer',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(5,150,105,0.13)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                <span style={{ fontSize: 16 }}>👤</span>
-                <span>Profile / प्रोफाइल</span>
+                👤 Profile / प्रोफाइल
               </button>
-
-              {/* Logout */}
               <button
+                type="button"
                 onClick={logout}
                 style={{
-                  width: '100%', padding: '12px 14px',
-                  background: 'none', border: 'none',
-                  color: 'rgba(252,165,165,0.85)', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600, textAlign: 'left',
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  transition: 'background 0.12s',
+                  width: '100%',
+                  padding: '13px 14px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#fecaca',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textAlign: 'left',
+                  cursor: 'pointer',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.12)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                <span style={{ fontSize: 16 }}>🚪</span>
-                <span>Logout / निकलें</span>
+                🚪 Logout / निकलें
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── MAIN CONTENT ── */}
-      <main className="main-content" style={{ flex: 1, marginLeft: 244, padding: '28px', minHeight: '100vh', paddingBottom: 80 }}>
-        {children}
+      <main
+        className="main-content"
+        style={{
+          marginLeft: 274,
+          padding: '28px 26px 92px',
+          minHeight: '100vh',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1380,
+            margin: '0 auto',
+          }}
+        >
+          {children}
+        </div>
       </main>
 
-      {/* ══════════════════════════════════════════
-          MOBILE BOTTOM NAV
-      ══════════════════════════════════════════ */}
-      <nav className="mobile-bottom-nav" style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'var(--navy)',
-        borderTop: '1px solid rgba(5,150,105,0.18)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        zIndex: 50,
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.25)',
-      }}>
-        <div style={{ display: 'flex', padding: '5px 0 7px' }}>
-          {navItems.map(item => {
+      <nav
+        className="mobile-bottom-nav"
+        style={{
+          position: 'fixed',
+          bottom: 10,
+          left: 12,
+          right: 12,
+          zIndex: 60,
+          display: 'none',
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 24,
+            background: 'rgba(8,21,40,0.94)',
+            border: '1px solid rgba(110,231,183,0.12)',
+            boxShadow: '0 24px 60px rgba(8,21,40,0.28)',
+            padding: '7px 6px calc(7px + env(safe-area-inset-bottom))',
+            display: 'flex',
+          }}
+        >
+          {navItems.map((item) => {
             const active = isActive(item.href);
             return (
-              <a key={item.href} href={item.href} style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: 2, textDecoration: 'none', padding: '3px 1px', position: 'relative',
-              }}>
-                {active && (
-                  <div style={{ position: 'absolute', top: 0, left: '8%', right: '8%', bottom: 0, background: 'rgba(5,150,105,0.12)', borderRadius: 8, border: '1px solid rgba(5,150,105,0.2)' }} />
-                )}
-                {active && (
-                  <div style={{ position: 'absolute', top: 0, left: '25%', right: '25%', height: 2, background: 'linear-gradient(90deg, #059669, #34D399)', borderRadius: '0 0 3px 3px', boxShadow: '0 0 8px rgba(5,150,105,0.7)' }} />
-                )}
-                <span style={{ fontSize: 19, position: 'relative', zIndex: 1, transform: active ? 'scale(1.12)' : 'scale(1)', transition: 'transform 0.15s', marginTop: 2 }}>
-                  {item.icon}
-                </span>
-                <span style={{ fontSize: 9, fontWeight: active ? 600 : 400, color: active ? '#34D399' : 'rgba(255,255,255,0.3)', position: 'relative', zIndex: 1 }}>
-                  {item.labelEn}
-                </span>
+              <a
+                key={item.href}
+                href={item.href}
+                style={{
+                  flex: 1,
+                  textDecoration: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 3,
+                  padding: '8px 2px',
+                  borderRadius: 18,
+                  position: 'relative',
+                  color: active ? '#fff' : 'rgba(226,232,240,0.46)',
+                  background: active ? 'linear-gradient(180deg, rgba(16,185,129,0.18), rgba(59,130,246,0.12))' : 'transparent',
+                }}
+              >
+                <span style={{ fontSize: 18, transform: active ? 'translateY(-1px)' : 'none' }}>{item.icon}</span>
+                <span style={{ fontSize: 9.5, fontWeight: 700 }}>{item.labelEn}</span>
               </a>
             );
           })}
@@ -457,20 +669,18 @@ export default function Layout({ children }) {
       </nav>
 
       <style>{`
-        .mobile-topbar     { display: none; }
+        .desktop-sidebar { display: flex; }
+        .mobile-topbar { display: none; }
         .mobile-bottom-nav { display: none; }
-        .desktop-sidebar   { display: flex !important; }
 
-        @media (max-width: 768px) {
-          .desktop-sidebar   { display: none !important; }
-          .mobile-topbar     { display: flex !important; }
+        @media (max-width: 900px) {
+          .desktop-sidebar { display: none !important; }
+          .mobile-topbar { display: flex !important; }
           .mobile-bottom-nav { display: block !important; }
-          .main-content      { margin-left: 0 !important; padding: 66px 14px 80px !important; }
-        }
-
-        @keyframes dropFadeIn {
-          from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0);    }
+          .main-content {
+            margin-left: 0 !important;
+            padding: 84px 14px 112px !important;
+          }
         }
 
         * { -webkit-tap-highlight-color: transparent; }

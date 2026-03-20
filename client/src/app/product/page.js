@@ -201,61 +201,87 @@ export default function ProductsPage() {
 
   return (
     <Layout>
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div className="page-title" style={{ marginBottom: 4 }}>उत्पाद / Products</div>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>{products.length} products</span>
-            {lowStockCount > 0 && <span style={{ fontSize: 12, color: '#d97706', fontWeight: 600 }}>⚠️ {lowStockCount} low stock</span>}
-            {outOfStockCount > 0 && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>🔴 {outOfStockCount} out of stock</span>}
-            <span style={{ fontSize: 12, color: '#6b7280' }}>Inventory Value: <strong>₹{totalValue.toFixed(0)}</strong></span>
+      <div className="page-shell">
+        <section className="hero-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div>
+              <div className="kicker" style={{ marginBottom: 12 }}>Inventory master</div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>उत्पाद / Products</div>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', maxWidth: 540 }}>
+                Manage stock, pricing, GST and product movement from one clean control panel.
+              </div>
+            </div>
+            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ उत्पाद जोड़ें / Add</button>
+          </div>
+        </section>
+
+        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Total Products</div>
+            <div className="metric-value" style={{ color: '#2563eb' }}>{products.length}</div>
+            <div className="metric-note">Catalog in your inventory</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Low Stock</div>
+            <div className="metric-value" style={{ color: '#f59e0b' }}>{lowStockCount}</div>
+            <div className="metric-note">Need reorder attention</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Out Of Stock</div>
+            <div className="metric-value" style={{ color: '#ef4444' }}>{outOfStockCount}</div>
+            <div className="metric-note">Unavailable for sale</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Inventory Value</div>
+            <div className="metric-value" style={{ color: '#10b981' }}>₹{totalValue.toFixed(0)}</div>
+            <div className="metric-note">Based on cost price</div>
+          </div>
+        </section>
+
+        <div className="toolbar-card">
+          <div className="toolbar">
+            <input className="form-input" style={{ flex: 1, minWidth: 180 }}
+              placeholder="🔍 उत्पाद खोजें / Search..."
+              value={search} onChange={e => setSearch(e.target.value)} />
+            <select className="form-input" style={{ minWidth: 140 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
+              <option value="all">सभी / All</option>
+              <option value="instock">✅ In Stock</option>
+              <option value="low">⚠️ Low Stock</option>
+              <option value="out">🔴 Out of Stock</option>
+            </select>
+            <select className="form-input" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="name">नाम से / Name</option>
+              <option value="price_asc">Price ↑</option>
+              <option value="price_desc">Price ↓</option>
+              <option value="quantity">Qty ↑</option>
+              <option value="margin">Margin ↓</option>
+            </select>
+            {(search || filterStock !== 'all') && (
+              <button onClick={() => { setSearch(''); setFilterStock('all'); }} className="btn-ghost" style={{ width: 'auto' }}>
+                Clear ✕
+              </button>
+            )}
           </div>
         </div>
-        <button onClick={openAdd} className="btn-primary">+ उत्पाद जोड़ें / Add</button>
-      </div>
 
-      {/* ── Filters ── */}
-      <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input className="form-input" style={{ flex: 1, minWidth: 180 }}
-          placeholder="🔍 उत्पाद खोजें / Search..."
-          value={search} onChange={e => setSearch(e.target.value)} />
-        <select className="form-input" style={{ minWidth: 140 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
-          <option value="all">सभी / All</option>
-          <option value="instock">✅ In Stock</option>
-          <option value="low">⚠️ Low Stock</option>
-          <option value="out">🔴 Out of Stock</option>
-        </select>
-        <select className="form-input" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-          <option value="name">नाम से / Name</option>
-          <option value="price_asc">Price ↑</option>
-          <option value="price_desc">Price ↓</option>
-          <option value="quantity">Qty ↑</option>
-          <option value="margin">Margin ↓</option>
-        </select>
-        {(search || filterStock !== 'all') && (
-          <button onClick={() => { setSearch(''); setFilterStock('all'); }}
-            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            Clear ✕
-          </button>
-        )}
-      </div>
-
-      {error && !showModal && !showStockModal && (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
+        {error && !showModal && !showStockModal && (
+          <div className="alert-error">
           {error}
-        </div>
-      )}
+          </div>
+        )}
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>लोड हो रहा है...</div>
-      ) : filtered.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
-          <div>{search || filterStock !== 'all' ? 'कोई उत्पाद नहीं मिला / No products found' : 'अभी कोई उत्पाद नहीं। "+ Add" से जोड़ें।'}</div>
-        </div>
-      ) : (
-        <>
+        {loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📦</div>
+            <div>लोड हो रहा है...</div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📦</div>
+            <div>{search || filterStock !== 'all' ? 'कोई उत्पाद नहीं मिला / No products found' : 'अभी कोई उत्पाद नहीं। Add से जोड़ें।'}</div>
+          </div>
+        ) : (
+          <>
           {/* Desktop table */}
           <div className="table-container hidden-xs">
             <table>
@@ -358,7 +384,8 @@ export default function ProductsPage() {
             ))}
           </div>
         </>
-      )}
+        )}
+      </div>
 
       {/* ── Add/Edit Modal ── */}
       {showModal && (

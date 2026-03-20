@@ -1,20 +1,28 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
-const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh'];
+const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'];
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
   const [shop, setShop] = useState(null);
-  const [nameForm, setNameForm] = useState({ name: '' });
+  const [nameForm, setNameForm] = useState(() => ({
+    name: typeof window === 'undefined'
+      ? ''
+      : (JSON.parse(localStorage.getItem('user') || 'null')?.name || ''),
+  }));
   const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [shopForm, setShopForm] = useState({
     name: '', address: '', city: '', state: '', pincode: '',
     gstin: '', phone: '', email: '',
     bank_name: '', bank_account: '', bank_ifsc: '', bank_branch: '',
-    terms: ''
+    terms: '',
   });
   const [nameMsg, setNameMsg] = useState('');
   const [passMsg, setPassMsg] = useState('');
@@ -26,18 +34,10 @@ export default function ProfilePage() {
 
   const getToken = () => localStorage.getItem('token');
 
-  useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (!stored) { router.push('/login'); return; }
-    const u = JSON.parse(stored);
-    setUser(u); setNameForm({ name: u.name });
-    fetchShop();
-  }, []);
-
-  const fetchShop = async () => {
+  async function fetchShop() {
     try {
       const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/shop', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       const data = await res.json();
       setShop(data);
@@ -57,10 +57,23 @@ export default function ProfilePage() {
         terms: data.terms || '',
       });
     } catch {}
-  };
+  }
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      fetchShop();
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [router, user]);
 
   const updateName = async (e) => {
-    e.preventDefault(); setNameMsg(''); setNameError('');
+    e.preventDefault();
+    setNameMsg('');
+    setNameError('');
     try {
       const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/profile', {
         method: 'PUT',
@@ -73,14 +86,26 @@ export default function ProfilePage() {
         localStorage.setItem('user', JSON.stringify(updated));
         setUser(updated);
         setNameMsg('नाम अपडेट हो गया! / Name updated!');
-      } else setNameError(data.message || 'विफल / Failed');
-    } catch { setNameError('सर्वर त्रुटि / Server error'); }
+      } else {
+        setNameError(data.message || 'विफल / Failed');
+      }
+    } catch {
+      setNameError('सर्वर त्रुटि / Server error');
+    }
   };
 
   const updatePassword = async (e) => {
-    e.preventDefault(); setPassMsg(''); setPassError('');
-    if (passForm.newPassword !== passForm.confirmPassword) { setPassError('पासवर्ड मेल नहीं खाते / Passwords do not match'); return; }
-    if (passForm.newPassword.length < 6) { setPassError('कम से कम 6 अक्षर / Min 6 characters'); return; }
+    e.preventDefault();
+    setPassMsg('');
+    setPassError('');
+    if (passForm.newPassword !== passForm.confirmPassword) {
+      setPassError('पासवर्ड मेल नहीं खाते / Passwords do not match');
+      return;
+    }
+    if (passForm.newPassword.length < 6) {
+      setPassError('कम से कम 6 अक्षर / Min 6 characters');
+      return;
+    }
     try {
       const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/password', {
         method: 'PUT',
@@ -88,13 +113,21 @@ export default function ProfilePage() {
         body: JSON.stringify({ currentPassword: passForm.currentPassword, newPassword: passForm.newPassword }),
       });
       const data = await res.json();
-      if (res.ok) { setPassMsg('पासवर्ड बदल गया! / Password updated!'); setPassForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); }
-      else setPassError(data.message || 'विफल / Failed');
-    } catch { setPassError('सर्वर त्रुटि / Server error'); }
+      if (res.ok) {
+        setPassMsg('पासवर्ड बदल गया! / Password updated!');
+        setPassForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        setPassError(data.message || 'विफल / Failed');
+      }
+    } catch {
+      setPassError('सर्वर त्रुटि / Server error');
+    }
   };
 
   const updateShop = async (e) => {
-    e.preventDefault(); setShopMsg(''); setShopError('');
+    e.preventDefault();
+    setShopMsg('');
+    setShopError('');
     try {
       const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/shop', {
         method: 'PUT',
@@ -102,158 +135,241 @@ export default function ProfilePage() {
         body: JSON.stringify(shopForm),
       });
       const data = await res.json();
-      if (res.ok) { setShop(data); setShopMsg('दुकान की जानकारी अपडेट हो गई! / Shop details updated!'); }
-      else setShopError(data.message || 'विफल / Failed');
-    } catch { setShopError('सर्वर त्रुटि / Server error'); }
+      if (res.ok) {
+        setShop(data);
+        setShopMsg('दुकान की जानकारी अपडेट हो गई! / Shop details updated!');
+      } else {
+        setShopError(data.message || 'विफल / Failed');
+      }
+    } catch {
+      setShopError('सर्वर त्रुटि / Server error');
+    }
   };
+
+  const profileTiles = [
+    { label: 'GSTIN', value: shop?.gstin || 'Not added yet' },
+    { label: 'Phone', value: shop?.phone || 'Add shop contact' },
+    { label: 'State', value: shop?.state || 'Select state' },
+  ];
 
   return (
     <Layout>
-      <div className="page-title">प्रोफ़ाइल / Profile & Settings</div>
-      <div style={{ maxWidth: 560 }}>
-
-        {/* Avatar */}
-        <div className="card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-            {user?.name?.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>{user?.name}</div>
-            <div style={{ color: '#9ca3af', fontSize: 14 }}>{user?.email}</div>
-            {shop?.gstin && <div style={{ fontSize: 12, color: '#6366f1', fontWeight: 600, marginTop: 2 }}>GSTIN: {shop.gstin}</div>}
-          </div>
-        </div>
-
-        {/* Shop Details */}
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 2 }}>🏪 दुकान की जानकारी / Shop Details</div>
-          <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>GST अनुपालन के लिए पूरा भरें / Fill completely for GST compliance & invoices</div>
-          {shopMsg && <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{shopMsg}</div>}
-          {shopError && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{shopError}</div>}
-          <form onSubmit={updateShop}>
-
-            {/* Basic Info */}
-            <div className="form-group">
-              <label className="form-label">दुकान का नाम / Shop Name *</label>
-              <input className="form-input" value={shopForm.name} onChange={e => setShopForm({ ...shopForm, name: e.target.value })} required />
+      <div className="page-shell">
+        <section className="hero-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 24,
+                  background: 'linear-gradient(135deg, #10b981, #2563eb)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 28,
+                  fontWeight: 800,
+                  boxShadow: '0 20px 48px rgba(16,185,129,0.24)',
+                }}
+              >
+                {user?.name?.charAt(0).toUpperCase() || 'R'}
+              </div>
+              <div>
+                <div className="kicker" style={{ marginBottom: 10 }}>Profile & settings</div>
+                <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>प्रोफ़ाइल / Profile & Settings</div>
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>
+                  Manage shop identity, invoice details and account security.
+                </div>
+              </div>
             </div>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {profileTiles.map((tile) => (
+                <div
+                  key={tile.label}
+                  style={{
+                    minWidth: 144,
+                    padding: '12px 14px',
+                    borderRadius: 18,
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.46)', fontWeight: 700 }}>
+                    {tile.label}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 6 }}>{tile.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="card">
+          <div style={{ marginBottom: 18 }}>
+            <div className="section-title">🏪 दुकान की जानकारी / Shop Details</div>
+            <div className="section-subtitle">GST compliance, billing identity and printed invoice information</div>
+          </div>
+
+          {shopMsg && <div className="alert-success">{shopMsg}</div>}
+          {shopError && <div className="alert-error">{shopError}</div>}
+
+          <form onSubmit={updateShop}>
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label">दुकान का नाम / Shop Name *</label>
+                <input className="form-input" value={shopForm.name} onChange={(e) => setShopForm({ ...shopForm, name: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">GSTIN</label>
+                <input className="form-input" placeholder="22AAAAA0000A1Z5" value={shopForm.gstin} onChange={(e) => setShopForm({ ...shopForm, gstin: e.target.value })} />
+              </div>
+            </div>
+
             <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">फ़ोन / Phone</label>
-                <input className="form-input" placeholder="9876543210" value={shopForm.phone} onChange={e => setShopForm({ ...shopForm, phone: e.target.value })} />
+                <input className="form-input" placeholder="9876543210" value={shopForm.phone} onChange={(e) => setShopForm({ ...shopForm, phone: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">ईमेल / Email</label>
-                <input className="form-input" placeholder="shop@email.com" value={shopForm.email} onChange={e => setShopForm({ ...shopForm, email: e.target.value })} />
+                <input className="form-input" placeholder="shop@email.com" value={shopForm.email} onChange={(e) => setShopForm({ ...shopForm, email: e.target.value })} />
               </div>
             </div>
+
             <div className="form-group">
               <label className="form-label">पता / Address</label>
-              <input className="form-input" placeholder="गली का पता / Street address" value={shopForm.address} onChange={e => setShopForm({ ...shopForm, address: e.target.value })} />
+              <input className="form-input" placeholder="गली का पता / Street address" value={shopForm.address} onChange={(e) => setShopForm({ ...shopForm, address: e.target.value })} />
             </div>
-            <div className="grid-2">
+
+            <div className="grid-3">
               <div className="form-group">
                 <label className="form-label">शहर / City</label>
-                <input className="form-input" placeholder="शहर / City" value={shopForm.city} onChange={e => setShopForm({ ...shopForm, city: e.target.value })} />
+                <input className="form-input" placeholder="City" value={shopForm.city} onChange={(e) => setShopForm({ ...shopForm, city: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">राज्य / State</label>
+                <select className="form-input" value={shopForm.state} onChange={(e) => setShopForm({ ...shopForm, state: e.target.value })}>
+                  <option value="">राज्य चुनें / Select State</option>
+                  {STATES.map((state) => <option key={state} value={state}>{state}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">पिनकोड / Pincode</label>
-                <input className="form-input" placeholder="110001" value={shopForm.pincode} onChange={e => setShopForm({ ...shopForm, pincode: e.target.value })} />
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">राज्य / State (CGST/IGST के लिए)</label>
-              <select className="form-input" value={shopForm.state} onChange={e => setShopForm({ ...shopForm, state: e.target.value })}>
-                <option value="">राज्य चुनें / Select State</option>
-                {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">GSTIN (वैकल्पिक / optional)</label>
-              <input className="form-input" placeholder="22AAAAA0000A1Z5" value={shopForm.gstin} onChange={e => setShopForm({ ...shopForm, gstin: e.target.value })} />
-            </div>
-
-            {/* Bank Details */}
-            <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginTop: 4, marginBottom: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>🏦 बैंक विवरण / Bank Details</div>
-              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>Invoice mein dikhayi dega / Will appear on invoices</div>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">बैंक का नाम / Bank Name</label>
-                  <input className="form-input" placeholder="State Bank of India" value={shopForm.bank_name} onChange={e => setShopForm({ ...shopForm, bank_name: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">शाखा / Branch</label>
-                  <input className="form-input" placeholder="Main Branch" value={shopForm.bank_branch} onChange={e => setShopForm({ ...shopForm, bank_branch: e.target.value })} />
-                </div>
-              </div>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">खाता नंबर / Account No.</label>
-                  <input className="form-input" placeholder="0000000000" value={shopForm.bank_account} onChange={e => setShopForm({ ...shopForm, bank_account: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">IFSC Code</label>
-                  <input className="form-input" placeholder="SBIN0000000" value={shopForm.bank_ifsc} onChange={e => setShopForm({ ...shopForm, bank_ifsc: e.target.value })} />
-                </div>
+                <input className="form-input" placeholder="110001" value={shopForm.pincode} onChange={(e) => setShopForm({ ...shopForm, pincode: e.target.value })} />
               </div>
             </div>
 
-            {/* Terms */}
-            <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>📋 नियम एवं शर्तें / Terms & Conditions</div>
+            <div className="divider" />
+
+            <div style={{ marginBottom: 12 }}>
+              <div className="section-title" style={{ fontSize: 16 }}>🏦 बैंक विवरण / Bank Details</div>
+              <div className="section-subtitle">Will appear on invoices when available</div>
+            </div>
+
+            <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">Invoice mein print hoga / Will print on invoices</label>
-                <textarea
-                  className="form-input"
-                  rows={4}
-                  placeholder="1. Goods once sold will not be taken back.&#10;2. Subject to local jurisdiction."
-                  value={shopForm.terms}
-                  onChange={e => setShopForm({ ...shopForm, terms: e.target.value })}
-                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
-                />
+                <label className="form-label">बैंक का नाम / Bank Name</label>
+                <input className="form-input" placeholder="State Bank of India" value={shopForm.bank_name} onChange={(e) => setShopForm({ ...shopForm, bank_name: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">शाखा / Branch</label>
+                <input className="form-input" placeholder="Main Branch" value={shopForm.bank_branch} onChange={(e) => setShopForm({ ...shopForm, bank_branch: e.target.value })} />
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label">खाता नंबर / Account No.</label>
+                <input className="form-input" placeholder="0000000000" value={shopForm.bank_account} onChange={(e) => setShopForm({ ...shopForm, bank_account: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">IFSC Code</label>
+                <input className="form-input" placeholder="SBIN0000000" value={shopForm.bank_ifsc} onChange={(e) => setShopForm({ ...shopForm, bank_ifsc: e.target.value })} />
+              </div>
+            </div>
+
+            <div className="divider" />
+
+            <div style={{ marginBottom: 12 }}>
+              <div className="section-title" style={{ fontSize: 16 }}>📋 नियम एवं शर्तें / Terms & Conditions</div>
+              <div className="section-subtitle">Printed on invoices for cleaner business communication</div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Terms</label>
+              <textarea
+                className="form-input"
+                rows={4}
+                placeholder={'1. Goods once sold will not be taken back.\n2. Subject to local jurisdiction.'}
+                value={shopForm.terms}
+                onChange={(e) => setShopForm({ ...shopForm, terms: e.target.value })}
+                style={{ resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            <button type="submit" className="btn-primary">
               दुकान की जानकारी सहेजें / Save Shop Details
             </button>
           </form>
-        </div>
+        </section>
 
-        {/* Update name */}
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 16 }}>✏️ नाम बदलें / Update Name</div>
-          {nameMsg && <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{nameMsg}</div>}
-          {nameError && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{nameError}</div>}
-          <form onSubmit={updateName} style={{ display: 'flex', gap: 10 }}>
-            <input className="form-input" style={{ flex: 1 }} value={nameForm.name} onChange={e => setNameForm({ name: e.target.value })} required />
-            <button type="submit" className="btn-primary">अपडेट / Update</button>
-          </form>
-        </div>
+        <section className="profile-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div className="card">
+            <div style={{ marginBottom: 16 }}>
+              <div className="section-title">✏️ नाम बदलें / Update Name</div>
+              <div className="section-subtitle">This updates your account identity across the app</div>
+            </div>
 
-        {/* Change password */}
-        <div className="card">
-          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e', marginBottom: 16 }}>🔒 पासवर्ड बदलें / Change Password</div>
-          {passMsg && <div style={{ background: '#f0fdf4', color: '#059669', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{passMsg}</div>}
-          {passError && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{passError}</div>}
-          <form onSubmit={updatePassword}>
-            <div className="form-group">
-              <label className="form-label">वर्तमान पासवर्ड / Current Password</label>
-              <input className="form-input" type="password" value={passForm.currentPassword} onChange={e => setPassForm({ ...passForm, currentPassword: e.target.value })} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">नया पासवर्ड / New Password</label>
-              <input className="form-input" type="password" value={passForm.newPassword} onChange={e => setPassForm({ ...passForm, newPassword: e.target.value })} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">पासवर्ड पुष्टि / Confirm Password</label>
-              <input className="form-input" type="password" value={passForm.confirmPassword} onChange={e => setPassForm({ ...passForm, confirmPassword: e.target.value })} required />
-            </div>
-            <button type="submit" className="btn-primary" style={{ width: '100%' }}>पासवर्ड बदलें / Change Password</button>
-          </form>
-        </div>
+            {nameMsg && <div className="alert-success">{nameMsg}</div>}
+            {nameError && <div className="alert-error">{nameError}</div>}
 
+            <form onSubmit={updateName} className="toolbar">
+              <input
+                className="form-input"
+                style={{ flex: 1, minWidth: 180 }}
+                value={nameForm.name}
+                onChange={(e) => setNameForm({ name: e.target.value })}
+                required
+              />
+              <button type="submit" className="btn-primary" style={{ width: 'auto' }}>अपडेट / Update</button>
+            </form>
+          </div>
+
+          <div className="card">
+            <div style={{ marginBottom: 16 }}>
+              <div className="section-title">🔒 पासवर्ड बदलें / Change Password</div>
+              <div className="section-subtitle">Keep access secure without changing any business data</div>
+            </div>
+
+            {passMsg && <div className="alert-success">{passMsg}</div>}
+            {passError && <div className="alert-error">{passError}</div>}
+
+            <form onSubmit={updatePassword}>
+              <div className="form-group">
+                <label className="form-label">वर्तमान पासवर्ड / Current Password</label>
+                <input className="form-input" type="password" value={passForm.currentPassword} onChange={(e) => setPassForm({ ...passForm, currentPassword: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">नया पासवर्ड / New Password</label>
+                <input className="form-input" type="password" value={passForm.newPassword} onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">पासवर्ड पुष्टि / Confirm Password</label>
+                <input className="form-input" type="password" value={passForm.confirmPassword} onChange={(e) => setPassForm({ ...passForm, confirmPassword: e.target.value })} required />
+              </div>
+              <button type="submit" className="btn-primary">पासवर्ड बदलें / Change Password</button>
+            </form>
+          </div>
+        </section>
+
+        <style>{`
+          @media (max-width: 900px) {
+            .profile-two-col {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}</style>
       </div>
     </Layout>
   );

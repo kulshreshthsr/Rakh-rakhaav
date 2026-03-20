@@ -230,13 +230,15 @@ export default function ReportsPage() {
 
   return (
     <Layout>
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div className="page-title" style={{ marginBottom: 4 }}>रिपोर्ट / Reports</div>
-          <div style={{ fontSize: 13, color: '#9ca3af' }}>{label} का डेटा / Data</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="page-shell">
+        <section className="hero-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <div className="kicker" style={{ marginBottom: 12 }}>Business reports</div>
+              <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>रिपोर्ट / Reports</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)' }}>{label} का डेटा / Data</div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
             { val: 'today', label: 'आज / Today'        },
             { val: 'week',  label: 'इस हफ्ते / Week'   },
@@ -254,11 +256,37 @@ export default function ReportsPage() {
               {f.label}
             </button>
           ))}
-        </div>
-      </div>
+            </div>
+          </div>
+        </section>
+
+        {!loading && (
+          <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+            <div className="metric-card" style={{ cursor: 'default' }}>
+              <div className="metric-label">Revenue</div>
+              <div className="metric-value" style={{ color: '#10b981' }}>₹{fmtN(summary.totalRevenue)}</div>
+              <div className="metric-note">{summary.salesCount || 0} invoices</div>
+            </div>
+            <div className="metric-card" style={{ cursor: 'default' }}>
+              <div className="metric-label">Profit</div>
+              <div className="metric-value" style={{ color: marginColor }}>₹{fmtN(summary.grossProfit)}</div>
+              <div className="metric-note">Margin {fmt(summary.margin)}%</div>
+            </div>
+            <div className="metric-card" style={{ cursor: 'default' }}>
+              <div className="metric-label">GST Payable</div>
+              <div className="metric-value" style={{ color: '#f59e0b' }}>₹{fmtN(summary.netGST)}</div>
+              <div className="metric-note">ITC ₹{fmtN(summary.totalITC)}</div>
+            </div>
+            <div className="metric-card" style={{ cursor: 'default' }}>
+              <div className="metric-label">Udhaar</div>
+              <div className="metric-value" style={{ color: '#ef4444' }}>₹{fmtN(summary.totalUdhaar)}</div>
+              <div className="metric-note">Pending collection</div>
+            </div>
+          </section>
+        )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
+        <div className="empty-state">
           <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
           <div>रिपोर्ट लोड हो रही है...</div>
         </div>
@@ -489,7 +517,7 @@ export default function ReportsPage() {
 
           {/* Empty state */}
           {sales.length === 0 && purchases.length === 0 && (
-            <div className="card" style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
+            <div className="empty-state">
               <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>कोई data नहीं / No data</div>
               <div style={{ fontSize: 13 }}>{label} mein koi sales ya purchases nahi hain</div>
@@ -497,6 +525,7 @@ export default function ReportsPage() {
           )}
         </>
       )}
+      </div>
 
       <style>{`
         @media (max-width: 640px) {
