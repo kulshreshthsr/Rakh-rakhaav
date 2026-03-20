@@ -2,138 +2,63 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
+// ── Profile removed from navItems — accessible via user avatar dropdown ──────
 const navItems = [
-  { href: '/dashboard', labelHi: 'होम', labelEn: 'Dashboard', icon: '🏠', tone: '#4F46E5' },
-  { href: '/product', labelHi: 'उत्पाद', labelEn: 'Products', icon: '📦', tone: '#6366F1' },
-  { href: '/sales', labelHi: 'बिक्री', labelEn: 'Sales', icon: '📈', tone: '#22C55E' },
-  { href: '/purchases', labelHi: 'खरीद', labelEn: 'Purchases', icon: '🛒', tone: '#F59E0B' },
-  { href: '/udhaar', labelHi: 'उधार', labelEn: 'Udhaar', icon: '🤝', tone: '#EF4444' },
-  { href: '/gst', labelHi: 'GST', labelEn: 'GST', icon: '🧾', tone: '#8B5CF6' },
-  { href: '/reports', labelHi: 'रिपोर्ट', labelEn: 'Reports', icon: '📊', tone: '#06B6D4' },
+  { href: '/dashboard', labelHi: 'होम',       labelEn: 'Dashboard', icon: '🏠' },
+  { href: '/product',   labelHi: 'उत्पाद',    labelEn: 'Products',  icon: '📦' },
+  { href: '/sales',     labelHi: 'बिक्री',    labelEn: 'Sales',     icon: '📈' },
+  { href: '/purchases', labelHi: 'खरीद',      labelEn: 'Purchases', icon: '🛒' },
+  { href: '/udhaar',    labelHi: 'उधार',      labelEn: 'Udhaar',    icon: '🤝' },
+  { href: '/gst',       labelHi: 'GST',        labelEn: 'GST',       icon: '🧾' },
+  { href: '/reports',   labelHi: 'रिपोर्ट',   labelEn: 'Reports',   icon: '📊' },
 ];
 
 function Logo({ size = 'md' }) {
   const [err, setErr] = useState(false);
-  const dim = size === 'sm' ? 30 : size === 'lg' ? 52 : 40;
-  const radius = size === 'sm' ? 10 : size === 'lg' ? 18 : 14;
-  const fs = size === 'sm' ? 12 : size === 'lg' ? 22 : 16;
+  const dim = size === 'sm' ? 28 : size === 'lg' ? 48 : 36;
+  const r   = size === 'sm' ? 8  : size === 'lg' ? 14 : 10;
+  const fs  = size === 'sm' ? 12 : size === 'lg' ? 20 : 15;
 
   if (!err) {
     return (
-      <div
-        style={{
-          width: dim,
-          height: dim,
-          borderRadius: radius,
-          overflow: 'hidden',
-          flexShrink: 0,
-          background:
-            'linear-gradient(135deg, rgba(79,70,229,0.18), rgba(34,197,94,0.18))',
-          border: '1px solid rgba(255,255,255,0.14)',
-          boxShadow: '0 10px 30px rgba(15,23,42,0.22)',
-        }}
-      >
-        <img
-          src="/logo.png"
-          alt="Rakhaav"
-          width={dim}
-          height={dim}
+      <div style={{ width: dim, height: dim, borderRadius: r, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #122D4F, #05966922)', border: '1px solid rgba(5,150,105,0.3)' }}>
+        <img src="/logo.png" alt="Logo" width={dim} height={dim}
           style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          onError={() => setErr(true)}
-        />
+          onError={() => setErr(true)} />
       </div>
     );
   }
-
   return (
-    <div
-      style={{
-        width: dim,
-        height: dim,
-        borderRadius: radius,
-        flexShrink: 0,
-        background: 'linear-gradient(135deg, #4F46E5 0%, #22C55E 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: '1px solid rgba(255,255,255,0.18)',
-        boxShadow: '0 12px 30px rgba(79,70,229,0.35)',
-      }}
-    >
-      <span
-        style={{
-          fontSize: fs,
-          fontWeight: 800,
-          color: '#fff',
-          fontFamily: 'var(--font-display)',
-          lineHeight: 1,
-        }}
-      >
-        र
-      </span>
+    <div style={{ width: dim, height: dim, borderRadius: r, flexShrink: 0, background: 'linear-gradient(135deg, #0B1D35, #1A3F6F)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(5,150,105,0.3)' }}>
+      <span style={{ fontSize: fs, fontWeight: 800, color: '#10B981', fontFamily: 'serif' }}>र</span>
     </div>
   );
 }
 
-function ShellGlow() {
-  return (
-    <>
-      <div
-        style={{
-          position: 'absolute',
-          top: -90,
-          left: -60,
-          width: 220,
-          height: 220,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(79,70,229,0.20), transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 80,
-          right: -50,
-          width: 200,
-          height: 200,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(34,197,94,0.14), transparent 72%)',
-          pointerEvents: 'none',
-        }}
-      />
-    </>
-  );
-}
-
 export default function Layout({ children }) {
-  const [user, setUser] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mobileDropOpen, setMobileDropOpen] = useState(false);
-
-  const dropdownRef = useRef(null);
+  const [user, setUser]                   = useState(null);
+  const [scrolled, setScrolled]           = useState(false);
+  const [dropdownOpen, setDropdownOpen]   = useState(false);     // desktop sidebar
+  const [mobileDropOpen, setMobileDropOpen] = useState(false);   // mobile topbar
+  const dropdownRef   = useRef(null);
   const mobileDropRef = useRef(null);
-
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    if (!stored || !token) {
-      router.push('/login');
-      return;
-    }
+    const token  = localStorage.getItem('token');
+    if (!stored || !token) { router.push('/login'); return; }
     setUser(JSON.parse(stored));
-  }, [router]);
+  }, []);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 10);
+    const fn = () => setScrolled(window.scrollY > 8);
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  // ── Close dropdowns when clicking outside ───────────────────────────────────
   useEffect(() => {
     const handleOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -162,673 +87,367 @@ export default function Layout({ children }) {
   };
 
   const isActive = (href) => pathname === href;
-  const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
-  const firstName = user?.name?.split(' ')?.[0] || 'User';
+  const initial  = user?.name?.charAt(0)?.toUpperCase() || '?';
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background:
-          'radial-gradient(circle at top left, rgba(79,70,229,0.09), transparent 28%), radial-gradient(circle at top right, rgba(34,197,94,0.08), transparent 24%), #F8FAFC',
-        fontFamily: 'var(--font-body)',
-        color: 'var(--text)',
-      }}
-    >
-      <aside
-        className="desktop-sidebar"
-        style={{
-          width: 280,
-          position: 'fixed',
-          top: 14,
-          left: 14,
-          bottom: 14,
-          zIndex: 50,
-          borderRadius: 28,
-          overflow: 'hidden',
-          background:
-            'linear-gradient(180deg, #0B1220 0%, #111C34 45%, #101A30 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow:
-            '0 24px 60px rgba(15,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.05)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <ShellGlow />
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Inter', sans-serif" }}>
 
-        <div
-          style={{
-            position: 'relative',
-            padding: '24px 20px 18px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* ══════════════════════════════════════════
+          DESKTOP SIDEBAR
+      ══════════════════════════════════════════ */}
+      <aside className="desktop-sidebar" style={{
+        width: 244,
+        background: 'var(--navy)',
+        display: 'flex', flexDirection: 'column',
+        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50,
+        borderRight: '1px solid rgba(5,150,105,0.1)',
+        boxShadow: '4px 0 20px rgba(0,0,0,0.2)',
+      }}>
+
+        {/* Brand */}
+        <div style={{ padding: '20px 18px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Logo size="md" />
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 19,
-                  fontWeight: 800,
-                  color: '#fff',
-                  letterSpacing: '-0.04em',
-                  fontFamily: 'var(--font-display)',
-                  lineHeight: 1,
-                }}
-              >
-                रख<span style={{ color: '#22C55E' }}>रखाव</span>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px', fontFamily: 'serif' }}>
+                रख<span style={{ color: '#10B981' }}>रखाव</span>
               </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  fontSize: 10,
-                  color: 'rgba(255,255,255,0.46)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.22em',
-                  fontWeight: 700,
-                }}
-              >
-                Inventory and GST Suite
+              <div style={{ fontSize: 9, color: 'rgba(52,211,153,0.45)', fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 1 }}>
+                Business Manager
               </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 18,
-              padding: '14px 15px',
-              borderRadius: 18,
-              background:
-                'linear-gradient(135deg, rgba(79,70,229,0.16), rgba(255,255,255,0.04))',
-              border: '1px solid rgba(255,255,255,0.07)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                color: 'rgba(255,255,255,0.58)',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-                marginBottom: 6,
-              }}
-            >
-              Control Center
-            </div>
-            <div
-              style={{
-                fontSize: 13,
-                lineHeight: 1.5,
-                color: 'rgba(255,255,255,0.82)',
-                fontWeight: 500,
-              }}
-            >
-              Sales, purchases, stock, GST, and reports in one premium workspace.
             </div>
           </div>
         </div>
 
-        <div style={{ padding: '16px 16px 10px', position: 'relative' }} ref={dropdownRef}>
+        {/* Emerald divider */}
+        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(5,150,105,0.35), transparent)', margin: '0 16px' }} />
+
+        {/* ── USER CARD — now clickable, opens dropdown ── */}
+        <div style={{ padding: '12px 12px 6px', position: 'relative' }} ref={dropdownRef}>
           <div
-            onClick={() => setDropdownOpen((v) => !v)}
+            onClick={() => setDropdownOpen(v => !v)}
+            title="Click to view profile or logout"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '13px 14px',
-              borderRadius: 18,
-              background: dropdownOpen
-                ? 'linear-gradient(135deg, rgba(79,70,229,0.26), rgba(79,70,229,0.12))'
-                : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${
-                dropdownOpen ? 'rgba(99,102,241,0.34)' : 'rgba(255,255,255,0.08)'
-              }`,
-              cursor: 'pointer',
-              transition: 'all 0.18s ease',
+              display: 'flex', alignItems: 'center', gap: 9,
+              background: dropdownOpen ? 'rgba(5,150,105,0.12)' : 'rgba(255,255,255,0.04)',
+              borderRadius: 10, padding: '9px 11px',
+              border: `1px solid ${dropdownOpen ? 'rgba(5,150,105,0.3)' : 'rgba(255,255,255,0.06)'}`,
+              cursor: 'pointer', transition: 'all 0.18s ease',
               userSelect: 'none',
-              boxShadow: dropdownOpen ? '0 14px 34px rgba(79,70,229,0.18)' : 'none',
             }}
+            onMouseEnter={e => { if (!dropdownOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(5,150,105,0.15)'; }}}
+            onMouseLeave={e => { if (!dropdownOpen) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}}
           >
-            <div
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                background: 'linear-gradient(135deg, #4F46E5 0%, #22C55E 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 16,
-                fontWeight: 800,
-                color: '#fff',
-                flexShrink: 0,
-                boxShadow: '0 10px 24px rgba(79,70,229,0.35)',
-              }}
-            >
+            {/* Avatar */}
+            <div style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: 'linear-gradient(135deg, #059669, #1A3F6F)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0,
+              boxShadow: dropdownOpen ? '0 0 10px rgba(5,150,105,0.55)' : 'none',
+              transition: 'box-shadow 0.18s',
+            }}>
               {initial}
             </div>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 13.5,
-                  fontWeight: 700,
-                  color: '#fff',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
+            {/* Name + email */}
+            <div style={{ overflow: 'hidden', flex: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {user?.name || '—'}
               </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(255,255,255,0.42)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  marginTop: 2,
-                }}
-              >
-                {user?.email || 'Shop account'}
+              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.email || 'Shopkeeper'}
               </div>
             </div>
 
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 10 10"
-              style={{
-                flexShrink: 0,
-                transition: 'transform 0.18s ease',
-                transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                color: 'rgba(255,255,255,0.48)',
-              }}
-            >
-              <path
-                d="M2 3.5L5 6.5L8 3.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
+            {/* Animated chevron */}
+            <span style={{
+              fontSize: 9, color: 'rgba(52,211,153,0.5)', flexShrink: 0,
+              transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease',
+            }}>▼</span>
           </div>
 
+          {/* ── Desktop Dropdown ── */}
           {dropdownOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 8px)',
-                left: 16,
-                right: 16,
-                background: 'rgba(12,19,35,0.98)',
-                border: '1px solid rgba(99,102,241,0.28)',
-                borderRadius: 18,
-                boxShadow: '0 24px 48px rgba(0,0,0,0.38)',
-                overflow: 'hidden',
-                zIndex: 100,
-                animation: 'dropFadeIn 0.16s ease',
-                backdropFilter: 'blur(16px)',
-              }}
-            >
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% - 4px)',
+              left: 12, right: 12,
+              background: '#0d2240',
+              border: '1px solid rgba(5,150,105,0.28)',
+              borderRadius: 10,
+              boxShadow: '0 10px 28px rgba(0,0,0,0.45)',
+              zIndex: 100,
+              overflow: 'hidden',
+              animation: 'dropFadeIn 0.15s ease',
+            }}>
+              {/* Profile option */}
               <button
                 onClick={goToProfile}
                 style={{
-                  width: '100%',
-                  padding: '13px 15px',
-                  background: 'none',
-                  border: 'none',
+                  width: '100%', padding: '11px 14px',
+                  background: 'none', border: 'none',
                   borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: 'rgba(255,255,255,0.90)',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontFamily: 'var(--font-body)',
+                  color: 'rgba(255,255,255,0.82)', cursor: 'pointer',
+                  fontSize: 12.5, fontWeight: 600, textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  transition: 'background 0.12s',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(5,150,105,0.13)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                <span style={{ fontSize: 15 }}>👤</span>
+                <span style={{ fontSize: 16 }}>👤</span>
                 <div>
-                  <div>Profile / प्रोफाइल</div>
-                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.30)', marginTop: 2 }}>
-                    Shop settings, invoice info, account details
+                  <div style={{ lineHeight: 1.3 }}>Profile / प्रोफाइल</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', marginTop: 1 }}>
+                    Shop &amp; account settings
                   </div>
                 </div>
               </button>
 
+              {/* Logout option */}
               <button
                 onClick={logout}
                 style={{
-                  width: '100%',
-                  padding: '13px 15px',
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(252,165,165,0.92)',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textAlign: 'left',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontFamily: 'var(--font-body)',
+                  width: '100%', padding: '11px 14px',
+                  background: 'none', border: 'none',
+                  color: 'rgba(252,165,165,0.85)', cursor: 'pointer',
+                  fontSize: 12.5, fontWeight: 600, textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  transition: 'background 0.12s',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                <span style={{ fontSize: 15 }}>🚪</span>
-                <div>
-                  <div>Logout / निकलें</div>
-                  <div style={{ fontSize: 10.5, color: 'rgba(252,165,165,0.42)', marginTop: 2 }}>
-                    End this session securely
-                  </div>
-                </div>
+                <span style={{ fontSize: 16 }}>🚪</span>
+                <div style={{ lineHeight: 1.3 }}>Logout / निकलें</div>
               </button>
             </div>
           )}
         </div>
 
-        <nav style={{ flex: 1, padding: '8px 14px 14px', overflowY: 'auto', position: 'relative' }}>
-          <div
-            style={{
-              padding: '0 10px 10px',
-              fontSize: 10,
-              color: 'rgba(255,255,255,0.32)',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.18em',
-            }}
-          >
-            Workspace
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: '8px 10px', overflowY: 'auto' }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(52,211,153,0.35)', textTransform: 'uppercase', letterSpacing: 1.5, padding: '6px 8px 10px' }}>
+            Main Menu
           </div>
-
-          {navItems.map((item) => {
+          {navItems.map(item => {
             const active = isActive(item.href);
-
             return (
-              <a
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '12px 13px',
-                  borderRadius: 18,
-                  marginBottom: 6,
-                  textDecoration: 'none',
-                  position: 'relative',
-                  background: active
-                    ? 'linear-gradient(135deg, rgba(79,70,229,0.26), rgba(79,70,229,0.12))'
-                    : 'transparent',
-                  border: `1px solid ${
-                    active ? 'rgba(99,102,241,0.24)' : 'transparent'
-                  }`,
-                  boxShadow: active ? '0 16px 34px rgba(79,70,229,0.18)' : 'none',
-                  transition: 'all 0.18s ease',
-                }}
+              <a key={item.href} href={item.href} style={{
+                display: 'flex', alignItems: 'center', gap: 11,
+                padding: '9px 10px', borderRadius: 9, marginBottom: 3,
+                textDecoration: 'none',
+                background: active ? 'rgba(5,150,105,0.15)' : 'transparent',
+                color: active ? '#34D399' : 'rgba(255,255,255,0.45)',
+                transition: 'all 0.16s ease',
+                borderLeft: `2px solid ${active ? '#059669' : 'transparent'}`,
+              }}
+              onMouseEnter={e => {
+                if (!active) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.78)';
+                  e.currentTarget.style.borderLeftColor = 'rgba(5,150,105,0.28)';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!active) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.45)';
+                  e.currentTarget.style.borderLeftColor = 'transparent';
+                }
+              }}
               >
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 12,
-                    background: active
-                      ? `linear-gradient(135deg, ${item.tone}, rgba(255,255,255,0.16))`
-                      : 'rgba(255,255,255,0.06)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    boxShadow: active ? `0 12px 24px ${item.tone}44` : 'none',
-                    fontSize: 17,
-                  }}
-                >
-                  {item.icon}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 13.5,
-                      fontWeight: active ? 700 : 600,
-                      color: active ? '#fff' : 'rgba(255,255,255,0.76)',
-                      lineHeight: 1.2,
-                    }}
-                  >
+                <span style={{ fontSize: 17, width: 22, textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: active ? 700 : 400, lineHeight: 1.2, color: 'inherit' }}>
                     {item.labelEn}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      color: active ? 'rgba(199,210,254,0.90)' : 'rgba(255,255,255,0.34)',
-                      marginTop: 3,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {item.labelHi}
-                  </div>
+                  <div style={{ fontSize: 9.5, opacity: 0.42, lineHeight: 1.2 }}>{item.labelHi}</div>
                 </div>
-
                 {active && (
-                  <div
-                    style={{
-                      width: 9,
-                      height: 9,
-                      borderRadius: '50%',
-                      background: '#fff',
-                      boxShadow: `0 0 0 4px ${item.tone}44, 0 0 18px ${item.tone}`,
-                      flexShrink: 0,
-                    }}
-                  />
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: '#059669',
+                    boxShadow: '0 0 8px rgba(5,150,105,0.9), 0 0 18px rgba(5,150,105,0.4)',
+                    flexShrink: 0,
+                  }} />
                 )}
               </a>
             );
           })}
         </nav>
 
-        <div
-          style={{
-            padding: '14px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            position: 'relative',
+        {/* Bottom logout button */}
+        <div style={{ padding: '8px 10px 16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <button onClick={logout} style={{
+            width: '100%', padding: '9px 12px', borderRadius: 8,
+            background: 'rgba(220,38,38,0.08)', color: 'rgba(252,165,165,0.75)',
+            border: '1px solid rgba(220,38,38,0.12)',
+            cursor: 'pointer', fontSize: 12.5, fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 8,
+            transition: 'all 0.15s',
           }}
-        >
-          <div
-            style={{
-              padding: '14px 14px 12px',
-              borderRadius: 18,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              marginBottom: 10,
-            }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.16)'; e.currentTarget.style.color = '#fca5a5'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.08)'; e.currentTarget.style.color = 'rgba(252,165,165,0.75)'; }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 800,
-                color: 'rgba(255,255,255,0.40)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.16em',
-                marginBottom: 6,
-              }}
-            >
-              Rakhaav Cloud
-            </div>
-            <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.78)', lineHeight: 1.5 }}>
-              Business data, GST records, and day-to-day billing in one secure flow.
-            </div>
-          </div>
-
-          <button
-            onClick={logout}
-            style={{
-              width: '100%',
-              padding: '11px 14px',
-              borderRadius: 14,
-              background: 'rgba(239,68,68,0.10)',
-              color: '#FCA5A5',
-              border: '1px solid rgba(239,68,68,0.16)',
-              cursor: 'pointer',
-              fontSize: 12.5,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              fontFamily: 'var(--font-body)',
-            }}
-          >
-            🚪 Logout / निकलें
+            🚪 <span>Logout / निकलें</span>
           </button>
         </div>
       </aside>
 
-      <div
-        className="mobile-topbar"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 60,
-          display: 'none',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: scrolled ? '12px 16px' : '14px 16px',
-          background: scrolled
-            ? 'rgba(248,250,252,0.86)'
-            : 'linear-gradient(180deg, rgba(248,250,252,0.98), rgba(248,250,252,0.82))',
-          backdropFilter: 'blur(18px)',
-          borderBottom: '1px solid rgba(148,163,184,0.16)',
-          boxShadow: scrolled ? '0 10px 30px rgba(15,23,42,0.08)' : 'none',
-          transition: 'all 0.2s ease',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* ══════════════════════════════════════════
+          MOBILE TOP BAR
+      ══════════════════════════════════════════ */}
+      <div className="mobile-topbar" style={{
+        position: 'fixed', top: 0, left: 0, right: 0,
+        background: scrolled ? 'rgba(11,29,53,0.97)' : 'var(--navy)',
+        backdropFilter: scrolled ? 'blur(12px)' : 'none',
+        padding: '10px 16px', zIndex: 50,
+        alignItems: 'center', justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(5,150,105,0.18)',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.2)',
+        transition: 'all 0.2s',
+      }}>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Logo size="sm" />
-          <div>
-            <div
-              style={{
-                fontSize: 16,
-                fontWeight: 800,
-                color: '#0F172A',
-                fontFamily: 'var(--font-display)',
-                lineHeight: 1,
-              }}
-            >
-              रख<span style={{ color: '#22C55E' }}>रखाव</span>
-            </div>
-            <div style={{ fontSize: 10, color: '#64748B', fontWeight: 700, marginTop: 2 }}>
-              Smart Billing Workspace
-            </div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'serif' }}>
+            रख<span style={{ color: '#10B981' }}>रखाव</span>
           </div>
         </div>
 
+        {/* ── Mobile Avatar — clickable ── */}
         <div style={{ position: 'relative' }} ref={mobileDropRef}>
           <div
-            onClick={() => setMobileDropOpen((v) => !v)}
+            onClick={() => setMobileDropOpen(v => !v)}
+            title="Profile / Logout"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 10px 6px 6px',
-              borderRadius: 999,
-              cursor: 'pointer',
-              background: mobileDropOpen ? 'rgba(79,70,229,0.10)' : '#fff',
-              border: `1px solid ${
-                mobileDropOpen ? 'rgba(79,70,229,0.22)' : 'rgba(148,163,184,0.18)'
-              }`,
-              boxShadow: '0 10px 24px rgba(15,23,42,0.06)',
+              display: 'flex', alignItems: 'center', gap: 6,
+              cursor: 'pointer', padding: '4px 8px 4px 6px', borderRadius: 20,
+              background: mobileDropOpen ? 'rgba(5,150,105,0.18)' : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${mobileDropOpen ? 'rgba(5,150,105,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              transition: 'all 0.15s',
             }}
           >
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #4F46E5 0%, #22C55E 100%)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 800,
-              }}
-            >
+            <div style={{
+              width: 28, height: 28, borderRadius: 7,
+              background: 'linear-gradient(135deg, #059669, #1A3F6F)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 700, color: '#fff',
+              boxShadow: mobileDropOpen ? '0 0 8px rgba(5,150,105,0.5)' : 'none',
+              transition: 'box-shadow 0.15s',
+            }}>
               {initial}
             </div>
-            <span
-              style={{
-                fontSize: 12,
-                color: '#0F172A',
-                fontWeight: 700,
-                maxWidth: 80,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {firstName}
+            <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+              {user?.name?.split(' ')[0]}
             </span>
+            <span style={{
+              fontSize: 8, color: 'rgba(52,211,153,0.5)',
+              transform: mobileDropOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.18s',
+            }}>▼</span>
           </div>
 
+          {/* Mobile Dropdown */}
           {mobileDropOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 10px)',
-                right: 0,
-                width: 230,
-                background: '#fff',
-                border: '1px solid rgba(226,232,240,0.95)',
-                borderRadius: 18,
-                boxShadow: '0 24px 48px rgba(15,23,42,0.16)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  padding: '14px',
-                  background:
-                    'linear-gradient(135deg, rgba(79,70,229,0.08), rgba(34,197,94,0.08))',
-                  borderBottom: '1px solid rgba(226,232,240,0.9)',
-                }}
-              >
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0F172A' }}>
-                  {user?.name}
-                </div>
-                <div style={{ fontSize: 11, color: '#64748B', marginTop: 3 }}>{user?.email}</div>
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              width: 210,
+              background: '#0d2240',
+              border: '1px solid rgba(5,150,105,0.28)',
+              borderRadius: 12,
+              boxShadow: '0 12px 32px rgba(0,0,0,0.55)',
+              zIndex: 200,
+              overflow: 'hidden',
+              animation: 'dropFadeIn 0.15s ease',
+            }}>
+              {/* User info header */}
+              <div style={{
+                padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(5,150,105,0.08)',
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{user?.name}</div>
+                <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{user?.email}</div>
               </div>
 
+              {/* Profile */}
               <button
                 onClick={goToProfile}
                 style={{
-                  width: '100%',
-                  padding: '13px 14px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: '1px solid rgba(241,245,249,1)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: '#0F172A',
-                  fontFamily: 'var(--font-body)',
+                  width: '100%', padding: '12px 14px',
+                  background: 'none', border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  color: 'rgba(255,255,255,0.82)', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  transition: 'background 0.12s',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(5,150,105,0.13)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                👤 Profile / प्रोफाइल
+                <span style={{ fontSize: 16 }}>👤</span>
+                <span>Profile / प्रोफाइल</span>
               </button>
 
+              {/* Logout */}
               <button
                 onClick={logout}
                 style={{
-                  width: '100%',
-                  padding: '13px 14px',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: '#DC2626',
-                  fontFamily: 'var(--font-body)',
+                  width: '100%', padding: '12px 14px',
+                  background: 'none', border: 'none',
+                  color: 'rgba(252,165,165,0.85)', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  transition: 'background 0.12s',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.12)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
               >
-                🚪 Logout / निकलें
+                <span style={{ fontSize: 16 }}>🚪</span>
+                <span>Logout / निकलें</span>
               </button>
             </div>
           )}
         </div>
       </div>
 
-      <main
-        className="main-content"
-        style={{
-          marginLeft: 308,
-          minHeight: '100vh',
-          padding: '22px 22px 110px',
-        }}
-      >
-        <div
-          style={{
-            minHeight: 'calc(100vh - 44px)',
-            borderRadius: 30,
-            background: 'rgba(255,255,255,0.56)',
-            border: '1px solid rgba(226,232,240,0.72)',
-            boxShadow: '0 24px 60px rgba(15,23,42,0.08)',
-            padding: '26px',
-            backdropFilter: 'blur(14px)',
-          }}
-        >
-          {children}
-        </div>
+      {/* ── MAIN CONTENT ── */}
+      <main className="main-content" style={{ flex: 1, marginLeft: 244, padding: '28px', minHeight: '100vh', paddingBottom: 80 }}>
+        {children}
       </main>
 
-      <nav
-        className="mobile-bottom-nav"
-        style={{
-          position: 'fixed',
-          left: 12,
-          right: 12,
-          bottom: 12,
-          zIndex: 60,
-          display: 'none',
-          padding: '8px 8px calc(8px + env(safe-area-inset-bottom))',
-          background: 'rgba(11,18,32,0.92)',
-          backdropFilter: 'blur(18px)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 24,
-          boxShadow: '0 20px 50px rgba(15,23,42,0.25)',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 4 }}>
-          {navItems.map((item) => {
+      {/* ══════════════════════════════════════════
+          MOBILE BOTTOM NAV
+      ══════════════════════════════════════════ */}
+      <nav className="mobile-bottom-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: 'var(--navy)',
+        borderTop: '1px solid rgba(5,150,105,0.18)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        zIndex: 50,
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.25)',
+      }}>
+        <div style={{ display: 'flex', padding: '5px 0 7px' }}>
+          {navItems.map(item => {
             const active = isActive(item.href);
-
             return (
-              <a
-                key={item.href}
-                href={item.href}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  textDecoration: 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 4,
-                  padding: '8px 4px',
-                  borderRadius: 18,
-                  background: active ? 'rgba(79,70,229,0.18)' : 'transparent',
-                  border: `1px solid ${active ? 'rgba(99,102,241,0.22)' : 'transparent'}`,
-                  position: 'relative',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 18,
-                    transform: active ? 'translateY(-1px)' : 'translateY(0)',
-                    transition: 'transform 0.15s ease',
-                  }}
-                >
+              <a key={item.href} href={item.href} style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 2, textDecoration: 'none', padding: '3px 1px', position: 'relative',
+              }}>
+                {active && (
+                  <div style={{ position: 'absolute', top: 0, left: '8%', right: '8%', bottom: 0, background: 'rgba(5,150,105,0.12)', borderRadius: 8, border: '1px solid rgba(5,150,105,0.2)' }} />
+                )}
+                {active && (
+                  <div style={{ position: 'absolute', top: 0, left: '25%', right: '25%', height: 2, background: 'linear-gradient(90deg, #059669, #34D399)', borderRadius: '0 0 3px 3px', boxShadow: '0 0 8px rgba(5,150,105,0.7)' }} />
+                )}
+                <span style={{ fontSize: 19, position: 'relative', zIndex: 1, transform: active ? 'scale(1.12)' : 'scale(1)', transition: 'transform 0.15s', marginTop: 2 }}>
                   {item.icon}
                 </span>
-                <span
-                  style={{
-                    fontSize: 9.5,
-                    fontWeight: active ? 700 : 600,
-                    color: active ? '#C7D2FE' : 'rgba(255,255,255,0.40)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <span style={{ fontSize: 9, fontWeight: active ? 600 : 400, color: active ? '#34D399' : 'rgba(255,255,255,0.3)', position: 'relative', zIndex: 1 }}>
                   {item.labelEn}
                 </span>
               </a>
@@ -838,28 +457,20 @@ export default function Layout({ children }) {
       </nav>
 
       <style>{`
-        .desktop-sidebar { display: flex !important; }
-        .mobile-topbar,
-        .mobile-bottom-nav { display: none !important; }
+        .mobile-topbar     { display: none; }
+        .mobile-bottom-nav { display: none; }
+        .desktop-sidebar   { display: flex !important; }
 
-        @media (max-width: 900px) {
-          .desktop-sidebar { display: none !important; }
-          .mobile-topbar { display: flex !important; }
+        @media (max-width: 768px) {
+          .desktop-sidebar   { display: none !important; }
+          .mobile-topbar     { display: flex !important; }
           .mobile-bottom-nav { display: block !important; }
-          .main-content {
-            margin-left: 0 !important;
-            padding: 68px 8px 96px !important;
-          }
-          .main-content > div {
-            border-radius: 20px !important;
-            padding: 14px 10px !important;
-          }
-
+          .main-content      { margin-left: 0 !important; padding: 66px 14px 80px !important; }
         }
 
         @keyframes dropFadeIn {
           from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0);    }
         }
 
         * { -webkit-tap-highlight-color: transparent; }
