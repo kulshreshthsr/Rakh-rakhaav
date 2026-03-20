@@ -52,8 +52,8 @@ export default function RegisterPage() {
 
         body {
           background:
-            radial-gradient(circle at top left, rgba(79,70,229,0.18), transparent 26%),
-            radial-gradient(circle at bottom right, rgba(34,197,94,0.14), transparent 22%),
+            radial-gradient(circle at top left, rgba(79,70,229,0.14), transparent 24%),
+            radial-gradient(circle at bottom right, rgba(34,197,94,0.10), transparent 20%),
             #F8FAFC;
           font-family: 'Plus Jakarta Sans', sans-serif;
         }
@@ -61,10 +61,9 @@ export default function RegisterPage() {
         .register-root {
           min-height: 100vh;
           display: grid;
-          grid-template-columns: 0.98fr 1.02fr;
+          grid-template-columns: 1fr 1fr;
           background:
-            radial-gradient(circle at top left, rgba(79,70,229,0.14), transparent 22%),
-            radial-gradient(circle at bottom left, rgba(34,197,94,0.10), transparent 18%),
+            radial-gradient(circle at top left, rgba(79,70,229,0.10), transparent 22%),
             #F8FAFC;
         }
 
@@ -72,21 +71,21 @@ export default function RegisterPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 40px 28px;
+          padding: 32px 20px;
         }
 
         .register-card {
           width: 100%;
-          max-width: 480px;
+          max-width: 450px;
           background: rgba(255,255,255,0.92);
           border: 1px solid rgba(226,232,240,0.92);
-          border-radius: 30px;
-          padding: 30px;
-          box-shadow: 0 34px 80px rgba(15,23,42,0.12);
+          border-radius: 28px;
+          padding: 28px;
+          box-shadow: 0 28px 70px rgba(15,23,42,0.12);
           backdrop-filter: blur(16px);
         }
 
-        .card-badge {
+        .register-badge {
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -96,11 +95,10 @@ export default function RegisterPage() {
           color: #4338CA;
           font-size: 11px;
           font-weight: 800;
-          letter-spacing: 0.04em;
           margin-bottom: 16px;
         }
 
-        .card-title {
+        .register-title {
           font-size: 30px;
           font-weight: 800;
           color: #0F172A;
@@ -110,10 +108,10 @@ export default function RegisterPage() {
           margin-bottom: 8px;
         }
 
-        .card-sub {
+        .register-sub {
           font-size: 14px;
           color: #64748B;
-          margin-bottom: 24px;
+          margin-bottom: 22px;
           line-height: 1.7;
         }
 
@@ -148,19 +146,16 @@ export default function RegisterPage() {
           border-radius: 16px;
           font-size: 14px;
           color: #0F172A;
-          background: rgba(255,255,255,0.95);
+          background: rgba(255,255,255,0.96);
           outline: none;
-          transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+          transition: border-color 0.16s ease, box-shadow 0.16s ease;
           font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         .input-box:focus {
           border-color: rgba(79,70,229,0.44);
           box-shadow: 0 0 0 4px rgba(79,70,229,0.10);
-          background: #fff;
         }
-
-        .input-box::placeholder { color: #94A3B8; }
 
         .hint {
           font-size: 11.5px;
@@ -184,24 +179,27 @@ export default function RegisterPage() {
         }
 
         .strength-wrap { margin-top: 8px; }
+
         .strength-track {
           height: 6px;
           background: #E2E8F0;
           border-radius: 999px;
           overflow: hidden;
         }
+
         .strength-fill {
           height: 100%;
           border-radius: 999px;
           transition: width 0.28s ease, background 0.28s ease;
         }
+
         .strength-label {
           font-size: 11.5px;
           font-weight: 700;
           margin-top: 6px;
         }
 
-        .signup-btn {
+        .register-btn {
           width: 100%;
           min-height: 50px;
           border: none;
@@ -213,25 +211,19 @@ export default function RegisterPage() {
           cursor: pointer;
           font-family: 'Plus Jakarta Sans', sans-serif;
           box-shadow: 0 18px 34px rgba(79,70,229,0.24);
-          transition: transform 0.16s ease, box-shadow 0.18s ease, opacity 0.18s ease;
         }
 
-        .signup-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 22px 40px rgba(79,70,229,0.30);
-        }
-
-        .signup-btn:disabled {
+        .register-btn:disabled {
           opacity: 0.68;
           cursor: not-allowed;
           box-shadow: none;
         }
 
         .register-footer {
-          margin-top: 22px;
+          margin-top: 20px;
+          text-align: center;
           font-size: 14px;
           color: #64748B;
-          text-align: center;
         }
 
         .register-footer a {
@@ -240,46 +232,35 @@ export default function RegisterPage() {
           text-decoration: none;
         }
 
-        .register-footer a:hover { text-decoration: underline; }
-
-        .trust-row {
-          margin-top: 24px;
-          padding-top: 20px;
+        .mini-trust {
+          margin-top: 20px;
+          padding-top: 16px;
           border-top: 1px solid rgba(226,232,240,0.95);
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: center;
         }
 
-        .trust-item {
-          padding: 13px 12px;
-          border-radius: 16px;
+        .mini-trust span {
           background: #F8FAFC;
-        }
-
-        .trust-title {
-          font-size: 12.5px;
-          font-weight: 800;
-          color: #0F172A;
-          margin-bottom: 4px;
-        }
-
-        .trust-sub {
+          border: 1px solid rgba(226,232,240,0.9);
+          border-radius: 999px;
+          padding: 7px 10px;
           font-size: 11.5px;
           color: #64748B;
-          line-height: 1.55;
+          font-weight: 700;
         }
 
         .register-brand {
           position: relative;
           overflow: hidden;
-          padding: 40px;
-          background:
-            linear-gradient(135deg, #0F172A 0%, #1E293B 38%, #4338CA 100%);
+          padding: 42px;
+          background: linear-gradient(135deg, #0F172A 0%, #1E293B 46%, #4338CA 100%);
           color: #fff;
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
+          justify-content: center;
         }
 
         .brand-orb {
@@ -289,53 +270,38 @@ export default function RegisterPage() {
         }
 
         .brand-orb.one {
-          width: 280px;
-          height: 280px;
-          top: -70px;
-          right: -40px;
-          background: radial-gradient(circle, rgba(255,255,255,0.16), transparent 68%);
+          width: 260px;
+          height: 260px;
+          top: -60px;
+          right: -30px;
+          background: radial-gradient(circle, rgba(255,255,255,0.14), transparent 68%);
         }
 
         .brand-orb.two {
-          width: 240px;
-          height: 240px;
-          bottom: -70px;
-          left: 40px;
-          background: radial-gradient(circle, rgba(34,197,94,0.20), transparent 70%);
+          width: 220px;
+          height: 220px;
+          bottom: -60px;
+          left: 30px;
+          background: radial-gradient(circle, rgba(34,197,94,0.18), transparent 70%);
         }
 
         .brand-grid {
           position: absolute;
           inset: 0;
-          opacity: 0.08;
+          opacity: 0.07;
           background-image:
             linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px);
           background-size: 34px 34px;
-          pointer-events: none;
         }
 
-        .brand-top,
-        .brand-bottom {
+        .brand-content {
           position: relative;
           z-index: 1;
+          max-width: 520px;
         }
 
-        .brand-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 7px 12px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.10);
-          border: 1px solid rgba(255,255,255,0.12);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          margin-bottom: 18px;
-        }
-
-        .brand-logo-wrap {
+        .brand-logo-row {
           display: flex;
           align-items: center;
           gap: 14px;
@@ -343,8 +309,8 @@ export default function RegisterPage() {
         }
 
         .brand-logo {
-          width: 56px;
-          height: 56px;
+          width: 58px;
+          height: 58px;
           border-radius: 18px;
           background: linear-gradient(135deg, #4F46E5 0%, #22C55E 100%);
           display: flex;
@@ -354,7 +320,7 @@ export default function RegisterPage() {
           font-size: 24px;
           font-weight: 800;
           font-family: 'Sora', sans-serif;
-          box-shadow: 0 18px 34px rgba(79,70,229,0.28);
+          box-shadow: 0 18px 34px rgba(79,70,229,0.26);
           flex-shrink: 0;
         }
 
@@ -371,109 +337,200 @@ export default function RegisterPage() {
         .brand-sub {
           margin-top: 6px;
           font-size: 11px;
-          color: rgba(255,255,255,0.58);
-          letter-spacing: 0.16em;
+          color: rgba(255,255,255,0.56);
+          letter-spacing: 0.14em;
           text-transform: uppercase;
           font-weight: 700;
         }
 
+        .brand-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 12px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.12);
+          font-size: 11px;
+          font-weight: 700;
+          margin-bottom: 18px;
+        }
+
         .brand-heading {
-          font-size: 44px;
-          line-height: 1.03;
+          font-size: 42px;
+          line-height: 1.04;
           letter-spacing: -0.05em;
           font-weight: 800;
           font-family: 'Sora', sans-serif;
-          max-width: 520px;
-          margin-bottom: 16px;
+          margin-bottom: 14px;
         }
 
         .brand-text {
-          max-width: 540px;
           font-size: 15px;
           line-height: 1.75;
           color: rgba(255,255,255,0.78);
+          max-width: 500px;
         }
 
-        .brand-feature-row {
+        .brand-tags {
           display: flex;
           gap: 10px;
           flex-wrap: wrap;
-          margin-top: 26px;
+          margin-top: 22px;
         }
 
-        .brand-feature {
+        .brand-tag {
           padding: 8px 12px;
           border-radius: 999px;
           background: rgba(255,255,255,0.10);
           border: 1px solid rgba(255,255,255,0.12);
           font-size: 12px;
-          color: rgba(255,255,255,0.90);
+          color: rgba(255,255,255,0.92);
           font-weight: 700;
         }
 
-        .brand-metrics {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
-        }
+        @media (max-width: 900px) {
+          .register-root {
+            grid-template-columns: 1fr;
+          }
 
-        .brand-metric {
-          padding: 16px;
-          border-radius: 20px;
-          background: rgba(255,255,255,0.10);
-          border: 1px solid rgba(255,255,255,0.12);
-          backdrop-filter: blur(10px);
-        }
+          .register-brand {
+            min-height: auto;
+            padding: 24px 20px 18px;
+          }
 
-        .brand-metric-label {
-          font-size: 11px;
-          color: rgba(255,255,255,0.56);
-          text-transform: uppercase;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          margin-bottom: 8px;
-        }
+          .brand-heading {
+            font-size: 28px;
+            margin-bottom: 10px;
+          }
 
-        .brand-metric-value {
-          font-size: 22px;
-          font-weight: 800;
-          color: #fff;
-          letter-spacing: -0.04em;
-        }
+          .brand-text {
+            font-size: 13.5px;
+            line-height: 1.65;
+          }
 
-        .brand-metric-sub {
-          font-size: 12px;
-          color: rgba(255,255,255,0.72);
-          margin-top: 6px;
-        }
+          .brand-tags {
+            margin-top: 16px;
+          }
 
-        @media (max-width: 980px) {
-          .register-root { grid-template-columns: 1fr; }
-          .register-brand { min-height: 420px; padding: 28px 24px; }
-          .register-panel { padding: 22px 14px 28px; margin-top: -40px; position: relative; z-index: 2; }
-          .brand-heading { font-size: 34px; max-width: 100%; }
-          .brand-metrics { grid-template-columns: 1fr; }
+          .register-panel {
+            padding: 0 14px 22px;
+            margin-top: -4px;
+          }
+
+          .register-card {
+            max-width: 100%;
+            border-radius: 24px;
+            padding: 22px 18px;
+          }
+
+          .brand-tag:nth-child(n+3) {
+            display: none;
+          }
         }
 
         @media (max-width: 640px) {
-          .register-card { padding: 22px 18px; border-radius: 24px; }
-          .brand-heading { font-size: 28px; }
-          .card-title { font-size: 24px; }
-          .trust-row { grid-template-columns: 1fr; }
+          .register-brand {
+            padding: 18px 16px 10px;
+          }
+
+          .brand-chip {
+            margin-bottom: 14px;
+            font-size: 10.5px;
+            padding: 6px 10px;
+          }
+
+          .brand-logo-row {
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+
+          .brand-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 15px;
+            font-size: 20px;
+          }
+
+          .brand-name {
+            font-size: 24px;
+          }
+
+          .brand-sub {
+            font-size: 10px;
+            letter-spacing: 0.12em;
+          }
+
+          .brand-heading {
+            font-size: 22px;
+            line-height: 1.1;
+          }
+
+          .brand-text {
+            font-size: 13px;
+            line-height: 1.6;
+          }
+
+          .brand-tags {
+            gap: 8px;
+            margin-top: 14px;
+          }
+
+          .brand-tag {
+            font-size: 11px;
+            padding: 7px 10px;
+          }
+
+          .register-panel {
+            padding: 8px 12px 18px;
+          }
+
+          .register-card {
+            padding: 18px 16px;
+            border-radius: 22px;
+          }
+
+          .register-badge {
+            margin-bottom: 12px;
+          }
+
+          .register-title {
+            font-size: 22px;
+          }
+
+          .register-sub {
+            font-size: 13px;
+            margin-bottom: 18px;
+          }
+
+          .field-wrap {
+            margin-bottom: 14px;
+          }
+
+          .input-box {
+            min-height: 46px;
+            border-radius: 15px;
+          }
+
+          .register-btn {
+            min-height: 48px;
+            border-radius: 15px;
+            font-size: 14px;
+          }
         }
       `}</style>
 
       <div className="register-root">
         <section className="register-panel">
           <div className="register-card">
-            <div className="card-badge">
+            <div className="register-badge">
               <span>🚀</span>
-              <span>Create your workspace</span>
+              <span>Create account</span>
             </div>
 
-            <div className="card-title">Start with Rakhaav</div>
-            <div className="card-sub">
-              Create your account to unlock inventory control, GST billing, supplier purchases, udhaar, and premium business reporting.
+            <div className="register-title">Start with Rakhaav</div>
+            <div className="register-sub">
+              Create your account and continue to your business dashboard.
             </div>
 
             {error && <div className="error-box">⚠️ {error}</div>}
@@ -501,7 +558,7 @@ export default function RegisterPage() {
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))}
                   required
                 />
-                <div className="hint">Sirf lowercase letters, numbers aur underscore</div>
+                <div className="hint">lowercase letters, numbers aur underscore</div>
               </div>
 
               <div className="field-wrap">
@@ -543,8 +600,8 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              <button type="submit" className="signup-btn" disabled={loading}>
-                {loading ? '⏳ Creating account...' : 'Create account and continue'}
+              <button type="submit" className="register-btn" disabled={loading}>
+                {loading ? '⏳ Creating account...' : 'Create account'}
               </button>
             </form>
 
@@ -552,18 +609,10 @@ export default function RegisterPage() {
               Already have an account? <a href="/login">Sign in</a>
             </div>
 
-            <div className="trust-row">
-              {[
-                { title: 'Inventory Ready', sub: 'Add products, pricing, GST, and stock instantly.' },
-                { title: 'Billing Ready', sub: 'Start sales invoices and purchase flows on day one.' },
-                { title: 'GST Ready', sub: 'Track output tax and ITC without extra setup.' },
-                { title: 'Mobile Ready', sub: 'Smooth experience across desktop and phone.' },
-              ].map((item, i) => (
-                <div key={i} className="trust-item">
-                  <div className="trust-title">{item.title}</div>
-                  <div className="trust-sub">{item.sub}</div>
-                </div>
-              ))}
+            <div className="mini-trust">
+              <span>🧾 GST Ready</span>
+              <span>📦 Stock Ready</span>
+              <span>📱 Mobile Ready</span>
             </div>
           </div>
         </section>
@@ -573,13 +622,13 @@ export default function RegisterPage() {
           <div className="brand-orb two" />
           <div className="brand-grid" />
 
-          <div className="brand-top">
+          <div className="brand-content">
             <div className="brand-chip">
               <span>💎</span>
               <span>Premium SaaS for Indian businesses</span>
             </div>
 
-            <div className="brand-logo-wrap">
+            <div className="brand-logo-row">
               <div className="brand-logo">र</div>
               <div>
                 <div className="brand-name">
@@ -590,41 +639,18 @@ export default function RegisterPage() {
             </div>
 
             <div className="brand-heading">
-              Build your business control center in minutes.
+              Set up your business workspace in minutes.
             </div>
 
             <div className="brand-text">
-              Create your workspace once and start running billing, inventory, GST, purchases, reports, and customer credit from a single premium dashboard.
+              Start billing, inventory tracking, GST reports, purchases, and udhaar from one clean dashboard.
             </div>
 
-            <div className="brand-feature-row">
-              {['🧾 GST Invoices', '📦 Stock Control', '📊 Reports', '🤝 Credit Tracking'].map((f, i) => (
-                <div key={i} className="brand-feature">
-                  {f}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="brand-bottom">
-            <div className="brand-metrics">
-              <div className="brand-metric">
-                <div className="brand-metric-label">Setup</div>
-                <div className="brand-metric-value">Fast</div>
-                <div className="brand-metric-sub">Create account and start quickly</div>
-              </div>
-
-              <div className="brand-metric">
-                <div className="brand-metric-label">Billing</div>
-                <div className="brand-metric-value">Live</div>
-                <div className="brand-metric-sub">Sales and purchases from day one</div>
-              </div>
-
-              <div className="brand-metric">
-                <div className="brand-metric-label">Reports</div>
-                <div className="brand-metric-value">Clear</div>
-                <div className="brand-metric-sub">Revenue, GST, and profit visibility</div>
-              </div>
+            <div className="brand-tags">
+              <div className="brand-tag">🧾 GST Invoices</div>
+              <div className="brand-tag">📦 Stock Control</div>
+              <div className="brand-tag">📊 Reports</div>
+              <div className="brand-tag">🤝 Credit Tracking</div>
             </div>
           </div>
         </section>

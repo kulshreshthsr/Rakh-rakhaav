@@ -667,3 +667,119 @@ kbd {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Rescue Layer
+   Keeps premium look, fixes cramped mobile layouts
+═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 980px) {
+  .dashboard-grid-main,
+  .sales-hero-grid,
+  .sales-main-grid,
+  .sales-modal-grid,
+  .purchase-hero-grid,
+  .purchase-main-grid,
+  .purchase-modal-grid,
+  .product-hero-grid,
+  .product-main-grid,
+  .product-modal-grid,
+  .gst-hero-grid,
+  .gst-main-grid,
+  .reports-hero-grid,
+  .reports-duo-grid,
+  .profile-hero-grid,
+  .profile-main-grid,
+  .profile-shop-grid,
+  .profile-pass-grid,
+  .profile-name-grid,
+  .udhaar-hero-grid,
+  .udhaar-main-grid,
+  .udhaar-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 21px !important;
+    line-height: 1.12 !important;
+  }
+
+  .card {
+    padding: 16px 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .modal {
+    padding: 18px 14px !important;
+    border-radius: 20px !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  .form-input {
+    min-height: 42px !important;
+    padding: 10px 12px !important;
+    font-size: 13.5px !important;
+    border-radius: 13px !important;
+  }
+
+  .btn-primary,
+  .btn-success,
+  .btn-warning,
+  .btn-danger {
+    min-height: 42px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    border-radius: 13px !important;
+  }
+
+  .table-container {
+    border-radius: 18px !important;
+  }
+
+  .table-container th {
+    font-size: 10px !important;
+    padding: 10px 10px !important;
+  }
+
+  .table-container td {
+    font-size: 12px !important;
+    padding: 11px 10px !important;
+  }
+
+  .badge {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  .page-title {
+    font-size: 19px !important;
+  }
+
+  .card {
+    padding: 14px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .modal {
+    padding: 16px 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .table-container th,
+  .table-container td {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}

@@ -848,12 +848,13 @@ export default function Layout({ children }) {
           .mobile-bottom-nav { display: block !important; }
           .main-content {
             margin-left: 0 !important;
-            padding: 76px 12px 102px !important;
+            padding: 68px 8px 96px !important;
           }
           .main-content > div {
-            border-radius: 24px !important;
-            padding: 18px 14px !important;
+            border-radius: 20px !important;
+            padding: 14px 10px !important;
           }
+
         }
 
         @keyframes dropFadeIn {
