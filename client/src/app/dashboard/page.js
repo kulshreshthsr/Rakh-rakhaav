@@ -166,12 +166,12 @@ export default function DashboardPage() {
     <Layout>
       <div className="page-shell">
         <section className="hero-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ maxWidth: 680, flex: 1 }}>
+          <div className="dashboard-hero-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ maxWidth: 680, flex: 1, minWidth: 0 }}>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>डैशबोर्ड / Dashboard</div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="dashboard-period-controls" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -448,6 +448,28 @@ export default function DashboardPage() {
         @media (max-width: 640px) {
           .hero-panel {
             padding: 16px !important;
+          }
+
+          .dashboard-hero-header {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            align-items: start !important;
+            gap: 12px !important;
+          }
+
+          .dashboard-period-controls {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px !important;
+            width: 100%;
+            min-width: 0;
+          }
+
+          .dashboard-period-controls .form-input {
+            min-width: 0 !important;
+            width: 100%;
+            font-size: 12.5px;
+            padding: 10px 12px;
           }
 
           .quick-actions-row {

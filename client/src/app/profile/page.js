@@ -156,41 +156,42 @@ export default function ProfilePage() {
     <Layout>
       <div className="page-shell">
         <section className="hero-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="profile-hero-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
               <div
                 style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 24,
+                  width: 58,
+                  height: 58,
+                  borderRadius: 18,
                   background: 'linear-gradient(135deg, #10b981, #2563eb)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 28,
+                  fontSize: 24,
                   fontWeight: 800,
-                  boxShadow: '0 20px 48px rgba(16,185,129,0.24)',
+                  boxShadow: '0 14px 32px rgba(16,185,129,0.2)',
+                  flexShrink: 0,
                 }}
               >
                 {user?.name?.charAt(0).toUpperCase() || 'R'}
               </div>
-              <div>
-                <div className="kicker" style={{ marginBottom: 10 }}>Profile & settings</div>
-                <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>प्रोफ़ाइल / Profile & Settings</div>
-                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>
-                  Manage shop identity, invoice details and account security.
+              <div style={{ minWidth: 0 }}>
+                <div className="page-title" style={{ color: '#fff', marginBottom: 4 }}>प्रोफ़ाइल / Profile & Settings</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.66)' }}>
+                  Shop identity and account details
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div className="profile-hero-tiles" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {profileTiles.map((tile) => (
                 <div
                   key={tile.label}
                   style={{
-                    minWidth: 144,
-                    padding: '12px 14px',
-                    borderRadius: 18,
+                    minWidth: 112,
+                    maxWidth: 148,
+                    padding: '9px 12px',
+                    borderRadius: 14,
                     background: 'rgba(255,255,255,0.08)',
                     border: '1px solid rgba(255,255,255,0.1)',
                   }}
@@ -198,7 +199,7 @@ export default function ProfilePage() {
                   <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.46)', fontWeight: 700 }}>
                     {tile.label}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 6 }}>{tile.value}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tile.value}</div>
                 </div>
               ))}
             </div>
@@ -367,6 +368,19 @@ export default function ProfilePage() {
           @media (max-width: 900px) {
             .profile-two-col {
               grid-template-columns: 1fr;
+            }
+          }
+
+          @media (max-width: 640px) {
+            .profile-hero-header {
+              align-items: flex-start !important;
+            }
+
+            .profile-hero-tiles {
+              width: 100%;
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+              gap: 8px !important;
             }
           }
         `}</style>

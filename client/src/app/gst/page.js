@@ -256,15 +256,15 @@ export default function GSTPage() {
     <Layout>
       <div className="page-shell">
         <section className="hero-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <div style={{ flex: 1 }}>
+          <div className="gst-hero-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST सारांश / GST Summary</div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="gst-period-controls" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <select
                 className="form-input"
                 style={{
-                  minWidth: 138,
+                  minWidth: 128,
                   height: 44,
                   background: 'rgba(255,255,255,0.92)',
                   borderColor: 'rgba(255,255,255,0.28)',
@@ -280,7 +280,7 @@ export default function GSTPage() {
               <select
                 className="form-input"
                 style={{
-                  minWidth: 104,
+                  minWidth: 96,
                   height: 44,
                   background: 'rgba(255,255,255,0.92)',
                   borderColor: 'rgba(255,255,255,0.28)',
@@ -309,10 +309,10 @@ export default function GSTPage() {
             border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
             borderRadius: 16, padding: '16px 18px', marginBottom: 20,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+            <div className="gst-status-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div className="gst-status-main" style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 28, flexShrink: 0 }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: 18, fontWeight: 900, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151', lineHeight: 1.25 }}>
                     {isPayable
                       ? `${monthHi} ${year}: ₹${fmt(netPayable)} GST भरना है`
@@ -723,6 +723,58 @@ export default function GSTPage() {
         @media (max-width: 640px) {
           .hero-panel {
             padding: 16px !important;
+          }
+
+          .gst-hero-header {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            align-items: start !important;
+            gap: 12px !important;
+          }
+
+          .gst-period-controls {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px !important;
+            width: 100%;
+            min-width: 0;
+          }
+
+          .gst-period-controls .form-input {
+            min-width: 0 !important;
+            width: 100%;
+            font-size: 12.5px;
+            padding: 10px 12px;
+          }
+
+          .gst-status-banner {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+          }
+
+          .gst-status-main {
+            align-items: flex-start !important;
+          }
+
+          .gst-status-main > div:last-child > div:first-child {
+            font-size: 16px !important;
+            line-height: 1.35 !important;
+          }
+
+          .gst-status-main > div:last-child > div:last-child {
+            font-size: 12px !important;
+            margin-top: 2px !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .gst-hero-header {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .gst-period-controls {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

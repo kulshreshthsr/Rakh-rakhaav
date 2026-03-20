@@ -50,9 +50,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 24, maxWidth: 420 }}>
+            <div style={{ marginTop: 18, maxWidth: 420 }}>
               <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: '-0.04em', fontWeight: 800 }}>
-                Fast login for your business dashboard.
+                Sign in and keep your business moving.
               </h1>
             </div>
 
