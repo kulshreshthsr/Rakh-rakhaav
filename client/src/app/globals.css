@@ -11,23 +11,27 @@
   --navy-2: #102544;
   --navy-3: #173760;
   --navy-light: #23518f;
+  --navy-soft: #203554;
 
   --emerald: #059669;
   --emerald-2: #10b981;
   --emerald-3: #6ee7b7;
+  --emerald-4: #a7f3d0;
   --emerald-light: rgba(16, 185, 129, 0.14);
   --emerald-border: rgba(16, 185, 129, 0.26);
 
   --gold: #f59e0b;
+  --gold-2: #fbbf24;
   --gold-light: rgba(245, 158, 11, 0.14);
 
-  --bg: #eef4fb;
-  --surface: rgba(255, 255, 255, 0.9);
+  --bg: #edf3fa;
+  --surface: rgba(255, 255, 255, 0.92);
   --surface-2: #f8fbff;
-  --surface-3: #edf3fb;
-  --surface-4: rgba(255, 255, 255, 0.66);
-  --border: rgba(148, 163, 184, 0.2);
-  --border-strong: rgba(71, 85, 105, 0.18);
+  --surface-3: #eef4fb;
+  --surface-4: rgba(255, 255, 255, 0.72);
+  --surface-5: rgba(245, 249, 255, 0.88);
+  --border: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(71, 85, 105, 0.16);
 
   --success: #059669;
   --success-bg: #ecfdf5;
@@ -50,10 +54,11 @@
 
   --sidebar: #081528;
 
-  --shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 24px 60px rgba(15, 23, 42, 0.1);
-  --shadow-lg: 0 32px 80px rgba(2, 8, 23, 0.16);
-  --shadow-green: 0 20px 45px rgba(5, 150, 105, 0.24);
+  --shadow: 0 18px 48px rgba(15, 23, 42, 0.07);
+  --shadow-md: 0 26px 64px rgba(15, 23, 42, 0.11);
+  --shadow-lg: 0 36px 92px rgba(2, 8, 23, 0.18);
+  --shadow-green: 0 20px 46px rgba(5, 150, 105, 0.22);
+  --ring: 0 0 0 1px rgba(255, 255, 255, 0.64), 0 10px 32px rgba(15, 23, 42, 0.08);
 
   --radius: 20px;
   --radius-sm: 14px;
@@ -72,8 +77,9 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.05), transparent 24%),
-    linear-gradient(180deg, #f4f8fd 0%, #edf3fa 46%, #e8eff7 100%);
+    radial-gradient(circle at 88% 4%, rgba(16, 185, 129, 0.08), transparent 18%),
+    radial-gradient(circle at 100% 20%, rgba(37, 99, 235, 0.06), transparent 24%),
+    linear-gradient(180deg, #f7fbff 0%, #edf3fa 44%, #e7eef7 100%);
 }
 
 body::before {
@@ -89,6 +95,17 @@ body::before {
   z-index: -1;
 }
 
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.54), transparent 20%),
+    radial-gradient(circle at 82% 78%, rgba(255, 255, 255, 0.36), transparent 24%);
+  z-index: -1;
+}
+
 a {
   color: inherit;
 }
@@ -100,11 +117,25 @@ textarea {
   font-family: 'Inter', sans-serif;
 }
 
+button,
+a,
+input,
+select,
+textarea {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
 input,
 select,
 textarea {
   color: var(--text) !important;
-  background: rgba(255, 255, 255, 0.88) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
 }
 
 input::placeholder,
@@ -132,33 +163,46 @@ textarea::placeholder {
 .metric-card,
 .feature-panel,
 .glass-panel {
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 251, 255, 0.88));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(246, 250, 255, 0.9));
   border-radius: var(--radius);
   padding: 22px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.74);
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.62), transparent 42%);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.76), transparent 38%),
+    radial-gradient(circle at top right, rgba(125, 211, 252, 0.08), transparent 30%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   pointer-events: none;
 }
 
 .page-shell {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .hero-panel {
@@ -167,11 +211,24 @@ textarea::placeholder {
   border-radius: 26px;
   border: 1px solid rgba(255, 255, 255, 0.4);
   background:
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.18), transparent 28%),
-    linear-gradient(135deg, rgba(8, 21, 40, 0.98), rgba(16, 37, 68, 0.97) 52%, rgba(8, 21, 40, 0.92));
-  box-shadow: 0 28px 80px rgba(8, 21, 40, 0.2);
+    radial-gradient(circle at 82% 14%, rgba(52, 211, 153, 0.28), transparent 18%),
+    radial-gradient(circle at 20% 100%, rgba(56, 189, 248, 0.14), transparent 24%),
+    linear-gradient(135deg, rgba(8, 21, 40, 0.985), rgba(16, 37, 68, 0.985) 50%, rgba(10, 28, 50, 0.96));
+  box-shadow: 0 28px 86px rgba(8, 21, 40, 0.24);
   color: #fff;
   padding: 24px;
+}
+
+.hero-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.26), transparent 72%);
+  pointer-events: none;
 }
 
 .hero-panel::after {
@@ -225,11 +282,11 @@ textarea::placeholder {
 }
 
 .toolbar-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 251, 255, 0.78));
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 250, 255, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 20px;
   padding: 16px;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--ring);
 }
 
 .metric-grid {
@@ -241,11 +298,11 @@ textarea::placeholder {
 .metric-card,
 .stat-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 255, 0.9));
+    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(245, 249, 255, 0.92));
   border-radius: 22px;
   padding: 18px 18px 17px;
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -260,14 +317,16 @@ textarea::placeholder {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 34%);
+  background:
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.48), transparent 40%);
   pointer-events: none;
 }
 
 .metric-card:hover,
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 26px 58px rgba(15, 23, 42, 0.12);
   border-color: rgba(16, 185, 129, 0.22);
 }
 
@@ -359,8 +418,8 @@ textarea::placeholder {
 .btn-primary {
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: linear-gradient(135deg, #0f2544, #1c4d81);
-  box-shadow: 0 18px 32px rgba(16, 37, 68, 0.22);
+  background: linear-gradient(135deg, #102544, #214c7d);
+  box-shadow: 0 20px 36px rgba(16, 37, 68, 0.24);
 }
 
 .btn-primary:hover {
@@ -371,7 +430,7 @@ textarea::placeholder {
 .btn-success {
   color: #fff;
   border: 1px solid rgba(16, 185, 129, 0.24);
-  background: linear-gradient(135deg, #059669, #10b981);
+  background: linear-gradient(135deg, #059669, #19c18d);
   box-shadow: var(--shadow-green);
 }
 
@@ -383,7 +442,7 @@ textarea::placeholder {
 .btn-warning {
   color: #fff;
   border: 1px solid rgba(245, 158, 11, 0.18);
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: linear-gradient(135deg, #f59e0b, #fb923c);
   box-shadow: 0 18px 34px rgba(245, 158, 11, 0.26);
 }
 
@@ -395,7 +454,7 @@ textarea::placeholder {
 .btn-danger {
   color: #fff;
   border: 1px solid rgba(248, 113, 113, 0.16);
-  background: linear-gradient(135deg, #dc2626, #ef4444);
+  background: linear-gradient(135deg, #dc2626, #f05252);
   box-shadow: 0 18px 34px rgba(220, 38, 38, 0.24);
 }
 
@@ -406,8 +465,8 @@ textarea::placeholder {
 
 .btn-ghost {
   color: var(--text-2);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.78);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
@@ -428,10 +487,10 @@ textarea::placeholder {
 }
 
 .table-container {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.9));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 255, 0.92));
   border-radius: 24px;
-  border: 1px solid rgba(226, 232, 240, 0.84);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
   overflow: hidden;
 }
 
@@ -439,7 +498,7 @@ table { width: 100%; border-collapse: collapse; }
 
 thead {
   background:
-    linear-gradient(135deg, rgba(8, 21, 40, 0.98), rgba(17, 39, 69, 0.94));
+    linear-gradient(135deg, rgba(8, 21, 40, 0.99), rgba(17, 39, 69, 0.96));
 }
 
 th {
@@ -469,7 +528,7 @@ tbody tr {
 }
 
 tbody tr:hover td {
-  background: rgba(248, 250, 252, 0.82);
+  background: rgba(243, 248, 255, 0.88);
 }
 
 .badge {
@@ -512,7 +571,7 @@ tbody tr:hover td {
 
 .modal {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 249, 255, 0.94));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(245, 249, 255, 0.95));
   border-radius: 26px;
   padding: 28px;
   width: 100%;
@@ -556,14 +615,14 @@ tbody tr:hover td {
 
 .form-input {
   padding: 12px 14px;
-  border: 1.5px solid rgba(148, 163, 184, 0.22);
-  border-radius: 14px;
+  border: 1.5px solid rgba(203, 213, 225, 0.84);
+  border-radius: 16px;
   font-size: 13.5px;
   color: var(--text) !important;
-  background: rgba(255, 255, 255, 0.86) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 251, 255, 0.92)) !important;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
   width: 100%;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 4px 18px rgba(15, 23, 42, 0.04);
 }
 
 .form-input:focus {
@@ -723,8 +782,8 @@ select.form-input { cursor: pointer; }
   border-radius: 24px;
   padding: 24px 22px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 255, 0.92));
-  border: 1px solid rgba(255, 255, 255, 0.68);
-  box-shadow: 0 30px 80px rgba(2, 8, 23, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  box-shadow: 0 30px 86px rgba(2, 8, 23, 0.22);
 }
 
 .auth-brand {
@@ -871,6 +930,10 @@ select.form-input { cursor: pointer; }
   .hero-panel {
     padding: 18px;
     border-radius: 22px;
+  }
+
+  body::after {
+    opacity: 0.55;
   }
 
   .table-container {
