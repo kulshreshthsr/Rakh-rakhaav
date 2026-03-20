@@ -157,11 +157,7 @@ export default function UdhaarPage() {
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <div className="kicker" style={{ marginBottom: 12 }}>Ledger overview</div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>उधार बही / Credit Ledger</div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)' }}>
-                Track who should pay you and who you need to pay, with clear transaction history.
-              </div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>उधार बही / Credit Ledger</div>
             </div>
           </div>
         </section>

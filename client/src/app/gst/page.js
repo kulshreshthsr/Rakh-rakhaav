@@ -258,11 +258,7 @@ export default function GSTPage() {
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <div className="kicker" style={{ marginBottom: 12 }}>GST control</div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>GST सारांश / GST Summary</div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)' }}>
-                Clear tax view for filing, payment planning and CA-ready export.
-              </div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST सारांश / GST Summary</div>
             </div>
             <div className="toolbar-card" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)', minWidth: 260 }}>
               <div className="toolbar">

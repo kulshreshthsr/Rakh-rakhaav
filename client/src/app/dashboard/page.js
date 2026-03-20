@@ -168,16 +168,7 @@ export default function DashboardPage() {
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div style={{ maxWidth: 680 }}>
-              <div className="kicker" style={{ marginBottom: 14 }}>Smart overview</div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 8 }}>डैशबोर्ड / Dashboard</div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', maxWidth: 560 }}>
-                Your premium control room for inventory, billing, GST and daily business performance.
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
-                <div className="feature-chip">₹{fmt(revenue)} monthly revenue</div>
-                <div className="feature-chip">{lowStock.length} low stock alerts</div>
-                <div className="feature-chip">{topProducts.length} top sellers tracked</div>
-              </div>
             </div>
 
             <div className="toolbar-card" style={{ minWidth: 216, background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)' }}>

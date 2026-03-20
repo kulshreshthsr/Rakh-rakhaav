@@ -205,11 +205,7 @@ export default function ProductsPage() {
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div>
-              <div className="kicker" style={{ marginBottom: 12 }}>Inventory master</div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>उत्पाद / Products</div>
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', maxWidth: 540 }}>
-                Manage stock, pricing, GST and product movement from one clean control panel.
-              </div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>उत्पाद / Products</div>
             </div>
             <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ उत्पाद जोड़ें / Add</button>
           </div>

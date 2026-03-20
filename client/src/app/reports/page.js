@@ -234,9 +234,8 @@ export default function ReportsPage() {
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div className="kicker" style={{ marginBottom: 12 }}>Business reports</div>
               <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>रिपोर्ट / Reports</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)' }}>{label} का डेटा / Data</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)' }}>{label}</div>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[

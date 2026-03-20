@@ -55,54 +55,24 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 34, maxWidth: 520 }}>
-              <div className="kicker" style={{ marginBottom: 16 }}>Launch-ready workspace</div>
-              <h1 style={{ fontSize: 42, lineHeight: 1.08, letterSpacing: '-0.05em', fontWeight: 800 }}>
-                Create your account and make your startup look serious from the first login.
+            <div style={{ marginTop: 24, maxWidth: 420 }}>
+              <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: '-0.04em', fontWeight: 800 }}>
+                Create your account and start quickly.
               </h1>
-              <p style={{ marginTop: 16, color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.7 }}>
-                Built to help entry-level businesses feel organized, modern and trusted without adding complexity.
-              </p>
             </div>
 
-            <div className="auth-meta">
-              {['✓ Free Forever', '✓ GST Ready', '✓ Mobile First', '✓ Instant Setup'].map((item) => (
+            <div className="auth-meta" style={{ marginTop: 14 }}>
+              {['Free', 'GST Ready', 'Mobile First'].map((item) => (
                 <div key={item} className="feature-chip">{item}</div>
               ))}
             </div>
           </div>
 
-          <div className="feature-panel">
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.58)', marginBottom: 14 }}>
-              What you get
-            </div>
-            <div className="feature-grid">
-              {[
-                { icon: '📦', title: 'Stock Management', text: 'Track inventory with low-stock awareness.' },
-                { icon: '🧾', title: 'GST Invoices', text: 'Create clean, business-ready billing records.' },
-                { icon: '📒', title: 'Udhaar Ledger', text: 'Manage credit without extra tools.' },
-                { icon: '📊', title: 'Profit Reports', text: 'See how your month is really performing.' },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  style={{
-                    padding: 16,
-                    borderRadius: 20,
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}
-                >
-                  <div style={{ fontSize: 24, marginBottom: 10 }}>{item.icon}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{item.title}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.62)', marginTop: 6, lineHeight: 1.6 }}>{item.text}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <div />
         </section>
 
         <section className="auth-card-wrap">
-          <div className="auth-card">
+          <div className="auth-card" style={{ maxWidth: 420, padding: '24px 22px' }}>
             <div className="auth-title">Create account</div>
             <div className="auth-subtitle">Start managing your business today.</div>
 

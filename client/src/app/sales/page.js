@@ -244,11 +244,7 @@ export default function SalesPage() {
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <div className="kicker" style={{ marginBottom: 12 }}>Billing flow</div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>बिक्री / Sales</div>
-              <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 560 }}>
-                Faster invoice tracking, cleaner payment visibility and a stronger sales screen without changing your workflow.
-              </div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>बिक्री / Sales</div>
             </div>
             <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success" style={{ width: 'auto' }}>+ बिक्री दर्ज / Record Sale</button>
           </div>

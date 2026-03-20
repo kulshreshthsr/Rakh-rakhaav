@@ -198,11 +198,7 @@ export default function PurchasesPage() {
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <div className="kicker" style={{ marginBottom: 12 }}>Purchase control</div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 6 }}>खरीद / Purchases</div>
-              <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, maxWidth: 560 }}>
-                Supplier purchases, due tracking and ITC visibility in a cleaner, more modern purchase dashboard.
-              </div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>खरीद / Purchases</div>
             </div>
             <button onClick={() => setShowModal(true)} className="btn-warning" style={{ width: 'auto' }}>
               + खरीद दर्ज / Record Purchase
