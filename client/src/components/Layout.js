@@ -6,7 +6,7 @@ import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
 import TrialWarningModal from './subscription/TrialWarningModal';
 import { API, FALLBACK_PLANS, getTrialWarningKey } from '../lib/subscription';
-import { AppLocaleProvider, useAppLocale } from './AppLocale';
+import { useAppLocale } from './AppLocale';
 
 const navItems = [
   { href: '/dashboard', key: 'dashboard', shortLabel: 'Home' },
@@ -1178,9 +1178,5 @@ function LayoutInner({ children }) {
 }
 
 export default function Layout({ children }) {
-  return (
-    <AppLocaleProvider>
-      <LayoutInner>{children}</LayoutInner>
-    </AppLocaleProvider>
-  );
+  return <LayoutInner>{children}</LayoutInner>;
 }

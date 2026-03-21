@@ -1,11 +1,17 @@
 import "./globals.css";
+import { AppLocaleProvider } from "../components/AppLocale";
 
 export const metadata = {
   title: "Rakhaav — Smart Inventory & GST Billing",
   description: "Complete inventory management, GST billing, and business accounting for Indian shopkeepers.",
   keywords: "inventory management, GST billing, udhaar, vyapar, shop management",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
   themeColor: "#0f172a",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({ children }) {
@@ -17,7 +23,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#0f172a" />
       </head>
       <body>
-        {children}
+        <AppLocaleProvider>{children}</AppLocaleProvider>
       </body>
     </html>
   );
