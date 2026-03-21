@@ -59,12 +59,32 @@ export default function RegisterPage() {
               <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: '-0.04em', fontWeight: 800 }}>
                 Start your business setup in minutes.
               </h1>
+              <p style={{ marginTop: 12, color: 'rgba(255,255,255,0.68)', fontSize: 14, lineHeight: 1.6 }}>
+                Create your account once and begin billing, inventory tracking and GST-ready records right away.
+              </p>
             </div>
 
             <div className="auth-meta" style={{ marginTop: 14 }}>
               {['Free', 'GST Ready', 'Mobile First'].map((item) => (
                 <div key={item} className="feature-chip">{item}</div>
               ))}
+            </div>
+
+            <div className="auth-feature-list">
+              <div className="auth-feature-item">
+                <div className="auth-feature-icon">A</div>
+                <div>
+                  <div className="auth-feature-title">Simple first setup</div>
+                  <div className="auth-feature-text">No confusing steps, just create your account and start recording business activity.</div>
+                </div>
+              </div>
+              <div className="auth-feature-item">
+                <div className="auth-feature-icon">B</div>
+                <div>
+                  <div className="auth-feature-title">Built for real shop work</div>
+                  <div className="auth-feature-text">Designed for quick billing, stock updates and daily use on mobile devices.</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -161,7 +181,7 @@ export default function RegisterPage() {
 
             <div className="auth-note">
               Already have an account?{' '}
-              <a href="/login" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>
+              <a href="/login" className="cta-link">
                 Sign in
               </a>
             </div>

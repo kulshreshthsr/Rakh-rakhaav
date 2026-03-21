@@ -54,12 +54,32 @@ export default function LoginPage() {
               <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: '-0.04em', fontWeight: 800 }}>
                 Sign in and keep your business moving.
               </h1>
+              <p style={{ marginTop: 12, color: 'rgba(255,255,255,0.68)', fontSize: 14, lineHeight: 1.6 }}>
+                Orders, inventory, GST and udhaar are ready where you left them.
+              </p>
             </div>
 
             <div className="auth-meta" style={{ marginTop: 14 }}>
               <div className="feature-chip">📦 Stock</div>
               <div className="feature-chip">🧾 GST</div>
               <div className="feature-chip">📒 Udhaar</div>
+            </div>
+
+            <div className="auth-feature-list">
+              <div className="auth-feature-item">
+                <div className="auth-feature-icon">1</div>
+                <div>
+                  <div className="auth-feature-title">Faster daily operations</div>
+                  <div className="auth-feature-text">Get to sales, purchases and stock changes in a single tap.</div>
+                </div>
+              </div>
+              <div className="auth-feature-item">
+                <div className="auth-feature-icon">2</div>
+                <div>
+                  <div className="auth-feature-title">Cleaner business records</div>
+                  <div className="auth-feature-text">Keep invoices, customer dues and GST numbers in one organized workspace.</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -125,7 +145,7 @@ export default function LoginPage() {
 
             <div className="auth-note">
               Don&apos;t have an account?{' '}
-              <a href="/register" style={{ color: '#059669', fontWeight: 800, textDecoration: 'none' }}>
+              <a href="/register" className="cta-link">
                 Create one free
               </a>
             </div>

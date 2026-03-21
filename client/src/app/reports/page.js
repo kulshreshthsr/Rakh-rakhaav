@@ -235,23 +235,22 @@ export default function ReportsPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>रिपोर्ट / Reports</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)' }}>{label}</div>
+              <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', maxWidth: 420 }}>
+                Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="filter-pills">
           {[
             { val: 'today', label: 'आज / Today'        },
             { val: 'week',  label: 'इस हफ्ते / Week'   },
             { val: 'month', label: 'इस महीने / Month'  },
           ].map(f => (
-            <button key={f.val} onClick={() => setFilter(f.val)}
-              style={{
-                padding: '8px 16px', borderRadius: 10, border: '1.5px solid',
-                borderColor: filter === f.val ? '#6366f1' : '#e5e7eb',
-                background:  filter === f.val ? '#6366f1' : '#fff',
-                color:       filter === f.val ? '#fff' : '#374151',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}>
+            <button
+              key={f.val}
+              onClick={() => setFilter(f.val)}
+              className={`filter-pill${filter === f.val ? ' is-active' : ''}`}
+            >
               {f.label}
             </button>
           ))}
@@ -293,7 +292,7 @@ export default function ReportsPage() {
         <>
           {/* ── SUMMARY CARDS ── */}
           {/* UPGRADE 4: COGS card removed. Gross Profit → renamed to Profit */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
+          <div className="mini-stat-grid" style={{ marginBottom: 24 }}>
             {[
               { label: '💰 Revenue',      value: `₹${fmtN(summary.totalRevenue)}`,  sub: `${summary.salesCount} invoices`,      color: '#10b981', bg: '#f0fdf4' },
               { label: '📊 मुनाफ़ा',      value: `₹${fmtN(summary.grossProfit)}`,   sub: `Margin: ${fmt(summary.margin)}%`,     color: marginColor, bg: '#f8fafc' },
@@ -301,10 +300,10 @@ export default function ReportsPage() {
               { label: '📒 Udhaar',       value: `₹${fmtN(summary.totalUdhaar)}`,   sub: 'Total pending',                        color: '#ef4444', bg: '#fef2f2' },
               { label: '🛒 Purchases',    value: `₹${fmtN(summary.totalPurchase)}`, sub: `ITC: ₹${fmtN(summary.totalITC)}`,     color: '#6366f1', bg: '#eef2ff' },
             ].map((card, i) => (
-              <div key={i} style={{ background: card.bg, borderRadius: 14, padding: '14px 16px', border: `1px solid ${card.color}22` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{card.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: card.color, letterSpacing: -0.5 }}>{card.value}</div>
-                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{card.sub}</div>
+              <div key={i} className="mini-stat">
+                <div className="mini-stat-label">{card.label}</div>
+                <div className="mini-stat-value" style={{ color: card.color }}>{card.value}</div>
+                <div className="mini-stat-note">{card.sub}</div>
               </div>
             ))}
           </div>
@@ -314,8 +313,8 @@ export default function ReportsPage() {
           <div className="card" style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>📊 मुनाफ़ा विवरण / Profit Breakdown</div>
-              <button onClick={() => exportCSV('profit')}
-                style={{ padding: '7px 14px', background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={() => exportCSV('profit')} className="panel-action"
+              >
                 📥 CSV Download
               </button>
             </div>
@@ -391,7 +390,7 @@ export default function ReportsPage() {
           {/* ── DAILY SALES (unchanged) ── */}
           {dailySales.length > 0 && (
             <div className="card" style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <div className="panel-head">
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>📅 Daily Sales</div>
                 <button onClick={() => exportCSV('sales')}
                   style={{ padding: '7px 14px', background: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
@@ -435,33 +434,30 @@ export default function ReportsPage() {
           )}
 
           {/* ── TOP PRODUCTS + TOP CUSTOMERS (unchanged) ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+          <div className="split-grid" style={{ marginBottom: 20 }}>
 
             {/* Top Products */}
             <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <div className="panel-head">
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>🏆 Top Products</div>
-                <button onClick={() => exportCSV('products')}
-                  style={{ padding: '6px 12px', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={() => exportCSV('products')} className="panel-action"
+                >
                   📥 CSV
                 </button>
               </div>
               {topProducts.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20, fontSize: 13 }}>कोई data नहीं</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="stack-list">
                   {topProducts.map((p, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{
-                        width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                    <div key={i} className="stack-row">
+                      <div className="stack-row-rank" style={{
                         background: ['#10b981','#6366f1','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6'][i] || '#9ca3af',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 800, color: '#fff',
                       }}>
                         {i + 1}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                        <div className="stack-row-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>{p.qty} units • {p.count} orders</div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -478,27 +474,24 @@ export default function ReportsPage() {
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>👥 Top Customers</div>
-                <button onClick={() => exportCSV('customers')}
-                  style={{ padding: '6px 12px', background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={() => exportCSV('customers')} className="panel-action"
+                >
                   📥 CSV
                 </button>
               </div>
               {topCustomers.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#9ca3af', padding: 20, fontSize: 13 }}>कोई data नहीं</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="stack-list">
                   {topCustomers.map((c, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{
-                        width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                    <div key={i} className="stack-row">
+                      <div className="stack-row-rank" style={{
                         background: ['#ef4444','#f59e0b','#10b981','#6366f1','#8b5cf6','#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6'][i] || '#9ca3af',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 800, color: '#fff',
                       }}>
                         {c.name.charAt(0).toUpperCase()}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                        <div className="stack-row-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>{c.count} orders{c.phone ? ` • ${c.phone}` : ''}</div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>

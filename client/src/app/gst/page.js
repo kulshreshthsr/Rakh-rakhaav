@@ -258,7 +258,11 @@ export default function GSTPage() {
         <section className="hero-panel">
           <div className="gst-hero-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="kicker" style={{ marginBottom: 10 }}>Tax centre</div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST सारांश / GST Summary</div>
+              <div style={{ marginTop: 10, color: 'rgba(226,232,240,0.7)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
+                Track collected GST, ITC and filing-ready exports for the selected period.
+              </div>
             </div>
             <div className="gst-period-controls" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <select
@@ -268,7 +272,7 @@ export default function GSTPage() {
                   height: 44,
                   background: 'rgba(255,255,255,0.92)',
                   borderColor: 'rgba(255,255,255,0.28)',
-                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                  boxShadow: '0 12px 24px rgba(13,19,43,0.12)',
                 }}
                 value={month}
                 onChange={e => setMonth(parseInt(e.target.value))}
@@ -284,7 +288,7 @@ export default function GSTPage() {
                   height: 44,
                   background: 'rgba(255,255,255,0.92)',
                   borderColor: 'rgba(255,255,255,0.28)',
-                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                  boxShadow: '0 12px 24px rgba(13,19,43,0.12)',
                 }}
                 value={year}
                 onChange={e => setYear(parseInt(e.target.value))}
@@ -304,14 +308,28 @@ export default function GSTPage() {
       ) : (
         <>
           {/* ── SECTION 1: NET PAYABLE BANNER ── */}
-          <div style={{
-            background: isPayable ? '#fef2f2' : isRefund ? '#f0fdf4' : '#f8fafc',
-            border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
-            borderRadius: 16, padding: '16px 18px', marginBottom: 20,
+          <div className="soft-panel" style={{
+            background: isPayable
+              ? 'linear-gradient(180deg, rgba(255,245,245,0.96), rgba(255,255,255,0.94))'
+              : isRefund
+              ? 'linear-gradient(180deg, rgba(240,253,244,0.96), rgba(255,255,255,0.94))'
+              : 'linear-gradient(180deg, rgba(248,250,252,0.96), rgba(255,255,255,0.94))',
+            border: `1px solid ${isPayable ? '#fecaca' : isRefund ? '#bbf7d0' : '#e2e8f0'}`,
+            padding: '18px 20px', marginBottom: 20,
           }}>
             <div className="gst-status-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div className="gst-status-main" style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 28, flexShrink: 0 }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
+                <div style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 16,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 24,
+                  background: isPayable ? '#fee2e2' : isRefund ? '#dcfce7' : '#eef2ff',
+                }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: 18, fontWeight: 900, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151', lineHeight: 1.25 }}>
                     {isPayable
@@ -334,7 +352,7 @@ export default function GSTPage() {
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   background: returnStatus.ok ? '#dcfce7' : '#fef9c3',
                   color: returnStatus.ok ? '#166534' : '#854d0e',
-                  padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+                  padding: '8px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700,
                   whiteSpace: 'nowrap',
                 }}>
                   {returnStatus.msg}
@@ -347,6 +365,24 @@ export default function GSTPage() {
           <div className="card" style={{ marginBottom: 20 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>
               🧮 GST हिसाब / Calculation
+            </div>
+
+            <div className="mini-stat-grid" style={{ marginBottom: 16 }}>
+              <div className="mini-stat">
+                <div className="mini-stat-label">Output GST</div>
+                <div className="mini-stat-value" style={{ color: '#059669' }}>₹{fmt(gstCollected)}</div>
+                <div className="mini-stat-note">Collected from sales</div>
+              </div>
+              <div className="mini-stat">
+                <div className="mini-stat-label">Input GST / ITC</div>
+                <div className="mini-stat-value" style={{ color: '#2563eb' }}>₹{fmt(gstITC)}</div>
+                <div className="mini-stat-note">Claimed from purchases</div>
+              </div>
+              <div className="mini-stat">
+                <div className="mini-stat-label">Net Position</div>
+                <div className="mini-stat-value" style={{ color: isPayable ? '#dc2626' : isRefund ? '#059669' : '#475569' }}>₹{fmt(Math.abs(netPayable))}</div>
+                <div className="mini-stat-note">{isPayable ? 'Payable now' : isRefund ? 'Refund side' : 'Balanced'}</div>
+              </div>
             </div>
 
             {/* GST Collected — clickable drill-down */}
@@ -478,7 +514,7 @@ export default function GSTPage() {
             )}
 
             {gstITC === 0 && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: '#92400e' }}>
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 14px', marginBottom: 12, fontSize: 13, color: '#92400e' }}>
                 ⚠️ कोई ITC claim नहीं — ज़्यादा tax भर रहे हैं / No ITC claimed — you may be overpaying tax
               </div>
             )}
@@ -487,9 +523,9 @@ export default function GSTPage() {
 
             {/* Net Payable */}
             <div style={{
-              padding: '18px 20px', borderRadius: 12,
+              padding: '18px 20px', borderRadius: 18,
               background: isPayable ? '#fef2f2' : isRefund ? '#f0fdf4' : '#f8fafc',
-              border: `2px solid ${isPayable ? '#fca5a5' : isRefund ? '#86efac' : '#e2e8f0'}`,
+              border: `1px solid ${isPayable ? '#fecaca' : isRefund ? '#bbf7d0' : '#e2e8f0'}`,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div>

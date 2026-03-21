@@ -163,22 +163,23 @@ export default function ProfilePage() {
                   width: 58,
                   height: 58,
                   borderRadius: 18,
-                  background: 'linear-gradient(135deg, #10b981, #2563eb)',
+                  background: 'linear-gradient(135deg, #4f46e5, #0ea5e9)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 24,
                   fontWeight: 800,
-                  boxShadow: '0 14px 32px rgba(16,185,129,0.2)',
+                  boxShadow: '0 14px 32px rgba(79,70,229,0.22)',
                   flexShrink: 0,
                 }}
               >
                 {user?.name?.charAt(0).toUpperCase() || 'R'}
               </div>
               <div style={{ minWidth: 0 }}>
+                <div className="kicker" style={{ marginBottom: 10 }}>Profile control</div>
                 <div className="page-title" style={{ color: '#fff', marginBottom: 4 }}>प्रोफ़ाइल / Profile & Settings</div>
                 <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.66)' }}>
-                  Shop identity and account details
+                  Manage shop identity, invoice details and account security in one place.
                 </div>
               </div>
             </div>
@@ -189,13 +190,13 @@ export default function ProfilePage() {
                   key={tile.label}
                   style={{
                     minWidth: 112,
-                    maxWidth: 148,
-                    padding: '9px 12px',
-                    borderRadius: 14,
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                  }}
-                >
+                  maxWidth: 160,
+                  padding: '10px 12px',
+                  borderRadius: 14,
+                  background: 'rgba(255,255,255,0.09)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                }}
+              >
                   <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.46)', fontWeight: 700 }}>
                     {tile.label}
                   </div>
@@ -263,53 +264,49 @@ export default function ProfilePage() {
 
             <div className="divider" />
 
-            <div style={{ marginBottom: 12 }}>
+            <div className="soft-panel" style={{ padding: 16, marginBottom: 16 }}>
               <div className="section-title" style={{ fontSize: 16 }}>🏦 बैंक विवरण / Bank Details</div>
               <div className="section-subtitle">Will appear on invoices when available</div>
+              <div className="grid-2" style={{ marginTop: 14 }}>
+                <div className="form-group">
+                  <label className="form-label">बैंक का नाम / Bank Name</label>
+                  <input className="form-input" placeholder="State Bank of India" value={shopForm.bank_name} onChange={(e) => setShopForm({ ...shopForm, bank_name: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">शाखा / Branch</label>
+                  <input className="form-input" placeholder="Main Branch" value={shopForm.bank_branch} onChange={(e) => setShopForm({ ...shopForm, bank_branch: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">खाता नंबर / Account No.</label>
+                  <input className="form-input" placeholder="0000000000" value={shopForm.bank_account} onChange={(e) => setShopForm({ ...shopForm, bank_account: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">IFSC Code</label>
+                  <input className="form-input" placeholder="SBIN0000000" value={shopForm.bank_ifsc} onChange={(e) => setShopForm({ ...shopForm, bank_ifsc: e.target.value })} />
+                </div>
+              </div>
             </div>
 
-            <div className="grid-2">
-              <div className="form-group">
-                <label className="form-label">बैंक का नाम / Bank Name</label>
-                <input className="form-input" placeholder="State Bank of India" value={shopForm.bank_name} onChange={(e) => setShopForm({ ...shopForm, bank_name: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">शाखा / Branch</label>
-                <input className="form-input" placeholder="Main Branch" value={shopForm.bank_branch} onChange={(e) => setShopForm({ ...shopForm, bank_branch: e.target.value })} />
-              </div>
-            </div>
-
-            <div className="grid-2">
-              <div className="form-group">
-                <label className="form-label">खाता नंबर / Account No.</label>
-                <input className="form-input" placeholder="0000000000" value={shopForm.bank_account} onChange={(e) => setShopForm({ ...shopForm, bank_account: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">IFSC Code</label>
-                <input className="form-input" placeholder="SBIN0000000" value={shopForm.bank_ifsc} onChange={(e) => setShopForm({ ...shopForm, bank_ifsc: e.target.value })} />
-              </div>
-            </div>
-
-            <div className="divider" />
-
-            <div style={{ marginBottom: 12 }}>
+            <div className="soft-panel" style={{ padding: 16, marginBottom: 18 }}>
               <div className="section-title" style={{ fontSize: 16 }}>📋 नियम एवं शर्तें / Terms & Conditions</div>
               <div className="section-subtitle">Printed on invoices for cleaner business communication</div>
+              <div className="form-group" style={{ marginTop: 14, marginBottom: 0 }}>
+                <label className="form-label">Terms</label>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  placeholder={'1. Goods once sold will not be taken back.\n2. Subject to local jurisdiction.'}
+                  value={shopForm.terms}
+                  onChange={(e) => setShopForm({ ...shopForm, terms: e.target.value })}
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Terms</label>
-              <textarea
-                className="form-input"
-                rows={4}
-                placeholder={'1. Goods once sold will not be taken back.\n2. Subject to local jurisdiction.'}
-                value={shopForm.terms}
-                onChange={(e) => setShopForm({ ...shopForm, terms: e.target.value })}
-                style={{ resize: 'vertical', fontFamily: 'inherit' }}
-              />
-            </div>
-
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="btn-primary" style={{ width: '100%' }}>
               दुकान की जानकारी सहेजें / Save Shop Details
             </button>
           </form>
