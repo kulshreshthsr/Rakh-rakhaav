@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 
 const authRoutes     = require('./routes/authRoutes');
+const paymentRoutes  = require('./routes/paymentRoutes');
 const productRoutes  = require('./routes/productRoutes');
 const salesRoutes    = require('./routes/salesRoutes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
@@ -26,6 +27,7 @@ app.use(cors({
   ],
   credentials: true,
 }));
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,6 +36,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',      authRoutes);
+app.use('/api/payments',  paymentRoutes);
 app.use('/api/products',  productRoutes);
 app.use('/api/sales',     salesRoutes);
 app.use('/api/purchases', purchaseRoutes);

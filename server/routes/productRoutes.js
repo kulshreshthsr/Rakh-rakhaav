@@ -9,12 +9,13 @@ const {
   getStockHistory,
 } = require('../controllers/productController');
 const { protect } = require('../middleware/authMiddleware');
+const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 
 router.get('/', protect, getProducts);
-router.post('/', protect, createProduct);
-router.put('/:id', protect, updateProduct);
-router.delete('/:id', protect, deleteProduct);
-router.post('/:id/adjust-stock', protect, adjustStock);   // ← NEW: manual stock adjust
-router.get('/:id/stock-history', protect, getStockHistory); // ← NEW: stock log
+router.post('/', protect, checkSubscriptionStatus, createProduct);
+router.put('/:id', protect, checkSubscriptionStatus, updateProduct);
+router.delete('/:id', protect, checkSubscriptionStatus, deleteProduct);
+router.post('/:id/adjust-stock', protect, checkSubscriptionStatus, adjustStock);
+router.get('/:id/stock-history', protect, getStockHistory);
 
 module.exports = router;

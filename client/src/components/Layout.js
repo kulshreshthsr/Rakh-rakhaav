@@ -1,6 +1,10 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import UpgradeModal from './subscription/UpgradeModal';
+import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
+import TrialWarningModal from './subscription/TrialWarningModal';
+import { API, FALLBACK_PLANS, getTrialWarningKey } from '../lib/subscription';
 
 const navItems = [
   { href: '/dashboard', labelHi: 'होम', labelEn: 'Dashboard', icon: '🏠' },
@@ -76,11 +80,17 @@ const linkBase = {
 };
 
 export default function Layout({ children }) {
-  const [user] = useState(() => {
+  const [user, setUser] = useState(() => {
     if (typeof window === 'undefined') return null;
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
+  const [subscription, setSubscription] = useState(null);
+  const [plans, setPlans] = useState(FALLBACK_PLANS);
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showTrialWarning, setShowTrialWarning] = useState(false);
+  const [paywallPlan, setPaywallPlan] = useState('six_month');
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileDropOpen, setMobileDropOpen] = useState(false);
@@ -89,12 +99,41 @@ export default function Layout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const refreshSubscriptionStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API}/api/auth/subscription-status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      setSubscription(data.subscription || null);
+      setPlans(data.plans?.length ? data.plans : FALLBACK_PLANS);
+      setRazorpayKeyId(data.razorpayKeyId || '');
+    } catch {}
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!user || !token) {
       router.push('/login');
+      return;
     }
-  }, [router, user]);
+    refreshSubscriptionStatus();
+  }, [router]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -115,6 +154,19 @@ export default function Layout({ children }) {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
+  useEffect(() => {
+    if (!subscription?.shouldWarnTrial || subscription?.isReadOnly) {
+      setShowTrialWarning(false);
+      return;
+    }
+
+    const warningKey = getTrialWarningKey();
+    if (!localStorage.getItem(warningKey)) {
+      setShowTrialWarning(true);
+      localStorage.setItem(warningKey, 'shown');
+    }
+  }, [subscription]);
+
   const logout = () => {
     setDropdownOpen(false);
     setMobileDropOpen(false);
@@ -129,6 +181,13 @@ export default function Layout({ children }) {
     router.push('/profile');
   };
 
+  const handleUpgradeSuccess = async (nextSubscription) => {
+    setSubscription(nextSubscription || null);
+    setShowUpgradeModal(false);
+    setShowTrialWarning(false);
+    await refreshSubscriptionStatus();
+  };
+
   const isActive = (href) => pathname === href;
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
   const firstName = user?.name?.split(' ')?.[0] || 'Profile';
@@ -141,6 +200,7 @@ export default function Layout({ children }) {
         fontFamily: "'Inter', sans-serif",
       }}
     >
+      <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
       <aside
         className="desktop-sidebar"
         style={{
@@ -622,6 +682,17 @@ export default function Layout({ children }) {
             margin: '0 auto',
           }}
         >
+          {subscription?.shouldWarnTrial && !subscription?.isReadOnly && (
+            <div className="trial-banner">
+              <div className="trial-banner-copy">
+                <div className="trial-banner-title">Your free trial ends in {subscription.trialDaysLeft} day{subscription.trialDaysLeft === 1 ? '' : 's'}</div>
+                <div className="trial-banner-subtitle">Upgrade now to keep GST exports, reports, udhaar and premium workflows active without interruption.</div>
+              </div>
+              <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
+                Upgrade
+              </button>
+            </div>
+          )}
           {children}
         </div>
       </main>
@@ -674,6 +745,39 @@ export default function Layout({ children }) {
           })}
         </div>
       </nav>
+      </div>
+
+      <ReadOnlyOverlay
+        visible={Boolean(subscription?.isReadOnly)}
+        plans={plans}
+        selectedPlan={paywallPlan}
+        onSelectPlan={setPaywallPlan}
+        onUpgrade={() => setShowUpgradeModal(true)}
+      />
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        plans={plans}
+        subscription={subscription}
+        razorpayKeyId={razorpayKeyId}
+        onSuccess={handleUpgradeSuccess}
+        initialPlan={paywallPlan}
+        title={subscription?.isReadOnly ? 'Reactivate full access' : 'Upgrade to premium'}
+        subtitle={subscription?.isReadOnly
+          ? 'Your data is safe and visible. Upgrade now to unlock billing actions, GST exports, reports and customer credit workflows again.'
+          : 'Choose a plan that keeps your business records, exports and workflows fully active.'}
+      />
+
+      <TrialWarningModal
+        open={showTrialWarning}
+        daysLeft={subscription?.trialDaysLeft}
+        onClose={() => setShowTrialWarning(false)}
+        onUpgrade={() => {
+          setShowTrialWarning(false);
+          setShowUpgradeModal(true);
+        }}
+      />
 
       <style>{`
         .desktop-sidebar { display: flex; }

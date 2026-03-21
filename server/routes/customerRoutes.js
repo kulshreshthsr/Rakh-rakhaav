@@ -10,15 +10,15 @@ const {
   settlePayment,
 } = require('../controllers/customerController');
 const { protect } = require('../middleware/authMiddleware');
+const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 
 router.get('/', protect, getCustomers);
-router.post('/', protect, createCustomer);
-router.put('/:id', protect, updateCustomer);
-router.delete('/:id', protect, deleteCustomer);
+router.post('/', protect, checkSubscriptionStatus, createCustomer);
+router.put('/:id', protect, checkSubscriptionStatus, updateCustomer);
+router.delete('/:id', protect, checkSubscriptionStatus, deleteCustomer);
 router.get('/:id/udhaar', protect, getUdhaar);
-router.post('/:id/udhaar', protect, addUdhaar);
-router.post('/:id/settle', protect, settlePayment); // ← fixed: POST, partial payment
-// Old PUT /:id/settle kept as alias for backward compat
-router.put('/:id/settle', protect, settlePayment);
+router.post('/:id/udhaar', protect, checkSubscriptionStatus, addUdhaar);
+router.post('/:id/settle', protect, checkSubscriptionStatus, settlePayment);
+router.put('/:id/settle', protect, checkSubscriptionStatus, settlePayment);
 
 module.exports = router;

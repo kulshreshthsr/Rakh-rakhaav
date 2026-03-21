@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { getPurchases, createPurchase, deletePurchase, getITCSummary } = require('../controllers/purchaseController');
 const { protect } = require('../middleware/authMiddleware');
+const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 
 router.get('/', protect, getPurchases);
-router.post('/', protect, createPurchase);
-router.get('/itc-summary', protect, getITCSummary);   // ← NEW: for GST page
-router.delete('/:id', protect, deletePurchase);
+router.post('/', protect, checkSubscriptionStatus, createPurchase);
+router.get('/itc-summary', protect, getITCSummary);
+router.delete('/:id', protect, checkSubscriptionStatus, deletePurchase);
 
 module.exports = router;

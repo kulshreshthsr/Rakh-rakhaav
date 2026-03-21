@@ -1,8 +1,7 @@
-// server/routes/salesRoutes.js
 const express = require('express');
-const router  = express.Router();
-const { protect: auth } = require('../middleware/authMiddleware');
-
+const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
+const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 const {
   getSales,
   createSale,
@@ -11,13 +10,11 @@ const {
   getProfitSummary,
 } = require('../controllers/salesController');
 
-// ── Summary routes (must be before /:id routes) ──────────────────────────────
-router.get('/profit-summary', auth, getProfitSummary);
-router.get('/gst-summary',    auth, getGSTSummary);
+router.get('/profit-summary', protect, getProfitSummary);
+router.get('/gst-summary', protect, getGSTSummary);
 
-// ── CRUD ─────────────────────────────────────────────────────────────────────
-router.get('/',       auth, getSales);
-router.post('/',      auth, createSale);
-router.delete('/:id', auth, deleteSale);
+router.get('/', protect, getSales);
+router.post('/', protect, checkSubscriptionStatus, createSale);
+router.delete('/:id', protect, checkSubscriptionStatus, deleteSale);
 
 module.exports = router;
