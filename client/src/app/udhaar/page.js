@@ -193,7 +193,7 @@ export default function UdhaarPage() {
             <button
               onClick={() => sendReminder(selected)}
               style={{ padding: '8px 14px', background: '#25d366', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              ðŸ“² Reminder
+              WhatsApp Reminder
             </button>
           )}
           {selected.totalUdhaar > 0 && (
