@@ -30,13 +30,6 @@ function readStoredUser() {
   }
 }
 
-function shouldBlockForAuthRestore() {
-  if (typeof window === 'undefined') return true;
-  const token = localStorage.getItem('token');
-  if (!token) return true;
-  return !readStoredUser();
-}
-
 function Glyph({ name, size = 20, stroke = 1.8 }) {
   const emojiStyle = {
     width: size,
@@ -135,7 +128,6 @@ function pickLocalizedSegment(text, locale) {
 function LayoutInner({ children }) {
   const { locale, setLocale, t } = useAppLocale();
   const [user, setUser] = useState(() => readStoredUser());
-  const [authChecking, setAuthChecking] = useState(() => shouldBlockForAuthRestore());
   const [subscription, setSubscription] = useState(null);
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
@@ -153,7 +145,6 @@ function LayoutInner({ children }) {
   const refreshSubscriptionStatus = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
-      setAuthChecking(false);
       return false;
     }
 
@@ -164,12 +155,10 @@ function LayoutInner({ children }) {
       if (res.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        setAuthChecking(false);
         router.push('/login');
         return false;
       }
       if (!res.ok) {
-        setAuthChecking(false);
         return false;
       }
 
@@ -181,10 +170,8 @@ function LayoutInner({ children }) {
       setSubscription(data.subscription || null);
       setPlans(data.plans?.length ? data.plans : FALLBACK_PLANS);
       setRazorpayKeyId(data.razorpayKeyId || '');
-      setAuthChecking(false);
       return true;
     } catch {
-      setAuthChecking(false);
       return false;
     }
   };
@@ -193,7 +180,6 @@ function LayoutInner({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
-      setAuthChecking(false);
       router.push('/login');
       return;
     }
@@ -331,21 +317,6 @@ function LayoutInner({ children }) {
         suffix: subscription.trialDaysLeft === 1 ? '' : locale === 'en' ? 's' : '',
       })
     : '';
-
-  if (authChecking) {
-    return (
-      <div className="app-shell-root">
-        <div className="shell-auth-loading">
-          <div className="shell-auth-card">
-            <Logo size="md" />
-            <div className="shell-auth-title">{locale === 'hi' ? 'कृपया रुकिए...' : 'Please wait...'}</div>
-            <div className="shell-auth-copy">{locale === 'hi' ? 'आपका सत्र खोला जा रहा है' : 'Restoring your session'}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="app-shell-root">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
@@ -1155,41 +1126,6 @@ function LayoutInner({ children }) {
         }
 
         * { -webkit-tap-highlight-color: transparent; }
-
-        .shell-auth-loading {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 24px;
-          background:
-            radial-gradient(circle at top right, rgba(37,99,235,0.12), transparent 20%),
-            linear-gradient(180deg, #f8faff, #eef2ff);
-        }
-
-        .shell-auth-card {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 12px;
-          padding: 28px;
-          border-radius: 28px;
-          background: rgba(255,255,255,0.96);
-          border: 1px solid rgba(148,163,184,0.16);
-          box-shadow: 0 20px 44px rgba(15,23,42,0.08);
-          text-align: center;
-        }
-
-        .shell-auth-title {
-          font-size: 20px;
-          font-weight: 800;
-          color: #0f172a;
-        }
-
-        .shell-auth-copy {
-          font-size: 13px;
-          color: #64748b;
-        }
       `}</style>
     </div>
   );
@@ -1198,3 +1134,4 @@ function LayoutInner({ children }) {
 export default function Layout({ children }) {
   return <LayoutInner>{children}</LayoutInner>;
 }
+
