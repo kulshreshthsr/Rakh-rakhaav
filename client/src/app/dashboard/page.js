@@ -115,9 +115,9 @@ export default function DashboardPage() {
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} invoices this month`,
       color: '#10b981',
-      accent: 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.06))',
+      accent: 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.04))',
       href: '/sales',
-      icon: '📈',
+      icon: 'Sales',
     },
     {
       label: 'मुनाफ़ा / Profit',
@@ -128,7 +128,7 @@ export default function DashboardPage() {
         ? 'linear-gradient(135deg, rgba(37,99,235,0.16), rgba(59,130,246,0.06))'
         : 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))',
       href: '/reports',
-      icon: '📊',
+      icon: 'Profit',
     },
     {
       label: 'उधार / Credit',
@@ -139,7 +139,7 @@ export default function DashboardPage() {
         ? 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))'
         : 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.06))',
       href: '/udhaar',
-      icon: '📒',
+      icon: 'Credit',
     },
     {
       label: 'GST देय / Payable',
@@ -150,16 +150,16 @@ export default function DashboardPage() {
         ? 'linear-gradient(135deg, rgba(245,158,11,0.16), rgba(251,191,36,0.06))'
         : 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.06))',
       href: '/gst',
-      icon: '🧾',
+      icon: 'GST',
     },
   ];
 
   const quickActions = [
-    { href: '/sales', icon: '📈', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', bg: 'linear-gradient(135deg, #10b981, #059669)' },
-    { href: '/purchases', icon: '🛒', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', bg: 'linear-gradient(135deg, #f59e0b, #f97316)' },
-    { href: '/udhaar', icon: '📒', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', bg: 'linear-gradient(135deg, #ef4444, #dc2626)' },
-    { href: '/product', icon: '📦', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', bg: 'linear-gradient(135deg, #2563eb, #1d4ed8)' },
-    { href: '/gst', icon: '🧾', hi: 'GST', en: 'GST', sub: 'Tax summary', bg: 'linear-gradient(135deg, #7c3aed, #2563eb)' },
+    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#059669' },
+    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#d97706' },
+    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.1)', color: '#dc2626' },
+    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5' },
+    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(14,165,233,0.12)', color: '#2563eb' },
   ];
 
   return (
@@ -168,20 +168,24 @@ export default function DashboardPage() {
         <section className="hero-panel">
           <div className="dashboard-hero-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ maxWidth: 680, flex: 1, minWidth: 0 }}>
+              <div className="kicker" style={{ marginBottom: 12 }}>Business overview</div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>डैशबोर्ड / Dashboard</div>
+              <div style={{ marginTop: 10, color: 'rgba(226,232,240,0.72)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
+                Revenue, profit, credit and GST at one glance for the active month.
+              </div>
             </div>
 
-            <div className="dashboard-period-controls" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="dashboard-period-controls" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
                 className="form-input"
                 style={{
-                  minWidth: 104,
+                  minWidth: 0,
                   height: 44,
                   background: 'rgba(255,255,255,0.92)',
                   borderColor: 'rgba(255,255,255,0.28)',
-                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                  boxShadow: '0 12px 24px rgba(13,19,43,0.12)',
                 }}
               >
                 {MONTHS.map((month, index) => (
@@ -193,11 +197,11 @@ export default function DashboardPage() {
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="form-input"
                 style={{
-                  minWidth: 112,
+                  minWidth: 0,
                   height: 44,
                   background: 'rgba(255,255,255,0.92)',
                   borderColor: 'rgba(255,255,255,0.28)',
-                  boxShadow: '0 10px 24px rgba(8,21,40,0.12)',
+                  boxShadow: '0 12px 24px rgba(13,19,43,0.12)',
                 }}
               >
                 {[2023, 2024, 2025, 2026].map((year) => (
@@ -223,15 +227,20 @@ export default function DashboardPage() {
                 </div>
                 <div
                   style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 16,
-                    background: 'rgba(255,255,255,0.7)',
+                    minWidth: 56,
+                    height: 32,
+                    padding: '0 10px',
+                    borderRadius: 999,
+                    background: 'rgba(255,255,255,0.76)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 22,
-                    boxShadow: '0 12px 24px rgba(15,23,42,0.06)',
+                    fontSize: 10.5,
+                    fontWeight: 800,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: '#334155',
+                    boxShadow: '0 12px 24px rgba(15,23,42,0.05)',
                   }}
                 >
                   {card.icon}
@@ -337,10 +346,13 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <section className="card" style={{ paddingBottom: 18 }}>
-          <div style={{ marginBottom: 14 }}>
+          <section className="card" style={{ paddingBottom: 18 }}>
+          <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div>
             <div className="section-title">त्वरित कार्य / Quick Actions</div>
             <div className="section-subtitle">Fast access to your most-used screens</div>
+            </div>
+            <div className="badge badge-navy">5 shortcuts</div>
           </div>
           <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
             {quickActions.map((action) => (
@@ -351,18 +363,19 @@ export default function DashboardPage() {
                   textDecoration: 'none',
                   borderRadius: 18,
                   padding: '12px 12px',
-                  background: action.bg,
-                  color: '#fff',
-                  boxShadow: '0 14px 28px rgba(15,23,42,0.1)',
-                  minHeight: 88,
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,248,255,0.94))',
+                  color: '#0f172a',
+                  boxShadow: '0 14px 28px rgba(15,23,42,0.06)',
+                  minHeight: 86,
+                  border: '1px solid rgba(255,255,255,0.78)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3 }}>{action.hi} / {action.en}</div>
-                    <div style={{ fontSize: 11, opacity: 0.82, marginTop: 4, lineHeight: 1.45 }}>{action.sub}</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, lineHeight: 1.45 }}>{action.sub}</div>
                   </div>
-                  <div style={{ fontSize: 20, flexShrink: 0 }}>{action.icon}</div>
+                  <div style={{ minWidth: 34, height: 34, borderRadius: 12, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0 }}>{action.icon}</div>
                 </div>
               </a>
             ))}
@@ -371,7 +384,7 @@ export default function DashboardPage() {
 
         <section className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="section-title">🏆 टॉप उत्पाद / Top Products</div>
+              <div className="section-title">टॉप उत्पाद / Top Products</div>
               <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
             </div>
             {topProducts.length === 0 ? (
@@ -397,15 +410,15 @@ export default function DashboardPage() {
                   >
                     <div
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 12,
+                        width: 38,
+                        height: 38,
+                        borderRadius: 14,
                         background: [
                           'linear-gradient(135deg, #10b981, #34d399)',
-                          'linear-gradient(135deg, #2563eb, #38bdf8)',
+                          'linear-gradient(135deg, #4f46e5, #818cf8)',
                           'linear-gradient(135deg, #f59e0b, #fbbf24)',
                           'linear-gradient(135deg, #ef4444, #fb7185)',
-                          'linear-gradient(135deg, #7c3aed, #60a5fa)',
+                          'linear-gradient(135deg, #2563eb, #38bdf8)',
                         ][index],
                         color: '#fff',
                         display: 'flex',
@@ -451,9 +464,9 @@ export default function DashboardPage() {
           }
 
           .dashboard-hero-header {
-            display: grid !important;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            align-items: start !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
             gap: 12px !important;
           }
 

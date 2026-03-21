@@ -27,9 +27,9 @@ function Logo({ size = 'md' }) {
           borderRadius: radius,
           overflow: 'hidden',
           flexShrink: 0,
-          background: 'linear-gradient(135deg, rgba(16,37,68,0.95), rgba(16,185,129,0.2))',
-          border: '1px solid rgba(110,231,183,0.2)',
-          boxShadow: '0 10px 28px rgba(5,150,105,0.18)',
+          background: 'linear-gradient(135deg, rgba(67,56,202,0.92), rgba(16,185,129,0.18))',
+          border: '1px solid rgba(165,180,252,0.22)',
+          boxShadow: '0 12px 28px rgba(79,70,229,0.18)',
         }}
       >
         <img
@@ -51,12 +51,12 @@ function Logo({ size = 'md' }) {
         height: dim,
         borderRadius: radius,
         flexShrink: 0,
-        background: 'linear-gradient(135deg, #0b1d35, #10b981)',
+        background: 'linear-gradient(135deg, #4338ca, #0ea5e9)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: '1px solid rgba(110,231,183,0.24)',
-        boxShadow: '0 14px 30px rgba(5,150,105,0.18)',
+        border: '1px solid rgba(165,180,252,0.24)',
+        boxShadow: '0 14px 30px rgba(79,70,229,0.18)',
       }}
     >
       <span style={{ fontSize, fontWeight: 800, color: '#f8fafc', fontFamily: 'serif' }}>र</span>
@@ -144,8 +144,8 @@ export default function Layout({ children }) {
       <aside
         className="desktop-sidebar"
         style={{
-          width: 274,
-          padding: '18px 14px 16px',
+          width: 268,
+          padding: '16px 12px 14px',
           position: 'fixed',
           left: 0,
           top: 0,
@@ -158,12 +158,12 @@ export default function Layout({ children }) {
         <div
           style={{
             height: '100%',
-            borderRadius: 30,
+            borderRadius: 28,
             background:
-              'linear-gradient(180deg, rgba(8,21,40,0.98), rgba(14,33,58,0.96) 48%, rgba(8,21,40,0.98))',
-            border: '1px solid rgba(110,231,183,0.08)',
-            boxShadow: '0 28px 80px rgba(8,21,40,0.3)',
-            padding: 16,
+              'linear-gradient(180deg, rgba(11,16,35,0.98), rgba(20,28,62,0.97) 48%, rgba(11,16,35,0.99))',
+            border: '1px solid rgba(165,180,252,0.08)',
+            boxShadow: '0 28px 80px rgba(13,19,43,0.28)',
+            padding: 14,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -178,12 +178,12 @@ export default function Layout({ children }) {
               width: 170,
               height: 170,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(16,185,129,0.26), transparent 65%)',
+              background: 'radial-gradient(circle, rgba(99,102,241,0.22), transparent 65%)',
               pointerEvents: 'none',
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px 14px' }}>
             <Logo size="md" />
             <div>
               <div
@@ -195,7 +195,7 @@ export default function Layout({ children }) {
                   fontFamily: 'serif',
                 }}
               >
-                रख<span style={{ color: '#6ee7b7' }}>रखाव</span>
+                रख<span style={{ color: '#a5b4fc' }}>रखाव</span>
               </div>
               <div
                 style={{
@@ -207,26 +207,33 @@ export default function Layout({ children }) {
                   marginTop: 2,
                 }}
               >
-                Smart Business Control
+                Business Manager
               </div>
             </div>
           </div>
 
           <div
             style={{
-              padding: '14px',
-              borderRadius: 22,
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
-              border: '1px solid rgba(255,255,255,0.08)',
+              padding: '10px 12px',
+              borderRadius: 18,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))',
+              border: '1px solid rgba(255,255,255,0.06)',
               marginBottom: 14,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
             }}
           >
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 6, fontWeight: 600 }}>
-              Bilingual business workspace
+            <div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.42)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+                Workspace
+              </div>
+              <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.82)', fontWeight: 700, marginTop: 2 }}>
+                Inventory, billing and GST
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55 }}>
-              Stock, billing, GST and udhaar in one premium dashboard.
-            </div>
+            <div className="badge" style={{ background: 'rgba(99,102,241,0.16)', color: '#c7d2fe', border: '1px solid rgba(165,180,252,0.16)' }}>Live</div>
           </div>
 
           <div ref={dropdownRef} style={{ position: 'relative', marginBottom: 10 }}>
@@ -235,12 +242,12 @@ export default function Layout({ children }) {
               onClick={() => setDropdownOpen((value) => !value)}
               style={{
                 width: '100%',
-                border: '1px solid rgba(110,231,183,0.1)',
+                border: '1px solid rgba(165,180,252,0.1)',
                 background: dropdownOpen
-                  ? 'linear-gradient(180deg, rgba(16,185,129,0.18), rgba(16,185,129,0.08))'
+                  ? 'linear-gradient(180deg, rgba(99,102,241,0.18), rgba(99,102,241,0.08))'
                   : 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
-                borderRadius: 20,
-                padding: '12px',
+                borderRadius: 18,
+                padding: '11px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
@@ -254,14 +261,14 @@ export default function Layout({ children }) {
                   width: 42,
                   height: 42,
                   borderRadius: 14,
-                  background: 'linear-gradient(135deg, #10b981, #1d4ed8)',
+                  background: 'linear-gradient(135deg, #4338ca, #0ea5e9)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 15,
                   fontWeight: 800,
                   flexShrink: 0,
-                  boxShadow: '0 12px 26px rgba(16,185,129,0.22)',
+                  boxShadow: '0 12px 26px rgba(79,70,229,0.2)',
                 }}
               >
                 {initial}
@@ -292,7 +299,7 @@ export default function Layout({ children }) {
               </div>
               <span
                 style={{
-                  color: 'rgba(110,231,183,0.72)',
+                  color: 'rgba(165,180,252,0.78)',
                   transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                   transition: 'transform 0.18s ease',
                 }}
@@ -310,8 +317,8 @@ export default function Layout({ children }) {
                   right: 0,
                   borderRadius: 18,
                   overflow: 'hidden',
-                  border: '1px solid rgba(110,231,183,0.16)',
-                  background: 'linear-gradient(180deg, rgba(10,28,50,0.98), rgba(8,21,40,0.98))',
+                  border: '1px solid rgba(165,180,252,0.14)',
+                  background: 'linear-gradient(180deg, rgba(16,23,53,0.98), rgba(11,16,35,0.98))',
                   boxShadow: '0 24px 48px rgba(0,0,0,0.35)',
                   zIndex: 20,
                 }}
@@ -365,7 +372,7 @@ export default function Layout({ children }) {
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: 'rgba(226,232,240,0.34)',
+              color: 'rgba(226,232,240,0.3)',
               textTransform: 'uppercase',
               letterSpacing: '0.16em',
               padding: '10px 8px 8px',
@@ -386,9 +393,9 @@ export default function Layout({ children }) {
                     marginBottom: 6,
                     color: active ? '#f8fafc' : 'rgba(226,232,240,0.62)',
                     background: active
-                      ? 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(37,99,235,0.14))'
+                      ? 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(14,165,233,0.12))'
                       : 'transparent',
-                    border: `1px solid ${active ? 'rgba(110,231,183,0.12)' : 'transparent'}`,
+                    border: `1px solid ${active ? 'rgba(165,180,252,0.12)' : 'transparent'}`,
                     boxShadow: active ? '0 20px 34px rgba(8,21,40,0.24)' : 'none',
                   }}
                 >
@@ -401,7 +408,7 @@ export default function Layout({ children }) {
                         bottom: 10,
                         width: 4,
                         borderRadius: '0 999px 999px 0',
-                        background: 'linear-gradient(180deg, #6ee7b7, #38bdf8)',
+                        background: 'linear-gradient(180deg, #818cf8, #38bdf8)',
                       }}
                     />
                   )}
@@ -409,7 +416,7 @@ export default function Layout({ children }) {
                     style={{
                       width: 38,
                       height: 38,
-                      borderRadius: 12,
+                      borderRadius: 14,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -432,8 +439,8 @@ export default function Layout({ children }) {
                         width: 9,
                         height: 9,
                         borderRadius: '50%',
-                        background: '#6ee7b7',
-                        boxShadow: '0 0 12px rgba(110,231,183,0.9)',
+                        background: '#a5b4fc',
+                        boxShadow: '0 0 12px rgba(165,180,252,0.8)',
                         flexShrink: 0,
                       }}
                     />
@@ -451,7 +458,7 @@ export default function Layout({ children }) {
               width: '100%',
               borderRadius: 18,
               border: '1px solid rgba(248,113,113,0.14)',
-              background: 'linear-gradient(180deg, rgba(127,29,29,0.24), rgba(127,29,29,0.14))',
+              background: 'linear-gradient(180deg, rgba(127,29,29,0.2), rgba(127,29,29,0.12))',
               color: '#fecaca',
               padding: '12px 14px',
               fontSize: 13,
@@ -479,15 +486,15 @@ export default function Layout({ children }) {
           padding: '14px 14px 12px',
           background: scrolled ? 'rgba(8,21,40,0.92)' : 'rgba(8,21,40,0.84)',
           backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(110,231,183,0.12)',
-          boxShadow: '0 12px 32px rgba(8,21,40,0.18)',
+          borderBottom: '1px solid rgba(165,180,252,0.1)',
+          boxShadow: '0 12px 32px rgba(13,19,43,0.18)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Logo size="sm" />
           <div>
             <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', fontFamily: 'serif' }}>
-              रख<span style={{ color: '#6ee7b7' }}>रखाव</span>
+              रख<span style={{ color: '#a5b4fc' }}>रखाव</span>
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>Business Manager</div>
           </div>
@@ -498,7 +505,7 @@ export default function Layout({ children }) {
             type="button"
             onClick={() => setMobileDropOpen((value) => !value)}
             style={{
-              border: '1px solid rgba(110,231,183,0.12)',
+              border: '1px solid rgba(165,180,252,0.12)',
               background: 'rgba(255,255,255,0.06)',
               borderRadius: 999,
               padding: '6px 8px 6px 6px',
@@ -514,7 +521,7 @@ export default function Layout({ children }) {
                 width: 30,
                 height: 30,
                 borderRadius: 10,
-                background: 'linear-gradient(135deg, #10b981, #1d4ed8)',
+                background: 'linear-gradient(135deg, #4338ca, #0ea5e9)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -530,7 +537,7 @@ export default function Layout({ children }) {
                 fontSize: 10,
                 transform: mobileDropOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                 transition: 'transform 0.18s ease',
-                color: '#6ee7b7',
+                color: '#a5b4fc',
               }}
             >
               ▼
@@ -546,15 +553,15 @@ export default function Layout({ children }) {
                 width: 220,
                 borderRadius: 18,
                 overflow: 'hidden',
-                border: '1px solid rgba(110,231,183,0.16)',
-                background: 'linear-gradient(180deg, rgba(10,28,50,0.98), rgba(8,21,40,0.98))',
+                border: '1px solid rgba(165,180,252,0.16)',
+                background: 'linear-gradient(180deg, rgba(16,23,53,0.98), rgba(11,16,35,0.98))',
                 boxShadow: '0 24px 50px rgba(0,0,0,0.34)',
               }}
             >
               <div
                 style={{
                   padding: '14px',
-                  background: 'rgba(16,185,129,0.1)',
+                  background: 'rgba(99,102,241,0.1)',
                   borderBottom: '1px solid rgba(255,255,255,0.06)',
                 }}
               >
@@ -604,8 +611,8 @@ export default function Layout({ children }) {
       <main
         className="main-content"
         style={{
-          marginLeft: 274,
-          padding: '28px 26px 92px',
+          marginLeft: 268,
+          padding: '28px 24px 92px',
           minHeight: '100vh',
         }}
       >
@@ -633,9 +640,9 @@ export default function Layout({ children }) {
         <div
           style={{
             borderRadius: 24,
-            background: 'rgba(8,21,40,0.94)',
-            border: '1px solid rgba(110,231,183,0.12)',
-            boxShadow: '0 24px 60px rgba(8,21,40,0.28)',
+            background: 'rgba(11,16,35,0.94)',
+            border: '1px solid rgba(165,180,252,0.12)',
+            boxShadow: '0 24px 60px rgba(13,19,43,0.28)',
             padding: '7px 6px calc(7px + env(safe-area-inset-bottom))',
             display: 'flex',
           }}
@@ -657,7 +664,7 @@ export default function Layout({ children }) {
                   borderRadius: 18,
                   position: 'relative',
                   color: active ? '#fff' : 'rgba(226,232,240,0.46)',
-                  background: active ? 'linear-gradient(180deg, rgba(16,185,129,0.18), rgba(59,130,246,0.12))' : 'transparent',
+                  background: active ? 'linear-gradient(180deg, rgba(99,102,241,0.18), rgba(14,165,233,0.12))' : 'transparent',
                 }}
               >
                 <span style={{ fontSize: 18, transform: active ? 'translateY(-1px)' : 'none' }}>{item.icon}</span>
