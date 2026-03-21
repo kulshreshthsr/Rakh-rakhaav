@@ -51,6 +51,9 @@ const saleSchema = new mongoose.Schema({
     enum: ['cash', 'credit', 'upi', 'bank'],     // ← added upi/bank
     default: 'cash'
   },
+  amount_paid: { type: Number, default: 0 },
+  balance_due: { type: Number, default: 0 },
+  payment_status: { type: String, enum: ['paid', 'partial', 'unpaid'], default: 'paid' },
 
   // ── Buyer / Customer ──────────────────────────────────────────
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', default: null },
@@ -64,5 +67,18 @@ const saleSchema = new mongoose.Schema({
   notes: { type: String },
 
 }, { timestamps: true });
+
+saleSchema.pre('save', async function () {
+  if (this.amount_paid >= this.total_amount) {
+    this.payment_status = 'paid';
+    this.balance_due = 0;
+  } else if (this.amount_paid > 0) {
+    this.payment_status = 'partial';
+    this.balance_due = parseFloat((this.total_amount - this.amount_paid).toFixed(2));
+  } else {
+    this.payment_status = 'unpaid';
+    this.balance_due = this.total_amount;
+  }
+});
 
 module.exports = mongoose.model('Sale', saleSchema);

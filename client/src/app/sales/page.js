@@ -93,6 +93,7 @@ export default function SalesPage() {
   const [items, setItems]           = useState([emptyItem()]);
   const [form, setForm]             = useState({
     payment_type: 'cash',
+    amount_paid: '',
     buyer_name: '', buyer_phone: '', buyer_gstin: '',
     buyer_address: '', buyer_state: '', notes: '',
   });
@@ -162,6 +163,8 @@ export default function SalesPage() {
     if (!g) return acc;
     return { taxable: acc.taxable + g.taxable, gst: acc.gst + g.gst, total: acc.total + g.total };
   }, { taxable: 0, gst: 0, total: 0 });
+  const amountPaidNum = parseFloat(form.amount_paid) || 0;
+  const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError('');
@@ -181,7 +184,11 @@ export default function SalesPage() {
       const res = await fetch(`${API}/api/sales`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ items: validItems, ...form }),
+        body: JSON.stringify({
+          items: validItems,
+          ...form,
+          amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
+        }),
       });
       const data = await res.json();
       if (res.ok) { setShowModal(false); resetForm(); fetchAll(); }
@@ -192,7 +199,7 @@ export default function SalesPage() {
 
   const resetForm = () => {
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
+    setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
     setError('');
   };
 
@@ -467,6 +474,11 @@ export default function SalesPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 4, marginTop: 2 }}>
                       <span>Total:</span><span>₹{fmt(billTotals.total)}</span>
                     </div>
+                    {form.payment_type === 'credit' && amountPaidNum > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
+                        <span>Balance Due:</span><span>₹{fmt(balanceDue)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -495,8 +507,15 @@ export default function SalesPage() {
                   ))}
                 </div>
                 {form.payment_type === 'credit' && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 8, fontSize: 12, color: '#991b1b' }}>
-                    ⚠️ उधार बही में entry अपने आप होगी
+                  <div style={{ marginTop: 10 }}>
+                    <label className="form-label">Advance Payment (optional)</label>
+                    <input className="form-input" type="number" step="0.01" min="0"
+                      placeholder={`Max ₹${fmt(billTotals.total)}`}
+                      value={form.amount_paid}
+                      onChange={e => setForm({ ...form, amount_paid: e.target.value })} />
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
+                      ⚠️ बाकी ₹{fmt(balanceDue)} customer ledger में automatically जाएगा
+                    </div>
                   </div>
                 )}
               </div>

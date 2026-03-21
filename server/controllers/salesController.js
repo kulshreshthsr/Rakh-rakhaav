@@ -92,6 +92,7 @@ const createSale = async (req, res) => {
       buyer_name, buyer_phone, buyer_gstin,
       buyer_address, buyer_state,
       payment_type = 'cash',
+      amount_paid = 0,
       notes,
     } = req.body;
 
@@ -155,6 +156,7 @@ const createSale = async (req, res) => {
     totalGST     = parseFloat(totalGST.toFixed(2));
     grandTotal   = parseFloat(grandTotal.toFixed(2));
     totalCost    = parseFloat(totalCost.toFixed(2));
+    const paid = parseFloat(Number(amount_paid).toFixed(2));
 
     const grossProfit = parseFloat((totalTaxable - totalCost).toFixed(2));
     const firstItem   = resolvedItems[0];
@@ -185,6 +187,7 @@ const createSale = async (req, res) => {
       gross_profit:   grossProfit,
 
       payment_type,
+      amount_paid: payment_type === 'credit' ? paid : grandTotal,
       buyer_name:    buyer_name || (invoice_type === 'B2C' ? 'Walk-in Customer' : ''),
       buyer_phone,
       buyer_gstin,
@@ -211,6 +214,7 @@ const createSale = async (req, res) => {
       }
 
       customer.totalSales  = parseFloat((customer.totalSales + grandTotal).toFixed(2));
+      customer.totalPaid   = parseFloat((customer.totalPaid + paid).toFixed(2));
       customer.totalUdhaar = parseFloat((customer.totalSales - customer.totalPaid).toFixed(2));
       await customer.save();
       await Sale.findByIdAndUpdate(sale._id, { customer: customer._id });
@@ -226,6 +230,20 @@ const createSale = async (req, res) => {
         reference_id:    invoice_number,
         reference_type:  'sale',
       });
+
+      if (paid > 0) {
+        await Udhaar.create({
+          shop:            shop._id,
+          customer:        customer._id,
+          type:            'credit',
+          amount:          paid,
+          running_balance: customer.totalUdhaar,
+          note:            `Advance payment at time of sale (${invoice_number})`,
+          date:            new Date(),
+          reference_id:    invoice_number,
+          reference_type:  'sale',
+        });
+      }
     }
 
     res.status(201).json(sale);
@@ -263,6 +281,7 @@ const deleteSale = async (req, res) => {
 
       if (customer) {
         customer.totalSales  = Math.max(0, customer.totalSales - sale.total_amount);
+        customer.totalPaid   = Math.max(0, customer.totalPaid - (sale.amount_paid || 0));
         customer.totalUdhaar = parseFloat((customer.totalSales - customer.totalPaid).toFixed(2));
         await customer.save();
         await Udhaar.deleteMany({ reference_id: sale.invoice_number, reference_type: 'sale' });
