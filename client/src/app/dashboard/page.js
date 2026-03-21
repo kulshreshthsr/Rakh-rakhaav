@@ -160,6 +160,7 @@ export default function DashboardPage() {
     { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.1)', color: '#dc2626' },
     { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5' },
     { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(14,165,233,0.12)', color: '#2563eb' },
+    { href: '/pricing', icon: 'UP', hi: 'प्लान', en: 'Pricing', sub: 'Upgrade plans', tone: 'rgba(168,85,247,0.12)', color: '#7c3aed' },
   ];
 
   return (
@@ -352,9 +353,9 @@ export default function DashboardPage() {
             <div className="section-title">त्वरित कार्य / Quick Actions</div>
             <div className="section-subtitle">Fast access to your most-used screens</div>
             </div>
-            <div className="badge badge-navy">5 shortcuts</div>
+            <div className="badge badge-navy">{quickActions.length} shortcuts</div>
           </div>
-          <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 10 }}>
+          <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
             {quickActions.map((action) => (
               <a
                 key={action.href}

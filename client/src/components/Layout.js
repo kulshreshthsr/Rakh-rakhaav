@@ -296,6 +296,49 @@ export default function Layout({ children }) {
             <div className="badge" style={{ background: 'rgba(99,102,241,0.16)', color: '#c7d2fe', border: '1px solid rgba(165,180,252,0.16)' }}>Live</div>
           </div>
 
+          <a
+            href="/pricing"
+            style={{
+              textDecoration: 'none',
+              marginBottom: 14,
+              padding: '12px 14px',
+              borderRadius: 18,
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.14))',
+              border: '1px solid rgba(165,180,252,0.14)',
+              boxShadow: '0 16px 32px rgba(8,21,40,0.18)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 10, color: 'rgba(224,231,255,0.72)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+                Plans
+              </div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, marginTop: 3 }}>
+                Pricing / Upgrade
+              </div>
+            </div>
+            <div
+              style={{
+                minWidth: 34,
+                height: 34,
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.14)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+              }}
+            >
+              UP
+            </div>
+          </a>
+
           <div ref={dropdownRef} style={{ position: 'relative', marginBottom: 10 }}>
             <button
               type="button"
@@ -560,6 +603,25 @@ export default function Layout({ children }) {
           </div>
         </div>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <a
+          href="/pricing"
+          style={{
+            textDecoration: 'none',
+            padding: '8px 10px',
+            borderRadius: 999,
+            background: 'rgba(99,102,241,0.18)',
+            border: '1px solid rgba(165,180,252,0.14)',
+            color: '#eef2ff',
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Pricing
+        </a>
+
         <div ref={mobileDropRef} style={{ position: 'relative' }}>
           <button
             type="button"
@@ -666,6 +728,7 @@ export default function Layout({ children }) {
             </div>
           )}
         </div>
+        </div>
       </div>
 
       <main
@@ -691,6 +754,9 @@ export default function Layout({ children }) {
               <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
                 Upgrade
               </button>
+              <a href="/pricing" className="btn-ghost" style={{ width: 'auto', textDecoration: 'none' }}>
+                View pricing
+              </a>
             </div>
           )}
           {children}
