@@ -3,14 +3,14 @@ import { AppLocaleProvider } from "../components/AppLocale";
 import PWAInstall from "../components/PWAInstall";
 
 export const metadata = {
-  title: "Rakhaav — Smart Inventory & GST Billing",
+  title: "Rakh-Rakhaav - Smart Inventory & GST Billing",
   description: "Complete inventory management, GST billing, and business accounting for Indian shopkeepers.",
   keywords: "inventory management, GST billing, udhaar, vyapar, shop management",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Rakhaav",
+    title: "Rakh-Rakhaav",
   },
   icons: {
     icon: [

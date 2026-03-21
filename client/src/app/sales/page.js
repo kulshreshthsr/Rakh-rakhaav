@@ -68,7 +68,7 @@ const buildWhatsAppMessage = (sale, shopName) => {
   return [
     `${greeting}🧾 *Invoice / Bill Details*`,
     `━━━━━━━━━━━━━━━━━━━━`,
-    `🏪 Shop: *${shopName || 'Rakhaav'}*`,
+    `🏪 Shop: *${shopName || 'Rakh-Rakhaav'}*`,
     `📄 Invoice No: *${sale.invoice_number}*`,
     `📅 Date: ${saleDate}`,
     `━━━━━━━━━━━━━━━━━━━━`,
@@ -82,9 +82,9 @@ const buildWhatsAppMessage = (sale, shopName) => {
     `💳 Payment: ${payLabel}`,
     `━━━━━━━━━━━━━━━━━━━━`,
     `🙏 Aapka business hamare liye bahut important hai!`,
-    `Thank you for choosing *${shopName || 'Rakhaav'}* 😊`,
+    `Thank you for choosing *${shopName || 'Rakh-Rakhaav'}* 😊`,
     ``,
-    `_Powered by Rakhaav Business Manager_`,
+    `_Powered by Rakh-Rakhaav Business Manager_`,
   ].join('\n');
 };
 
@@ -111,7 +111,7 @@ const buildWhatsAppShareMessage = (sale, shopName) => {
     sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' ? `Namaste ${sale.buyer_name} ji,` : 'Namaste,',
     '',
     `Invoice / Bill Details`,
-    `Shop: ${shopName || 'Rakhaav'}`,
+    `Shop: ${shopName || 'Rakh-Rakhaav'}`,
     `Invoice No: ${sale.invoice_number}`,
     `Date: ${saleDate}`,
     `Items:`,
@@ -127,7 +127,7 @@ const buildWhatsAppShareMessage = (sale, shopName) => {
         ]
       : []),
     '',
-    `Thank you for choosing ${shopName || 'Rakhaav'}`,
+    `Thank you for choosing ${shopName || 'Rakh-Rakhaav'}`,
   ].join('\n');
 };
 
@@ -820,7 +820,7 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '<div style="font-size:10px;color:#9ca3af;margin-top:6px">Computer generated invoice<br/>No signature required.</div>'
     + '</div></div>'
     + termsHTML
-    + '<div style="text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;font-style:italic">~ Rakhaav Business Manager ~</div>'
+    + '<div style="text-align:center;font-size:10px;color:#9ca3af;margin-top:8px;font-style:italic">~ Rakh-Rakhaav Business Manager ~</div>'
     + '</div>'
     + (autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : '')
     + '</body></html>';

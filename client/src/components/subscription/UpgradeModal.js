@@ -77,7 +77,7 @@ export default function UpgradeModal({
         key: orderData.keyId || razorpayKeyId,
         amount: orderData.order.amount,
         currency: orderData.order.currency,
-        name: 'Rakhaav',
+        name: 'Rakh-Rakhaav',
         description: `${selected.label} premium subscription`,
         order_id: orderData.order.id,
         theme: { color: '#4f46e5' },

@@ -80,7 +80,7 @@ function Logo({ size = 'md' }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.png"
-          alt="Rakhaav logo"
+          alt="Rakh-Rakhaav logo"
           width={dim}
           height={dim}
           style={{ width: '100%', height: '100%', objectFit: 'contain' }}
@@ -120,6 +120,7 @@ function LayoutInner({ children }) {
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
+  const [authChecking, setAuthChecking] = useState(true);
   const [subscription, setSubscription] = useState(null);
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
@@ -136,7 +137,10 @@ function LayoutInner({ children }) {
 
   const refreshSubscriptionStatus = async () => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      setAuthChecking(false);
+      return false;
+    }
 
     try {
       const res = await fetch(`${API}/api/auth/subscription-status`, {
@@ -145,10 +149,14 @@ function LayoutInner({ children }) {
       if (res.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        setAuthChecking(false);
         router.push('/login');
-        return;
+        return false;
       }
-      if (!res.ok) return;
+      if (!res.ok) {
+        setAuthChecking(false);
+        return false;
+      }
 
       const data = await res.json();
       if (data.user) {
@@ -158,21 +166,28 @@ function LayoutInner({ children }) {
       setSubscription(data.subscription || null);
       setPlans(data.plans?.length ? data.plans : FALLBACK_PLANS);
       setRazorpayKeyId(data.razorpayKeyId || '');
-    } catch {}
+      setAuthChecking(false);
+      return true;
+    } catch {
+      setAuthChecking(false);
+      return false;
+    }
   };
 
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!user || !token) {
+    if (!token) {
+      setAuthChecking(false);
       router.push('/login');
       return;
     }
+
     const timeoutId = window.setTimeout(() => {
       refreshSubscriptionStatus();
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [router, user]);
+  }, [router]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
@@ -301,6 +316,20 @@ function LayoutInner({ children }) {
         suffix: subscription.trialDaysLeft === 1 ? '' : locale === 'en' ? 's' : '',
       })
     : '';
+
+  if (authChecking) {
+    return (
+      <div className="app-shell-root">
+        <div className="shell-auth-loading">
+          <div className="shell-auth-card">
+            <Logo size="md" />
+            <div className="shell-auth-title">{locale === 'hi' ? 'कृपया रुकिए...' : 'Please wait...'}</div>
+            <div className="shell-auth-copy">{locale === 'hi' ? 'आपका सत्र खोला जा रहा है' : 'Restoring your session'}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell-root">
@@ -1111,6 +1140,41 @@ function LayoutInner({ children }) {
         }
 
         * { -webkit-tap-highlight-color: transparent; }
+
+        .shell-auth-loading {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background:
+            radial-gradient(circle at top right, rgba(37,99,235,0.12), transparent 20%),
+            linear-gradient(180deg, #f8faff, #eef2ff);
+        }
+
+        .shell-auth-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          padding: 28px;
+          border-radius: 28px;
+          background: rgba(255,255,255,0.96);
+          border: 1px solid rgba(148,163,184,0.16);
+          box-shadow: 0 20px 44px rgba(15,23,42,0.08);
+          text-align: center;
+        }
+
+        .shell-auth-title {
+          font-size: 20px;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .shell-auth-copy {
+          font-size: 13px;
+          color: #64748b;
+        }
       `}</style>
     </div>
   );
