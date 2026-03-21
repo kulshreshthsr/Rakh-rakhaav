@@ -1,4 +1,4 @@
-const DAY_MS = 24 * 60 * 60 * 1000;
+const { DAY_MS, calculateDaysRemaining } = require('../utils/subscriptionUtils');
 const TRIAL_DAYS = 5;
 
 const PLANS = {
@@ -55,6 +55,32 @@ function ensureTrialDates(user) {
   if (!user.paymentStatus) {
     user.paymentStatus = 'trial';
   }
+  if (!user.subscriptionType) {
+    user.subscriptionType = user.subscriptionPlan ? mapPlanToSubscriptionType(user.subscriptionPlan) : 'trial';
+  }
+}
+
+function mapPlanToSubscriptionType(plan) {
+  if (plan === 'six_month') return '6months';
+  if (plan === 'monthly' || plan === 'yearly') return plan;
+  return 'trial';
+}
+
+function getAdminSubscriptionStatus(user) {
+  ensureTrialDates(user);
+  const now = new Date();
+  const trialEnd = new Date(user.trialEndDate);
+  const subscriptionEnd = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+
+  if (subscriptionEnd && subscriptionEnd > now && Boolean(user.isPro)) {
+    return 'active';
+  }
+
+  if (trialEnd > now) {
+    return 'trial';
+  }
+
+  return 'expired';
 }
 
 function syncSubscriptionState(user) {
@@ -69,9 +95,9 @@ function syncSubscriptionState(user) {
 
   if (user.subscriptionEndDate && new Date(user.subscriptionEndDate) <= now && user.isPro) {
     user.isPro = false;
-    user.subscriptionPlan = null;
-    user.subscriptionStartDate = null;
-    user.subscriptionEndDate = null;
+    if (!user.subscriptionType) {
+      user.subscriptionType = user.subscriptionPlan ? mapPlanToSubscriptionType(user.subscriptionPlan) : 'trial';
+    }
     user.paymentStatus = 'expired';
     dirty = true;
   } else if (hasActiveSubscription && !user.isPro) {
@@ -89,7 +115,7 @@ function getSubscriptionSnapshot(user) {
   const trialEnd = new Date(user.trialEndDate);
   const subscriptionEnd = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isTrialActive = now < trialEnd;
-  const trialDaysLeft = isTrialActive ? Math.max(0, Math.ceil((trialEnd - now) / DAY_MS)) : 0;
+  const trialDaysLeft = isTrialActive ? calculateDaysRemaining(trialEnd) : 0;
   const isSubscriptionActive =
     Boolean(subscriptionEnd) &&
     subscriptionEnd > now &&
@@ -99,6 +125,7 @@ function getSubscriptionSnapshot(user) {
 
   return {
     isPro: Boolean(user.isPro && isSubscriptionActive),
+    subscriptionType: user.subscriptionType || (isTrialActive ? 'trial' : mapPlanToSubscriptionType(user.subscriptionPlan)),
     trialStartDate: user.trialStartDate,
     trialEndDate: user.trialEndDate,
     subscriptionPlan: user.subscriptionPlan || null,
@@ -124,6 +151,7 @@ function activatePlan(user, planId) {
   const start = new Date();
   user.isPro = true;
   user.subscriptionPlan = plan.id;
+  user.subscriptionType = mapPlanToSubscriptionType(plan.id);
   user.subscriptionStartDate = start;
   user.subscriptionEndDate = addMonths(start, plan.months);
   user.paymentStatus = 'paid';
@@ -151,6 +179,8 @@ module.exports = {
   ensureTrialDates,
   syncSubscriptionState,
   getSubscriptionSnapshot,
+  getAdminSubscriptionStatus,
+  mapPlanToSubscriptionType,
   activatePlan,
   serializePlans,
 };

@@ -5,6 +5,11 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
   isPro: { type: Boolean, default: false },
+  subscriptionType: {
+    type: String,
+    enum: ['trial', 'monthly', '6months', 'yearly', null],
+    default: 'trial',
+  },
   trialStartDate: { type: Date, default: null },
   trialEndDate: { type: Date, default: null },
   subscriptionPlan: { type: String, enum: ['monthly', 'six_month', 'yearly', null], default: null },
