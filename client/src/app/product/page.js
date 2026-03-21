@@ -2,12 +2,23 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
+import { useAppLocale } from '../../components/AppLocale';
 
 const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
+const HSN_GST_HINTS = {
+  84: 18,
+  85: 18,
+  30: 12,
+  61: 5,
+  62: 5,
+  64: 12,
+  90: 18,
+};
 
 export default function ProductsPage() {
   const router = useRouter();
+  const { locale } = useAppLocale();
   const [products, setProducts]   = useState([]);
   const [filtered, setFiltered]   = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -26,6 +37,7 @@ export default function ProductsPage() {
     quantity: '', unit: 'pcs', hsn_code: '', gst_rate: 0,
     low_stock_threshold: 5,
   });
+  const [productStep, setProductStep] = useState(0);
 
   // Stock adjust modal
   const [showStockModal, setShowStockModal]   = useState(false);
@@ -39,10 +51,12 @@ export default function ProductsPage() {
   const [historyData, setHistoryData]   = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     fetchProducts();
   }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
     let result = [...products];
@@ -78,6 +92,7 @@ export default function ProductsPage() {
     setEditProduct(null);
     setForm({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
     setError('');
+    setProductStep(0);
     setShowModal(true);
   };
 
@@ -91,6 +106,7 @@ export default function ProductsPage() {
       low_stock_threshold: p.low_stock_threshold || 5,
     });
     setError('');
+    setProductStep(0);
     setShowModal(true);
   };
 
@@ -171,6 +187,15 @@ export default function ProductsPage() {
   const lowStockCount = products.filter(p => p.is_low_stock && p.quantity > 0).length;
   const outOfStockCount = products.filter(p => p.quantity === 0).length;
   const totalValue = products.reduce((s, p) => s + (p.cost_price || 0) * p.quantity, 0);
+  const suggestedGstRate = (() => {
+    const prefix = parseInt(String(form.hsn_code || '').slice(0, 2), 10);
+    return HSN_GST_HINTS[prefix];
+  })();
+  const wizardSteps = [
+    { title: locale === 'hi' ? 'बेसिक' : 'Basics', copy: locale === 'hi' ? 'नाम और विवरण' : 'Name and description' },
+    { title: locale === 'hi' ? 'प्राइसिंग' : 'Pricing', copy: locale === 'hi' ? 'कॉस्ट और margin' : 'Cost and margin' },
+    { title: locale === 'hi' ? 'टैक्स/स्टॉक' : 'Tax/Stock', copy: locale === 'hi' ? 'HSN, GST और stock' : 'HSN, GST and stock' },
+  ];
 
   // ── Badge helpers ────────────────────────────────────────────────────────────
   const StockBadge = ({ p }) => {
@@ -391,7 +416,22 @@ export default function ProductsPage() {
               {editProduct ? '✏️ उत्पाद संपादित / Edit Product' : '📦 उत्पाद जोड़ें / Add Product'}
             </h3>
             {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            <div className="wizard-progress" style={{ marginBottom: 16 }}>
+              {wizardSteps.map((step, index) => (
+                <div key={step.title} className={`wizard-step ${productStep === index ? 'is-active' : ''}`}>
+                  <div className="wizard-step-index">{index + 1}</div>
+                  <div className="wizard-step-title">{step.title}</div>
+                  <div className="wizard-step-copy">{step.copy}</div>
+                </div>
+              ))}
+            </div>
             <form onSubmit={handleSubmit}>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+                {locale === 'hi'
+                  ? 'Guided wizard: basic details se shuru karein, phir pricing aur last mein tax-stock settings confirm karein.'
+                  : 'Guided wizard: add basics first, then pricing, and finish with tax and stock settings.'}
+              </div>
+              <div style={{ display: productStep === 0 ? 'block' : 'none' }}>
               <div className="form-group">
                 <label className="form-label">नाम / Name *</label>
                 <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
@@ -401,6 +441,9 @@ export default function ProductsPage() {
                 <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
 
+              </div>
+
+              <div style={{ display: productStep === 1 ? 'block' : 'none' }}>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">लागत मूल्य / Cost Price ₹</label>
@@ -425,6 +468,9 @@ export default function ProductsPage() {
                 </div>
               )}
 
+              </div>
+
+              <div style={{ display: productStep === 2 ? 'block' : 'none' }}>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">
@@ -434,7 +480,7 @@ export default function ProductsPage() {
                     value={form.quantity}
                     onChange={e => setForm({ ...form, quantity: e.target.value })}
                     required={!editProduct} />
-                  {editProduct && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Stock adjust ke liye "Stock" button use karo</div>}
+                    {editProduct && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Stock adjust ke liye Stock button use karo</div>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">इकाई / Unit</label>
@@ -445,7 +491,26 @@ export default function ProductsPage() {
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">HSN/SAC Code</label>
-                  <input className="form-input" placeholder="e.g. 8471" value={form.hsn_code} onChange={e => setForm({ ...form, hsn_code: e.target.value })} />
+                  <input
+                    className="form-input"
+                    placeholder="e.g. 8471"
+                    value={form.hsn_code}
+                    onChange={e => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+                      const prefix = parseInt(value.slice(0, 2), 10);
+                      const nextSuggestedRate = HSN_GST_HINTS[prefix];
+                      setForm(current => ({
+                        ...current,
+                        hsn_code: value,
+                        gst_rate: nextSuggestedRate ?? current.gst_rate,
+                      }));
+                    }}
+                  />
+                  {suggestedGstRate !== undefined && (
+                    <div style={{ fontSize: 11, color: '#2563eb', marginTop: 4 }}>
+                      Suggested GST: {suggestedGstRate}% based on HSN
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">GST दर / Rate</label>
@@ -456,6 +521,11 @@ export default function ProductsPage() {
                     <option value={18}>18% GST</option>
                     <option value={28}>28% GST</option>
                   </select>
+                  {suggestedGstRate !== undefined && form.gst_rate !== suggestedGstRate && (
+                    <button type="button" className="btn-ghost" style={{ marginTop: 8, width: '100%' }} onClick={() => setForm(current => ({ ...current, gst_rate: suggestedGstRate }))}>
+                      Apply suggested {suggestedGstRate}% GST
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -480,10 +550,23 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {productStep > 0 && (
+                  <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setProductStep((current) => current - 1)}>
+                    Back
+                  </button>
+                )}
+                {productStep < 2 ? (
+                  <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => setProductStep((current) => current + 1)}>
+                    Continue
+                  </button>
+                ) : (
+                  <button type="submit" className="btn-primary" style={{ flex: 1 }}>
                   {editProduct ? '✅ Update' : '➕ Add Product'}
                 </button>
+                )}
                 <button type="button" onClick={() => setShowModal(false)}
                   style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel

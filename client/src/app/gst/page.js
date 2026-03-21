@@ -25,11 +25,6 @@ export default function GSTPage() {
   const [drillData,    setDrillData]    = useState([]);
   const [drillLoading, setDrillLoading] = useState(false);
 
-  useEffect(() => {
-    if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchSummary();
-  }, [month, year]);
-
   // ── Fetch GST summary ────────────────────────────────────────────────────────
   const fetchSummary = async () => {
     setLoading(true);
@@ -43,6 +38,13 @@ export default function GSTPage() {
     } catch {}
     setLoading(false);
   };
+
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (!localStorage.getItem('token')) { router.push('/login'); return; }
+    fetchSummary();
+  }, [month, year, router]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   // ── Drill-down ───────────────────────────────────────────────────────────────
   const openDrill = async (type) => {

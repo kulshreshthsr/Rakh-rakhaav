@@ -12,12 +12,10 @@ export default function PricingPage() {
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('six_month');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn] = useState(() => Boolean(getToken()));
 
   useEffect(() => {
     const token = getToken();
-    setIsLoggedIn(Boolean(token));
-
     if (!token) return;
 
     fetch(`${API}/api/auth/subscription-status`, {

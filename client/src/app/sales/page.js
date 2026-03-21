@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
+import { useAppLocale } from '../../components/AppLocale';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -11,6 +12,7 @@ const API      = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
 const numberToWords = (num) => {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -82,6 +84,7 @@ const buildWhatsAppMessage = (sale, shopName) => {
 
 export default function SalesPage() {
   const router = useRouter();
+  const { locale } = useAppLocale();
   const [sales, setSales]           = useState([]);
   const [summary, setSummary]       = useState({});
   const [products, setProducts]     = useState([]);
@@ -97,19 +100,15 @@ export default function SalesPage() {
     buyer_name: '', buyer_phone: '', buyer_gstin: '',
     buyer_address: '', buyer_state: '', notes: '',
   });
+  const [saleStep, setSaleStep] = useState(0);
 
-  useEffect(() => {
-    if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
-  }, []);
-
-  const fetchAll = async () => {
+  async function fetchAll() {
     setLoading(true);
     await Promise.all([fetchSales(), fetchProducts()]);
     setLoading(false);
-  };
+  }
 
-  const fetchSales = async () => {
+  async function fetchSales() {
     try {
       const res = await fetch(`${API}/api/sales`, { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.status === 401) { router.push('/login'); return; }
@@ -117,15 +116,22 @@ export default function SalesPage() {
       setSales(data.sales || (Array.isArray(data) ? data : []));
       setSummary(data.summary || {});
     } catch { setError('बिक्री लोड नहीं हो सकी'); }
-  };
+  }
 
-  const fetchProducts = async () => {
+  async function fetchProducts() {
     try {
       const res = await fetch(`${API}/api/products`, { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : data.products || []);
     } catch {}
-  };
+  }
+
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (!localStorage.getItem('token')) { router.push('/login'); return; }
+    fetchAll();
+  }, [router]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   // fetch shop name once on load for WhatsApp message
   useEffect(() => {
@@ -165,12 +171,20 @@ export default function SalesPage() {
   }, { taxable: 0, gst: 0, total: 0 });
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
+  const gstinValue = form.buyer_gstin.trim().toUpperCase();
+  const gstinValid = !gstinValue || GSTIN_REGEX.test(gstinValue);
+  const wizardSteps = [
+    { title: locale === 'hi' ? 'आइटम्स' : 'Items', copy: locale === 'hi' ? 'प्रोडक्ट और मात्रा' : 'Products and quantity' },
+    { title: locale === 'hi' ? 'भुगतान' : 'Payment', copy: locale === 'hi' ? 'टोटल और मोड' : 'Totals and method' },
+    { title: locale === 'hi' ? 'ग्राहक' : 'Buyer', copy: locale === 'hi' ? 'ग्राहक और GST' : 'Buyer and GST' },
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError('');
     if (form.payment_type === 'credit' && !form.buyer_name) {
       setError('उधार बिक्री के लिए ग्राहक का नाम जरूरी है!'); return;
     }
+    if (!gstinValid) { setError('Invalid GSTIN format'); return; }
     const validItems = items.filter(i => i.product_id && i.quantity && i.price_per_unit);
     if (validItems.length === 0) { setError('कम से कम एक product चुनें'); return; }
     for (const item of validItems) {
@@ -200,6 +214,7 @@ export default function SalesPage() {
   const resetForm = () => {
     setItems([emptyItem()]);
     setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
+    setSaleStep(0);
     setError('');
   };
 
@@ -405,10 +420,22 @@ export default function SalesPage() {
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
             )}
-            <form onSubmit={handleSubmit}>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+                {locale === 'hi' ? 'Guided wizard: item select करें, payment सेट करें, फिर buyer details review करें।' : 'Guided wizard: select items, confirm payment and finish buyer details.'}
+              </div>
+              <div className="wizard-progress" style={{ marginBottom: 16 }}>
+                {wizardSteps.map((step, index) => (
+                  <div key={step.title} className={`wizard-step ${saleStep === index ? 'is-active' : ''}`}>
+                    <div className="wizard-step-index">{index + 1}</div>
+                    <div className="wizard-step-title">{step.title}</div>
+                    <div className="wizard-step-copy">{step.copy}</div>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={handleSubmit}>
 
               {/* Items */}
-              <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 12, display: saleStep === 0 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>🛍️ Items</div>
                 {items.map((item, index) => {
                   const g    = rowGST(item);
@@ -465,7 +492,7 @@ export default function SalesPage() {
               </div>
 
               {/* Bill Summary */}
-              {billTotals.total > 0 && (
+              {billTotals.total > 0 && saleStep === 1 && (
                 <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
                   <div style={{ fontWeight: 700, color: '#6d28d9', marginBottom: 6 }}>📋 Bill Summary</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, color: '#7c3aed' }}>
@@ -484,7 +511,7 @@ export default function SalesPage() {
               )}
 
               {/* Payment Type */}
-              <div className="form-group">
+              <div className="form-group" style={{ display: saleStep === 1 ? 'block' : 'none' }}>
                 <label className="form-label">Payment Type *</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[
@@ -521,7 +548,7 @@ export default function SalesPage() {
               </div>
 
               {/* Buyer Details */}
-              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14 }}>
+              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14, display: saleStep === 2 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
                   👤 {form.payment_type === 'credit' ? 'Customer Details (जरूरी *)' : 'Buyer Details (वैकल्पिक)'}
                 </div>
@@ -538,7 +565,10 @@ export default function SalesPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">GSTIN</label>
-                    <input className="form-input" placeholder="GSTIN for B2B" value={form.buyer_gstin} onChange={e => setForm({ ...form, buyer_gstin: e.target.value })} />
+                    <input className="form-input" placeholder="GSTIN for B2B" value={form.buyer_gstin} onChange={e => setForm({ ...form, buyer_gstin: e.target.value.toUpperCase() })} />
+                    {gstinValue && !gstinValid && (
+                      <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
+                    )}
                   </div>
                 </div>
                 <div className="grid-2">
@@ -561,10 +591,21 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {saleStep > 0 && (
+                  <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setSaleStep((current) => current - 1)}>
+                    Back
+                  </button>
+                )}
+                {saleStep < 2 ? (
+                  <button type="button" className="btn-success" style={{ flex: 1 }} onClick={() => setSaleStep((current) => current + 1)}>
+                    Continue
+                  </button>
+                ) : (
                 <button type="submit" className="btn-success" style={{ flex: 1 }} disabled={submitting}>
                   {submitting ? '⏳ दर्ज हो रहा है...' : form.payment_type === 'credit' ? '📒 Credit Sale' : '💵 बिक्री दर्ज'}
                 </button>
+                )}
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
                   style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel

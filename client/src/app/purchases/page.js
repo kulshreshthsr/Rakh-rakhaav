@@ -3,17 +3,20 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
+import { useAppLocale } from '../../components/AppLocale';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
 
 const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
 // Empty item row
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
 
 export default function PurchasesPage() {
+  const { locale } = useAppLocale();
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({});
@@ -31,19 +34,15 @@ export default function PurchasesPage() {
     supplier_name: '', supplier_phone: '', supplier_gstin: '',
     supplier_address: '', supplier_state: '', notes: '',
   });
+  const [purchaseStep, setPurchaseStep] = useState(0);
 
-  useEffect(() => {
-    if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
-  }, []);
-
-  const fetchAll = async () => {
+  async function fetchAll() {
     setLoading(true);
     await Promise.all([fetchPurchases(), fetchProducts()]);
     setLoading(false);
-  };
+  }
 
-  const fetchPurchases = async () => {
+  async function fetchPurchases() {
     try {
       const res = await fetch(`${API}/api/purchases`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -53,9 +52,9 @@ export default function PurchasesPage() {
       setPurchases(data.purchases || []);
       setSummary(data.summary || {});
     } catch { setError('खरीद लोड नहीं हो सकी'); }
-  };
+  }
 
-  const fetchProducts = async () => {
+  async function fetchProducts() {
     try {
       const res = await fetch(`${API}/api/products`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -63,7 +62,14 @@ export default function PurchasesPage() {
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : data.products || []);
     } catch {}
-  };
+  }
+
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (!localStorage.getItem('token')) { router.push('/login'); return; }
+    fetchAll();
+  }, [router]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   // ── Item row handlers ────────────────────────────────────────────────────────
   const updateItem = (index, field, value) => {
@@ -107,6 +113,13 @@ export default function PurchasesPage() {
 
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
+  const gstinValue = form.supplier_gstin.trim().toUpperCase();
+  const gstinValid = !gstinValue || GSTIN_REGEX.test(gstinValue);
+  const wizardSteps = [
+    { title: locale === 'hi' ? 'आइटम्स' : 'Items', copy: locale === 'hi' ? 'खरीद सूची' : 'Purchase items' },
+    { title: locale === 'hi' ? 'भुगतान' : 'Payment', copy: locale === 'hi' ? 'क्रेडिट या कैश' : 'Credit or cash' },
+    { title: locale === 'hi' ? 'सप्लायर' : 'Supplier', copy: locale === 'hi' ? 'सप्लायर और GST' : 'Supplier and GST' },
+  ];
 
   // ── Submit ───────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
@@ -115,6 +128,10 @@ export default function PurchasesPage() {
 
     if (form.payment_type === 'credit' && !form.supplier_name) {
       setError('उधार खरीद के लिए supplier का नाम जरूरी है!');
+      return;
+    }
+    if (!gstinValid) {
+      setError('Invalid GSTIN format');
       return;
     }
     const validItems = items.filter(i => i.product_id && i.quantity && i.price_per_unit);
@@ -174,7 +191,8 @@ export default function PurchasesPage() {
     setError('');
     setItems([emptyItem()]);
     setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '' });
-  };
+    setPurchaseStep(0);
+  }
 
   // ── Payment type badge helper ────────────────────────────────────────────────
   const PayBadge = ({ type }) => {
@@ -363,11 +381,23 @@ export default function PurchasesPage() {
                 {error}
               </div>
             )}
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+              {locale === 'hi' ? 'Guided wizard: products चुनें, payment तय करें, फिर supplier details जोड़ें।' : 'Guided wizard: choose products, confirm payment and finish supplier details.'}
+            </div>
+            <div className="wizard-progress" style={{ marginBottom: 16 }}>
+              {wizardSteps.map((step, index) => (
+                <div key={step.title} className={`wizard-step ${purchaseStep === index ? 'is-active' : ''}`}>
+                  <div className="wizard-step-index">{index + 1}</div>
+                  <div className="wizard-step-title">{step.title}</div>
+                  <div className="wizard-step-copy">{step.copy}</div>
+                </div>
+              ))}
+            </div>
 
             <form onSubmit={handleSubmit}>
 
               {/* ── ITEMS ── */}
-              <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 12, display: purchaseStep === 0 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   🛒 Products
                 </div>
@@ -432,7 +462,7 @@ export default function PurchasesPage() {
               </div>
 
               {/* ── BILL SUMMARY ── */}
-              {billTotals.total > 0 && (
+              {billTotals.total > 0 && purchaseStep === 1 && (
                 <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
                   <div style={{ fontWeight: 700, color: '#92400e', marginBottom: 6 }}>📋 Bill Summary</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -455,7 +485,7 @@ export default function PurchasesPage() {
               )}
 
               {/* ── PAYMENT TYPE ── */}
-              <div className="form-group">
+              <div className="form-group" style={{ display: purchaseStep === 1 ? 'block' : 'none' }}>
                 <label className="form-label">भुगतान प्रकार / Payment Type *</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[
@@ -494,7 +524,7 @@ export default function PurchasesPage() {
               </div>
 
               {/* ── SUPPLIER DETAILS ── */}
-              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14 }}>
+              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14, display: purchaseStep === 2 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
                   🏭 Supplier Details {form.payment_type === 'credit' ? '(जरूरी *)' : '(वैकल्पिक)'}
                 </div>
@@ -518,9 +548,12 @@ export default function PurchasesPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">GSTIN (optional)</label>
-                    <input className="form-input" placeholder="Supplier GSTIN"
-                      value={form.supplier_gstin}
-                      onChange={e => setForm({ ...form, supplier_gstin: e.target.value })} />
+                      <input className="form-input" placeholder="Supplier GSTIN"
+                        value={form.supplier_gstin}
+                        onChange={e => setForm({ ...form, supplier_gstin: e.target.value.toUpperCase() })} />
+                      {gstinValue && !gstinValid && (
+                        <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
+                      )}
                     <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>GSTIN se B2B classify होगा</div>
                   </div>
                 </div>
@@ -558,10 +591,21 @@ export default function PurchasesPage() {
               </div>
 
               {/* ── SUBMIT ── */}
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {purchaseStep > 0 && (
+                  <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current - 1)}>
+                    Back
+                  </button>
+                )}
+                {purchaseStep < 2 ? (
+                  <button type="button" className="btn-warning" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current + 1)}>
+                    Continue
+                  </button>
+                ) : (
                 <button type="submit" className="btn-warning" style={{ flex: 1 }} disabled={submitting}>
                   {submitting ? 'दर्ज हो रहा है...' : form.payment_type === 'credit' ? '📒 Credit Purchase' : '💵 Purchase दर्ज करें'}
                 </button>
+                )}
                 <button type="button" onClick={resetModal}
                   style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel

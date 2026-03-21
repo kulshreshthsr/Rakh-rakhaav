@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
+const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'NA';
 
 export default function UdhaarPage() {
   const router = useRouter();
@@ -30,26 +31,13 @@ export default function UdhaarPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
-  }, []);
-
-  // Clear selection when tab changes
-  useEffect(() => {
-    setSelected(null);
-    setLedger([]);
-    setError('');
-    setSuccess('');
-  }, [activeTab]);
-
-  const fetchAll = async () => {
+  async function fetchAll() {
     setLoading(true);
     await Promise.all([fetchCustomers(), fetchSuppliers()]);
     setLoading(false);
-  };
+  }
 
-  const fetchCustomers = async () => {
+  async function fetchCustomers() {
     try {
       const res = await fetch(`${API}/api/customers`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -58,9 +46,9 @@ export default function UdhaarPage() {
       const data = await res.json();
       setCustomers(Array.isArray(data) ? data : []);
     } catch { setError('Customers load nahi hue'); }
-  };
+  }
 
-  const fetchSuppliers = async () => {
+  async function fetchSuppliers() {
     try {
       const res = await fetch(`${API}/api/suppliers`, {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -68,7 +56,22 @@ export default function UdhaarPage() {
       const data = await res.json();
       setSuppliers(Array.isArray(data) ? data : []);
     } catch {}
+  }
+
+  const switchTab = (nextTab) => {
+    setActiveTab(nextTab);
+    setSelected(null);
+    setLedger([]);
+    setError('');
+    setSuccess('');
   };
+
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (!localStorage.getItem('token')) { router.push('/login'); return; }
+    fetchAll();
+  }, [router]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   // ── Open ledger ──────────────────────────────────────────────────────────────
   const openLedger = async (item) => {
@@ -157,10 +160,15 @@ export default function UdhaarPage() {
       marginTop: 8,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="customer-chip-avatar" style={{ width: 42, height: 42, fontSize: 14, background: isCustomer ? '#fee2e2' : '#fef3c7', color: isCustomer ? '#b91c1c' : '#b45309' }}>
+            {initials(selected.name)}
+          </div>
+          <div>
           <div style={{ fontWeight: 800, fontSize: 16, color: '#1a1a2e' }}>{selected.name}</div>
           {selected.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {selected.phone}</div>}
           <div style={{ fontSize: 12, color: '#9ca3af' }}>Transaction History</div>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {selected.totalUdhaar > 0 && (
@@ -269,12 +277,12 @@ export default function UdhaarPage() {
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <button
-          onClick={() => setActiveTab('customers')}
+          onClick={() => switchTab('customers')}
           style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: isCustomer ? '#ef4444' : '#f3f4f6', color: isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
           👥 Customers ({customers.length})
         </button>
         <button
-          onClick={() => setActiveTab('suppliers')}
+          onClick={() => switchTab('suppliers')}
           style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: !isCustomer ? '#f59e0b' : '#f3f4f6', color: !isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
           🏭 Suppliers ({suppliers.length})
         </button>
@@ -328,10 +336,15 @@ export default function UdhaarPage() {
                       boxShadow: selected?._id === item._id ? '0 18px 40px rgba(15,23,42,0.08)' : '0 10px 22px rgba(15,23,42,0.05)',
                       transition: 'border-color 0.2s',
                     }}>
-                    <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div className="customer-chip-avatar" style={{ width: 42, height: 42, fontSize: 14, background: selected?._id === item._id ? (isCustomer ? '#fee2e2' : '#fef3c7') : '#e2e8f0', color: selected?._id === item._id ? (isCustomer ? '#b91c1c' : '#b45309') : '#334155' }}>
+                        {initials(item.name)}
+                      </div>
+                      <div>
                       <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{item.name}</div>
                       {item.phone && <div style={{ fontSize: 12, color: '#9ca3af' }}>📞 {item.phone}</div>}
                       {item.gstin && <div style={{ fontSize: 11, color: '#6366f1' }}>GSTIN: {item.gstin}</div>}
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div>

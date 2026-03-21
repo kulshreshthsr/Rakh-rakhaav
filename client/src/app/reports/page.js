@@ -42,11 +42,6 @@ export default function ReportsPage() {
   const [customers, setCustomers] = useState([]);
   const [summary,   setSummary]   = useState({});
 
-  useEffect(() => {
-    if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
-  }, [filter]);
-
   const fetchAll = async () => {
     setLoading(true);
     const { from, to } = getRange(filter);
@@ -94,6 +89,13 @@ export default function ReportsPage() {
     }
     setLoading(false);
   };
+
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (!localStorage.getItem('token')) { router.push('/login'); return; }
+    fetchAll();
+  }, [filter, router]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   // ── Top Products (unchanged) ─────────────────────────────────────────────────
   const topProducts = (() => {

@@ -1,44 +1,147 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
 import TrialWarningModal from './subscription/TrialWarningModal';
 import { API, FALLBACK_PLANS, getTrialWarningKey } from '../lib/subscription';
+import { AppLocaleProvider, useAppLocale } from './AppLocale';
 
 const navItems = [
-  { href: '/dashboard', labelHi: 'होम', labelEn: 'Dashboard', icon: '🏠' },
-  { href: '/product', labelHi: 'उत्पाद', labelEn: 'Products', icon: '📦' },
-  { href: '/sales', labelHi: 'बिक्री', labelEn: 'Sales', icon: '📈' },
-  { href: '/purchases', labelHi: 'खरीद', labelEn: 'Purchases', icon: '🛒' },
-  { href: '/udhaar', labelHi: 'उधार', labelEn: 'Udhaar', icon: '🤝' },
-  { href: '/gst', labelHi: 'GST', labelEn: 'GST', icon: '🧾' },
-  { href: '/reports', labelHi: 'रिपोर्ट', labelEn: 'Reports', icon: '📊' },
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home' },
+  { href: '/product', key: 'products', shortLabel: 'Stock' },
+  { href: '/sales', key: 'sales', shortLabel: 'Sales' },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Buy' },
+  { href: '/udhaar', key: 'udhaar', shortLabel: 'Ledger' },
+  { href: '/gst', key: 'gst', shortLabel: 'GST' },
+  { href: '/reports', key: 'reports', shortLabel: 'Reports' },
 ];
+
+function Glyph({ name, size = 20, stroke = 1.8 }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: stroke,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  switch (name) {
+    case 'dashboard':
+      return (
+        <svg {...common}>
+          <rect x="3" y="3" width="8" height="8" rx="2" />
+          <rect x="13" y="3" width="8" height="5" rx="2" />
+          <rect x="13" y="10" width="8" height="11" rx="2" />
+          <rect x="3" y="13" width="8" height="8" rx="2" />
+        </svg>
+      );
+    case 'products':
+      return (
+        <svg {...common}>
+          <path d="M12 3 4.5 7 12 11 19.5 7 12 3Z" />
+          <path d="M4.5 7v10L12 21l7.5-4V7" />
+          <path d="M12 11v10" />
+        </svg>
+      );
+    case 'sales':
+      return (
+        <svg {...common}>
+          <path d="M4 18h16" />
+          <path d="M6 15l4-4 3 3 5-7" />
+          <path d="M18 7h-4" />
+        </svg>
+      );
+    case 'purchases':
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="19" r="1.25" />
+          <circle cx="17" cy="19" r="1.25" />
+          <path d="M4 5h2l2.2 9.2a1 1 0 0 0 1 .8h7.7a1 1 0 0 0 1-.8L20 8H7" />
+        </svg>
+      );
+    case 'udhaar':
+      return (
+        <svg {...common}>
+          <rect x="4" y="4" width="16" height="16" rx="3" />
+          <path d="M8 9h8M8 13h8M8 17h5" />
+        </svg>
+      );
+    case 'gst':
+      return (
+        <svg {...common}>
+          <path d="M12 3v18" />
+          <path d="M16.5 7.5c0-1.9-1.8-3.5-4.5-3.5S7.5 5.6 7.5 7.5 9.3 11 12 11s4.5 1.6 4.5 3.5-1.8 3.5-4.5 3.5-4.5-1.6-4.5-3.5" />
+        </svg>
+      );
+    case 'reports':
+      return (
+        <svg {...common}>
+          <path d="M4 19h16" />
+          <path d="M7 15V9" />
+          <path d="M12 15V5" />
+          <path d="M17 15v-7" />
+        </svg>
+      );
+    case 'profile':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="8" r="3.25" />
+          <path d="M5 19a7 7 0 0 1 14 0" />
+        </svg>
+      );
+    case 'logout':
+      return (
+        <svg {...common}>
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <path d="M16 17l5-5-5-5" />
+          <path d="M21 12H9" />
+        </svg>
+      );
+    case 'pricing':
+      return (
+        <svg {...common}>
+          <path d="M12 2 3 6v6c0 5 3.8 8.8 9 10 5.2-1.2 9-5 9-10V6l-9-4Z" />
+          <path d="M9.5 12.5 11 14l3.5-4" />
+        </svg>
+      );
+    case 'language':
+      return (
+        <svg {...common}>
+          <path d="M4 5h10" />
+          <path d="M9 5c0 6-2 10-5 12" />
+          <path d="M7 11c1.2 2 2.8 3.8 5 5" />
+          <path d="M15 15h5" />
+          <path d="m16 12 3.5 9" />
+          <path d="m19.5 12-3.5 9" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      );
+  }
+}
 
 function Logo({ size = 'md' }) {
   const [err, setErr] = useState(false);
-  const dim = size === 'sm' ? 34 : size === 'lg' ? 54 : 42;
-  const radius = size === 'sm' ? 12 : size === 'lg' ? 18 : 15;
-  const fontSize = size === 'sm' ? 14 : size === 'lg' ? 22 : 18;
+  const dim = size === 'sm' ? 34 : size === 'lg' ? 58 : 46;
+  const radius = size === 'sm' ? 12 : size === 'lg' ? 20 : 16;
 
   if (!err) {
     return (
-      <div
-        style={{
-          width: dim,
-          height: dim,
-          borderRadius: radius,
-          overflow: 'hidden',
-          flexShrink: 0,
-          background: 'linear-gradient(135deg, rgba(67,56,202,0.92), rgba(16,185,129,0.18))',
-          border: '1px solid rgba(165,180,252,0.22)',
-          boxShadow: '0 12px 28px rgba(79,70,229,0.18)',
-        }}
-      >
+      <div className="brand-logo-frame" style={{ width: dim, height: dim, borderRadius: radius }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.png"
-          alt="Logo"
+          alt="Rakhaav logo"
           width={dim}
           height={dim}
           style={{ width: '100%', height: '100%', objectFit: 'contain' }}
@@ -49,37 +152,30 @@ function Logo({ size = 'md' }) {
   }
 
   return (
-    <div
-      style={{
-        width: dim,
-        height: dim,
-        borderRadius: radius,
-        flexShrink: 0,
-        background: 'linear-gradient(135deg, #4338ca, #0ea5e9)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: '1px solid rgba(165,180,252,0.24)',
-        boxShadow: '0 14px 30px rgba(79,70,229,0.18)',
-      }}
-    >
-      <span style={{ fontSize, fontWeight: 800, color: '#f8fafc', fontFamily: 'serif' }}>र</span>
+    <div className="brand-logo-fallback" style={{ width: dim, height: dim, borderRadius: radius }}>
+      <span style={{ fontSize: size === 'sm' ? 14 : 20, fontWeight: 900 }}>र</span>
     </div>
   );
 }
 
-const linkBase = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  padding: '12px 12px',
-  borderRadius: 16,
-  textDecoration: 'none',
-  transition: 'all 0.18s ease',
-  position: 'relative',
-};
+function pickLocalizedSegment(text, locale) {
+  const segments = text
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
 
-export default function Layout({ children }) {
+  if (segments.length < 2) return text;
+
+  const devanagari = /[\u0900-\u097F]/;
+  if (locale === 'hi') {
+    return segments.find((segment) => devanagari.test(segment)) || segments[0];
+  }
+
+  return segments.find((segment) => !devanagari.test(segment)) || segments[segments.length - 1];
+}
+
+function LayoutInner({ children }) {
+  const { locale, setLocale, t } = useAppLocale();
   const [user, setUser] = useState(() => {
     if (typeof window === 'undefined') return null;
     const stored = localStorage.getItem('user');
@@ -126,14 +222,19 @@ export default function Layout({ children }) {
     } catch {}
   };
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!user || !token) {
       router.push('/login');
       return;
     }
-    refreshSubscriptionStatus();
-  }, [router]);
+    const timeoutId = window.setTimeout(() => {
+      refreshSubscriptionStatus();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [router, user]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -142,11 +243,11 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
-    const handleOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const handleOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
-      if (mobileDropRef.current && !mobileDropRef.current.contains(e.target)) {
+      if (mobileDropRef.current && !mobileDropRef.current.contains(event.target)) {
         setMobileDropOpen(false);
       }
     };
@@ -156,16 +257,72 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (!subscription?.shouldWarnTrial || subscription?.isReadOnly) {
-      setShowTrialWarning(false);
-      return;
+      const timeoutId = window.setTimeout(() => setShowTrialWarning(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
 
     const warningKey = getTrialWarningKey();
     if (!localStorage.getItem(warningKey)) {
-      setShowTrialWarning(true);
-      localStorage.setItem(warningKey, 'shown');
+      const timeoutId = window.setTimeout(() => {
+        setShowTrialWarning(true);
+        localStorage.setItem(warningKey, 'shown');
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
     }
+
+    const timeoutId = window.setTimeout(() => setShowTrialWarning(false), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [subscription]);
+
+  useEffect(() => {
+    const root = document.querySelector('.app-shell-root');
+    if (!root) return undefined;
+
+    const shouldSkip = (node) => {
+      const parent = node.parentElement;
+      if (!parent) return true;
+      if (parent.closest('script, style, svg, option')) return true;
+      if (parent.hasAttribute('data-locale-ignore')) return true;
+      return false;
+    };
+
+    const applyLocaleToNode = (node) => {
+      if (node.nodeType !== Node.TEXT_NODE) return;
+      const value = node.nodeValue;
+      if (!value || !value.includes('/')) return;
+      if (shouldSkip(node)) return;
+
+      const original = node.__rakhaavOriginalText || value;
+      node.__rakhaavOriginalText = original;
+      node.nodeValue = pickLocalizedSegment(original, locale);
+    };
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      applyLocaleToNode(walker.currentNode);
+    }
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((addedNode) => {
+          if (addedNode.nodeType === Node.TEXT_NODE) {
+            applyLocaleToNode(addedNode);
+            return;
+          }
+
+          if (addedNode.nodeType === Node.ELEMENT_NODE) {
+            const childWalker = document.createTreeWalker(addedNode, NodeFilter.SHOW_TEXT);
+            while (childWalker.nextNode()) {
+              applyLocaleToNode(childWalker.currentNode);
+            }
+          }
+        });
+      });
+    });
+
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [locale]);
 
   const logout = () => {
     setDropdownOpen(false);
@@ -188,629 +345,222 @@ export default function Layout({ children }) {
     await refreshSubscriptionStatus();
   };
 
-  const isActive = (href) => pathname === href;
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
-  const firstName = user?.name?.split(' ')?.[0] || 'Profile';
+  const firstName = user?.name?.split(' ')?.[0] || t('profile');
+  const translatedNav = useMemo(
+    () =>
+      navItems.map((item) => ({
+        ...item,
+        label: t(item.key),
+      })),
+    [t]
+  );
+
+  const trialBannerTitle = subscription?.trialDaysLeft
+    ? t('trialEnds', {
+        days: subscription.trialDaysLeft,
+        suffix: subscription.trialDaysLeft === 1 ? '' : locale === 'en' ? 's' : '',
+      })
+    : '';
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'transparent',
-        fontFamily: "'Inter', sans-serif",
-      }}
-    >
+    <div className="app-shell-root">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
-      <aside
-        className="desktop-sidebar"
-        style={{
-          width: 268,
-          padding: '16px 12px 14px',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 50,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div
-          style={{
-            height: '100%',
-            borderRadius: 28,
-            background:
-              'linear-gradient(180deg, rgba(11,16,35,0.98), rgba(20,28,62,0.97) 48%, rgba(11,16,35,0.99))',
-            border: '1px solid rgba(165,180,252,0.08)',
-            boxShadow: '0 28px 80px rgba(13,19,43,0.28)',
-            padding: 14,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: -70,
-              right: -50,
-              width: 170,
-              height: 170,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(99,102,241,0.22), transparent 65%)',
-              pointerEvents: 'none',
-            }}
-          />
+        <aside className="desktop-sidebar premium-sidebar">
+          <div className="sidebar-panel">
+            <div className="sidebar-orb sidebar-orb-top" />
+            <div className="sidebar-orb sidebar-orb-bottom" />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px 14px' }}>
-            <Logo size="md" />
+            <div className="brand-lockup">
+              <div className="brand-row">
+                <Logo size="md" />
+                <div>
+                  <div className="brand-title">रखरखाव</div>
+                  <div className="brand-subtitle">{t('brand')}</div>
+                </div>
+              </div>
+              <div className="brand-status-card">
+                <div>
+                  <div className="brand-status-label">{t('workspace')}</div>
+                  <div className="brand-status-copy">{t('workspaceCopy')}</div>
+                </div>
+                <div className="badge badge-blue brand-live-pill">{t('live')}</div>
+              </div>
+            </div>
+
+            <div className="sidebar-quick-grid">
+              <a href="/pricing" className="sidebar-shortcut">
+                <div className="sidebar-shortcut-icon">
+                  <Glyph name="pricing" size={18} />
+                </div>
+                <div>
+                  <div className="sidebar-shortcut-title">{t('pricing')}</div>
+                  <div className="sidebar-shortcut-copy">{t('plans')}</div>
+                </div>
+              </a>
+              <a href="/reports" className="sidebar-shortcut is-secondary">
+                <div className="sidebar-shortcut-icon">
+                  <Glyph name="reports" size={18} />
+                </div>
+                <div>
+                  <div className="sidebar-shortcut-title">{t('reports')}</div>
+                  <div className="sidebar-shortcut-copy">{t('reportsShortcut')}</div>
+                </div>
+              </a>
+            </div>
+
+            <div className="language-switch-card">
+              <div className="language-copy">
+                <div className="language-title">{t('language')}</div>
+                <div className="language-subtitle">{locale === 'hi' ? t('hindi') : t('english')}</div>
+              </div>
+              <div className="segmented-group language-toggle">
+                <button
+                  type="button"
+                  onClick={() => setLocale('hi')}
+                  className={`segmented-option ${locale === 'hi' ? 'is-active' : ''}`}
+                >
+                  हिं
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocale('en')}
+                  className={`segmented-option ${locale === 'en' ? 'is-active' : ''}`}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
+
+            <div ref={dropdownRef} style={{ position: 'relative' }}>
+              <button type="button" className="sidebar-user-card" onClick={() => setDropdownOpen((value) => !value)}>
+                <div className="sidebar-avatar">{initial}</div>
+                <div className="sidebar-user-copy">
+                  <div className="sidebar-user-name">{user?.name || 'Shopkeeper'}</div>
+                  <div className="sidebar-user-email">{user?.email || 'Business account'}</div>
+                </div>
+                <div className={`sidebar-chevron ${dropdownOpen ? 'is-open' : ''}`}>⌄</div>
+              </button>
+
+              {dropdownOpen && (
+                <div className="sidebar-user-menu">
+                  <button type="button" onClick={goToProfile}>
+                    <Glyph name="profile" size={16} />
+                    {t('profile')}
+                  </button>
+                  <button type="button" onClick={logout} className="danger">
+                    <Glyph name="logout" size={16} />
+                    {t('logout')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="sidebar-section-label">{t('mainMenu')}</div>
+
+            <nav className="sidebar-nav">
+              {translatedNav.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <a key={item.href} href={item.href} className={`nav-link ${active ? 'is-active' : ''}`}>
+                    <span className="nav-link-accent" />
+                    <span className="nav-icon-wrap">
+                      <Glyph name={item.key} size={18} />
+                    </span>
+                    <span className="nav-copy">
+                      <span className="nav-label">{item.label}</span>
+                      <span className="nav-short">{item.shortLabel}</span>
+                    </span>
+                  </a>
+                );
+              })}
+            </nav>
+
+            <button type="button" onClick={logout} className="sidebar-logout">
+              <Glyph name="logout" size={16} />
+              {t('logout')}
+            </button>
+          </div>
+        </aside>
+
+        <div className={`mobile-topbar premium-topbar ${scrolled ? 'is-scrolled' : ''}`}>
+          <div className="mobile-topbar-brand">
+            <Logo size="sm" />
             <div>
-              <div
-                style={{
-                  fontSize: 21,
-                  fontWeight: 800,
-                  color: '#fff',
-                  letterSpacing: '-0.04em',
-                  fontFamily: 'serif',
-                }}
-              >
-                रख<span style={{ color: '#a5b4fc' }}>रखाव</span>
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: 'rgba(226,232,240,0.46)',
-                  fontWeight: 700,
-                  letterSpacing: '0.16em',
-                  textTransform: 'uppercase',
-                  marginTop: 2,
-                }}
-              >
-                Business Manager
-              </div>
+              <div className="mobile-brand-title">रखरखाव</div>
+              <div className="mobile-brand-subtitle">{t('brand')}</div>
             </div>
           </div>
 
-          <div
-            style={{
-              padding: '10px 12px',
-              borderRadius: 18,
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))',
-              border: '1px solid rgba(255,255,255,0.06)',
-              marginBottom: 14,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 10,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.42)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                Workspace
-              </div>
-              <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.82)', fontWeight: 700, marginTop: 2 }}>
-                Inventory, billing and GST
-              </div>
-            </div>
-            <div className="badge" style={{ background: 'rgba(99,102,241,0.16)', color: '#c7d2fe', border: '1px solid rgba(165,180,252,0.16)' }}>Live</div>
-          </div>
-
-          <a
-            href="/pricing"
-            style={{
-              textDecoration: 'none',
-              marginBottom: 14,
-              padding: '12px 14px',
-              borderRadius: 18,
-              background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.14))',
-              border: '1px solid rgba(165,180,252,0.14)',
-              boxShadow: '0 16px 32px rgba(8,21,40,0.18)',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 10,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 10, color: 'rgba(224,231,255,0.72)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                Plans
-              </div>
-              <div style={{ fontSize: 13.5, fontWeight: 800, marginTop: 3 }}>
-                Pricing / Upgrade
-              </div>
-            </div>
-            <div
-              style={{
-                minWidth: 34,
-                height: 34,
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.14)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: '0.08em',
-              }}
-            >
-              UP
-            </div>
-          </a>
-
-          <div ref={dropdownRef} style={{ position: 'relative', marginBottom: 10 }}>
-            <button
-              type="button"
-              onClick={() => setDropdownOpen((value) => !value)}
-              style={{
-                width: '100%',
-                border: '1px solid rgba(165,180,252,0.1)',
-                background: dropdownOpen
-                  ? 'linear-gradient(180deg, rgba(99,102,241,0.18), rgba(99,102,241,0.08))'
-                  : 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
-                borderRadius: 18,
-                padding: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                cursor: 'pointer',
-                color: '#fff',
-                textAlign: 'left',
-              }}
-            >
-              <div
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 14,
-                  background: 'linear-gradient(135deg, #4338ca, #0ea5e9)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 15,
-                  fontWeight: 800,
-                  flexShrink: 0,
-                  boxShadow: '0 12px 26px rgba(79,70,229,0.2)',
-                }}
-              >
-                {initial}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 13.5,
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {user?.name || 'Shopkeeper'}
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'rgba(255,255,255,0.46)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {user?.email || 'Business account'}
-                </div>
-              </div>
-              <span
-                style={{
-                  color: 'rgba(165,180,252,0.78)',
-                  transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.18s ease',
-                }}
-              >
-                ▼
-              </span>
+          <div className="mobile-topbar-actions">
+            <button type="button" className="language-compact" onClick={() => setLocale(locale === 'hi' ? 'en' : 'hi')}>
+              <Glyph name="language" size={14} />
+              {locale === 'hi' ? 'हिं' : 'EN'}
             </button>
 
-            {dropdownOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  left: 0,
-                  right: 0,
-                  borderRadius: 18,
-                  overflow: 'hidden',
-                  border: '1px solid rgba(165,180,252,0.14)',
-                  background: 'linear-gradient(180deg, rgba(16,23,53,0.98), rgba(11,16,35,0.98))',
-                  boxShadow: '0 24px 48px rgba(0,0,0,0.35)',
-                  zIndex: 20,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={goToProfile}
-                  style={{
-                    width: '100%',
-                    padding: '13px 14px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.86)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>👤</span>
-                  <span>Profile / प्रोफाइल</span>
+            <div ref={mobileDropRef} style={{ position: 'relative' }}>
+              <button type="button" className="mobile-user-chip" onClick={() => setMobileDropOpen((value) => !value)}>
+                <div className="mobile-avatar">{initial}</div>
+                <span>{firstName}</span>
+              </button>
+              {mobileDropOpen && (
+                <div className="sidebar-user-menu mobile-user-menu">
+                  <button type="button" onClick={goToProfile}>
+                    <Glyph name="profile" size={16} />
+                    {t('profile')}
+                  </button>
+                  <a href="/reports">
+                    <Glyph name="reports" size={16} />
+                    {t('reports')}
+                  </a>
+                  <a href="/pricing">
+                    <Glyph name="pricing" size={16} />
+                    {t('pricing')}
+                  </a>
+                  <button type="button" onClick={logout} className="danger">
+                    <Glyph name="logout" size={16} />
+                    {t('logout')}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <main className="main-content premium-main-content">
+          <div className="content-container">
+            {subscription?.shouldWarnTrial && !subscription?.isReadOnly && (
+              <div className="trial-banner premium-trial-banner">
+                <div className="trial-banner-copy">
+                  <div className="trial-banner-title">{trialBannerTitle}</div>
+                  <div className="trial-banner-subtitle">{t('trialCopy')}</div>
+                </div>
+                <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
+                  {t('upgrade')}
                 </button>
-                <button
-                  type="button"
-                  onClick={logout}
-                  style={{
-                    width: '100%',
-                    padding: '13px 14px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#fca5a5',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>🚪</span>
-                  <span>Logout / निकलें</span>
-                </button>
+                <a href="/pricing" className="btn-ghost" style={{ width: 'auto', textDecoration: 'none' }}>
+                  {t('viewPricing')}
+                </a>
               </div>
             )}
+            {children}
           </div>
+        </main>
 
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'rgba(226,232,240,0.3)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.16em',
-              padding: '10px 8px 8px',
-            }}
-          >
-            Main Menu
-          </div>
-
-          <nav style={{ flex: 1, overflowY: 'auto', paddingRight: 2 }}>
-            {navItems.map((item) => {
-              const active = isActive(item.href);
+        <nav className="mobile-bottom-nav premium-bottom-nav">
+          <div className="mobile-bottom-nav-card">
+            {translatedNav.map((item) => {
+              const active = pathname === item.href;
               return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  style={{
-                    ...linkBase,
-                    marginBottom: 6,
-                    color: active ? '#f8fafc' : 'rgba(226,232,240,0.62)',
-                    background: active
-                      ? 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(14,165,233,0.12))'
-                      : 'transparent',
-                    border: `1px solid ${active ? 'rgba(165,180,252,0.12)' : 'transparent'}`,
-                    boxShadow: active ? '0 20px 34px rgba(8,21,40,0.24)' : 'none',
-                  }}
-                >
-                  {active && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 10,
-                        bottom: 10,
-                        width: 4,
-                        borderRadius: '0 999px 999px 0',
-                        background: 'linear-gradient(180deg, #818cf8, #38bdf8)',
-                      }}
-                    />
-                  )}
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 14,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: active ? 'rgba(255,255,255,0.11)' : 'rgba(255,255,255,0.04)',
-                      fontSize: 18,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {item.icon}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.15 }}>{item.labelEn}</div>
-                    <div style={{ fontSize: 10.5, color: active ? 'rgba(226,232,240,0.78)' : 'rgba(226,232,240,0.4)' }}>
-                      {item.labelHi}
-                    </div>
-                  </div>
-                  {active && (
-                    <div
-                      style={{
-                        width: 9,
-                        height: 9,
-                        borderRadius: '50%',
-                        background: '#a5b4fc',
-                        boxShadow: '0 0 12px rgba(165,180,252,0.8)',
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
+                <a key={item.href} href={item.href} className={`mobile-nav-link ${active ? 'is-active' : ''}`}>
+                  <span className="mobile-nav-glow" />
+                  <Glyph name={item.key} size={18} />
+                  <span>{item.label}</span>
                 </a>
               );
             })}
-          </nav>
-
-          <button
-            type="button"
-            onClick={logout}
-            style={{
-              marginTop: 10,
-              width: '100%',
-              borderRadius: 18,
-              border: '1px solid rgba(248,113,113,0.14)',
-              background: 'linear-gradient(180deg, rgba(127,29,29,0.2), rgba(127,29,29,0.12))',
-              color: '#fecaca',
-              padding: '12px 14px',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            Logout / निकलें
-          </button>
-        </div>
-      </aside>
-
-      <div
-        className="mobile-topbar"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 60,
-          display: 'none',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: '14px 14px 12px',
-          background: scrolled ? 'rgba(8,21,40,0.92)' : 'rgba(8,21,40,0.84)',
-          backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(165,180,252,0.1)',
-          boxShadow: '0 12px 32px rgba(13,19,43,0.18)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Logo size="sm" />
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', fontFamily: 'serif' }}>
-              रख<span style={{ color: '#a5b4fc' }}>रखाव</span>
-            </div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>Business Manager</div>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <a
-          href="/pricing"
-          style={{
-            textDecoration: 'none',
-            padding: '8px 10px',
-            borderRadius: 999,
-            background: 'rgba(99,102,241,0.18)',
-            border: '1px solid rgba(165,180,252,0.14)',
-            color: '#eef2ff',
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Pricing
-        </a>
-
-        <div ref={mobileDropRef} style={{ position: 'relative' }}>
-          <button
-            type="button"
-            onClick={() => setMobileDropOpen((value) => !value)}
-            style={{
-              border: '1px solid rgba(165,180,252,0.12)',
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: 999,
-              padding: '6px 8px 6px 6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              color: '#fff',
-              cursor: 'pointer',
-            }}
-          >
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #4338ca, #0ea5e9)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 800,
-              }}
-            >
-              {initial}
-            </div>
-            <span style={{ fontSize: 12, fontWeight: 700 }}>{firstName}</span>
-            <span
-              style={{
-                fontSize: 10,
-                transform: mobileDropOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.18s ease',
-                color: '#a5b4fc',
-              }}
-            >
-              ▼
-            </span>
-          </button>
-
-          {mobileDropOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 8px)',
-                right: 0,
-                width: 220,
-                borderRadius: 18,
-                overflow: 'hidden',
-                border: '1px solid rgba(165,180,252,0.16)',
-                background: 'linear-gradient(180deg, rgba(16,23,53,0.98), rgba(11,16,35,0.98))',
-                boxShadow: '0 24px 50px rgba(0,0,0,0.34)',
-              }}
-            >
-              <div
-                style={{
-                  padding: '14px',
-                  background: 'rgba(99,102,241,0.1)',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>{user?.name}</div>
-                <div style={{ color: 'rgba(255,255,255,0.42)', fontSize: 11, marginTop: 2 }}>{user?.email}</div>
-              </div>
-              <button
-                type="button"
-                onClick={goToProfile}
-                style={{
-                  width: '100%',
-                  padding: '13px 14px',
-                  border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  background: 'transparent',
-                  color: 'rgba(255,255,255,0.86)',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-              >
-                👤 Profile / प्रोफाइल
-              </button>
-              <button
-                type="button"
-                onClick={logout}
-                style={{
-                  width: '100%',
-                  padding: '13px 14px',
-                  border: 'none',
-                  background: 'transparent',
-                  color: '#fecaca',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-              >
-                🚪 Logout / निकलें
-              </button>
-            </div>
-          )}
-        </div>
-        </div>
-      </div>
-
-      <main
-        className="main-content"
-        style={{
-          marginLeft: 268,
-          padding: '28px 24px 92px',
-          minHeight: '100vh',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1380,
-            margin: '0 auto',
-          }}
-        >
-          {subscription?.shouldWarnTrial && !subscription?.isReadOnly && (
-            <div className="trial-banner">
-              <div className="trial-banner-copy">
-                <div className="trial-banner-title">Your free trial ends in {subscription.trialDaysLeft} day{subscription.trialDaysLeft === 1 ? '' : 's'}</div>
-                <div className="trial-banner-subtitle">Upgrade now to keep GST exports, reports, udhaar and premium workflows active without interruption.</div>
-              </div>
-              <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
-                Upgrade
-              </button>
-              <a href="/pricing" className="btn-ghost" style={{ width: 'auto', textDecoration: 'none' }}>
-                View pricing
-              </a>
-            </div>
-          )}
-          {children}
-        </div>
-      </main>
-
-      <nav
-        className="mobile-bottom-nav"
-        style={{
-          position: 'fixed',
-          bottom: 10,
-          left: 12,
-          right: 12,
-          zIndex: 60,
-          display: 'none',
-        }}
-      >
-        <div
-          style={{
-            borderRadius: 24,
-            background: 'rgba(11,16,35,0.94)',
-            border: '1px solid rgba(165,180,252,0.12)',
-            boxShadow: '0 24px 60px rgba(13,19,43,0.28)',
-            padding: '7px 6px calc(7px + env(safe-area-inset-bottom))',
-            display: 'flex',
-          }}
-        >
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                style={{
-                  flex: 1,
-                  textDecoration: 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 3,
-                  padding: '8px 2px',
-                  borderRadius: 18,
-                  position: 'relative',
-                  color: active ? '#fff' : 'rgba(226,232,240,0.46)',
-                  background: active ? 'linear-gradient(180deg, rgba(99,102,241,0.18), rgba(14,165,233,0.12))' : 'transparent',
-                }}
-              >
-                <span style={{ fontSize: 18, transform: active ? 'translateY(-1px)' : 'none' }}>{item.icon}</span>
-                <span style={{ fontSize: 9.5, fontWeight: 700 }}>{item.labelEn}</span>
-              </a>
-            );
-          })}
-        </div>
-      </nav>
+        </nav>
       </div>
 
       <ReadOnlyOverlay
@@ -830,9 +580,11 @@ export default function Layout({ children }) {
         onSuccess={handleUpgradeSuccess}
         initialPlan={paywallPlan}
         title={subscription?.isReadOnly ? 'Reactivate full access' : 'Upgrade to premium'}
-        subtitle={subscription?.isReadOnly
-          ? 'Your data is safe and visible. Upgrade now to unlock billing actions, GST exports, reports and customer credit workflows again.'
-          : 'Choose a plan that keeps your business records, exports and workflows fully active.'}
+        subtitle={
+          subscription?.isReadOnly
+            ? 'Your data is safe and visible. Upgrade now to unlock billing actions, GST exports, reports and customer credit workflows again.'
+            : 'Choose a plan that keeps your business records, exports and workflows fully active.'
+        }
       />
 
       <TrialWarningModal
@@ -850,18 +602,585 @@ export default function Layout({ children }) {
         .mobile-topbar { display: none; }
         .mobile-bottom-nav { display: none; }
 
+        .premium-sidebar {
+          width: 288px;
+          padding: 18px 12px;
+          position: fixed;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          z-index: 50;
+        }
+
+        .sidebar-panel {
+          height: 100%;
+          border-radius: 30px;
+          padding: 16px;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          background:
+            radial-gradient(circle at 100% 0%, rgba(70, 167, 255, 0.24), transparent 26%),
+            radial-gradient(circle at 0% 100%, rgba(16, 185, 129, 0.16), transparent 26%),
+            linear-gradient(180deg, rgba(8, 16, 34, 0.98), rgba(14, 26, 51, 0.98) 48%, rgba(8, 16, 34, 0.99));
+          border: 1px solid rgba(148, 163, 184, 0.12);
+          box-shadow: 0 32px 80px rgba(2, 8, 23, 0.28);
+        }
+
+        .sidebar-orb {
+          position: absolute;
+          border-radius: 999px;
+          pointer-events: none;
+          filter: blur(20px);
+          opacity: 0.9;
+        }
+
+        .sidebar-orb-top {
+          width: 180px;
+          height: 180px;
+          top: -70px;
+          right: -70px;
+          background: rgba(59, 130, 246, 0.18);
+        }
+
+        .sidebar-orb-bottom {
+          width: 160px;
+          height: 160px;
+          bottom: -80px;
+          left: -50px;
+          background: rgba(16, 185, 129, 0.14);
+        }
+
+        .brand-lockup,
+        .language-switch-card,
+        .sidebar-user-card,
+        .sidebar-shortcut,
+        .sidebar-logout {
+          position: relative;
+          z-index: 1;
+        }
+
+        .brand-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .brand-logo-frame,
+        .brand-logo-fallback {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(16, 185, 129, 0.5));
+          border: 1px solid rgba(191, 219, 254, 0.22);
+          box-shadow: 0 18px 40px rgba(37, 99, 235, 0.22);
+          overflow: hidden;
+          color: white;
+        }
+
+        .brand-title {
+          font-size: 23px;
+          line-height: 1;
+          font-weight: 900;
+          color: #ffffff;
+          letter-spacing: -0.06em;
+        }
+
+        .brand-subtitle {
+          font-size: 10px;
+          margin-top: 4px;
+          color: rgba(226, 232, 240, 0.56);
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+
+        .brand-status-card,
+        .language-switch-card {
+          margin-top: 14px;
+          border-radius: 20px;
+          padding: 14px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .brand-status-label,
+        .sidebar-section-label,
+        .language-title {
+          font-size: 10px;
+          font-weight: 700;
+          color: rgba(226, 232, 240, 0.42);
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }
+
+        .brand-status-copy,
+        .language-subtitle {
+          font-size: 12.5px;
+          color: rgba(255, 255, 255, 0.84);
+          font-weight: 700;
+          margin-top: 4px;
+        }
+
+        .brand-live-pill {
+          white-space: nowrap;
+          background: rgba(37, 99, 235, 0.14) !important;
+          color: #bfdbfe !important;
+          border-color: rgba(147, 197, 253, 0.16) !important;
+        }
+
+        .sidebar-quick-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .sidebar-shortcut {
+          text-decoration: none;
+          color: white;
+          padding: 14px;
+          border-radius: 20px;
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          background: linear-gradient(135deg, rgba(37,99,235,0.18), rgba(56,189,248,0.08));
+          border: 1px solid rgba(147,197,253,0.12);
+          box-shadow: 0 18px 34px rgba(2, 8, 23, 0.18);
+          transform: translateY(0);
+        }
+
+        .sidebar-shortcut.is-secondary {
+          background: linear-gradient(135deg, rgba(16,185,129,0.16), rgba(74,222,128,0.08));
+          border-color: rgba(110,231,183,0.12);
+        }
+
+        .sidebar-shortcut:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 40px rgba(2, 8, 23, 0.24);
+        }
+
+        .sidebar-shortcut-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.12);
+          color: #eff6ff;
+          flex-shrink: 0;
+        }
+
+        .sidebar-shortcut-title {
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .sidebar-shortcut-copy {
+          font-size: 11px;
+          margin-top: 4px;
+          color: rgba(226, 232, 240, 0.6);
+        }
+
+        .language-toggle {
+          min-width: 96px;
+        }
+
+        .language-toggle .segmented-option {
+          min-height: 40px;
+          color: rgba(226, 232, 240, 0.72);
+        }
+
+        .language-toggle .segmented-option.is-active {
+          color: white;
+          background: linear-gradient(135deg, rgba(37,99,235,0.22), rgba(16,185,129,0.18));
+          border-color: rgba(125, 211, 252, 0.22);
+        }
+
+        .sidebar-user-card {
+          width: 100%;
+          border-radius: 20px;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+          padding: 12px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: white;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .sidebar-avatar,
+        .mobile-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #2563eb, #14b8a6);
+          color: white;
+          font-size: 15px;
+          font-weight: 900;
+          box-shadow: 0 16px 30px rgba(37, 99, 235, 0.2);
+          flex-shrink: 0;
+        }
+
+        .sidebar-user-copy {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .sidebar-user-name,
+        .sidebar-user-email {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .sidebar-user-name {
+          font-size: 13.5px;
+          font-weight: 800;
+        }
+
+        .sidebar-user-email {
+          font-size: 11px;
+          color: rgba(226, 232, 240, 0.5);
+          margin-top: 2px;
+        }
+
+        .sidebar-chevron {
+          color: rgba(191, 219, 254, 0.7);
+          transition: transform 0.18s ease;
+        }
+
+        .sidebar-chevron.is-open {
+          transform: rotate(180deg);
+        }
+
+        .sidebar-user-menu {
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 0;
+          right: 0;
+          border-radius: 18px;
+          overflow: hidden;
+          background: linear-gradient(180deg, rgba(14,26,51,0.99), rgba(8,16,34,0.99));
+          border: 1px solid rgba(148,163,184,0.12);
+          box-shadow: 0 24px 48px rgba(2, 8, 23, 0.34);
+          z-index: 15;
+        }
+
+        .sidebar-user-menu button,
+        .sidebar-user-menu a {
+          width: 100%;
+          padding: 13px 14px;
+          background: transparent;
+          border: none;
+          color: rgba(255,255,255,0.86);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .sidebar-user-menu button + button,
+        .sidebar-user-menu button + a,
+        .sidebar-user-menu a + button,
+        .sidebar-user-menu a + a {
+          border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sidebar-user-menu .danger {
+          color: #fecaca;
+        }
+
+        .sidebar-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          flex: 1;
+          overflow-y: auto;
+          padding-right: 2px;
+        }
+
+        .nav-link {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          border-radius: 18px;
+          color: rgba(226,232,240,0.68);
+          text-decoration: none;
+          overflow: hidden;
+          border: 1px solid transparent;
+        }
+
+        .nav-link-accent {
+          position: absolute;
+          left: 0;
+          top: 10px;
+          bottom: 10px;
+          width: 4px;
+          border-radius: 0 999px 999px 0;
+          background: linear-gradient(180deg, #60a5fa, #34d399);
+          opacity: 0;
+          transform: scaleY(0.6);
+          transition: all 0.22s ease;
+        }
+
+        .nav-link.is-active {
+          color: white;
+          background: linear-gradient(135deg, rgba(37,99,235,0.16), rgba(20,184,166,0.12));
+          border-color: rgba(147,197,253,0.12);
+          box-shadow: 0 16px 30px rgba(2,8,23,0.2);
+        }
+
+        .nav-link.is-active .nav-link-accent {
+          opacity: 1;
+          transform: scaleY(1);
+        }
+
+        .nav-link:hover {
+          color: white;
+          background: rgba(255,255,255,0.05);
+        }
+
+        .nav-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.06);
+          flex-shrink: 0;
+        }
+
+        .nav-link.is-active .nav-icon-wrap {
+          background: rgba(255,255,255,0.1);
+        }
+
+        .nav-copy {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        .nav-label {
+          font-size: 13.5px;
+          font-weight: 800;
+        }
+
+        .nav-short {
+          font-size: 10.5px;
+          color: rgba(226,232,240,0.44);
+          margin-top: 2px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+
+        .sidebar-logout {
+          margin-top: 6px;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          border-radius: 18px;
+          border: 1px solid rgba(248,113,113,0.16);
+          background: linear-gradient(180deg, rgba(127,29,29,0.22), rgba(127,29,29,0.12));
+          color: #fecaca;
+          padding: 12px 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .premium-topbar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 60;
+          padding: 14px;
+          display: none;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          background: rgba(8, 16, 34, 0.82);
+          backdrop-filter: blur(18px);
+          border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        }
+
+        .premium-topbar.is-scrolled {
+          background: rgba(8, 16, 34, 0.94);
+          box-shadow: 0 14px 34px rgba(2, 8, 23, 0.18);
+        }
+
+        .mobile-topbar-brand,
+        .mobile-topbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .mobile-brand-title {
+          font-size: 17px;
+          font-weight: 900;
+          color: white;
+          line-height: 1;
+        }
+
+        .mobile-brand-subtitle {
+          font-size: 10px;
+          color: rgba(226, 232, 240, 0.56);
+          margin-top: 4px;
+        }
+
+        .mobile-user-chip,
+        .language-compact {
+          border: 1px solid rgba(148,163,184,0.12);
+          background: rgba(255,255,255,0.06);
+          color: white;
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+        }
+
+        .mobile-user-chip {
+          padding: 6px 10px 6px 6px;
+        }
+
+        .language-compact {
+          padding: 9px 12px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .mobile-avatar {
+          width: 30px;
+          height: 30px;
+          border-radius: 10px;
+          font-size: 12px;
+        }
+
+        .mobile-user-menu {
+          left: auto;
+          right: 0;
+          width: 220px;
+        }
+
+        .premium-main-content {
+          margin-left: 288px;
+          padding: 28px 24px 102px;
+          min-height: 100vh;
+        }
+
+        .content-container {
+          max-width: 1420px;
+          margin: 0 auto;
+        }
+
+        .premium-trial-banner {
+          border: 1px solid rgba(96, 165, 250, 0.18);
+          background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(20,184,166,0.08));
+        }
+
+        .premium-bottom-nav {
+          position: fixed;
+          left: 12px;
+          right: 12px;
+          bottom: 10px;
+          z-index: 60;
+          display: none;
+        }
+
+        .mobile-bottom-nav-card {
+          display: flex;
+          gap: 6px;
+          padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+          border-radius: 26px;
+          background: rgba(8,16,34,0.94);
+          border: 1px solid rgba(148,163,184,0.1);
+          box-shadow: 0 26px 60px rgba(2, 8, 23, 0.3);
+          backdrop-filter: blur(18px);
+        }
+
+        .mobile-nav-link {
+          position: relative;
+          flex: 1;
+          min-width: 0;
+          color: rgba(226,232,240,0.5);
+          text-decoration: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 5px;
+          padding: 10px 4px;
+          border-radius: 18px;
+          overflow: hidden;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .mobile-nav-glow {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          background: linear-gradient(180deg, rgba(37,99,235,0.2), rgba(20,184,166,0.08));
+          transition: opacity 0.2s ease;
+        }
+
+        .mobile-nav-link.is-active {
+          color: white;
+          transform: translateY(-1px);
+        }
+
+        .mobile-nav-link.is-active .mobile-nav-glow {
+          opacity: 1;
+        }
+
+        .mobile-nav-link > * {
+          position: relative;
+          z-index: 1;
+        }
+
         @media (max-width: 900px) {
           .desktop-sidebar { display: none !important; }
           .mobile-topbar { display: flex !important; }
           .mobile-bottom-nav { display: block !important; }
-          .main-content {
+          .premium-main-content {
             margin-left: 0 !important;
-            padding: 84px 14px 112px !important;
+            padding: 86px 14px 116px !important;
           }
         }
 
         * { -webkit-tap-highlight-color: transparent; }
       `}</style>
     </div>
+  );
+}
+
+export default function Layout({ children }) {
+  return (
+    <AppLocaleProvider>
+      <LayoutInner>{children}</LayoutInner>
+    </AppLocaleProvider>
   );
 }
