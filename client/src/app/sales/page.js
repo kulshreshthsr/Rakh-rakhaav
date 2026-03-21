@@ -58,6 +58,12 @@ const buildWhatsAppMessage = (sale, shopName) => {
   const greeting = sale.buyer_name && sale.buyer_name !== 'Walk-in Customer'
     ? `Namaste *${sale.buyer_name}* ji! 🙏\n\n`
     : '';
+  const advancePaid = sale.payment_type === 'credit'
+    ? parseFloat(sale.amount_paid || 0)
+    : parseFloat(sale.total_amount || 0);
+  const dueAmount = sale.payment_type === 'credit'
+    ? Math.max(0, parseFloat(sale.total_amount || 0) - advancePaid)
+    : 0;
 
   return [
     `${greeting}🧾 *Invoice / Bill Details*`,
@@ -79,6 +85,49 @@ const buildWhatsAppMessage = (sale, shopName) => {
     `Thank you for choosing *${shopName || 'Rakhaav'}* 😊`,
     ``,
     `_Powered by Rakhaav Business Manager_`,
+  ].join('\n');
+};
+
+const buildWhatsAppShareMessage = (sale, shopName) => {
+  const saleDate = new Date(sale.createdAt || sale.sold_at)
+    .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const advancePaid = sale.payment_type === 'credit'
+    ? parseFloat(sale.amount_paid || 0)
+    : parseFloat(sale.total_amount || 0);
+  const dueAmount = sale.payment_type === 'credit'
+    ? Math.max(0, parseFloat(sale.total_amount || 0) - advancePaid)
+    : 0;
+  const payLabel =
+    sale.payment_type === 'cash' ? 'Cash (Paid)' :
+    sale.payment_type === 'upi' ? 'UPI (Paid)' :
+    sale.payment_type === 'bank' ? 'Bank Transfer' : 'Udhaar (Credit)';
+  const itemLines = (sale.items && sale.items.length > 0)
+    ? sale.items.map((item, i) =>
+        `  ${i + 1}. ${item.product_name} x ${item.quantity} @ Rs ${fmt(item.price_per_unit)} = Rs ${fmt(item.total_amount)}`
+      ).join('\n')
+    : `  1. ${sale.product_name} x ${sale.quantity} @ Rs ${fmt(sale.price_per_unit)} = Rs ${fmt(sale.total_amount)}`;
+
+  return [
+    sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' ? `Namaste ${sale.buyer_name} ji,` : 'Namaste,',
+    '',
+    `Invoice / Bill Details`,
+    `Shop: ${shopName || 'Rakhaav'}`,
+    `Invoice No: ${sale.invoice_number}`,
+    `Date: ${saleDate}`,
+    `Items:`,
+    itemLines,
+    `Taxable Amount: Rs ${fmt(sale.taxable_amount)}`,
+    `GST: Rs ${fmt(sale.total_gst)}`,
+    `Total Amount: Rs ${fmt(sale.total_amount)}`,
+    `Payment: ${payLabel}`,
+    ...(sale.payment_type === 'credit'
+      ? [
+          `Advance Payment: Rs ${fmt(advancePaid)}`,
+          `Udhaar / Due: Rs ${fmt(dueAmount)}`,
+        ]
+      : []),
+    '',
+    `Thank you for choosing ${shopName || 'Rakhaav'}`,
   ].join('\n');
 };
 
@@ -236,7 +285,7 @@ export default function SalesPage() {
 
   // ── WhatsApp share — pure text, no API call, no PDF ──────────────────────
   const shareWhatsApp = (sale) => {
-    const msg   = buildWhatsAppMessage(sale, shopName);
+    const msg   = buildWhatsAppShareMessage(sale, shopName);
     const phone = sale.buyer_phone ? sale.buyer_phone.replace(/\D/g, '') : '';
     // If phone number exists → open direct chat, else → open WhatsApp contact picker
     const waUrl = phone

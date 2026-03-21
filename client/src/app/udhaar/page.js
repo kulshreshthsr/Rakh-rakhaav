@@ -7,6 +7,7 @@ const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'NA';
+const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
 
 export default function UdhaarPage() {
   const router = useRouter();
@@ -64,6 +65,23 @@ export default function UdhaarPage() {
     setLedger([]);
     setError('');
     setSuccess('');
+  };
+
+  const sendReminder = (customer) => {
+    const phone = cleanPhone(customer.phone || '');
+    if (!phone) {
+      setError('Is customer ka phone number nahi hai');
+      return;
+    }
+    const msg = [
+      `Namaste ${customer.name || 'Customer'} ji,`,
+      '',
+      `Aapke account me abhi Rs ${fmt(customer.totalUdhaar)} baki hai.`,
+      `Kripya suvidha anusar payment kar dein.`,
+      '',
+      `Dhanyavaad`,
+    ].join('\n');
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
@@ -171,6 +189,13 @@ export default function UdhaarPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {isCustomer && selected.phone && selected.totalUdhaar > 0 && (
+            <button
+              onClick={() => sendReminder(selected)}
+              style={{ padding: '8px 14px', background: '#25d366', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              ðŸ“² Reminder
+            </button>
+          )}
           {selected.totalUdhaar > 0 && (
             <button
               onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}
@@ -347,6 +372,14 @@ export default function UdhaarPage() {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {isCustomer && item.phone && item.totalUdhaar > 0 && (
+                        <button
+                          type="button"
+                          onClick={(event) => { event.stopPropagation(); sendReminder(item); }}
+                          style={{ padding: '7px 10px', background: '#dcfce7', color: '#15803d', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                          WA
+                        </button>
+                      )}
                       <div>
                         <div style={{ fontSize: 18, fontWeight: 800, color: item.totalUdhaar > 0 ? (isCustomer ? '#ef4444' : '#f59e0b') : '#10b981' }}>
                           ₹{fmt(item.totalUdhaar)}
