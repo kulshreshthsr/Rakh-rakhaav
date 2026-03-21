@@ -18,6 +18,25 @@ const navItems = [
   { href: '/reports', key: 'reports', shortLabel: 'Reports' },
 ];
 
+function readStoredUser() {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem('user');
+  if (!stored) return null;
+
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
+function shouldBlockForAuthRestore() {
+  if (typeof window === 'undefined') return true;
+  const token = localStorage.getItem('token');
+  if (!token) return true;
+  return !readStoredUser();
+}
+
 function Glyph({ name, size = 20, stroke = 1.8 }) {
   const emojiStyle = {
     width: size,
@@ -115,12 +134,8 @@ function pickLocalizedSegment(text, locale) {
 
 function LayoutInner({ children }) {
   const { locale, setLocale, t } = useAppLocale();
-  const [user, setUser] = useState(() => {
-    if (typeof window === 'undefined') return null;
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [authChecking, setAuthChecking] = useState(true);
+  const [user, setUser] = useState(() => readStoredUser());
+  const [authChecking, setAuthChecking] = useState(() => shouldBlockForAuthRestore());
   const [subscription, setSubscription] = useState(null);
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
