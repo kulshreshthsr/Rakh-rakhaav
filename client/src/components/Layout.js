@@ -19,6 +19,16 @@ const navItems = [
 ];
 
 function Glyph({ name, size = 20, stroke = 1.8 }) {
+  const emojiStyle = {
+    width: size,
+    height: size,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: size - 1,
+    lineHeight: 1,
+  };
+
   const common = {
     width: size,
     height: size,
@@ -33,100 +43,29 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
 
   switch (name) {
     case 'dashboard':
-      return (
-        <svg {...common}>
-          <rect x="3" y="3" width="8" height="8" rx="2" />
-          <rect x="13" y="3" width="8" height="5" rx="2" />
-          <rect x="13" y="10" width="8" height="11" rx="2" />
-          <rect x="3" y="13" width="8" height="8" rx="2" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">🏠</span>;
     case 'products':
-      return (
-        <svg {...common}>
-          <path d="M12 3 4.5 7 12 11 19.5 7 12 3Z" />
-          <path d="M4.5 7v10L12 21l7.5-4V7" />
-          <path d="M12 11v10" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">📦</span>;
     case 'sales':
-      return (
-        <svg {...common}>
-          <path d="M4 18h16" />
-          <path d="M6 15l4-4 3 3 5-7" />
-          <path d="M18 7h-4" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">💰</span>;
     case 'purchases':
-      return (
-        <svg {...common}>
-          <circle cx="9" cy="19" r="1.25" />
-          <circle cx="17" cy="19" r="1.25" />
-          <path d="M4 5h2l2.2 9.2a1 1 0 0 0 1 .8h7.7a1 1 0 0 0 1-.8L20 8H7" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">🛒</span>;
     case 'udhaar':
-      return (
-        <svg {...common}>
-          <rect x="4" y="4" width="16" height="16" rx="3" />
-          <path d="M8 9h8M8 13h8M8 17h5" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">📒</span>;
     case 'gst':
-      return (
-        <svg {...common}>
-          <path d="M12 3v18" />
-          <path d="M16.5 7.5c0-1.9-1.8-3.5-4.5-3.5S7.5 5.6 7.5 7.5 9.3 11 12 11s4.5 1.6 4.5 3.5-1.8 3.5-4.5 3.5-4.5-1.6-4.5-3.5" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">🧾</span>;
     case 'reports':
-      return (
-        <svg {...common}>
-          <path d="M4 19h16" />
-          <path d="M7 15V9" />
-          <path d="M12 15V5" />
-          <path d="M17 15v-7" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">📊</span>;
     case 'profile':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="8" r="3.25" />
-          <path d="M5 19a7 7 0 0 1 14 0" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">👤</span>;
     case 'logout':
-      return (
-        <svg {...common}>
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <path d="M16 17l5-5-5-5" />
-          <path d="M21 12H9" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">🚪</span>;
     case 'pricing':
-      return (
-        <svg {...common}>
-          <path d="M12 2 3 6v6c0 5 3.8 8.8 9 10 5.2-1.2 9-5 9-10V6l-9-4Z" />
-          <path d="M9.5 12.5 11 14l3.5-4" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">⭐</span>;
     case 'language':
-      return (
-        <svg {...common}>
-          <path d="M4 5h10" />
-          <path d="M9 5c0 6-2 10-5 12" />
-          <path d="M7 11c1.2 2 2.8 3.8 5 5" />
-          <path d="M15 15h5" />
-          <path d="m16 12 3.5 9" />
-          <path d="m19.5 12-3.5 9" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">🌐</span>;
     default:
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8" />
-        </svg>
-      );
+      return <span style={emojiStyle} aria-hidden="true">•</span>;
   }
 }
 
