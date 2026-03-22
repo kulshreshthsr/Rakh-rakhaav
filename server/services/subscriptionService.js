@@ -1,7 +1,16 @@
-const { DAY_MS, calculateDaysRemaining } = require('../utils/subscriptionUtils');
+const { calculateDaysRemaining } = require('../utils/subscriptionUtils');
+
 const TRIAL_DAYS = 5;
 
 const PLANS = {
+  test_10: {
+    id: 'test_10',
+    label: 'Test Rs 10',
+    amount: 10,
+    months: 1,
+    badge: 'Test',
+    description: 'Temporary low-value plan for real payment verification.',
+  },
   monthly: {
     id: 'monthly',
     label: 'Monthly',
@@ -62,7 +71,7 @@ function ensureTrialDates(user) {
 
 function mapPlanToSubscriptionType(plan) {
   if (plan === 'six_month') return '6months';
-  if (plan === 'monthly' || plan === 'yearly') return plan;
+  if (plan === 'test_10' || plan === 'monthly' || plan === 'yearly') return plan;
   return 'trial';
 }
 
@@ -164,11 +173,13 @@ function serializePlans() {
   return Object.values(PLANS).map((plan) => ({
     ...plan,
     savingsLabel:
-      plan.id === 'six_month'
-        ? `Save ₹${(monthly * 6) - plan.amount} compared to monthly`
-        : plan.id === 'yearly'
-          ? `Maximum savings • Save ₹${(monthly * 12) - plan.amount}`
-          : null,
+      plan.id === 'test_10'
+        ? null
+        : plan.id === 'six_month'
+          ? `Save Rs ${(monthly * 6) - plan.amount} compared to monthly`
+          : plan.id === 'yearly'
+            ? `Maximum savings - Save Rs ${(monthly * 12) - plan.amount}`
+            : null,
   }));
 }
 

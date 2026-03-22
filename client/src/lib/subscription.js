@@ -2,6 +2,14 @@ export const API = 'https://rakh-rakhaav.onrender.com';
 
 export const FALLBACK_PLANS = [
   {
+    id: 'test_10',
+    label: 'Test Rs 10',
+    amount: 10,
+    badge: 'Test',
+    description: 'Temporary low-value plan for real payment verification.',
+    savingsLabel: null,
+  },
+  {
     id: 'monthly',
     label: 'Monthly',
     amount: 449,
@@ -15,7 +23,7 @@ export const FALLBACK_PLANS = [
     amount: 2500,
     badge: 'Most Popular',
     description: 'Balanced pricing for businesses using the app every day.',
-    savingsLabel: 'Save ₹194 compared to monthly',
+    savingsLabel: 'Save Rs 194 compared to monthly',
   },
   {
     id: 'yearly',
@@ -23,7 +31,7 @@ export const FALLBACK_PLANS = [
     amount: 4499,
     badge: 'Best Value',
     description: 'Maximum savings with long-term premium access.',
-    savingsLabel: 'Maximum savings • Save ₹889',
+    savingsLabel: 'Maximum savings - Save Rs 889',
   },
 ];
 
