@@ -39,6 +39,29 @@ export function getToken() {
   return localStorage.getItem('token');
 }
 
+export function readStoredSubscription() {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem('subscription-status');
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function writeStoredSubscription(subscription) {
+  if (typeof window === 'undefined') return;
+
+  if (!subscription) {
+    localStorage.removeItem('subscription-status');
+    return;
+  }
+
+  localStorage.setItem('subscription-status', JSON.stringify(subscription));
+}
+
 export function getTrialWarningKey() {
   return `trial-warning-${new Date().toISOString().slice(0, 10)}`;
 }

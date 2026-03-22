@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import PlanCard from '../../components/subscription/PlanCard';
 import UpgradeModal from '../../components/subscription/UpgradeModal';
-import { API, FALLBACK_PLANS, formatCurrency, getToken } from '../../lib/subscription';
+import { API, FALLBACK_PLANS, formatCurrency, getToken, readStoredSubscription, writeStoredSubscription } from '../../lib/subscription';
 
 const MEMBERSHIP_FEATURES = [
   'Unlimited billing and invoice printing',
@@ -15,7 +15,7 @@ const MEMBERSHIP_FEATURES = [
 
 export default function PricingPage() {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
-  const [subscription, setSubscription] = useState(null);
+  const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('six_month');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -33,6 +33,7 @@ export default function PricingPage() {
         const nextPlans = data.plans?.length ? data.plans : FALLBACK_PLANS;
         setPlans(nextPlans);
         setSubscription(data.subscription || null);
+        writeStoredSubscription(data.subscription || null);
         setRazorpayKeyId(data.razorpayKeyId || '');
         setSelectedPlan((currentPlan) => (
           nextPlans.some((plan) => plan.id === currentPlan) ? currentPlan : (nextPlans[0]?.id || 'six_month')
@@ -190,6 +191,7 @@ export default function PricingPage() {
         initialPlan={selectedPlan}
         onSuccess={(nextSubscription) => {
           setSubscription(nextSubscription || null);
+          writeStoredSubscription(nextSubscription || null);
           setShowUpgradeModal(false);
         }}
       />

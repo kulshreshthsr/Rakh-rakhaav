@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
 import TrialWarningModal from './subscription/TrialWarningModal';
-import { API, FALLBACK_PLANS, getTrialWarningKey } from '../lib/subscription';
+import { API, FALLBACK_PLANS, getTrialWarningKey, readStoredSubscription, writeStoredSubscription } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
 
 const navItems = [
@@ -168,7 +168,7 @@ function getPromoMessage(subscription) {
 function LayoutInner({ children }) {
   const { locale, setLocale, t } = useAppLocale();
   const [user, setUser] = useState(() => readStoredUser());
-  const [subscription, setSubscription] = useState(null);
+  const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -208,6 +208,7 @@ function LayoutInner({ children }) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
       setSubscription(data.subscription || null);
+      writeStoredSubscription(data.subscription || null);
       setPlans(data.plans?.length ? data.plans : FALLBACK_PLANS);
       setRazorpayKeyId(data.razorpayKeyId || '');
       return true;
@@ -335,6 +336,7 @@ function LayoutInner({ children }) {
 
   const handleUpgradeSuccess = async (nextSubscription) => {
     setSubscription(nextSubscription || null);
+    writeStoredSubscription(nextSubscription || null);
     setShowUpgradeModal(false);
     setShowTrialWarning(false);
     await refreshSubscriptionStatus();
@@ -539,8 +541,7 @@ function LayoutInner({ children }) {
                 </a>
               </div>
             )}
-            {!subscription?.isPro && (
-              <section className={`membership-spotlight-banner accent-${promoMessage.accent}`}>
+            <section className={`membership-spotlight-banner accent-${promoMessage.accent}`}>
                 <div className="membership-spotlight-copy">
                   <div className="subscription-pill">Premium spotlight</div>
                   <h2>{promoMessage.title}</h2>
@@ -571,7 +572,7 @@ function LayoutInner({ children }) {
 
                   <div className="membership-spotlight-actions">
                     <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
-                      {subscription?.isReadOnly ? 'Reactivate now' : t('upgrade')}
+                      {subscription?.isPro ? 'Switch membership' : subscription?.isReadOnly ? 'Reactivate now' : t('upgrade')}
                     </button>
                     <a href="/pricing" className="btn-ghost" style={{ width: 'auto', textDecoration: 'none' }}>
                       {t('viewPricing')}
@@ -579,7 +580,6 @@ function LayoutInner({ children }) {
                   </div>
                 </div>
               </section>
-            )}
             {children}
           </div>
         </main>
