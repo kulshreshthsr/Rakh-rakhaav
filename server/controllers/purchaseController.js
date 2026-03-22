@@ -22,9 +22,13 @@ const generateBillNumber = async (shopId) => {
   return `PUR-${year}${month}-${String(count + 1).padStart(4, '0')}`;
 };
 
+const normalizeState = (value = '') => value.trim().toLowerCase();
+
 const calculateGST = (taxable_amount, gst_rate, shopState, supplierState) => {
   const gst = (taxable_amount * gst_rate) / 100;
-  const isIGST = supplierState && shopState && shopState !== supplierState;
+  const normalizedShopState = normalizeState(shopState);
+  const normalizedSupplierState = normalizeState(supplierState);
+  const isIGST = normalizedSupplierState && normalizedShopState && normalizedShopState !== normalizedSupplierState;
   if (isIGST) {
     return {
       cgst_amount: 0,
@@ -209,7 +213,7 @@ const createPurchase = async (req, res) => {
 
       payment_type,
       amount_paid: paid,
-      // balance_due & payment_status set by pre-save hook
+        // balance_due & payment_status set by pre-save hook
 
       supplier_name: supplier_name || '',
       supplier_phone: supplier_phone || '',

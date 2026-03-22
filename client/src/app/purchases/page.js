@@ -595,29 +595,27 @@ export default function PurchasesPage() {
                   </div>
                 </div>
 
-                {form.payment_type === 'credit' && (
-                  <div className="grid-2">
-                    <div className="form-group">
-                      <label className="form-label">Supplier State</label>
-                      <select className="form-input" value={form.supplier_state}
-                        onChange={e => updateForm({ supplier_state: e.target.value })}>
-                        <option value="">Select State/UT</option>
-                        <optgroup label="── States ──">
-                          {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                        </optgroup>
-                        <optgroup label="── Union Territories ──">
-                          {UTS.map(s => <option key={s} value={s}>{s}</option>)}
-                        </optgroup>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Address</label>
-                      <input className="form-input" placeholder="Supplier address"
-                        value={form.supplier_address}
-                        onChange={e => updateForm({ supplier_address: e.target.value })} />
-                    </div>
+                <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Supplier State</label>
+                    <select className="form-input" value={form.supplier_state}
+                      onChange={e => updateForm({ supplier_state: e.target.value })}>
+                      <option value="">Select State/UT</option>
+                      <optgroup label="── States ──">
+                        {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </optgroup>
+                      <optgroup label="── Union Territories ──">
+                        {UTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      </optgroup>
+                    </select>
                   </div>
-                )}
+                  <div className="form-group">
+                    <label className="form-label">Address</label>
+                    <input className="form-input" placeholder="Supplier address"
+                      value={form.supplier_address}
+                      onChange={e => updateForm({ supplier_address: e.target.value })} />
+                  </div>
+                </div>
 
                 <div className="form-group">
                   <label className="form-label">नोट / Notes</label>

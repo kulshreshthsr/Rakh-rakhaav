@@ -61,6 +61,7 @@ const saleSchema = new mongoose.Schema({
   buyer_phone: { type: String },
   buyer_gstin: { type: String },
   buyer_address: { type: String },
+  buyer_state: { type: String },
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, unique: true },

@@ -23,9 +23,13 @@ const generateInvoiceNumber = async (shopId) => {
   return `INV-${year}${month}-${String(count + 1).padStart(4, '0')}`;
 };
 
+const normalizeState = (value = '') => value.trim().toLowerCase();
+
 const calculateGST = (taxable_amount, gst_rate, shopState, buyerState) => {
   const gst    = (taxable_amount * gst_rate) / 100;
-  const isIGST = buyerState && shopState && shopState !== buyerState;
+  const normalizedShopState = normalizeState(shopState);
+  const normalizedBuyerState = normalizeState(buyerState);
+  const isIGST = normalizedBuyerState && normalizedShopState && normalizedShopState !== normalizedBuyerState;
   if (isIGST) {
     return {
       cgst_amount: 0, sgst_amount: 0,
@@ -192,6 +196,7 @@ const createSale = async (req, res) => {
       buyer_phone,
       buyer_gstin,
       buyer_address,
+      buyer_state: buyer_state || '',
       notes,
     });
 
