@@ -7,12 +7,12 @@ const userSchema = new mongoose.Schema({
   isPro: { type: Boolean, default: false },
   subscriptionType: {
     type: String,
-    enum: ['trial', 'monthly', '6months', 'yearly', null],
+    enum: ['trial', 'test_10', 'monthly', '6months', 'yearly', null],
     default: 'trial',
   },
   trialStartDate: { type: Date, default: null },
   trialEndDate: { type: Date, default: null },
-  subscriptionPlan: { type: String, enum: ['monthly', 'six_month', 'yearly', null], default: null },
+  subscriptionPlan: { type: String, enum: ['test_10', 'monthly', 'six_month', 'yearly', null], default: null },
   subscriptionStartDate: { type: Date, default: null },
   subscriptionEndDate: { type: Date, default: null },
   paymentStatus: {
