@@ -1,4 +1,6 @@
 export const API = 'https://rakh-rakhaav.onrender.com';
+const WELCOME_PENDING_KEY = 'rr-welcome-pending';
+const TRIAL_GATE_SEEN_KEY = 'rr-trial-gate-seen';
 
 export const FALLBACK_PLANS = [
   {
@@ -60,6 +62,35 @@ export function writeStoredSubscription(subscription) {
   }
 
   localStorage.setItem('subscription-status', JSON.stringify(subscription));
+}
+
+export function setWelcomePending(value) {
+  if (typeof window === 'undefined') return;
+  if (value) {
+    localStorage.setItem(WELCOME_PENDING_KEY, '1');
+    return;
+  }
+  localStorage.removeItem(WELCOME_PENDING_KEY);
+}
+
+export function hasWelcomePending() {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(WELCOME_PENDING_KEY) === '1';
+}
+
+export function markTrialGateSeen() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(TRIAL_GATE_SEEN_KEY, '1');
+}
+
+export function clearTrialGateSeen() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(TRIAL_GATE_SEEN_KEY);
+}
+
+export function hasTrialGateSeen() {
+  if (typeof window === 'undefined') return false;
+  return sessionStorage.getItem(TRIAL_GATE_SEEN_KEY) === '1';
 }
 
 export function getTrialWarningKey() {

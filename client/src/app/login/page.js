@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { clearTrialGateSeen, hasWelcomePending, markTrialGateSeen, readStoredSubscription, setWelcomePending, writeStoredSubscription } from '../../lib/subscription';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -13,6 +14,17 @@ export default function LoginPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
+      if (hasWelcomePending()) {
+        router.replace('/welcome');
+        return;
+      }
+
+      const subscription = readStoredSubscription();
+      if (subscription && !subscription.isPro) {
+        router.replace('/trial-status');
+        return;
+      }
+
       router.replace('/dashboard');
     }
   }, [router]);
@@ -31,7 +43,15 @@ export default function LoginPage() {
       if (data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/dashboard');
+        writeStoredSubscription(data.user?.subscription || null);
+        setWelcomePending(false);
+        if (data.user?.subscription?.isPro) {
+          markTrialGateSeen();
+          router.push('/dashboard');
+        } else {
+          clearTrialGateSeen();
+          router.push('/trial-status');
+        }
       } else {
         setError(data.message || 'Login failed');
       }

@@ -4,8 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
-import TrialWarningModal from './subscription/TrialWarningModal';
-import { API, FALLBACK_PLANS, getTrialWarningKey, readStoredSubscription, writeStoredSubscription } from '../lib/subscription';
+import { API, FALLBACK_PLANS, hasTrialGateSeen, hasWelcomePending, readStoredSubscription, writeStoredSubscription } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
 
 const navItems = [
@@ -125,46 +124,6 @@ function pickLocalizedSegment(text, locale) {
   return segments.find((segment) => !devanagari.test(segment)) || segments[segments.length - 1];
 }
 
-function getPromoMessage(subscription) {
-  if (!subscription) {
-    return {
-      title: 'Unlock premium access',
-      subtitle: 'Bring billing, GST, reports and ledger workflows to the front with one upgrade.',
-      accent: 'trial',
-    };
-  }
-
-  if (subscription.isPro) {
-    return {
-      title: 'Premium access is already active',
-      subtitle: 'Switch to a longer membership anytime for better savings and uninterrupted operations.',
-      accent: 'active',
-    };
-  }
-
-  if (subscription.isReadOnly) {
-    return {
-      title: 'Your workspace is waiting for reactivation',
-      subtitle: 'Your data is safe. Upgrade now to restore billing, GST exports, reports and credit actions.',
-      accent: 'expired',
-    };
-  }
-
-  if (subscription.trialDaysLeft) {
-    return {
-      title: `Free trial: ${subscription.trialDaysLeft} day${subscription.trialDaysLeft === 1 ? '' : 's'} left`,
-      subtitle: 'Upgrade before the countdown ends so your daily workflows keep running without interruption.',
-      accent: 'trial',
-    };
-  }
-
-  return {
-    title: 'Keep premium workflows active',
-    subtitle: 'Choose a membership plan now so billing, GST and reports stay available when you need them.',
-    accent: 'trial',
-  };
-}
-
 function LayoutInner({ children }) {
   const { locale, setLocale, t } = useAppLocale();
   const [user, setUser] = useState(() => readStoredUser());
@@ -172,7 +131,6 @@ function LayoutInner({ children }) {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showTrialWarning, setShowTrialWarning] = useState(false);
   const [paywallPlan, setPaywallPlan] = useState('six_month');
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -252,23 +210,23 @@ function LayoutInner({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!subscription?.shouldWarnTrial || subscription?.isReadOnly) {
-      const timeoutId = window.setTimeout(() => setShowTrialWarning(false), 0);
-      return () => window.clearTimeout(timeoutId);
+    if (!pathname || pathname === '/pricing' || pathname === '/welcome' || pathname === '/trial-status') {
+      return;
     }
 
-    const warningKey = getTrialWarningKey();
-    if (!localStorage.getItem(warningKey)) {
-      const timeoutId = window.setTimeout(() => {
-        setShowTrialWarning(true);
-        localStorage.setItem(warningKey, 'shown');
-      }, 0);
-      return () => window.clearTimeout(timeoutId);
+    if (hasWelcomePending()) {
+      router.replace('/welcome');
+      return;
     }
 
-    const timeoutId = window.setTimeout(() => setShowTrialWarning(false), 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [subscription]);
+    if (!subscription) {
+      return;
+    }
+
+    if (!subscription?.isPro && !hasTrialGateSeen()) {
+      router.replace('/trial-status');
+    }
+  }, [pathname, router, subscription]);
 
   useEffect(() => {
     const root = document.querySelector('.app-shell-root');
@@ -338,7 +296,6 @@ function LayoutInner({ children }) {
     setSubscription(nextSubscription || null);
     writeStoredSubscription(nextSubscription || null);
     setShowUpgradeModal(false);
-    setShowTrialWarning(false);
     await refreshSubscriptionStatus();
   };
 
@@ -353,14 +310,7 @@ function LayoutInner({ children }) {
     [t]
   );
 
-  const trialBannerTitle = subscription?.trialDaysLeft
-    ? t('trialEnds', {
-        days: subscription.trialDaysLeft,
-        suffix: subscription.trialDaysLeft === 1 ? '' : locale === 'en' ? 's' : '',
-      })
-    : '';
-  const promoMessage = getPromoMessage(subscription);
-  const membershipSpotlightPlans = plans.slice(0, 3);
+  const upgradeButtonLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
   return (
     <div className="app-shell-root">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
@@ -491,6 +441,10 @@ function LayoutInner({ children }) {
           </div>
 
           <div className="mobile-topbar-actions">
+            <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
+              <Glyph name="pricing" size={14} />
+              {upgradeButtonLabel}
+            </a>
             <button type="button" className="language-compact" onClick={() => setLocale(locale === 'hi' ? 'en' : 'hi')}>
               <Glyph name="language" size={14} />
               {locale === 'hi' ? 'हिं' : 'EN'}
@@ -527,59 +481,18 @@ function LayoutInner({ children }) {
 
         <main className="main-content premium-main-content">
           <div className="content-container">
-            {subscription?.shouldWarnTrial && !subscription?.isReadOnly && (
-              <div className="trial-banner premium-trial-banner">
-                <div className="trial-banner-copy">
-                  <div className="trial-banner-title">{trialBannerTitle}</div>
-                  <div className="trial-banner-subtitle">{t('trialCopy')}</div>
+            <div className="content-top-actions">
+              <div className="content-top-actions-copy">
+                <div className="content-top-actions-kicker">Premium access</div>
+                <div className="content-top-actions-subtitle">
+                  Open plans anytime from this top tab without cluttering your main workspace.
                 </div>
-                <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
-                  {t('upgrade')}
-                </button>
-                <a href="/pricing" className="btn-ghost" style={{ width: 'auto', textDecoration: 'none' }}>
-                  {t('viewPricing')}
-                </a>
               </div>
-            )}
-            <section className={`membership-spotlight-banner accent-${promoMessage.accent}`}>
-                <div className="membership-spotlight-copy">
-                  <div className="subscription-pill">Premium spotlight</div>
-                  <h2>{promoMessage.title}</h2>
-                  <p>{promoMessage.subtitle}</p>
-
-                  <div className="membership-spotlight-pills">
-                    <span>Billing + invoice printing</span>
-                    <span>GST exports and reports</span>
-                    <span>Udhaar and customer collections</span>
-                    <span>WhatsApp-ready workflows</span>
-                  </div>
-                </div>
-
-                <div className="membership-spotlight-side">
-                  <div className="membership-spotlight-planrow">
-                    {membershipSpotlightPlans.map((plan) => (
-                      <button
-                        key={plan.id}
-                        type="button"
-                        className={`membership-mini-plan ${paywallPlan === plan.id ? 'is-selected' : ''}`}
-                        onClick={() => setPaywallPlan(plan.id)}
-                      >
-                        <strong>{plan.label}</strong>
-                        <span>{plan.amount}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="membership-spotlight-actions">
-                    <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
-                      {subscription?.isPro ? 'Switch membership' : subscription?.isReadOnly ? 'Reactivate now' : t('upgrade')}
-                    </button>
-                    <a href="/pricing" className="btn-ghost" style={{ width: 'auto', textDecoration: 'none' }}>
-                      {t('viewPricing')}
-                    </a>
-                  </div>
-                </div>
-              </section>
+              <a href="/pricing" className={`top-upgrade-chip desktop-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
+                <Glyph name="pricing" size={15} />
+                {upgradeButtonLabel}
+              </a>
+            </div>
             {children}
           </div>
         </main>
@@ -622,16 +535,6 @@ function LayoutInner({ children }) {
             ? 'Your data is safe and visible. Upgrade now to unlock billing actions, GST exports, reports and customer credit workflows again.'
             : 'Choose a membership plan that keeps billing, GST, reports and customer workflows fully active.'
         }
-      />
-
-      <TrialWarningModal
-        open={showTrialWarning}
-        daysLeft={subscription?.trialDaysLeft}
-        onClose={() => setShowTrialWarning(false)}
-        onUpgrade={() => {
-          setShowTrialWarning(false);
-          setShowUpgradeModal(true);
-        }}
       />
 
       <style>{`
@@ -1073,6 +976,10 @@ function LayoutInner({ children }) {
           gap: 10px;
         }
 
+        .mobile-topbar-actions {
+          gap: 8px;
+        }
+
         .mobile-brand-title {
           font-size: 17px;
           font-weight: 900;
@@ -1087,7 +994,8 @@ function LayoutInner({ children }) {
         }
 
         .mobile-user-chip,
-        .language-compact {
+        .language-compact,
+        .top-upgrade-chip {
           border: 1px solid rgba(148,163,184,0.12);
           background: rgba(255,255,255,0.06);
           color: white;
@@ -1108,6 +1016,38 @@ function LayoutInner({ children }) {
           font-weight: 800;
           letter-spacing: 0.08em;
           text-transform: uppercase;
+        }
+
+        .top-upgrade-chip {
+          position: relative;
+          overflow: hidden;
+          padding: 9px 14px;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          text-decoration: none;
+          flex-shrink: 0;
+          box-shadow: 0 14px 30px rgba(37, 99, 235, 0.2);
+          background: linear-gradient(135deg, rgba(37,99,235,0.92), rgba(20,184,166,0.86));
+          border-color: rgba(191,219,254,0.18);
+        }
+
+        .top-upgrade-chip.is-manage {
+          background: rgba(255,255,255,0.08);
+          box-shadow: none;
+        }
+
+        .top-upgrade-chip.is-shining::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: -30%;
+          width: 32%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.38), transparent);
+          transform: skewX(-18deg);
+          animation: premiumShine 2.7s ease-in-out infinite;
         }
 
         .mobile-avatar {
@@ -1132,6 +1072,32 @@ function LayoutInner({ children }) {
         .content-container {
           max-width: 1420px;
           margin: 0 auto;
+        }
+
+        .content-top-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          margin: 0 0 18px;
+        }
+
+        .content-top-actions-kicker {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .content-top-actions-subtitle {
+          margin-top: 4px;
+          font-size: 13px;
+          color: #64748b;
+        }
+
+        .desktop-upgrade-chip {
+          width: auto;
         }
 
         .premium-trial-banner {
@@ -1322,10 +1288,15 @@ function LayoutInner({ children }) {
             margin-left: 0 !important;
             padding: 86px 14px 116px !important;
           }
-          .membership-spotlight-banner {
-            grid-template-columns: 1fr;
-            padding: 18px;
+          .content-top-actions {
+            display: none;
           }
+        }
+
+        @keyframes premiumShine {
+          0% { transform: translateX(-160%) skewX(-18deg); }
+          45% { transform: translateX(420%) skewX(-18deg); }
+          100% { transform: translateX(420%) skewX(-18deg); }
         }
 
         * { -webkit-tap-highlight-color: transparent; }

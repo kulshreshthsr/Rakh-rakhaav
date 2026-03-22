@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { clearTrialGateSeen, setWelcomePending, writeStoredSubscription } from '../../lib/subscription';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -25,7 +26,10 @@ export default function RegisterPage() {
       if (data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/dashboard');
+        writeStoredSubscription(data.user?.subscription || null);
+        setWelcomePending(true);
+        clearTrialGateSeen();
+        router.push('/welcome');
       } else {
         setError(data.message || 'Registration failed');
       }
