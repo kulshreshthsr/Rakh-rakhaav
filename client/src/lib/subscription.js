@@ -2,35 +2,27 @@ export const API = 'https://rakh-rakhaav.onrender.com';
 
 export const FALLBACK_PLANS = [
   {
-    id: 'test_10',
-    label: 'Test Rs 10',
-    amount: 10,
-    badge: 'Test',
-    description: 'Temporary low-value plan for real payment verification.',
-    savingsLabel: null,
-  },
-  {
     id: 'monthly',
-    label: 'Monthly',
+    label: 'Starter Monthly',
     amount: 449,
     badge: null,
-    description: 'Flexible access for businesses getting started.',
+    description: 'Flexible premium access for shops that want full billing, GST and reports every month.',
     savingsLabel: null,
   },
   {
     id: 'six_month',
-    label: '6 Months',
+    label: 'Growth 6 Months',
     amount: 2500,
-    badge: 'Most Popular',
-    description: 'Balanced pricing for businesses using the app every day.',
+    badge: 'Most Chosen',
+    description: 'Best balance for daily users who want lower effective monthly cost without long lock-in.',
     savingsLabel: 'Save Rs 194 compared to monthly',
   },
   {
     id: 'yearly',
-    label: 'Yearly',
+    label: 'Business Yearly',
     amount: 4499,
-    badge: 'Best Value',
-    description: 'Maximum savings with long-term premium access.',
+    badge: 'Best Savings',
+    description: 'Lowest monthly cost for serious businesses that run inventory, GST and billing all year.',
     savingsLabel: 'Maximum savings - Save Rs 889',
   },
 ];

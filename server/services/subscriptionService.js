@@ -13,27 +13,27 @@ const PLANS = {
   },
   monthly: {
     id: 'monthly',
-    label: 'Monthly',
+    label: 'Starter Monthly',
     amount: 449,
     months: 1,
     badge: null,
-    description: 'Good for testing premium workflows month to month.',
+    description: 'Flexible premium access for shops that want full billing, GST and reports every month.',
   },
   six_month: {
     id: 'six_month',
-    label: '6 Months',
+    label: 'Growth 6 Months',
     amount: 2500,
     months: 6,
-    badge: 'Most Popular',
-    description: 'Balanced savings for growing businesses.',
+    badge: 'Most Chosen',
+    description: 'Best balance for daily users who want lower effective monthly cost without long lock-in.',
   },
   yearly: {
     id: 'yearly',
-    label: 'Yearly',
+    label: 'Business Yearly',
     amount: 4499,
     months: 12,
-    badge: 'Best Value',
-    description: 'Maximum savings for long-term usage.',
+    badge: 'Best Savings',
+    description: 'Lowest monthly cost for serious businesses that run inventory, GST and billing all year.',
   },
 };
 
@@ -170,16 +170,14 @@ function activatePlan(user, planId) {
 
 function serializePlans() {
   const monthly = PLANS.monthly.amount;
-  return Object.values(PLANS).map((plan) => ({
+  return Object.values(PLANS).filter((plan) => plan.id !== 'test_10').map((plan) => ({
     ...plan,
     savingsLabel:
-      plan.id === 'test_10'
-        ? null
-        : plan.id === 'six_month'
-          ? `Save Rs ${(monthly * 6) - plan.amount} compared to monthly`
-          : plan.id === 'yearly'
-            ? `Maximum savings - Save Rs ${(monthly * 12) - plan.amount}`
-            : null,
+      plan.id === 'six_month'
+        ? `Save Rs ${(monthly * 6) - plan.amount} compared to monthly`
+        : plan.id === 'yearly'
+          ? `Maximum savings - Save Rs ${(monthly * 12) - plan.amount}`
+          : null,
   }));
 }
 

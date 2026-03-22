@@ -3,6 +3,9 @@
 import { formatCurrency } from '../../lib/subscription';
 
 export default function PlanCard({ plan, selected, onSelect, compact = false }) {
+  const months = plan.id === 'yearly' ? 12 : plan.id === 'six_month' ? 6 : 1;
+  const effectiveMonthlyPrice = Math.round((plan.amount || 0) / months);
+
   return (
     <button
       type="button"
@@ -13,11 +16,13 @@ export default function PlanCard({ plan, selected, onSelect, compact = false }) 
         <div>
           <div className="subscription-plan-name">{plan.label}</div>
           <div className="subscription-plan-price">{formatCurrency(plan.amount)}</div>
+          <div className="subscription-plan-meta">{formatCurrency(effectiveMonthlyPrice)}/month effective</div>
         </div>
         {plan.badge && <span className="subscription-plan-badge">{plan.badge}</span>}
       </div>
       <div className="subscription-plan-description">{plan.description}</div>
       {plan.savingsLabel && <div className="subscription-plan-saving">{plan.savingsLabel}</div>}
+      {selected && <div className="subscription-plan-selected">Selected for checkout</div>}
     </button>
   );
 }

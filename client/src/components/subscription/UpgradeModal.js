@@ -13,7 +13,7 @@ export default function UpgradeModal({
   onSuccess,
   initialPlan = 'six_month',
   title = 'Unlock premium access',
-  subtitle = 'Upgrade to continue using billing, GST, reports and credit workflows without interruption.',
+  subtitle = 'Continue billing, GST, reports and credit workflows without interruption.',
 }) {
   const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [loading, setLoading] = useState(false);
@@ -129,7 +129,7 @@ export default function UpgradeModal({
         <button type="button" onClick={onClose} className="subscription-modal-close">×</button>
 
         <div className="subscription-modal-hero">
-          <div className="subscription-pill">Premium subscription</div>
+          <div className="subscription-pill">Premium membership</div>
           <h2>{title}</h2>
           <p>{subtitle}</p>
         </div>
@@ -163,7 +163,7 @@ export default function UpgradeModal({
 
         <div className="subscription-modal-actions">
           <button type="button" className="btn-primary" onClick={startCheckout} disabled={loading}>
-            {loading ? 'Starting secure checkout...' : `Upgrade to ${selected?.label || 'Premium'}`}
+            {loading ? 'Starting secure checkout...' : `Unlock ${selected?.label || 'Premium'}`}
           </button>
           <button type="button" className="btn-ghost" onClick={onClose} disabled={loading}>
             Maybe later

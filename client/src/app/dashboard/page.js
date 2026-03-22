@@ -229,7 +229,7 @@ export default function DashboardPage() {
     { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.1)', color: '#dc2626' },
     { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5' },
     { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(14,165,233,0.12)', color: '#2563eb' },
-    { href: '/pricing', icon: 'UP', hi: 'प्लान', en: 'Pricing', sub: 'Upgrade plans', tone: 'rgba(168,85,247,0.12)', color: '#7c3aed' },
+    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(168,85,247,0.12)', color: '#7c3aed' },
   ];
 
   return (

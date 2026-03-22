@@ -125,6 +125,46 @@ function pickLocalizedSegment(text, locale) {
   return segments.find((segment) => !devanagari.test(segment)) || segments[segments.length - 1];
 }
 
+function getPromoMessage(subscription) {
+  if (!subscription) {
+    return {
+      title: 'Unlock premium access',
+      subtitle: 'Bring billing, GST, reports and ledger workflows to the front with one upgrade.',
+      accent: 'trial',
+    };
+  }
+
+  if (subscription.isPro) {
+    return {
+      title: 'Premium access is already active',
+      subtitle: 'Switch to a longer membership anytime for better savings and uninterrupted operations.',
+      accent: 'active',
+    };
+  }
+
+  if (subscription.isReadOnly) {
+    return {
+      title: 'Your workspace is waiting for reactivation',
+      subtitle: 'Your data is safe. Upgrade now to restore billing, GST exports, reports and credit actions.',
+      accent: 'expired',
+    };
+  }
+
+  if (subscription.trialDaysLeft) {
+    return {
+      title: `Free trial: ${subscription.trialDaysLeft} day${subscription.trialDaysLeft === 1 ? '' : 's'} left`,
+      subtitle: 'Upgrade before the countdown ends so your daily workflows keep running without interruption.',
+      accent: 'trial',
+    };
+  }
+
+  return {
+    title: 'Keep premium workflows active',
+    subtitle: 'Choose a membership plan now so billing, GST and reports stay available when you need them.',
+    accent: 'trial',
+  };
+}
+
 function LayoutInner({ children }) {
   const { locale, setLocale, t } = useAppLocale();
   const [user, setUser] = useState(() => readStoredUser());
@@ -317,6 +357,8 @@ function LayoutInner({ children }) {
         suffix: subscription.trialDaysLeft === 1 ? '' : locale === 'en' ? 's' : '',
       })
     : '';
+  const promoMessage = getPromoMessage(subscription);
+  const membershipSpotlightPlans = plans.slice(0, 3);
   return (
     <div className="app-shell-root">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
@@ -497,6 +539,47 @@ function LayoutInner({ children }) {
                 </a>
               </div>
             )}
+            {!subscription?.isPro && (
+              <section className={`membership-spotlight-banner accent-${promoMessage.accent}`}>
+                <div className="membership-spotlight-copy">
+                  <div className="subscription-pill">Premium spotlight</div>
+                  <h2>{promoMessage.title}</h2>
+                  <p>{promoMessage.subtitle}</p>
+
+                  <div className="membership-spotlight-pills">
+                    <span>Billing + invoice printing</span>
+                    <span>GST exports and reports</span>
+                    <span>Udhaar and customer collections</span>
+                    <span>WhatsApp-ready workflows</span>
+                  </div>
+                </div>
+
+                <div className="membership-spotlight-side">
+                  <div className="membership-spotlight-planrow">
+                    {membershipSpotlightPlans.map((plan) => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        className={`membership-mini-plan ${paywallPlan === plan.id ? 'is-selected' : ''}`}
+                        onClick={() => setPaywallPlan(plan.id)}
+                      >
+                        <strong>{plan.label}</strong>
+                        <span>{plan.amount}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="membership-spotlight-actions">
+                    <button type="button" className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowUpgradeModal(true)}>
+                      {subscription?.isReadOnly ? 'Reactivate now' : t('upgrade')}
+                    </button>
+                    <a href="/pricing" className="btn-ghost" style={{ width: 'auto', textDecoration: 'none' }}>
+                      {t('viewPricing')}
+                    </a>
+                  </div>
+                </div>
+              </section>
+            )}
             {children}
           </div>
         </main>
@@ -533,11 +616,11 @@ function LayoutInner({ children }) {
         razorpayKeyId={razorpayKeyId}
         onSuccess={handleUpgradeSuccess}
         initialPlan={paywallPlan}
-        title={subscription?.isReadOnly ? 'Reactivate full access' : 'Upgrade to premium'}
+        title={subscription?.isReadOnly ? 'Reactivate full access' : 'Unlock premium access'}
         subtitle={
           subscription?.isReadOnly
             ? 'Your data is safe and visible. Upgrade now to unlock billing actions, GST exports, reports and customer credit workflows again.'
-            : 'Choose a plan that keeps your business records, exports and workflows fully active.'
+            : 'Choose a membership plan that keeps billing, GST, reports and customer workflows fully active.'
         }
       />
 
@@ -1056,6 +1139,122 @@ function LayoutInner({ children }) {
           background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(20,184,166,0.08));
         }
 
+        .membership-spotlight-banner {
+          display: grid;
+          grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+          gap: 18px;
+          padding: 22px;
+          margin: 0 0 18px;
+          border-radius: 28px;
+          border: 1px solid rgba(96, 165, 250, 0.14);
+          box-shadow: 0 26px 60px rgba(15, 23, 42, 0.08);
+          overflow: hidden;
+          position: relative;
+          background:
+            radial-gradient(circle at top right, rgba(14,165,233,0.18), transparent 28%),
+            linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,118,110,0.94));
+        }
+
+        .membership-spotlight-banner.accent-expired {
+          background:
+            radial-gradient(circle at top right, rgba(248,113,113,0.22), transparent 28%),
+            linear-gradient(135deg, rgba(69,10,10,0.98), rgba(15,23,42,0.96));
+        }
+
+        .membership-spotlight-banner.accent-active {
+          background:
+            radial-gradient(circle at top right, rgba(52,211,153,0.18), transparent 28%),
+            linear-gradient(135deg, rgba(3,105,84,0.98), rgba(15,23,42,0.96));
+        }
+
+        .membership-spotlight-copy h2 {
+          color: white;
+          margin: 14px 0 0;
+          font-size: 34px;
+          line-height: 1.02;
+          letter-spacing: -0.06em;
+        }
+
+        .membership-spotlight-copy p {
+          color: rgba(226,232,240,0.82);
+          margin-top: 12px;
+          max-width: 720px;
+          line-height: 1.65;
+        }
+
+        .membership-spotlight-pills {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 18px;
+        }
+
+        .membership-spotlight-pills span {
+          padding: 10px 12px;
+          border-radius: 999px;
+          color: white;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.12);
+          font-size: 11.5px;
+          font-weight: 700;
+        }
+
+        .membership-spotlight-side {
+          border-radius: 24px;
+          padding: 16px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.12);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .membership-spotlight-planrow {
+          display: grid;
+          gap: 10px;
+        }
+
+        .membership-mini-plan {
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 18px;
+          padding: 14px 16px;
+          background: rgba(255,255,255,0.06);
+          color: white;
+          text-align: left;
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .membership-mini-plan strong,
+        .membership-mini-plan span {
+          display: block;
+        }
+
+        .membership-mini-plan strong {
+          font-size: 13px;
+        }
+
+        .membership-mini-plan span {
+          font-size: 12px;
+          color: rgba(226,232,240,0.76);
+          font-weight: 700;
+        }
+
+        .membership-mini-plan.is-selected {
+          background: rgba(255,255,255,0.16);
+          border-color: rgba(191,219,254,0.4);
+          box-shadow: 0 16px 34px rgba(2, 8, 23, 0.18);
+        }
+
+        .membership-spotlight-actions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
         .premium-bottom-nav {
           position: fixed;
           left: 12px;
@@ -1122,6 +1321,10 @@ function LayoutInner({ children }) {
           .premium-main-content {
             margin-left: 0 !important;
             padding: 86px 14px 116px !important;
+          }
+          .membership-spotlight-banner {
+            grid-template-columns: 1fr;
+            padding: 18px;
           }
         }
 
