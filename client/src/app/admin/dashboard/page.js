@@ -37,6 +37,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
+  const [deletingId, setDeletingId] = useState('');
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -81,6 +82,49 @@ export default function AdminDashboardPage() {
   }, [router, search, statusFilter]);
 
   const cards = useMemo(() => metricCards(stats), [stats]);
+
+  const refreshDashboard = async () => {
+    const params = new URLSearchParams();
+    if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
+    if (search.trim()) params.set('search', search.trim());
+
+    const [statsResponse, shopsResponse] = await Promise.all([
+      fetch('/api/admin/stats', { cache: 'no-store' }),
+      fetch(`/api/admin/shops?${params.toString()}`, { cache: 'no-store' }),
+    ]);
+
+    if (statsResponse.status === 401 || shopsResponse.status === 401) {
+      router.push('/admin/login');
+      return;
+    }
+
+    const statsData = await statsResponse.json();
+    const shopsData = await shopsResponse.json();
+
+    if (!statsResponse.ok) throw new Error(statsData.message || 'Unable to load admin stats.');
+    if (!shopsResponse.ok) throw new Error(shopsData.message || 'Unable to load shop list.');
+
+    setStats(statsData);
+    setShops(shopsData.shops || []);
+  };
+
+  const handleDeleteUser = async (shop) => {
+    const confirmed = window.confirm(`Remove ${shop.shopName} and all linked user data? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingId(shop.id);
+    setError('');
+    try {
+      const response = await fetch(`/api/admin/shops/${shop.id}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Unable to remove user.');
+      await refreshDashboard();
+    } catch (deleteError) {
+      setError(deleteError.message || 'Unable to remove user.');
+    } finally {
+      setDeletingId('');
+    }
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -164,12 +208,13 @@ export default function AdminDashboardPage() {
                     <th>Trial</th>
                     <th>Subscription</th>
                     <th>Alerts</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {shops.length === 0 ? (
                     <tr>
-                      <td colSpan="10">
+                      <td colSpan="11">
                         <div className="admin-empty-state">No shops matched the current filter.</div>
                       </td>
                     </tr>
@@ -209,6 +254,16 @@ export default function AdminDashboardPage() {
                             ) : null}
                           </div>
                         </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="admin-delete-btn"
+                            onClick={() => handleDeleteUser(shop)}
+                            disabled={deletingId === shop.id}
+                          >
+                            {deletingId === shop.id ? 'Removing...' : 'Remove User'}
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -216,6 +271,54 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           )}
+
+          {!loading ? (
+            <div className="admin-mobile-list">
+              {shops.length === 0 ? (
+                <div className="admin-empty-state">No shops matched the current filter.</div>
+              ) : (
+                shops.map((shop) => (
+                  <article key={shop.id} className={`admin-mobile-card ${rowClassName(shop)}`}>
+                    <div className="admin-mobile-top">
+                      <div>
+                        <div className="shop-primary">{shop.shopName}</div>
+                        <div className="admin-subline">{shop.ownerName || '-'}</div>
+                      </div>
+                      <span className={`admin-status-pill status-${shop.subscriptionStatus}`}>{shop.subscriptionStatus}</span>
+                    </div>
+
+                    <div className="admin-mobile-grid">
+                      <div><strong>Phone</strong><span>{shop.phoneNumber || '-'}</span></div>
+                      <div><strong>Plan</strong><span>{shop.subscriptionPlanLabel}</span></div>
+                      <div><strong>Trial</strong><span>{shop.trial.daysRemaining} days</span></div>
+                      <div><strong>Subscription</strong><span>{shop.subscription.daysRemaining} days</span></div>
+                    </div>
+
+                    <div className="admin-subline">{shop.gstin || 'No GSTIN'}</div>
+                    <div className="admin-subline">{shop.shopAddress || 'No address added'}</div>
+
+                    <div className="admin-alert-stack">
+                      {shop.alerts.expired ? <span className="admin-alert-chip alert-red">Expired</span> : null}
+                      {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-yellow">Trial ending in 3 days</span> : null}
+                      {shop.alerts.highValueCustomer ? <span className="admin-alert-chip alert-green">High value</span> : null}
+                      {!shop.alerts.expired && !shop.alerts.trialEndingSoon && !shop.alerts.highValueCustomer ? (
+                        <span className="admin-alert-chip alert-neutral">Stable</span>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="admin-delete-btn"
+                      onClick={() => handleDeleteUser(shop)}
+                      disabled={deletingId === shop.id}
+                    >
+                      {deletingId === shop.id ? 'Removing...' : 'Remove User'}
+                    </button>
+                  </article>
+                ))
+              )}
+            </div>
+          ) : null}
         </section>
       </div>
 
@@ -420,6 +523,10 @@ export default function AdminDashboardPage() {
           overflow-x: auto;
         }
 
+        .admin-mobile-list {
+          display: none;
+        }
+
         .admin-table {
           width: 100%;
           border-collapse: separate;
@@ -523,6 +630,17 @@ export default function AdminDashboardPage() {
           gap: 6px;
         }
 
+        .admin-delete-btn {
+          min-height: 42px;
+          padding: 0 14px;
+          border-radius: 12px;
+          border: 1px solid rgba(248, 113, 113, 0.22);
+          background: #fff5f5;
+          color: #b91c1c;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
         .alert-red {
           background: #fee2e2;
           color: #b91c1c;
@@ -595,6 +713,63 @@ export default function AdminDashboardPage() {
 
           .admin-search-box {
             min-width: 100%;
+          }
+
+          .admin-table-wrap {
+            display: none;
+          }
+
+          .admin-mobile-list {
+            display: grid;
+            gap: 12px;
+          }
+
+          .admin-mobile-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 16px;
+            background: #fff;
+            display: grid;
+            gap: 10px;
+          }
+
+          .admin-mobile-card.is-expired {
+            background: linear-gradient(180deg, #fff5f5, #ffffff);
+          }
+
+          .admin-mobile-card.is-warning {
+            background: linear-gradient(180deg, #fffbea, #ffffff);
+          }
+
+          .admin-mobile-card.is-active {
+            background: linear-gradient(180deg, #f0fdf4, #ffffff);
+          }
+
+          .admin-mobile-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+          }
+
+          .admin-mobile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+          }
+
+          .admin-mobile-grid strong {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 2px;
+          }
+
+          .admin-mobile-grid span {
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 13px;
           }
         }
       `}</style>

@@ -3,6 +3,7 @@ const Product = require('../models/productModel');
 const Shop = require('../models/shopModel');
 const Supplier = require('../models/supplierModel');
 const SupplierUdhaar = require('../models/supplierUdhaarModel');
+const DocumentSequence = require('../models/documentSequenceModel');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers
@@ -14,12 +15,22 @@ const getOrCreateShop = async (userId) => {
   return shop;
 };
 
+const getFinancialYear = (date = new Date()) => {
+  const year = date.getFullYear();
+  const startYear = date.getMonth() >= 3 ? year : year - 1;
+  const endYear = startYear + 1;
+  return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
+};
+
 const generateBillNumber = async (shopId) => {
-  const count = await Purchase.countDocuments({ shop: shopId });
-  const date = new Date();
-  const year = date.getFullYear().toString().slice(-2);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `PUR-${year}${month}-${String(count + 1).padStart(4, '0')}`;
+  const financialYear = getFinancialYear();
+  const sequence = await DocumentSequence.findOneAndUpdate(
+    { shop: shopId, doc_type: 'purchase', financial_year: financialYear },
+    { $inc: { last_number: 1 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+
+  return `PUR/${financialYear}/${String(sequence.last_number).padStart(4, '0')}`;
 };
 
 const normalizeState = (value = '') => value.trim().toLowerCase();
@@ -47,6 +58,237 @@ const calculateGST = (taxable_amount, gst_rate, shopState, supplierState) => {
       gst_type: 'CGST_SGST',
     };
   }
+};
+
+const getExistingPurchaseQuantities = (record) => {
+  const sourceItems = record.items && record.items.length > 0
+    ? record.items
+    : (record.product ? [{
+        product: record.product,
+        quantity: record.quantity,
+      }] : []);
+
+  return sourceItems.reduce((map, item) => {
+    if (!item.product) return map;
+    map.set(String(item.product), Number(item.quantity || 0));
+    return map;
+  }, new Map());
+};
+
+const syncPurchaseStock = async (previousPurchase, nextItems) => {
+  const previousQuantities = previousPurchase ? getExistingPurchaseQuantities(previousPurchase) : new Map();
+  const nextQuantities = nextItems.reduce((map, item) => {
+    const productId = String(item.product);
+    map.set(productId, (map.get(productId) || 0) + Number(item.quantity || 0));
+    return map;
+  }, new Map());
+
+  const allProductIds = [...new Set([
+    ...previousQuantities.keys(),
+    ...nextQuantities.keys(),
+  ])];
+
+  for (const productId of allProductIds) {
+    const delta = (nextQuantities.get(productId) || 0) - (previousQuantities.get(productId) || 0);
+    if (!delta) continue;
+
+    const update = { $inc: { quantity: delta } };
+    const nextItem = nextItems.find((item) => String(item.product) === productId);
+    if (nextItem) {
+      update.$set = { cost_price: nextItem.price_per_unit };
+    }
+
+    await Product.findByIdAndUpdate(productId, update);
+  }
+};
+
+const reverseSupplierLedgerForPurchase = async (purchase) => {
+  if (purchase.payment_type !== 'credit') return;
+
+  const supplierId = purchase.supplier;
+  const supplier = supplierId
+    ? await Supplier.findById(supplierId)
+    : await Supplier.findOne({
+        shop: purchase.shop,
+        name: { $regex: new RegExp(`^${purchase.supplier_name}$`, 'i') },
+      });
+
+  if (!supplier) return;
+
+  supplier.totalPurchased = Math.max(0, (supplier.totalPurchased || 0) - (purchase.total_amount || 0));
+  supplier.totalPaid = Math.max(0, (supplier.totalPaid || 0) - (purchase.amount_paid || 0));
+  supplier.totalUdhaar = parseFloat((supplier.totalPurchased - supplier.totalPaid).toFixed(2));
+  await supplier.save();
+  await SupplierUdhaar.deleteMany({ reference_id: purchase.invoice_number, reference_type: 'purchase' });
+};
+
+const syncSupplierLedgerForPurchase = async (shopId, purchase, itemNames = []) => {
+  if (purchase.payment_type !== 'credit' || !purchase.supplier_name) return;
+
+  const {
+    supplier_name: supplierName,
+    supplier_phone: supplierPhone,
+    supplier_gstin: supplierGstin,
+    supplier_address: supplierAddress,
+    supplier_state: supplierState,
+    total_amount: grandTotal,
+    amount_paid: paid,
+    invoice_number: invoiceNumber,
+  } = purchase;
+
+  let supplier = await Supplier.findOne({
+    shop: shopId,
+    $or: [
+      { name: { $regex: new RegExp(`^${supplierName}$`, 'i') } },
+      ...(supplierPhone ? [{ phone: supplierPhone }] : []),
+    ],
+  });
+
+  if (!supplier) {
+    supplier = await Supplier.create({
+      shop: shopId,
+      name: supplierName,
+      phone: supplierPhone || '',
+      gstin: supplierGstin || '',
+      address: supplierAddress || '',
+      state: supplierState || '',
+      totalPurchased: 0,
+      totalPaid: 0,
+      totalUdhaar: 0,
+    });
+  }
+
+  supplier.totalPurchased = parseFloat(((supplier.totalPurchased || 0) + grandTotal).toFixed(2));
+  supplier.totalPaid = parseFloat(((supplier.totalPaid || 0) + paid).toFixed(2));
+  supplier.totalUdhaar = parseFloat((supplier.totalPurchased - supplier.totalPaid).toFixed(2));
+  await supplier.save();
+
+  purchase.supplier = supplier._id;
+  await purchase.save();
+
+  await SupplierUdhaar.create({
+    shop: shopId,
+    supplier: supplier._id,
+    type: 'debit',
+    amount: grandTotal,
+    running_balance: supplier.totalUdhaar,
+    note: `Credit Purchase - ${itemNames.join(', ')} (${invoiceNumber})`,
+    date: new Date(),
+    reference_id: invoiceNumber,
+    reference_type: 'purchase',
+  });
+
+  if (paid > 0) {
+    await SupplierUdhaar.create({
+      shop: shopId,
+      supplier: supplier._id,
+      type: 'credit',
+      amount: paid,
+      running_balance: supplier.totalUdhaar,
+      note: `Advance payment at time of purchase (${invoiceNumber})`,
+      date: new Date(),
+      reference_id: invoiceNumber,
+      reference_type: 'purchase',
+    });
+  }
+};
+
+const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null, invoiceNumber = null }) => {
+  const {
+    items,
+    product_id, quantity, price_per_unit,
+    supplier_name, supplier_phone, supplier_gstin,
+    supplier_address, supplier_state,
+    payment_type = 'cash',
+    amount_paid = 0,
+    notes,
+  } = payload;
+
+  if (payment_type === 'credit' && !supplier_name) {
+    throw new Error('Credit purchase ke liye supplier ka naam zaroori hai!');
+  }
+
+  const rawItems = items && items.length > 0
+    ? items
+    : [{ product_id, quantity, price_per_unit }];
+
+  const resolvedItems = [];
+  let totalTaxable = 0;
+  let totalCGST = 0;
+  let totalSGST = 0;
+  let totalIGST = 0;
+  let totalGST = 0;
+  let grandTotal = 0;
+
+  for (const item of rawItems) {
+    const product = await Product.findById(item.product_id || item.product);
+    if (!product) {
+      throw new Error(`Product not found: ${item.product_id || item.product}`);
+    }
+
+    const qty = Number(item.quantity);
+    const ppu = Number(item.price_per_unit);
+    const gst_rate = product.gst_rate || 0;
+    const taxable = parseFloat((qty * ppu).toFixed(2));
+    const gstCalc = calculateGST(taxable, gst_rate, shop.state, supplier_state);
+    const lineTotal = parseFloat((taxable + gstCalc.total_gst).toFixed(2));
+
+    totalTaxable += taxable;
+    totalCGST += gstCalc.cgst_amount;
+    totalSGST += gstCalc.sgst_amount;
+    totalIGST += gstCalc.igst_amount;
+    totalGST += gstCalc.total_gst;
+    grandTotal += lineTotal;
+
+    resolvedItems.push({
+      product: product._id,
+      product_name: product.name,
+      hsn_code: product.hsn_code,
+      quantity: qty,
+      price_per_unit: ppu,
+      gst_rate,
+      taxable_amount: taxable,
+      ...gstCalc,
+      total_amount: lineTotal,
+    });
+  }
+
+  totalTaxable = parseFloat(totalTaxable.toFixed(2));
+  totalGST = parseFloat(totalGST.toFixed(2));
+  grandTotal = parseFloat(grandTotal.toFixed(2));
+  const paid = parseFloat(Number(payment_type === 'credit' ? amount_paid : grandTotal).toFixed(2));
+  const firstItem = resolvedItems[0];
+
+  return {
+    itemNames: resolvedItems.map((item) => item.product_name),
+    data: {
+      shop: shop._id,
+      items: resolvedItems,
+      product: firstItem.product,
+      product_name: firstItem.product_name,
+      hsn_code: firstItem.hsn_code,
+      quantity: firstItem.quantity,
+      price_per_unit: firstItem.price_per_unit,
+      gst_rate: firstItem.gst_rate,
+      gst_type: firstItem.gst_type,
+      invoice_type: (supplier_gstin && supplier_gstin.trim() !== '') ? 'B2B' : 'B2C',
+      invoice_number: invoiceNumber || existingPurchase?.invoice_number,
+      taxable_amount: totalTaxable,
+      cgst_amount: parseFloat(totalCGST.toFixed(2)),
+      sgst_amount: parseFloat(totalSGST.toFixed(2)),
+      igst_amount: parseFloat(totalIGST.toFixed(2)),
+      total_gst: totalGST,
+      total_amount: grandTotal,
+      payment_type,
+      amount_paid: paid,
+      supplier_name: supplier_name || '',
+      supplier_phone: supplier_phone || '',
+      supplier_gstin: supplier_gstin || '',
+      supplier_address: supplier_address || '',
+      supplier_state: supplier_state || '',
+      notes,
+    },
+  };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,6 +338,23 @@ const getPurchases = async (req, res) => {
 const createPurchase = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
+    const invoiceNumber = await generateBillNumber(shop._id);
+    const { data, itemNames } = await buildPurchaseRecordData({
+      shop,
+      payload: req.body,
+      invoiceNumber,
+    });
+
+    await syncPurchaseStock(null, data.items);
+
+    const createdPurchase = await Purchase.create({
+      ...data,
+      shop: shop._id,
+    });
+
+    await syncSupplierLedgerForPurchase(shop._id, createdPurchase, itemNames);
+    const hydratedPurchase = await Purchase.findById(createdPurchase._id).populate('supplier', 'name phone gstin');
+    return res.status(201).json(hydratedPurchase);
 
     const {
       // Multi-item bill
@@ -298,6 +557,34 @@ const createPurchase = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+const updatePurchase = async (req, res) => {
+  try {
+    const shop = await getOrCreateShop(req.user.id);
+    const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id });
+    if (!purchase) return res.status(404).json({ message: 'Purchase not found' });
+
+    const { data, itemNames } = await buildPurchaseRecordData({
+      shop,
+      payload: req.body,
+      existingPurchase: purchase,
+      invoiceNumber: purchase.invoice_number,
+    });
+
+    await reverseSupplierLedgerForPurchase(purchase);
+    await syncPurchaseStock(purchase, data.items);
+
+    Object.assign(purchase, data, { supplier: null });
+    await purchase.save();
+    await syncSupplierLedgerForPurchase(shop._id, purchase, itemNames);
+
+    const hydratedPurchase = await Purchase.findById(purchase._id).populate('supplier', 'name phone gstin');
+    res.json(hydratedPurchase);
+  } catch (err) {
+    console.error('updatePurchase error:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // DELETE PURCHASE  (reverses stock + supplier ledger)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -392,4 +679,4 @@ const getITCSummary = async (req, res) => {
   }
 };
 
-module.exports = { getPurchases, createPurchase, deletePurchase, getITCSummary };
+module.exports = { getPurchases, createPurchase, updatePurchase, deletePurchase, getITCSummary };

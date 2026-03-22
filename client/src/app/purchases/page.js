@@ -14,6 +14,7 @@ const getToken = () => localStorage.getItem('token');
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const PURCHASES_CACHE_KEY = 'purchases-page';
 const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
+const normalizeState = (value = '') => value.trim().toLowerCase();
 
 // Empty item row
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
@@ -27,8 +28,10 @@ export default function PurchasesPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingPurchaseId, setEditingPurchaseId] = useState('');
   const [error, setError] = useState('');
   const [gstinTouched, setGstinTouched] = useState(false);
+  const [shopState, setShopState] = useState('');
   const router = useRouter();
 
   // ── Form state ──────────────────────────────────────────────────────────────
@@ -72,6 +75,16 @@ export default function PurchasesPage() {
     } catch {}
   }
 
+  async function fetchShopMeta() {
+    try {
+      const res = await fetch(`${API}/api/auth/shop`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const shop = await res.json();
+      setShopState(shop.state || '');
+    } catch {}
+  }
+
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
@@ -97,6 +110,13 @@ export default function PurchasesPage() {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
     fetchProducts();
   }, [showModal, products.length]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (shopState || !localStorage.getItem('token')) return;
+    fetchShopMeta();
+  }, [shopState]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // ── Item row handlers ────────────────────────────────────────────────────────
@@ -126,7 +146,17 @@ export default function PurchasesPage() {
     const taxable = parseFloat(item.quantity) * parseFloat(item.price_per_unit);
     const gst_rate = prod.gst_rate || 0;
     const gst = (taxable * gst_rate) / 100;
-    return { taxable, gst_rate, gst, total: taxable + gst, half_gst: gst / 2 };
+    const isIGST = normalizeState(shopState) && normalizeState(form.supplier_state)
+      ? normalizeState(shopState) !== normalizeState(form.supplier_state)
+      : false;
+    return {
+      taxable,
+      gst_rate,
+      gst,
+      total: taxable + gst,
+      half_gst: gst / 2,
+      isIGST,
+    };
   };
 
   // ── Bill totals ──────────────────────────────────────────────────────────────
@@ -176,7 +206,7 @@ export default function PurchasesPage() {
       const payload = {
         items: validItems,
         payment_type: form.payment_type,
-        amount_paid: form.payment_type === 'cash' ? billTotals.total : (amountPaidNum || 0),
+        amount_paid: form.payment_type === 'credit' ? (amountPaidNum || 0) : billTotals.total,
         supplier_name: form.supplier_name,
         supplier_phone: form.supplier_phone,
         supplier_gstin: gstinValue,
@@ -185,8 +215,9 @@ export default function PurchasesPage() {
         notes: form.notes,
       };
 
-      const res = await fetch(`${API}/api/purchases`, {
-        method: 'POST',
+      const isEditing = Boolean(editingPurchaseId);
+      const res = await fetch(isEditing ? `${API}/api/purchases/${editingPurchaseId}` : `${API}/api/purchases`, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify(payload),
       });
@@ -219,6 +250,7 @@ export default function PurchasesPage() {
   };
 
   const resetModal = () => {
+    setEditingPurchaseId('');
     setShowModal(false);
     setError('');
     setItems([emptyItem()]);
@@ -226,6 +258,37 @@ export default function PurchasesPage() {
     setPurchaseStep(0);
     setGstinTouched(false);
   }
+
+  const startEditPurchase = (purchase) => {
+    const sourceItems = purchase.items && purchase.items.length > 0
+      ? purchase.items
+      : [{
+          product: purchase.product,
+          quantity: purchase.quantity,
+          price_per_unit: purchase.price_per_unit,
+        }];
+
+    setEditingPurchaseId(purchase._id);
+    setItems(sourceItems.map((item) => ({
+      product_id: item.product?._id || item.product || '',
+      quantity: item.quantity || 1,
+      price_per_unit: item.price_per_unit || '',
+    })));
+    setForm({
+      payment_type: purchase.payment_type || 'cash',
+      amount_paid: purchase.payment_type === 'credit' ? String(purchase.amount_paid || '') : '',
+      supplier_name: purchase.supplier_name || '',
+      supplier_phone: purchase.supplier_phone || '',
+      supplier_gstin: purchase.supplier_gstin || '',
+      supplier_address: purchase.supplier_address || '',
+      supplier_state: purchase.supplier_state || '',
+      notes: purchase.notes || '',
+    });
+    setPurchaseStep(0);
+    setGstinTouched(false);
+    setError('');
+    setShowModal(true);
+  };
 
   // ── Payment type badge helper ────────────────────────────────────────────────
   const PayBadge = ({ type }) => {
@@ -252,7 +315,7 @@ export default function PurchasesPage() {
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>खरीद / Purchases</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing purchase data...</div>}
             </div>
-            <button onClick={() => setShowModal(true)} className="btn-warning" style={{ width: 'auto' }}>
+            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-warning" style={{ width: 'auto' }}>
               + खरीद दर्ज / Record Purchase
             </button>
           </div>
@@ -349,6 +412,10 @@ export default function PurchasesPage() {
                       {new Date(p.createdAt).toLocaleDateString('en-IN')}
                     </td>
                     <td>
+                      <button onClick={() => startEditPurchase(p)}
+                        style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                        Edit
+                      </button>
                       <button onClick={() => handleDelete(p._id)}
                         style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                         Delete
@@ -393,6 +460,10 @@ export default function PurchasesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{new Date(p.createdAt).toLocaleDateString('en-IN')}</div></div>
                 </div>
 
+                <button onClick={() => startEditPurchase(p)}
+                  style={{ width: '100%', padding: '8px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
+                  Edit
+                </button>
                 <button onClick={() => handleDelete(p._id)}
                   style={{ width: '100%', padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   Delete
@@ -411,6 +482,9 @@ export default function PurchasesPage() {
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>
               खरीद दर्ज करें / Record Purchase
             </h3>
+            {editingPurchaseId ? (
+              <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing purchase</div>
+            ) : null}
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
                 {error}
@@ -480,9 +554,15 @@ export default function PurchasesPage() {
 
                       {/* Row GST preview */}
                       {rowGST && (
-                        <div style={{ fontSize: 12, color: '#6b7280', background: rowGST.gst_rate > 0 ? '#fffbeb' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 16 }}>
+                        <div style={{ fontSize: 12, color: '#6b7280', background: rowGST.gst_rate > 0 ? '#fffbeb' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                           <span>Taxable: <strong>₹{rowGST.taxable.toFixed(2)}</strong></span>
-                          {rowGST.gst_rate > 0 && <span>GST {rowGST.gst_rate}%: <strong>₹{rowGST.gst.toFixed(2)}</strong></span>}
+                          {rowGST.gst_rate > 0 && (
+                            <span>
+                              {rowGST.isIGST
+                                ? `IGST ${rowGST.gst_rate}%: ₹${rowGST.gst.toFixed(2)}`
+                                : `CGST ${(rowGST.gst_rate / 2).toFixed(1)}% + SGST ${(rowGST.gst_rate / 2).toFixed(1)}%: ₹${rowGST.gst.toFixed(2)}`}
+                            </span>
+                          )}
                           <span>Total: <strong>₹{rowGST.total.toFixed(2)}</strong></span>
                         </div>
                       )}
@@ -507,6 +587,12 @@ export default function PurchasesPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>Total GST (ITC):</span><strong style={{ color: '#6366f1' }}>₹{billTotals.gst.toFixed(2)}</strong>
                     </div>
+                    {form.supplier_state && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                        <span>Tax split:</span>
+                        <strong>{normalizeState(shopState) !== normalizeState(form.supplier_state) ? 'IGST' : 'CGST + SGST'}</strong>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 4, marginTop: 2 }}>
                       <span>Grand Total:</span><span>₹{billTotals.total.toFixed(2)}</span>
                     </div>
@@ -638,7 +724,7 @@ export default function PurchasesPage() {
                   </button>
                 ) : (
                 <button type="button" onClick={handleSubmit} className="btn-warning" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? 'दर्ज हो रहा है...' : form.payment_type === 'credit' ? '📒 Credit Purchase' : '💵 Purchase दर्ज करें'}
+                  {submitting ? 'दर्ज हो रहा है...' : editingPurchaseId ? '💾 Update Purchase' : form.payment_type === 'credit' ? '📒 Credit Purchase' : '💵 Purchase दर्ज करें'}
                 </button>
                 )}
                 <button type="button" onClick={resetModal}

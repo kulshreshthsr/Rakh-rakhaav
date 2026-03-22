@@ -5,6 +5,7 @@ const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddlewar
 const {
   getSales,
   createSale,
+  updateSale,
   deleteSale,
   getGSTSummary,
   getProfitSummary,
@@ -15,6 +16,7 @@ router.get('/gst-summary', protect, getGSTSummary);
 
 router.get('/', protect, getSales);
 router.post('/', protect, checkSubscriptionStatus, createSale);
+router.put('/:id', protect, checkSubscriptionStatus, updateSale);
 router.delete('/:id', protect, checkSubscriptionStatus, deleteSale);
 
 module.exports = router;

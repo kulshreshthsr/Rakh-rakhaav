@@ -1,4 +1,15 @@
 const Shop = require('../models/shopModel');
+const User = require('../models/userModel');
+const Sale = require('../models/salesModel');
+const Purchase = require('../models/purchaseModel');
+const Product = require('../models/productModel');
+const Customer = require('../models/customerModel');
+const Supplier = require('../models/supplierModel');
+const Udhaar = require('../models/udhaarModel');
+const SupplierUdhaar = require('../models/supplierUdhaarModel');
+const Expense = require('../models/expenseModel');
+const SubscriptionPayment = require('../models/subscriptionPaymentModel');
+const DocumentSequence = require('../models/documentSequenceModel');
 const {
   ensureTrialDates,
   getAdminSubscriptionStatus,
@@ -138,7 +149,41 @@ const getAdminStats = async (req, res) => {
   }
 };
 
+const deleteAdminShop = async (req, res) => {
+  try {
+    const shop = await Shop.findById(req.params.id).populate('owner');
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    const ownerId = shop.owner?._id;
+    const shopId = shop._id;
+
+    await Promise.all([
+      Sale.deleteMany({ shop: shopId }),
+      Purchase.deleteMany({ shop: shopId }),
+      Product.deleteMany({ shop: shopId }),
+      Customer.deleteMany({ shop: shopId }),
+      Supplier.deleteMany({ shop: shopId }),
+      Udhaar.deleteMany({ shop: shopId }),
+      SupplierUdhaar.deleteMany({ shop: shopId }),
+      Expense.deleteMany({ shop: shopId }),
+      DocumentSequence.deleteMany({ shop: shopId }),
+      Shop.deleteOne({ _id: shopId }),
+      ...(ownerId ? [
+        SubscriptionPayment.deleteMany({ user: ownerId }),
+        User.deleteOne({ _id: ownerId }),
+      ] : []),
+    ]);
+
+    res.json({ message: 'User account and shop data removed successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   listAdminShops,
   getAdminStats,
+  deleteAdminShop,
 };

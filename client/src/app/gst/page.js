@@ -102,8 +102,13 @@ export default function GSTPage() {
       ['Description', 'Amount (Rs)'],
       ['GST Collected (Output)',  fmt(summary.gstr3b.output_gst)],
       ['GST Input Credit (ITC)', fmt(summary.gstr3b.input_gst)],
-      ['Net GST Payable',        fmt(summary.gstr3b.net_payable)],
+      ['Net GST Payable After ITC Set-Off', fmt(summary.gstr3b.payable_total ?? summary.gstr3b.net_payable)],
       ['Outward Taxable Sales',  fmt(summary.gstr3b.outward_taxable)],
+      [''],
+      ['Remaining Liability By Head'],
+      ['CGST Payable', fmt(summary.gstr3b.payable_by_head?.cgst)],
+      ['SGST Payable', fmt(summary.gstr3b.payable_by_head?.sgst)],
+      ['IGST Payable', fmt(summary.gstr3b.payable_by_head?.igst)],
       [''],
       ['Sales Breakup'],
       ['Total Sales',            fmt(summary.sales.total_amount)],
@@ -216,7 +221,9 @@ export default function GSTPage() {
           igst:          summary.purchases.igst,
           total_gst:     summary.purchases.total_gst,
         },
-        net_payable:  summary.gstr3b.net_payable,
+        payable_by_head: summary.gstr3b.payable_by_head,
+        excess_credit: summary.gstr3b.excess_credit,
+        net_payable:  summary.gstr3b.payable_total ?? summary.gstr3b.net_payable,
         output_gst:   summary.gstr3b.output_gst,
         input_gst:    summary.gstr3b.input_gst,
       };
@@ -243,10 +250,14 @@ export default function GSTPage() {
   const netPayable   = summary?.gstr3b?.net_payable || 0;
   const gstCollected = summary?.gstr3b?.output_gst  || 0;
   const gstITC       = summary?.gstr3b?.input_gst   || 0;
+  const payableByHead = summary?.gstr3b?.payable_by_head || { cgst: 0, sgst: 0, igst: 0 };
+  const payableTotal = summary?.gstr3b?.payable_total ?? netPayable;
+  const excessCredit = summary?.gstr3b?.excess_credit || { cgst: 0, sgst: 0, igst: 0 };
+  const excessCreditTotal = (excessCredit.cgst || 0) + (excessCredit.sgst || 0) + (excessCredit.igst || 0);
   const monthHi      = MONTHS_HI[month - 1];
   const monthEn      = MONTHS[month - 1];
-  const isPayable    = netPayable > 0;
-  const isRefund     = netPayable < 0;
+  const isPayable    = payableTotal > 0;
+  const isRefund     = false;
 
   const returnStatus = summary
     ? summary.sales.total > 0
@@ -382,8 +393,8 @@ export default function GSTPage() {
               </div>
               <div className="mini-stat">
                 <div className="mini-stat-label">Net Position</div>
-                <div className="mini-stat-value" style={{ color: isPayable ? '#dc2626' : isRefund ? '#059669' : '#475569' }}>₹{fmt(Math.abs(netPayable))}</div>
-                <div className="mini-stat-note">{isPayable ? 'Payable now' : isRefund ? 'Refund side' : 'Balanced'}</div>
+                <div className="mini-stat-value" style={{ color: isPayable ? '#dc2626' : excessCreditTotal > 0 ? '#059669' : '#475569' }}>₹{fmt(isPayable ? payableTotal : excessCreditTotal)}</div>
+                <div className="mini-stat-note">{isPayable ? 'Payable after ITC set-off' : excessCreditTotal > 0 ? 'Unused ITC left' : 'Balanced'}</div>
               </div>
             </div>
 
@@ -532,18 +543,18 @@ export default function GSTPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 16, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151' }}>
-                    {isRefund ? '💰 वापसी (Refund)' : '💸 शुद्ध देय (Net Payable)'}
+                    {isPayable ? '💸 शुद्ध देय (Net Payable)' : excessCreditTotal > 0 ? '🧾 Excess ITC Available' : '✅ Liability Balanced'}
                   </div>
                   <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                    ₹{fmt(gstCollected)} − ₹{fmt(gstITC)} = ₹{fmt(netPayable)}
+                    ITC set-off ke baad remaining liability by head dikhayi gayi hai.
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: isPayable ? '#ef4444' : isRefund ? '#059669' : '#374151' }}>
-                    ₹{fmt(Math.abs(netPayable))}
+                  <div style={{ fontSize: 32, fontWeight: 900, color: isPayable ? '#ef4444' : excessCreditTotal > 0 ? '#059669' : '#374151' }}>
+                    ₹{fmt(isPayable ? payableTotal : excessCreditTotal)}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: isPayable ? '#ef4444' : isRefund ? '#059669' : '#374151' }}>
-                    {isPayable ? '▲ भरना है / You Pay' : isRefund ? '▼ वापस मिलेगा / Refund' : 'All Clear ✅'}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: isPayable ? '#ef4444' : excessCreditTotal > 0 ? '#059669' : '#374151' }}>
+                    {isPayable ? '▲ भरना है / You Pay' : excessCreditTotal > 0 ? 'ITC carry forward' : 'All Clear ✅'}
                   </div>
                 </div>
               </div>
@@ -583,13 +594,13 @@ export default function GSTPage() {
                   </tr>
                   <tr style={{ background: isPayable ? '#fef2f2' : '#f0fdf4', borderTop: '2px solid #e5e7eb' }}>
                     <td style={{ ...tdStyle, fontWeight: 800, color: isPayable ? '#991b1b' : '#065f46' }}>
-                      {isPayable ? '💸 Net Payable' : '💰 Net Refund'}
+                      {isPayable ? '💸 Payable After ITC Set-Off' : '🧾 Unused ITC / Nil Liability'}
                     </td>
-                    <td style={tdStyle}>₹{fmt((summary.sales.cgst || 0) - (summary.purchases.cgst || 0))}</td>
-                    <td style={tdStyle}>₹{fmt((summary.sales.sgst || 0) - (summary.purchases.sgst || 0))}</td>
-                    <td style={tdStyle}>₹{fmt((summary.sales.igst || 0) - (summary.purchases.igst || 0))}</td>
+                    <td style={tdStyle}>₹{fmt(isPayable ? payableByHead.cgst : excessCredit.cgst)}</td>
+                    <td style={tdStyle}>₹{fmt(isPayable ? payableByHead.sgst : excessCredit.sgst)}</td>
+                    <td style={tdStyle}>₹{fmt(isPayable ? payableByHead.igst : excessCredit.igst)}</td>
                     <td style={{ ...tdStyle, fontWeight: 900, fontSize: 15, color: isPayable ? '#ef4444' : '#059669' }}>
-                      ₹{fmt(Math.abs(netPayable))}
+                      ₹{fmt(isPayable ? payableTotal : excessCreditTotal)}
                     </td>
                   </tr>
                 </tbody>
