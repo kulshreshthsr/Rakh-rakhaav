@@ -31,7 +31,9 @@ async function createRazorpayOrder({ planId, userId, username }) {
     throw new Error('Invalid plan');
   }
 
-  const receipt = `sub_${userId}_${Date.now()}`;
+  const compactUserId = String(userId).slice(-8);
+  const compactTime = Date.now().toString().slice(-10);
+  const receipt = `sub_${compactUserId}_${compactTime}`;
   const response = await fetch('https://api.razorpay.com/v1/orders', {
     method: 'POST',
     headers: {
