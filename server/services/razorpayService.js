@@ -1,6 +1,21 @@
 const crypto = require('crypto');
 const { getPlanConfig } = require('./subscriptionService');
 
+function getRazorpayDebugMeta() {
+  const keyId = process.env.RAZORPAY_KEY_ID || '';
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
+
+  return {
+    hasKeyId: Boolean(keyId),
+    hasKeySecret: Boolean(keySecret),
+    keyIdPrefix: keyId ? keyId.slice(0, 12) : '',
+    keyIdLength: keyId.length,
+    keySecretLength: keySecret.length,
+    keyIdHasWhitespace: /\s/.test(keyId),
+    keySecretHasWhitespace: /\s/.test(keySecret),
+  };
+}
+
 function getAuthHeader() {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -37,7 +52,8 @@ async function createRazorpayOrder({ planId, userId, username }) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || 'Unable to create Razorpay order');
+    const debugMeta = getRazorpayDebugMeta();
+    throw new Error(`${errorText || 'Unable to create Razorpay order'} | debug=${JSON.stringify(debugMeta)}`);
   }
 
   const order = await response.json();
@@ -76,4 +92,5 @@ module.exports = {
   createRazorpayOrder,
   verifyCheckoutSignature,
   verifyWebhookSignature,
+  getRazorpayDebugMeta,
 };
