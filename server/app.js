@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 
 const authRoutes     = require('./routes/authRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const paymentRoutes  = require('./routes/paymentRoutes');
 const adminRoutes    = require('./routes/adminRoutes');
 const productRoutes  = require('./routes/productRoutes');
@@ -37,6 +38,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',      authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin',     adminRoutes);
 app.use('/api/payments',  paymentRoutes);
 app.use('/api/products',  productRoutes);

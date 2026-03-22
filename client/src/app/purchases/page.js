@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -11,6 +12,7 @@ const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and 
 const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const PURCHASES_CACHE_KEY = 'purchases-page';
 
 // Empty item row
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
@@ -21,6 +23,7 @@ export default function PurchasesPage() {
   const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -38,7 +41,7 @@ export default function PurchasesPage() {
 
   async function fetchAll() {
     setLoading(true);
-    await Promise.all([fetchPurchases(), fetchProducts()]);
+    await fetchPurchases();
     setLoading(false);
   }
 
@@ -49,8 +52,11 @@ export default function PurchasesPage() {
       });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
-      setPurchases(data.purchases || []);
-      setSummary(data.summary || {});
+      const nextPurchases = data.purchases || [];
+      const nextSummary = data.summary || {};
+      setPurchases(nextPurchases);
+      setSummary(nextSummary);
+      writePageCache(PURCHASES_CACHE_KEY, { purchases: nextPurchases, summary: nextSummary });
     } catch { setError('खरीद लोड नहीं हो सकी'); }
   }
 
@@ -67,9 +73,27 @@ export default function PurchasesPage() {
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
+    const cached = readPageCache(PURCHASES_CACHE_KEY);
+    if (cached?.purchases) {
+      setPurchases(cached.purchases);
+      setSummary(cached.summary || {});
+      setLoading(false);
+    }
+
+    const deferredId = scheduleDeferred(async () => {
+      setRefreshing(Boolean(cached?.purchases));
+      await fetchAll();
+      setRefreshing(false);
+    });
+
+    return () => cancelDeferred(deferredId);
   }, [router]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+
+  useEffect(() => {
+    if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
+    fetchProducts();
+  }, [showModal, products.length]);
 
   // ── Item row handlers ────────────────────────────────────────────────────────
   const updateItem = (index, field, value) => {
@@ -217,6 +241,7 @@ export default function PurchasesPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>खरीद / Purchases</div>
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing purchase data...</div>}
             </div>
             <button onClick={() => setShowModal(true)} className="btn-warning" style={{ width: 'auto' }}>
               + खरीद दर्ज / Record Purchase
@@ -249,9 +274,10 @@ export default function PurchasesPage() {
         )}
 
         {loading ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">🛒</div>
-            <div>लोड हो रहा है...</div>
+          <div className="card" style={{ display: 'grid', gap: 12 }}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="skeleton" style={{ height: 72 }} />
+            ))}
           </div>
         ) : purchases.length === 0 ? (
           <div className="empty-state">

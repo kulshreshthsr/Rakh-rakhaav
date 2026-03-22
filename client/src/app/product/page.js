@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { useAppLocale } from '../../components/AppLocale';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
 const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
@@ -15,6 +16,7 @@ const HSN_GST_HINTS = {
   64: 12,
   90: 18,
 };
+const PRODUCTS_CACHE_KEY = 'products-page';
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -22,6 +24,7 @@ export default function ProductsPage() {
   const [products, setProducts]   = useState([]);
   const [filtered, setFiltered]   = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError]         = useState('');
 
   // Filters
@@ -54,7 +57,19 @@ export default function ProductsPage() {
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchProducts();
+    const cached = readPageCache(PRODUCTS_CACHE_KEY);
+    if (cached?.products) {
+      setProducts(cached.products);
+      setLoading(false);
+    }
+
+    const deferredId = scheduleDeferred(async () => {
+      setRefreshing(Boolean(cached?.products));
+      await fetchProducts();
+      setRefreshing(false);
+    });
+
+    return () => cancelDeferred(deferredId);
   }, []);
   /* eslint-enable react-hooks/exhaustive-deps */
 
@@ -82,7 +97,9 @@ export default function ProductsPage() {
       });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data : data.products || []);
+      const nextProducts = Array.isArray(data) ? data : data.products || [];
+      setProducts(nextProducts);
+      writePageCache(PRODUCTS_CACHE_KEY, { products: nextProducts });
     } catch { setError('उत्पाद लोड नहीं हो सके'); }
     finally { setLoading(false); }
   };
@@ -231,6 +248,7 @@ export default function ProductsPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>उत्पाद / Products</div>
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing inventory...</div>}
             </div>
             <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ उत्पाद जोड़ें / Add</button>
           </div>
@@ -292,9 +310,10 @@ export default function ProductsPage() {
         )}
 
         {loading ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📦</div>
-            <div>लोड हो रहा है...</div>
+          <div className="card" style={{ display: 'grid', gap: 12 }}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="skeleton" style={{ height: 72 }} />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">

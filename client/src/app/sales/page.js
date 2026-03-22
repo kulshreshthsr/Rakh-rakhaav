@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -13,6 +14,7 @@ const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const SALES_CACHE_KEY = 'sales-page';
 
 const numberToWords = (num) => {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -139,6 +141,7 @@ export default function SalesPage() {
   const [products, setProducts]     = useState([]);
   const [shopName, setShopName]     = useState('');
   const [loading, setLoading]       = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState('');
@@ -153,7 +156,7 @@ export default function SalesPage() {
 
   async function fetchAll() {
     setLoading(true);
-    await Promise.all([fetchSales(), fetchProducts()]);
+    await fetchSales();
     setLoading(false);
   }
 
@@ -162,8 +165,11 @@ export default function SalesPage() {
       const res = await fetch(`${API}/api/sales`, { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
-      setSales(data.sales || (Array.isArray(data) ? data : []));
-      setSummary(data.summary || {});
+      const nextSales = data.sales || (Array.isArray(data) ? data : []);
+      const nextSummary = data.summary || {};
+      setSales(nextSales);
+      setSummary(nextSummary);
+      writePageCache(SALES_CACHE_KEY, { sales: nextSales, summary: nextSummary });
     } catch { setError('बिक्री लोड नहीं हो सकी'); }
   }
 
@@ -178,18 +184,35 @@ export default function SalesPage() {
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
+    const cached = readPageCache(SALES_CACHE_KEY);
+    if (cached?.sales) {
+      setSales(cached.sales);
+      setSummary(cached.summary || {});
+      setLoading(false);
+    }
+
+    const deferredId = scheduleDeferred(async () => {
+      setRefreshing(Boolean(cached?.sales));
+      await fetchAll();
+      setRefreshing(false);
+    });
+
+    return () => cancelDeferred(deferredId);
   }, [router]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
-  // fetch shop name once on load for WhatsApp message
   useEffect(() => {
-    if (!localStorage.getItem('token')) return;
+    if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
+    fetchProducts();
+  }, [showModal, products.length]);
+
+  useEffect(() => {
+    if ((!showModal && !sales.length) || shopName || !localStorage.getItem('token')) return;
     fetch(`${API}/api/auth/shop`, { headers: { Authorization: `Bearer ${getToken()}` } })
       .then(r => r.json())
       .then(shop => setShopName(shop.name || ''))
       .catch(() => {});
-  }, []);
+  }, [showModal, sales.length, shopName]);
 
   const updateItem = (index, field, value) => {
     const updated = [...items];
@@ -316,6 +339,7 @@ export default function SalesPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>बिक्री / Sales</div>
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing sales data...</div>}
             </div>
             <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success" style={{ width: 'auto' }}>+ बिक्री दर्ज / Record Sale</button>
           </div>
@@ -346,9 +370,10 @@ export default function SalesPage() {
         )}
 
         {loading ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📈</div>
-            <div>लोड हो रहा है...</div>
+          <div className="card" style={{ display: 'grid', gap: 12 }}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="skeleton" style={{ height: 72 }} />
+            ))}
           </div>
         ) : sales.length === 0 ? (
           <div className="empty-state">
