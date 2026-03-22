@@ -15,6 +15,7 @@ const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const SALES_CACHE_KEY = 'sales-page';
+const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 
 const numberToWords = (num) => {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -146,6 +147,7 @@ export default function SalesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState('');
   const [items, setItems]           = useState([emptyItem()]);
+  const [gstinTouched, setGstinTouched] = useState(false);
   const [form, setForm]             = useState({
     payment_type: 'cash',
     amount_paid: '',
@@ -201,10 +203,12 @@ export default function SalesPage() {
   }, [router]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
     fetchProducts();
   }, [showModal, products.length]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if ((!showModal && !sales.length) || shopName || !localStorage.getItem('token')) return;
@@ -226,6 +230,7 @@ export default function SalesPage() {
 
   const addItem    = () => setItems([...items, emptyItem()]);
   const removeItem = (i) => { if (items.length > 1) setItems(items.filter((_, idx) => idx !== i)); };
+  const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
 
   const rowGST = (item) => {
     const prod = products.find(p => p._id === item.product_id);
@@ -243,8 +248,9 @@ export default function SalesPage() {
   }, { taxable: 0, gst: 0, total: 0 });
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
-  const gstinValue = form.buyer_gstin.trim().toUpperCase();
+  const gstinValue = normalizeGstin(form.buyer_gstin);
   const gstinValid = !gstinValue || GSTIN_REGEX.test(gstinValue);
+  const showGstinError = gstinTouched && !!gstinValue && !gstinValid;
   const wizardSteps = [
     { title: locale === 'hi' ? 'आइटम्स' : 'Items', copy: locale === 'hi' ? 'प्रोडक्ट और मात्रा' : 'Products and quantity' },
     { title: locale === 'hi' ? 'भुगतान' : 'Payment', copy: locale === 'hi' ? 'टोटल और मोड' : 'Totals and method' },
@@ -252,7 +258,9 @@ export default function SalesPage() {
   ];
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setError('');
+    e?.preventDefault();
+    setError('');
+    setGstinTouched(true);
     if (form.payment_type === 'credit' && !form.buyer_name) {
       setError('उधार बिक्री के लिए ग्राहक का नाम जरूरी है!'); return;
     }
@@ -273,6 +281,7 @@ export default function SalesPage() {
         body: JSON.stringify({
           items: validItems,
           ...form,
+          buyer_gstin: gstinValue,
           amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
         }),
       });
@@ -287,6 +296,7 @@ export default function SalesPage() {
     setItems([emptyItem()]);
     setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
     setSaleStep(0);
+    setGstinTouched(false);
     setError('');
   };
 
@@ -506,7 +516,7 @@ export default function SalesPage() {
                   </div>
                 ))}
               </div>
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={(e) => e.preventDefault()}>
 
               {/* Items */}
               <div style={{ marginBottom: 12, display: saleStep === 0 ? 'block' : 'none' }}>
@@ -595,7 +605,7 @@ export default function SalesPage() {
                     { val: 'bank',   label: '🏦 Bank',   color: '#3b82f6' },
                   ].map(opt => (
                     <button key={opt.val} type="button"
-                      onClick={() => setForm({ ...form, payment_type: opt.val })}
+                      onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
                       style={{
                         flex: 1, minWidth: 70, padding: '9px 4px', borderRadius: 8, border: '2px solid',
                         borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
@@ -613,7 +623,7 @@ export default function SalesPage() {
                     <input className="form-input" type="number" step="0.01" min="0"
                       placeholder={`Max ₹${fmt(billTotals.total)}`}
                       value={form.amount_paid}
-                      onChange={e => setForm({ ...form, amount_paid: e.target.value })} />
+                      onChange={e => updateForm({ amount_paid: e.target.value })} />
                     <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
                       ⚠️ बाकी ₹{fmt(balanceDue)} customer ledger में automatically जाएगा
                     </div>
@@ -629,18 +639,25 @@ export default function SalesPage() {
                 <div className="form-group">
                   <label className="form-label">नाम / Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}</label>
                   <input className="form-input" placeholder="ग्राहक का नाम"
-                    value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })}
+                    value={form.buyer_name} onChange={e => updateForm({ buyer_name: e.target.value })}
                     required={form.payment_type === 'credit'} />
                 </div>
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">Phone</label>
-                    <input className="form-input" placeholder="Mobile" value={form.buyer_phone} onChange={e => setForm({ ...form, buyer_phone: e.target.value })} />
+                    <input className="form-input" placeholder="Mobile" value={form.buyer_phone} onChange={e => updateForm({ buyer_phone: e.target.value })} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">GSTIN</label>
-                    <input className="form-input" placeholder="GSTIN for B2B" value={form.buyer_gstin} onChange={e => setForm({ ...form, buyer_gstin: e.target.value.toUpperCase() })} />
-                    {gstinValue && !gstinValid && (
+                    <input
+                      className="form-input"
+                      placeholder="GSTIN for B2B"
+                      value={form.buyer_gstin}
+                      maxLength={15}
+                      onChange={e => updateForm({ buyer_gstin: normalizeGstin(e.target.value) })}
+                      onBlur={() => setGstinTouched(true)}
+                    />
+                    {showGstinError && (
                       <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
                     )}
                   </div>
@@ -648,7 +665,7 @@ export default function SalesPage() {
                 <div className="grid-2">
                   <div className="form-group">
                     <label className="form-label">State</label>
-                    <select className="form-input" value={form.buyer_state} onChange={e => setForm({ ...form, buyer_state: e.target.value })}>
+                    <select className="form-input" value={form.buyer_state} onChange={e => updateForm({ buyer_state: e.target.value })}>
                       <option value="">Select State/UT</option>
                       <optgroup label="── States ──">{STATES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
                       <optgroup label="── Union Territories ──">{UTS.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
@@ -656,12 +673,12 @@ export default function SalesPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Address</label>
-                    <input className="form-input" placeholder="Address" value={form.buyer_address} onChange={e => setForm({ ...form, buyer_address: e.target.value })} />
+                    <input className="form-input" placeholder="Address" value={form.buyer_address} onChange={e => updateForm({ buyer_address: e.target.value })} />
                   </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Notes</label>
-                  <input className="form-input" placeholder="Any notes..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+                  <input className="form-input" placeholder="Any notes..." value={form.notes} onChange={e => updateForm({ notes: e.target.value })} />
                 </div>
               </div>
 
@@ -676,7 +693,7 @@ export default function SalesPage() {
                     Continue
                   </button>
                 ) : (
-                <button type="submit" className="btn-success" style={{ flex: 1 }} disabled={submitting}>
+                <button type="button" onClick={handleSubmit} className="btn-success" style={{ flex: 1 }} disabled={submitting}>
                   {submitting ? '⏳ दर्ज हो रहा है...' : form.payment_type === 'credit' ? '📒 Credit Sale' : '💵 बिक्री दर्ज'}
                 </button>
                 )}

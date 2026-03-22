@@ -13,6 +13,7 @@ const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const PURCHASES_CACHE_KEY = 'purchases-page';
+const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 
 // Empty item row
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
@@ -27,6 +28,7 @@ export default function PurchasesPage() {
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [gstinTouched, setGstinTouched] = useState(false);
   const router = useRouter();
 
   // ── Form state ──────────────────────────────────────────────────────────────
@@ -90,10 +92,12 @@ export default function PurchasesPage() {
   }, [router]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
     fetchProducts();
   }, [showModal, products.length]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // ── Item row handlers ────────────────────────────────────────────────────────
   const updateItem = (index, field, value) => {
@@ -108,6 +112,7 @@ export default function PurchasesPage() {
   };
 
   const addItem = () => setItems([...items, emptyItem()]);
+  const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
 
   const removeItem = (index) => {
     if (items.length === 1) return; // keep at least 1
@@ -137,8 +142,9 @@ export default function PurchasesPage() {
 
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
-  const gstinValue = form.supplier_gstin.trim().toUpperCase();
+  const gstinValue = normalizeGstin(form.supplier_gstin);
   const gstinValid = !gstinValue || GSTIN_REGEX.test(gstinValue);
+  const showGstinError = gstinTouched && !!gstinValue && !gstinValid;
   const wizardSteps = [
     { title: locale === 'hi' ? 'आइटम्स' : 'Items', copy: locale === 'hi' ? 'खरीद सूची' : 'Purchase items' },
     { title: locale === 'hi' ? 'भुगतान' : 'Payment', copy: locale === 'hi' ? 'क्रेडिट या कैश' : 'Credit or cash' },
@@ -147,8 +153,9 @@ export default function PurchasesPage() {
 
   // ── Submit ───────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setError('');
+    setGstinTouched(true);
 
     if (form.payment_type === 'credit' && !form.supplier_name) {
       setError('उधार खरीद के लिए supplier का नाम जरूरी है!');
@@ -172,7 +179,7 @@ export default function PurchasesPage() {
         amount_paid: form.payment_type === 'cash' ? billTotals.total : (amountPaidNum || 0),
         supplier_name: form.supplier_name,
         supplier_phone: form.supplier_phone,
-        supplier_gstin: form.supplier_gstin,
+        supplier_gstin: gstinValue,
         supplier_address: form.supplier_address,
         supplier_state: form.supplier_state,
         notes: form.notes,
@@ -189,6 +196,7 @@ export default function PurchasesPage() {
         setShowModal(false);
         setItems([emptyItem()]);
         setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '' });
+        setGstinTouched(false);
         fetchPurchases();
       } else {
         setError(data.message || 'विफल');
@@ -216,6 +224,7 @@ export default function PurchasesPage() {
     setItems([emptyItem()]);
     setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '' });
     setPurchaseStep(0);
+    setGstinTouched(false);
   }
 
   // ── Payment type badge helper ────────────────────────────────────────────────
@@ -420,7 +429,7 @@ export default function PurchasesPage() {
               ))}
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={(e) => e.preventDefault()}>
 
               {/* ── ITEMS ── */}
               <div style={{ marginBottom: 12, display: purchaseStep === 0 ? 'block' : 'none' }}>
@@ -521,7 +530,7 @@ export default function PurchasesPage() {
                     { val: 'bank',   label: '🏦 Bank',   color: '#3b82f6' },
                   ].map(opt => (
                     <button key={opt.val} type="button"
-                      onClick={() => setForm({ ...form, payment_type: opt.val })}
+                      onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
                       style={{
                         flex: 1, minWidth: 80, padding: '9px 4px', borderRadius: 8, border: '2px solid',
                         borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
@@ -541,7 +550,7 @@ export default function PurchasesPage() {
                     <input className="form-input" type="number" step="0.01" min="0"
                       placeholder={`Max ₹${billTotals.total.toFixed(2)}`}
                       value={form.amount_paid}
-                      onChange={e => setForm({ ...form, amount_paid: e.target.value })} />
+                      onChange={e => updateForm({ amount_paid: e.target.value })} />
                     <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
                       ⚠️ बाकी ₹{balanceDue.toFixed(2)} supplier ledger में automatically जाएगा
                     </div>
@@ -559,10 +568,10 @@ export default function PurchasesPage() {
                   <label className="form-label">
                     Supplier नाम {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}
                   </label>
-                  <input className="form-input" placeholder="Supplier ka naam"
-                    value={form.supplier_name}
-                    onChange={e => setForm({ ...form, supplier_name: e.target.value })}
-                    required={form.payment_type === 'credit'} />
+                    <input className="form-input" placeholder="Supplier ka naam"
+                      value={form.supplier_name}
+                      onChange={e => updateForm({ supplier_name: e.target.value })}
+                      required={form.payment_type === 'credit'} />
                 </div>
 
                 <div className="grid-2">
@@ -570,14 +579,16 @@ export default function PurchasesPage() {
                     <label className="form-label">Phone</label>
                     <input className="form-input" placeholder="Mobile number"
                       value={form.supplier_phone}
-                      onChange={e => setForm({ ...form, supplier_phone: e.target.value })} />
+                      onChange={e => updateForm({ supplier_phone: e.target.value })} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">GSTIN (optional)</label>
                       <input className="form-input" placeholder="Supplier GSTIN"
                         value={form.supplier_gstin}
-                        onChange={e => setForm({ ...form, supplier_gstin: e.target.value.toUpperCase() })} />
-                      {gstinValue && !gstinValid && (
+                        maxLength={15}
+                        onChange={e => updateForm({ supplier_gstin: normalizeGstin(e.target.value) })}
+                        onBlur={() => setGstinTouched(true)} />
+                      {showGstinError && (
                         <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
                       )}
                     <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>GSTIN se B2B classify होगा</div>
@@ -589,7 +600,7 @@ export default function PurchasesPage() {
                     <div className="form-group">
                       <label className="form-label">Supplier State</label>
                       <select className="form-input" value={form.supplier_state}
-                        onChange={e => setForm({ ...form, supplier_state: e.target.value })}>
+                        onChange={e => updateForm({ supplier_state: e.target.value })}>
                         <option value="">Select State/UT</option>
                         <optgroup label="── States ──">
                           {STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -603,7 +614,7 @@ export default function PurchasesPage() {
                       <label className="form-label">Address</label>
                       <input className="form-input" placeholder="Supplier address"
                         value={form.supplier_address}
-                        onChange={e => setForm({ ...form, supplier_address: e.target.value })} />
+                        onChange={e => updateForm({ supplier_address: e.target.value })} />
                     </div>
                   </div>
                 )}
@@ -612,7 +623,7 @@ export default function PurchasesPage() {
                   <label className="form-label">नोट / Notes</label>
                   <input className="form-input" placeholder="Any notes..."
                     value={form.notes}
-                    onChange={e => setForm({ ...form, notes: e.target.value })} />
+                    onChange={e => updateForm({ notes: e.target.value })} />
                 </div>
               </div>
 
@@ -628,7 +639,7 @@ export default function PurchasesPage() {
                     Continue
                   </button>
                 ) : (
-                <button type="submit" className="btn-warning" style={{ flex: 1 }} disabled={submitting}>
+                <button type="button" onClick={handleSubmit} className="btn-warning" style={{ flex: 1 }} disabled={submitting}>
                   {submitting ? 'दर्ज हो रहा है...' : form.payment_type === 'credit' ? '📒 Credit Purchase' : '💵 Purchase दर्ज करें'}
                 </button>
                 )}
