@@ -157,11 +157,15 @@ function activatePlan(user, planId) {
     throw new Error('Invalid subscription plan');
   }
 
-  const start = new Date();
+  const now = new Date();
+  const currentEnd = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+  const start = currentEnd && currentEnd > now ? currentEnd : now;
   user.isPro = true;
   user.subscriptionPlan = plan.id;
   user.subscriptionType = mapPlanToSubscriptionType(plan.id);
-  user.subscriptionStartDate = start;
+  if (!user.subscriptionStartDate || !currentEnd || currentEnd <= now) {
+    user.subscriptionStartDate = now;
+  }
   user.subscriptionEndDate = addMonths(start, plan.months);
   user.paymentStatus = 'paid';
 

@@ -159,24 +159,23 @@ const deleteAdminShop = async (req, res) => {
     const ownerId = shop.owner?._id;
     const shopId = shop._id;
 
-    await Promise.all([
-      Sale.deleteMany({ shop: shopId }),
-      Purchase.deleteMany({ shop: shopId }),
-      Product.deleteMany({ shop: shopId }),
-      Customer.deleteMany({ shop: shopId }),
-      Supplier.deleteMany({ shop: shopId }),
-      Udhaar.deleteMany({ shop: shopId }),
-      SupplierUdhaar.deleteMany({ shop: shopId }),
-      Expense.deleteMany({ shop: shopId }),
-      DocumentSequence.deleteMany({ shop: shopId }),
-      Shop.deleteOne({ _id: shopId }),
-      ...(ownerId ? [
-        SubscriptionPayment.deleteMany({ user: ownerId }),
-        User.deleteOne({ _id: ownerId }),
-      ] : []),
-    ]);
+    await Sale.deleteMany({ shop: shopId });
+    await Purchase.deleteMany({ shop: shopId });
+    await Product.deleteMany({ shop: shopId });
+    await Customer.deleteMany({ shop: shopId });
+    await Supplier.deleteMany({ shop: shopId });
+    await Udhaar.deleteMany({ shop: shopId });
+    await SupplierUdhaar.deleteMany({ shop: shopId });
+    await Expense.deleteMany({ shop: shopId });
+    await DocumentSequence.deleteMany({ shop: shopId });
+    await Shop.deleteOne({ _id: shopId });
 
-    res.json({ message: 'User account and shop data removed successfully.' });
+    if (ownerId) {
+      await SubscriptionPayment.deleteMany({ user: ownerId });
+      await User.deleteOne({ _id: ownerId });
+    }
+
+    res.json({ message: 'User account and shop data removed successfully.', deletedShopId: String(shopId) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

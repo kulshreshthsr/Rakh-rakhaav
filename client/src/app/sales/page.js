@@ -17,6 +17,14 @@ const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const SALES_CACHE_KEY = 'sales-page';
 const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const normalizeState = (value = '') => value.trim().toLowerCase();
+const getRoundedBillValues = (amount) => {
+  const numericAmount = Number(amount || 0);
+  const roundedTotal = Math.round(numericAmount);
+  return {
+    roundedTotal,
+    roundOff: parseFloat((roundedTotal - numericAmount).toFixed(2)),
+  };
+};
 const STATE_CODE_BY_NAME = {
   'andaman & nicobar islands': '35',
   'andhra pradesh': '37',
@@ -295,6 +303,7 @@ export default function SalesPage() {
   }, { taxable: 0, gst: 0, total: 0 });
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
+  const roundedBill = getRoundedBillValues(billTotals.total);
   const gstinValue = normalizeGstin(form.buyer_gstin);
   const gstinValid = !gstinValue || GSTIN_REGEX.test(gstinValue);
   const showGstinError = gstinTouched && !!gstinValue && !gstinValid;
@@ -688,6 +697,12 @@ export default function SalesPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 4, marginTop: 2 }}>
                       <span>Total:</span><span>₹{fmt(billTotals.total)}</span>
                     </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
+                      <span>Rounded Total:</span><span>₹{fmt(roundedBill.roundedTotal)}</span>
+                    </div>
                     {form.payment_type === 'credit' && amountPaidNum > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
                         <span>Balance Due:</span><span>₹{fmt(balanceDue)}</span>
@@ -848,6 +863,7 @@ const buildTaxSummaryRows = (saleItems, isIGST) => {
 };
 
 function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
+  const roundedBill = getRoundedBillValues(sale.total_amount);
   const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{
     product_name: sale.product_name,
     hsn_code: sale.hsn_code,
@@ -990,7 +1006,9 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '<div class="amount-row"><span>Taxable Amount</span><span>₹' + fmt(sale.taxable_amount) + '</span></div>'
     + amountGSTRows
     + '<div class="amount-row"><span>Total GST</span><span>₹' + fmt(sale.total_gst) + '</span></div>'
+    + '<div class="amount-row"><span>Round Off</span><span>' + (roundedBill.roundOff >= 0 ? '+' : '') + '₹' + fmt(roundedBill.roundOff) + '</span></div>'
     + '<div class="amount-total"><span>GRAND TOTAL</span><span>₹' + fmt(sale.total_amount) + '</span></div>'
+    + '<div class="amount-total" style="font-size:13px;color:#059669;border-top:1px dashed #94a3b8"><span>ROUNDED TOTAL</span><span>₹' + fmt(roundedBill.roundedTotal) + '</span></div>'
     + '</div></div>'
     + '<div class="footer-section"><div class="bank-box">' + bankHTML + '</div>'
     + '<div class="sign-box"><div style="font-size:12px;font-weight:700;margin-bottom:40px">For <strong>' + (shop.name || 'रखरखाव') + '</strong></div>'
