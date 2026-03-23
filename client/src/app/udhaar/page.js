@@ -287,7 +287,7 @@ export default function UdhaarPage() {
           </div>
         </section>
 
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default', background: 'linear-gradient(180deg, rgba(255,241,242,0.96), rgba(255,255,255,0.92))' }}>
             <div className="metric-label">Customer Due</div>
             <div className="metric-value" style={{ color: '#ef4444' }}>₹{totalCustomerUdhaar.toFixed(0)}</div>
