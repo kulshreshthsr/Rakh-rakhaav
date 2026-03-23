@@ -13,6 +13,23 @@ const {
   verifyWebhookSignature,
 } = require('../services/razorpayService');
 
+const ACTIVE_PAYMENT_STATUSES = ['verified', 'captured'];
+
+const buildSubscriptionResponse = (user) => ({
+  message: 'Subscription activated successfully',
+  subscription: getSubscriptionSnapshot(user),
+  user: {
+    id: user._id,
+    name: user.name,
+    username: user.username,
+  },
+});
+
+const activateSubscriptionFromPayment = async (user, payment) => {
+  activatePlan(user, payment.plan);
+  await user.save();
+};
+
 const createOrder = async (req, res) => {
   try {
     const planId = req.body.plan;
@@ -69,7 +86,6 @@ const createOrder = async (req, res) => {
 const verifyOrder = async (req, res) => {
   try {
     const {
-      plan,
       razorpay_order_id: orderId,
       razorpay_payment_id: paymentId,
       razorpay_signature: signature,
@@ -90,28 +106,35 @@ const verifyOrder = async (req, res) => {
       return res.status(404).json({ message: 'Payment session not found' });
     }
 
+    if (payment.status === 'failed') {
+      return res.status(409).json({ message: 'This payment is marked as failed.' });
+    }
+
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
 
-    activatePlan(user, plan || payment.plan);
-    await user.save();
+    if (ACTIVE_PAYMENT_STATUSES.includes(payment.status)) {
+      if (payment.razorpayPaymentId && payment.razorpayPaymentId !== paymentId) {
+        return res.status(409).json({ message: 'This order is already linked to another payment.' });
+      }
+
+      if (syncSubscriptionState(user)) {
+        await user.save();
+      }
+
+      return res.json(buildSubscriptionResponse(user));
+    }
+
+    await activateSubscriptionFromPayment(user, payment);
 
     payment.status = 'verified';
     payment.razorpayPaymentId = paymentId;
     payment.razorpaySignature = signature;
     await payment.save();
 
-    res.json({
-      message: 'Subscription activated successfully',
-      subscription: getSubscriptionSnapshot(user),
-      user: {
-        id: user._id,
-        name: user.name,
-        username: user.username,
-      },
-    });
+    res.json(buildSubscriptionResponse(user));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -134,10 +157,20 @@ const webhook = async (req, res) => {
     if (orderId) {
       const payment = await SubscriptionPayment.findOne({ razorpayOrderId: orderId });
       if (payment) {
+        const wasAlreadyActivated = ACTIVE_PAYMENT_STATUSES.includes(payment.status);
         payment.webhookEvent = event;
         payment.razorpayPaymentId = paymentEntity.id || payment.razorpayPaymentId;
-        if (event === 'payment.captured') payment.status = 'captured';
-        if (event === 'payment.failed') payment.status = 'failed';
+        if (event === 'payment.captured') {
+          payment.status = 'captured';
+
+          if (!wasAlreadyActivated) {
+            const user = await User.findById(payment.user);
+            if (user) {
+              await activateSubscriptionFromPayment(user, payment);
+            }
+          }
+        }
+        if (event === 'payment.failed' && !wasAlreadyActivated) payment.status = 'failed';
         await payment.save();
       }
     }
