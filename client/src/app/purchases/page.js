@@ -15,6 +15,45 @@ const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const PURCHASES_CACHE_KEY = 'purchases-page';
 const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const normalizeState = (value = '') => value.trim().toLowerCase();
+const GST_STATE_CODE_MAP = {
+  '01': 'Jammu & Kashmir',
+  '02': 'Himachal Pradesh',
+  '03': 'Punjab',
+  '04': 'Chandigarh',
+  '05': 'Uttarakhand',
+  '06': 'Haryana',
+  '07': 'Delhi',
+  '08': 'Rajasthan',
+  '09': 'Uttar Pradesh',
+  '10': 'Bihar',
+  '11': 'Sikkim',
+  '12': 'Arunachal Pradesh',
+  '13': 'Nagaland',
+  '14': 'Manipur',
+  '15': 'Mizoram',
+  '16': 'Tripura',
+  '17': 'Meghalaya',
+  '18': 'Assam',
+  '19': 'West Bengal',
+  '20': 'Jharkhand',
+  '21': 'Odisha',
+  '22': 'Chhattisgarh',
+  '23': 'Madhya Pradesh',
+  '24': 'Gujarat',
+  '26': 'Dadra & Nagar Haveli and Daman & Diu',
+  '27': 'Maharashtra',
+  '28': 'Andhra Pradesh',
+  '29': 'Karnataka',
+  '30': 'Goa',
+  '31': 'Lakshadweep',
+  '32': 'Kerala',
+  '33': 'Tamil Nadu',
+  '34': 'Puducherry',
+  '35': 'Andaman & Nicobar Islands',
+  '36': 'Telangana',
+  '37': 'Andhra Pradesh',
+  '38': 'Ladakh',
+};
 const getRoundedBillValues = (amount) => {
   const numericAmount = Number(amount || 0);
   const roundedTotal = Math.round(numericAmount);
@@ -26,6 +65,11 @@ const getRoundedBillValues = (amount) => {
 
 // Empty item row
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
+const getStateFromGstin = (gstin) => {
+  const normalized = normalizeGstin(gstin);
+  if (normalized.length < 2) return null;
+  return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
+};
 
 export default function PurchasesPage() {
   const { locale } = useAppLocale();
@@ -184,6 +228,15 @@ export default function PurchasesPage() {
   const gstinValue = normalizeGstin(form.supplier_gstin);
   const gstinValid = !gstinValue || GSTIN_REGEX.test(gstinValue);
   const showGstinError = gstinTouched && !!gstinValue && !gstinValid;
+  const handleSupplierGstinChange = (value) => {
+    const normalized = normalizeGstin(value);
+    const detectedState = getStateFromGstin(normalized);
+    updateForm({
+      supplier_gstin: normalized,
+      ...(detectedState ? { supplier_state: detectedState } : {}),
+    });
+    setGstinTouched(Boolean(normalized));
+  };
   const wizardSteps = [
     { title: locale === 'hi' ? 'आइटम्स' : 'Items', copy: locale === 'hi' ? 'खरीद सूची' : 'Purchase items' },
     { title: locale === 'hi' ? 'भुगतान' : 'Payment', copy: locale === 'hi' ? 'क्रेडिट या कैश' : 'Credit or cash' },
@@ -687,7 +740,7 @@ export default function PurchasesPage() {
                       <input className="form-input" placeholder="Supplier GSTIN"
                         value={form.supplier_gstin}
                         maxLength={15}
-                        onChange={e => updateForm({ supplier_gstin: normalizeGstin(e.target.value) })}
+                        onChange={e => handleSupplierGstinChange(e.target.value)}
                         onBlur={() => setGstinTouched(true)} />
                       {showGstinError && (
                         <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
@@ -709,6 +762,9 @@ export default function PurchasesPage() {
                         {UTS.map(s => <option key={s} value={s}>{s}</option>)}
                       </optgroup>
                     </select>
+                    {gstinValid && gstinValue.length >= 2 && form.supplier_state && (
+                      <div style={{ fontSize: 11, color: '#059669', marginTop: 4 }}>State auto-detected from GSTIN</div>
+                    )}
                   </div>
                   <div className="form-group">
                     <label className="form-label">Address</label>
