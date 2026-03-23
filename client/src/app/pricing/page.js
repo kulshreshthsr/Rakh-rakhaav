@@ -13,24 +13,13 @@ const MEMBERSHIP_FEATURES = [
   'WhatsApp sharing and daily business reporting',
 ];
 
-function formatPreviewDate(value) {
-  if (!value) return '-';
-  return new Date(value).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 export default function PricingPage() {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
-  const [previewSubscription, setPreviewSubscription] = useState(null);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('six_month');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isLoggedIn] = useState(() => Boolean(getToken()));
-  const activeSubscription = previewSubscription || subscription;
 
   useEffect(() => {
     const token = getToken();
@@ -58,46 +47,19 @@ export default function PricingPage() {
     [plans, selectedPlan]
   );
 
-  const membershipHeadline = activeSubscription?.isPro
+  const membershipHeadline = subscription?.isPro
     ? 'Your premium access is active.'
-    : activeSubscription?.isReadOnly
+    : subscription?.isReadOnly
       ? 'Reactivate premium and unlock your full workspace again.'
       : 'Keep your business workflows active before the trial ends.';
 
-  const membershipSubline = activeSubscription?.isPro
+  const membershipSubline = subscription?.isPro
     ? 'You already have full access. You can still switch to a longer plan for better savings.'
-    : activeSubscription?.isReadOnly
+    : subscription?.isReadOnly
       ? 'Your data is safe. Upgrade to resume billing, GST exports, reports and credit actions.'
-      : activeSubscription?.trialDaysLeft
-        ? `Free trial has ${activeSubscription.trialDaysLeft} day${activeSubscription.trialDaysLeft === 1 ? '' : 's'} left.`
+      : subscription?.trialDaysLeft
+        ? `Free trial has ${subscription.trialDaysLeft} day${subscription.trialDaysLeft === 1 ? '' : 's'} left.`
         : 'Choose a plan once and continue billing, GST and reports without interruption.';
-
-  const handlePreviewMonthlyState = () => {
-    const start = new Date();
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + 1);
-    setPreviewSubscription({
-      isPro: true,
-      subscriptionType: 'monthly',
-      trialStartDate: activeSubscription?.trialStartDate || null,
-      trialEndDate: activeSubscription?.trialEndDate || null,
-      subscriptionPlan: 'monthly',
-      subscriptionStartDate: start.toISOString(),
-      subscriptionEndDate: end.toISOString(),
-      paymentStatus: 'paid',
-      isTrialActive: false,
-      isTrialExpired: true,
-      trialDaysLeft: 0,
-      shouldWarnTrial: false,
-      isSubscriptionActive: true,
-      hasFullAccess: true,
-      isReadOnly: false,
-    });
-  };
-
-  const resetPreviewMonthlyState = () => {
-    setPreviewSubscription(null);
-  };
 
   return (
     <div className="pricing-page-shell membership-page-shell">
@@ -108,46 +70,6 @@ export default function PricingPage() {
           Billing, GST, udhaar, reports and daily operations should feel worth paying for. This membership page now
           makes the value obvious and keeps upgrade actions within thumb reach on mobile.
         </p>
-
-        {previewSubscription ? (
-          <div style={{
-            marginTop: 18,
-            borderRadius: 20,
-            border: '1px solid rgba(16, 185, 129, 0.28)',
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(5, 150, 105, 0.94))',
-            color: '#fff',
-            padding: '18px 20px',
-            boxShadow: '0 18px 50px rgba(15, 23, 42, 0.18)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)' }}>
-                  Monthly Preview Active
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, marginTop: 6 }}>
-                  This is how a paid monthly account will look.
-                </div>
-                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.82)', marginTop: 8 }}>
-                  Status: Active | Plan: Monthly | Payment: Paid
-                </div>
-              </div>
-              <div style={{
-                minWidth: 220,
-                borderRadius: 16,
-                background: 'rgba(255,255,255,0.12)',
-                padding: '14px 16px',
-                backdropFilter: 'blur(10px)',
-              }}>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', marginBottom: 8 }}>Preview dates</div>
-                <div style={{ display: 'grid', gap: 6, fontSize: 14 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}><span>Starts</span><strong>{formatPreviewDate(previewSubscription.subscriptionStartDate)}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}><span>Ends</span><strong>{formatPreviewDate(previewSubscription.subscriptionEndDate)}</strong></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}><span>Access</span><strong>Premium unlocked</strong></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
 
         <div className="membership-hero-grid">
           <div className="membership-spotlight-card">
@@ -185,28 +107,6 @@ export default function PricingPage() {
               {selected?.description || 'Choose the plan that fits your workflow.'}
             </div>
             {selected?.savingsLabel && <div className="membership-summary-saving">{selected.savingsLabel}</div>}
-
-            {previewSubscription ? (
-              <div style={{
-                marginTop: 16,
-                borderRadius: 16,
-                background: '#ecfdf5',
-                border: '1px solid #a7f3d0',
-                padding: '14px 16px',
-                color: '#065f46',
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Premium preview
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800, marginTop: 6 }}>Monthly membership active</div>
-                <div style={{ fontSize: 14, marginTop: 6 }}>
-                  Start: {formatPreviewDate(previewSubscription.subscriptionStartDate)}
-                </div>
-                <div style={{ fontSize: 14, marginTop: 2 }}>
-                  End: {formatPreviewDate(previewSubscription.subscriptionEndDate)}
-                </div>
-              </div>
-            ) : null}
 
             <div className="pricing-trust-strip membership-trust-strip">
               <span>Secure payment via Razorpay</span>
@@ -250,18 +150,9 @@ export default function PricingPage() {
 
         <div className="membership-bottom-actions">
           {isLoggedIn ? (
-            <>
-              <button type="button" className="btn-primary membership-upgrade-button" onClick={() => setShowUpgradeModal(true)}>
-                Unlock {selected?.label || 'Premium'}
-              </button>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={previewSubscription ? resetPreviewMonthlyState : handlePreviewMonthlyState}
-              >
-                {previewSubscription ? 'Reset preview' : 'Preview Monthly State'}
-              </button>
-            </>
+            <button type="button" className="btn-primary membership-upgrade-button" onClick={() => setShowUpgradeModal(true)}>
+              Unlock {selected?.label || 'Premium'}
+            </button>
           ) : (
             <>
               <Link href="/register" className="btn-primary" style={{ textDecoration: 'none', width: 'auto' }}>
@@ -295,13 +186,12 @@ export default function PricingPage() {
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         plans={plans}
-        subscription={activeSubscription}
+        subscription={subscription}
         razorpayKeyId={razorpayKeyId}
         initialPlan={selectedPlan}
         onSuccess={(nextSubscription) => {
           setSubscription(nextSubscription || null);
           writeStoredSubscription(nextSubscription || null);
-          setPreviewSubscription(null);
           setShowUpgradeModal(false);
         }}
       />
