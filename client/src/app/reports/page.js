@@ -292,23 +292,6 @@ export default function ReportsPage() {
         </div>
       ) : (
         <>
-          {/* ── SUMMARY CARDS ── */}
-          {/* UPGRADE 4: COGS card removed. Gross Profit → renamed to Profit */}
-          <div className="mini-stat-grid" style={{ marginBottom: 24 }}>
-            {[
-              { label: '💰 Revenue',      value: `₹${fmtN(summary.totalRevenue)}`,  sub: `${summary.salesCount} invoices`,      color: '#10b981', bg: '#f0fdf4' },
-              { label: '📊 मुनाफ़ा',      value: `₹${fmtN(summary.grossProfit)}`,   sub: `Margin: ${fmt(summary.margin)}%`,     color: marginColor, bg: '#f8fafc' },
-              { label: '🧾 GST Payable',  value: `₹${fmtN(summary.netGST)}`,        sub: `Collected ₹${fmtN(summary.totalGST)}`, color: '#f59e0b', bg: '#fffbeb' },
-              { label: '📒 Udhaar',       value: `₹${fmtN(summary.totalUdhaar)}`,   sub: 'Total pending',                        color: '#ef4444', bg: '#fef2f2' },
-              { label: '🛒 Purchases',    value: `₹${fmtN(summary.totalPurchase)}`, sub: `ITC: ₹${fmtN(summary.totalITC)}`,     color: '#6366f1', bg: '#eef2ff' },
-            ].map((card, i) => (
-              <div key={i} className="mini-stat">
-                <div className="mini-stat-label">{card.label}</div>
-                <div className="mini-stat-value" style={{ color: card.color }}>{card.value}</div>
-                <div className="mini-stat-note">{card.sub}</div>
-              </div>
-            ))}
-          </div>
 
           {/* ── PROFIT BREAKDOWN ── */}
           {/* UPGRADE 4: COGS row removed. Layout: Revenue → −GST → =Taxable → =Profit */}
