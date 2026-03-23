@@ -16,10 +16,12 @@ const MEMBERSHIP_FEATURES = [
 export default function PricingPage() {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
+  const [previewSubscription, setPreviewSubscription] = useState(null);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('six_month');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isLoggedIn] = useState(() => Boolean(getToken()));
+  const activeSubscription = previewSubscription || subscription;
 
   useEffect(() => {
     const token = getToken();
@@ -47,19 +49,46 @@ export default function PricingPage() {
     [plans, selectedPlan]
   );
 
-  const membershipHeadline = subscription?.isPro
+  const membershipHeadline = activeSubscription?.isPro
     ? 'Your premium access is active.'
-    : subscription?.isReadOnly
+    : activeSubscription?.isReadOnly
       ? 'Reactivate premium and unlock your full workspace again.'
       : 'Keep your business workflows active before the trial ends.';
 
-  const membershipSubline = subscription?.isPro
+  const membershipSubline = activeSubscription?.isPro
     ? 'You already have full access. You can still switch to a longer plan for better savings.'
-    : subscription?.isReadOnly
+    : activeSubscription?.isReadOnly
       ? 'Your data is safe. Upgrade to resume billing, GST exports, reports and credit actions.'
-      : subscription?.trialDaysLeft
-        ? `Free trial has ${subscription.trialDaysLeft} day${subscription.trialDaysLeft === 1 ? '' : 's'} left.`
+      : activeSubscription?.trialDaysLeft
+        ? `Free trial has ${activeSubscription.trialDaysLeft} day${activeSubscription.trialDaysLeft === 1 ? '' : 's'} left.`
         : 'Choose a plan once and continue billing, GST and reports without interruption.';
+
+  const handlePreviewMonthlyState = () => {
+    const start = new Date();
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 1);
+    setPreviewSubscription({
+      isPro: true,
+      subscriptionType: 'monthly',
+      trialStartDate: activeSubscription?.trialStartDate || null,
+      trialEndDate: activeSubscription?.trialEndDate || null,
+      subscriptionPlan: 'monthly',
+      subscriptionStartDate: start.toISOString(),
+      subscriptionEndDate: end.toISOString(),
+      paymentStatus: 'paid',
+      isTrialActive: false,
+      isTrialExpired: true,
+      trialDaysLeft: 0,
+      shouldWarnTrial: false,
+      isSubscriptionActive: true,
+      hasFullAccess: true,
+      isReadOnly: false,
+    });
+  };
+
+  const resetPreviewMonthlyState = () => {
+    setPreviewSubscription(null);
+  };
 
   return (
     <div className="pricing-page-shell membership-page-shell">
@@ -150,9 +179,18 @@ export default function PricingPage() {
 
         <div className="membership-bottom-actions">
           {isLoggedIn ? (
-            <button type="button" className="btn-primary membership-upgrade-button" onClick={() => setShowUpgradeModal(true)}>
-              Unlock {selected?.label || 'Premium'}
-            </button>
+            <>
+              <button type="button" className="btn-primary membership-upgrade-button" onClick={() => setShowUpgradeModal(true)}>
+                Unlock {selected?.label || 'Premium'}
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={previewSubscription ? resetPreviewMonthlyState : handlePreviewMonthlyState}
+              >
+                {previewSubscription ? 'Reset preview' : 'Preview Monthly State'}
+              </button>
+            </>
           ) : (
             <>
               <Link href="/register" className="btn-primary" style={{ textDecoration: 'none', width: 'auto' }}>
@@ -186,12 +224,13 @@ export default function PricingPage() {
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         plans={plans}
-        subscription={subscription}
+        subscription={activeSubscription}
         razorpayKeyId={razorpayKeyId}
         initialPlan={selectedPlan}
         onSuccess={(nextSubscription) => {
           setSubscription(nextSubscription || null);
           writeStoredSubscription(nextSubscription || null);
+          setPreviewSubscription(null);
           setShowUpgradeModal(false);
         }}
       />

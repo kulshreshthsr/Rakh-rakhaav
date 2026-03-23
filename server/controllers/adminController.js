@@ -43,7 +43,9 @@ const serializeAdminShop = async (shopDoc) => {
 
   const status = getAdminSubscriptionStatus(owner);
   const trialDaysRemaining = calculateDaysRemaining(owner.trialEndDate);
-  const subscriptionDaysRemaining = calculateDaysRemaining(owner.subscriptionEndDate);
+  const subscriptionDaysRemaining = status === 'active'
+    ? calculateDaysRemaining(owner.subscriptionEndDate)
+    : 0;
   const subscriptionType = owner.subscriptionType || (owner.subscriptionPlan ? mapPlanToSubscriptionType(owner.subscriptionPlan) : 'trial');
 
   return {

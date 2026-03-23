@@ -75,6 +75,10 @@ function mapPlanToSubscriptionType(plan) {
   return 'trial';
 }
 
+function isLegacyTestPlan(user) {
+  return user.subscriptionPlan === 'test_10' || user.subscriptionType === 'test_10';
+}
+
 function getAdminSubscriptionStatus(user) {
   ensureTrialDates(user);
   const now = new Date();
@@ -97,6 +101,16 @@ function syncSubscriptionState(user) {
   ensureTrialDates(user);
 
   const now = new Date();
+  if (isLegacyTestPlan(user)) {
+    user.isPro = false;
+    user.subscriptionPlan = null;
+    user.subscriptionType = 'trial';
+    user.subscriptionStartDate = null;
+    user.subscriptionEndDate = null;
+    user.paymentStatus = new Date(user.trialEndDate) > now ? 'trial' : 'expired';
+    dirty = true;
+  }
+
   const hasActiveSubscription =
     Boolean(user.subscriptionEndDate) &&
     new Date(user.subscriptionEndDate) > now &&
