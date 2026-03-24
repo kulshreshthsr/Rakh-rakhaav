@@ -83,37 +83,16 @@ export default function LoginPage() {
           </div>
 
           <div className="trust-auth-copy">
-            <h1>Bring authority to every bill, every stock count, and every customer ledger.</h1>
+            <h1>Run your business with clarity and confidence.</h1>
             <p>
-              A sharper, more premium workspace for inventory, GST billing, purchases, and udhaar. Your first screen
-              should feel like a business system people can trust instantly.
+              Inventory, GST billing, purchases, and udhaar in one reliable workspace.
             </p>
           </div>
 
-          <div className="trust-auth-proof-grid">
-            <article className="trust-proof-card">
-              <strong>GST-ready records</strong>
-              <span>Invoices, tax details, and reports stay organized from the first login.</span>
-            </article>
-            <article className="trust-proof-card">
-              <strong>Operational clarity</strong>
-              <span>Stock, sales, and dues live together so daily decisions feel faster and cleaner.</span>
-            </article>
-          </div>
-
-          <div className="trust-auth-stat-row">
-            <div>
-              <strong>01</strong>
-              <span>One dashboard for billing, stock, and reports</span>
-            </div>
-            <div>
-              <strong>24/7</strong>
-              <span>Mobile-friendly access for day-to-day shop work</span>
-            </div>
-            <div>
-              <strong>Pro</strong>
-              <span>Premium-first visual language that feels stable and credible</span>
-            </div>
+          <div className="trust-mini-strip trust-mini-strip-dark" style={{ marginTop: 22 }}>
+            <span>GST ready</span>
+            <span>Secure access</span>
+            <span>Mobile friendly</span>
           </div>
         </section>
 
