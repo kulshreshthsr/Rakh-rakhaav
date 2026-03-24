@@ -562,11 +562,22 @@ function LayoutInner({ children }) {
           flex-direction: column;
           gap: 14px;
           background:
-            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.18), transparent 26%),
-            radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.14), transparent 26%),
-            linear-gradient(180deg, rgba(7, 17, 31, 0.99), rgba(12, 28, 49, 0.98) 48%, rgba(7, 17, 31, 1));
-          border: 1px solid rgba(148, 163, 184, 0.12);
-          box-shadow: 0 32px 80px rgba(2, 8, 23, 0.28);
+            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.24), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.16), transparent 28%),
+            radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.16), transparent 32%),
+            linear-gradient(180deg, rgba(4, 11, 21, 0.995), rgba(12, 28, 49, 0.985) 44%, rgba(5, 17, 31, 1));
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 36px 90px rgba(2, 8, 23, 0.34);
+        }
+
+        .sidebar-panel::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 22%),
+            linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.02));
+          pointer-events: none;
         }
 
         .sidebar-orb {
@@ -613,11 +624,21 @@ function LayoutInner({ children }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, rgba(8, 32, 50, 0.98), rgba(29, 78, 216, 0.82), rgba(245, 158, 11, 0.72));
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          box-shadow: 0 18px 40px rgba(8, 32, 50, 0.28);
+          background: linear-gradient(135deg, rgba(4, 11, 21, 0.98), rgba(29, 78, 216, 0.86), rgba(13, 148, 136, 0.74), rgba(245, 158, 11, 0.72));
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          box-shadow: 0 22px 48px rgba(8, 32, 50, 0.34);
           overflow: hidden;
           color: white;
+          position: relative;
+        }
+
+        .brand-logo-frame::after,
+        .brand-logo-fallback::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.28), transparent 34%);
+          pointer-events: none;
         }
 
         .brand-title {
@@ -626,6 +647,7 @@ function LayoutInner({ children }) {
           font-weight: 900;
           color: #ffffff;
           letter-spacing: -0.06em;
+          text-shadow: 0 10px 26px rgba(245, 158, 11, 0.18);
         }
 
         .brand-subtitle {
@@ -642,9 +664,9 @@ function LayoutInner({ children }) {
           margin-top: 14px;
           border-radius: 20px;
           padding: 14px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+          background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.035));
+          border: 1px solid rgba(255,255,255,0.1);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 34px rgba(2, 8, 23, 0.12);
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -690,9 +712,9 @@ function LayoutInner({ children }) {
           display: flex;
           gap: 12px;
           align-items: flex-start;
-          background: linear-gradient(135deg, rgba(37,99,235,0.18), rgba(56,189,248,0.08));
-          border: 1px solid rgba(147,197,253,0.12);
-          box-shadow: 0 18px 34px rgba(2, 8, 23, 0.18);
+          background: linear-gradient(135deg, rgba(37,99,235,0.22), rgba(56,189,248,0.08), rgba(255,255,255,0.03));
+          border: 1px solid rgba(147,197,253,0.14);
+          box-shadow: 0 18px 34px rgba(2, 8, 23, 0.2);
           transform: translateY(0);
         }
 
@@ -702,8 +724,8 @@ function LayoutInner({ children }) {
         }
 
         .sidebar-shortcut:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 20px 40px rgba(2, 8, 23, 0.24);
+          transform: translateY(-3px);
+          box-shadow: 0 24px 46px rgba(2, 8, 23, 0.28);
         }
 
         .sidebar-shortcut-icon {
@@ -747,8 +769,8 @@ function LayoutInner({ children }) {
         .sidebar-user-card {
           width: 100%;
           border-radius: 20px;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+          border: 1px solid rgba(255,255,255,0.1);
+          background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.035));
           padding: 12px;
           display: flex;
           align-items: center;
@@ -756,6 +778,7 @@ function LayoutInner({ children }) {
           color: white;
           text-align: left;
           cursor: pointer;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 34px rgba(2, 8, 23, 0.12);
         }
 
         .sidebar-avatar,
@@ -866,6 +889,7 @@ function LayoutInner({ children }) {
           text-decoration: none;
           overflow: hidden;
           border: 1px solid transparent;
+          background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
         }
 
         .nav-link-accent {
@@ -883,9 +907,9 @@ function LayoutInner({ children }) {
 
         .nav-link.is-active {
           color: white;
-          background: linear-gradient(135deg, rgba(37,99,235,0.16), rgba(20,184,166,0.12));
-          border-color: rgba(147,197,253,0.12);
-          box-shadow: 0 16px 30px rgba(2,8,23,0.2);
+          background: linear-gradient(135deg, rgba(37,99,235,0.2), rgba(20,184,166,0.16), rgba(255,255,255,0.03));
+          border-color: rgba(147,197,253,0.16);
+          box-shadow: 0 18px 34px rgba(2,8,23,0.24);
         }
 
         .nav-link.is-active .nav-link-accent {
@@ -895,7 +919,7 @@ function LayoutInner({ children }) {
 
         .nav-link:hover {
           color: white;
-          background: rgba(255,255,255,0.05);
+          background: linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
         }
 
         .nav-icon-wrap {
@@ -959,14 +983,14 @@ function LayoutInner({ children }) {
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          background: rgba(7, 17, 31, 0.84);
+          background: rgba(4, 11, 21, 0.84);
           backdrop-filter: blur(18px);
-          border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .premium-topbar.is-scrolled {
-          background: rgba(7, 17, 31, 0.96);
-          box-shadow: 0 14px 34px rgba(2, 8, 23, 0.22);
+          background: rgba(4, 11, 21, 0.96);
+          box-shadow: 0 18px 40px rgba(2, 8, 23, 0.26);
         }
 
         .mobile-topbar-brand,
@@ -996,7 +1020,7 @@ function LayoutInner({ children }) {
         .mobile-user-chip,
         .language-compact,
         .top-upgrade-chip {
-          border: 1px solid rgba(148,163,184,0.12);
+          border: 1px solid rgba(255,255,255,0.1);
           background: rgba(255,255,255,0.06);
           color: white;
           border-radius: 999px;
@@ -1004,6 +1028,7 @@ function LayoutInner({ children }) {
           align-items: center;
           gap: 8px;
           cursor: pointer;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
         }
 
         .mobile-user-chip {
@@ -1028,9 +1053,9 @@ function LayoutInner({ children }) {
           text-transform: uppercase;
           text-decoration: none;
           flex-shrink: 0;
-          box-shadow: 0 16px 34px rgba(8, 32, 50, 0.28);
-          background: linear-gradient(135deg, rgba(8,32,50,0.98), rgba(29,78,216,0.84), rgba(245,158,11,0.82));
-          border-color: rgba(255,255,255,0.16);
+          box-shadow: 0 20px 42px rgba(8, 32, 50, 0.32);
+          background: linear-gradient(135deg, rgba(4,11,21,0.98), rgba(29,78,216,0.84), rgba(13,148,136,0.76), rgba(245,158,11,0.84));
+          border-color: rgba(255,255,255,0.18);
         }
 
         .top-upgrade-chip.is-manage {
@@ -1065,12 +1090,12 @@ function LayoutInner({ children }) {
 
         .premium-main-content {
           margin-left: 288px;
-          padding: 28px 24px 102px;
+          padding: 30px 26px 108px;
           min-height: 100vh;
         }
 
         .content-container {
-          max-width: 1420px;
+          max-width: 1440px;
           margin: 0 auto;
         }
 
@@ -1236,9 +1261,9 @@ function LayoutInner({ children }) {
           gap: 6px;
           padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
           border-radius: 26px;
-          background: rgba(7,17,31,0.96);
-          border: 1px solid rgba(148,163,184,0.1);
-          box-shadow: 0 26px 60px rgba(2, 8, 23, 0.34);
+          background: linear-gradient(180deg, rgba(4,11,21,0.98), rgba(7,17,31,0.96));
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 28px 70px rgba(2, 8, 23, 0.36);
           backdrop-filter: blur(18px);
         }
 
@@ -1257,6 +1282,7 @@ function LayoutInner({ children }) {
           overflow: hidden;
           font-size: 10px;
           font-weight: 800;
+          border: 1px solid transparent;
         }
 
         .mobile-nav-glow {
@@ -1270,6 +1296,8 @@ function LayoutInner({ children }) {
         .mobile-nav-link.is-active {
           color: white;
           transform: translateY(-1px);
+          border-color: rgba(147,197,253,0.16);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
         }
 
         .mobile-nav-link.is-active .mobile-nav-glow {
