@@ -590,7 +590,8 @@ const updatePurchase = async (req, res) => {
 
 const deletePurchase = async (req, res) => {
   try {
-    const purchase = await Purchase.findById(req.params.id);
+    const shop = await getOrCreateShop(req.user.id);
+    const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id });
     if (!purchase) return res.status(404).json({ message: 'Purchase not found' });
 
     // ✅ Reverse stock for all items
@@ -630,7 +631,7 @@ const deletePurchase = async (req, res) => {
       }
     }
 
-    await Purchase.findByIdAndDelete(req.params.id);
+    await Purchase.findOneAndDelete({ _id: req.params.id, shop: shop._id });
     res.json({ message: 'Purchase deleted and stock reversed' });
   } catch (err) {
     res.status(500).json({ message: err.message });

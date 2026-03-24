@@ -86,7 +86,10 @@ const getSupplierLedger = async (req, res) => {
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
     if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
 
-    const ledger = await SupplierUdhaar.find({ supplier: req.params.id })
+    const ledger = await SupplierUdhaar.find({
+      shop: shop._id,
+      supplier: req.params.id,
+    })
       .sort({ date: -1 });
 
     res.json({ supplier, ledger });

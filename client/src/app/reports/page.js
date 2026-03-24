@@ -49,15 +49,17 @@ export default function ReportsPage() {
     const params       = from ? `?from=${from}&to=${to}` : '';
 
     try {
-      const [sRes, pRes, cRes] = await Promise.all([
+      const [sRes, pRes, cRes, profitRes] = await Promise.all([
         fetch(`${API}/api/sales${params}`,     { headers }),
         fetch(`${API}/api/purchases${params}`, { headers }),
         fetch(`${API}/api/customers`,          { headers }),
+        fetch(`${API}/api/sales/profit-summary${params}`, { headers }),
       ]);
 
       const sData = await sRes.json();
       const pData = await pRes.json();
       const cData = await cRes.json();
+      const profitData = await profitRes.json();
 
       const salesList     = sData.sales     || (Array.isArray(sData) ? sData : []);
       const purchasesList = pData.purchases || (Array.isArray(pData) ? pData : []);
@@ -69,20 +71,20 @@ export default function ReportsPage() {
 
       // UPGRADE 4: totalCOGS removed from summary computation
       // grossProfit from API kept — it represents Selling Price - Cost Price
-      const totalRevenue  = salesList.reduce((s, x) => s + (x.total_amount || 0), 0);
-      const totalGST      = salesList.reduce((s, x) => s + (x.total_gst    || 0), 0);
-      const grossProfit   = salesList.reduce((s, x) => s + (x.gross_profit || 0), 0);
-      const totalPurchase = purchasesList.reduce((s, x) => s + (x.total_amount || 0), 0);
-      const totalITC      = purchasesList.reduce((s, x) => s + (x.total_gst    || 0), 0);
+      const totalRevenue  = profitData.totalRevenue ?? salesList.reduce((s, x) => s + (x.total_amount || 0), 0);
+      const totalGST      = profitData.gstCollected ?? salesList.reduce((s, x) => s + (x.total_gst    || 0), 0);
+      const grossProfit   = profitData.grossProfit ?? salesList.reduce((s, x) => s + (x.gross_profit || 0), 0);
+      const totalPurchase = profitData.totalSpent ?? purchasesList.reduce((s, x) => s + (x.total_amount || 0), 0);
+      const totalITC      = profitData.gstITC ?? purchasesList.reduce((s, x) => s + (x.total_gst    || 0), 0);
       const totalUdhaar   = customersList.reduce((s, c) => s + (c.totalUdhaar  || 0), 0);
-      const taxableRev    = totalRevenue - totalGST;
+      const taxableRev    = profitData.totalTaxable ?? (totalRevenue - totalGST);
       const margin        = taxableRev > 0 ? ((grossProfit / taxableRev) * 100) : 0;
 
       setSummary({
         totalRevenue, totalGST, grossProfit,
         totalPurchase, totalITC, totalUdhaar, margin,
-        salesCount: salesList.length,
-        netGST:     totalGST - totalITC,
+        salesCount: profitData.salesCount ?? salesList.length,
+        netGST:     profitData.netGSTPayable ?? (totalGST - totalITC),
       });
     } catch (err) {
       console.error(err);
@@ -106,14 +108,19 @@ export default function ReportsPage() {
         quantity:     sale.quantity     || 0,
         total_amount: sale.total_amount || 0,
         gross_profit: sale.gross_profit || 0,
+        taxable_amount: sale.taxable_amount || 0,
+        cost_price: sale.cost_price || 0,
       }];
       items.forEach(item => {
         const k = item.product_name;
         if (!k) return;
         if (!map[k]) map[k] = { name: k, qty: 0, revenue: 0, profit: 0, count: 0 };
+        const itemProfit = item.gross_profit != null
+          ? item.gross_profit
+          : (item.taxable_amount || 0) - ((item.cost_price || 0) * (item.quantity || 0));
         map[k].qty     += item.quantity     || 0;
         map[k].revenue += item.total_amount || 0;
-        map[k].profit  += item.gross_profit || 0;
+        map[k].profit  += itemProfit || 0;
         map[k].count   += 1;
       });
     });

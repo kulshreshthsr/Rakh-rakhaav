@@ -57,7 +57,8 @@ const updateCustomer = async (req, res) => {
 // ── DELETE CUSTOMER (soft) ───────────────────────────────────────────────────
 const deleteCustomer = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
+    const shop = await getOrCreateShop(req.user.id);
+    const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
     // Warn if balance still due
@@ -68,7 +69,7 @@ const deleteCustomer = async (req, res) => {
     }
 
     // Soft delete
-    await Customer.findByIdAndUpdate(req.params.id, { isActive: false });
+    await Customer.findOneAndUpdate({ _id: req.params.id, shop: shop._id }, { isActive: false });
     res.json({ message: 'Customer removed' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -78,8 +79,14 @@ const deleteCustomer = async (req, res) => {
 // ── GET UDHAAR LEDGER ────────────────────────────────────────────────────────
 const getUdhaar = async (req, res) => {
   try {
-    const entries = await Udhaar.find({ customer: req.params.id }).sort({ date: -1 });
-    const customer = await Customer.findById(req.params.id);
+    const shop = await getOrCreateShop(req.user.id);
+    const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
+    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+
+    const entries = await Udhaar.find({
+      shop: shop._id,
+      customer: req.params.id,
+    }).sort({ date: -1 });
     res.json({ customer, entries });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -91,7 +98,7 @@ const addUdhaar = async (req, res) => {
   const { type, amount, note, date } = req.body;
   try {
     const shop = await getOrCreateShop(req.user.id);
-    const customer = await Customer.findById(req.params.id);
+    const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
     // Normalise legacy 'diya'/'liya' to 'debit'/'credit'

@@ -643,7 +643,8 @@ const updateSale = async (req, res) => {
 
 const deleteSale = async (req, res) => {
   try {
-    const sale = await Sale.findById(req.params.id);
+    const shop = await getOrCreateShop(req.user.id);
+    const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
 
     if (sale.items && sale.items.length > 0) {
@@ -672,7 +673,7 @@ const deleteSale = async (req, res) => {
       }
     }
 
-    await Sale.findByIdAndDelete(req.params.id);
+    await Sale.findOneAndDelete({ _id: req.params.id, shop: shop._id });
     res.json({ message: 'Sale deleted and stock reversed' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -686,10 +687,14 @@ const deleteSale = async (req, res) => {
 const getProfitSummary = async (req, res) => {
   try {
     const shop         = await getOrCreateShop(req.user.id);
-    const { month, year } = req.query;
+    const { month, year, from, to } = req.query;
     const filter       = { shop: shop._id };
 
-    if (month && year) {
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) filter.createdAt.$lte = new Date(to);
+    } else if (month && year) {
       filter.createdAt = {
         $gte: new Date(year, month - 1, 1),
         $lte: new Date(year, month, 0, 23, 59, 59),
@@ -725,8 +730,14 @@ const getProfitSummary = async (req, res) => {
 
     const s = salesAgg    || { totalRevenue: 0, totalTaxable: 0, totalGSTCollected: 0, totalCOGS: 0, totalGrossProfit: 0, salesCount: 0 };
     const p = purchasesAgg || { totalSpent: 0, totalITC: 0, purchasesCount: 0 };
-
-    const netGSTPayable = parseFloat((s.totalGSTCollected - p.totalITC).toFixed(2));
+    const [sales, purchases] = await Promise.all([
+      Sale.find(filter).select('taxable_amount cgst_amount sgst_amount igst_amount'),
+      Purchase.find({
+        shop: shop._id,
+        ...(filter.createdAt ? { createdAt: filter.createdAt } : {}),
+      }).select('taxable_amount cgst_amount sgst_amount igst_amount'),
+    ]);
+    const gstr3b = calculateGSTR3BSummary(sales, purchases);
 
     res.json({
       totalRevenue:   parseFloat(s.totalRevenue.toFixed(2)),
@@ -737,7 +748,9 @@ const getProfitSummary = async (req, res) => {
       netProfit:      parseFloat(s.totalGrossProfit.toFixed(2)),
       gstCollected:   parseFloat(s.totalGSTCollected.toFixed(2)),
       gstITC:         parseFloat(p.totalITC.toFixed(2)),
-      netGSTPayable,
+      netGSTPayable:  gstr3b.payable_total,
+      payableByHead:  gstr3b.payable_by_head,
+      excessCredit:   gstr3b.excess_credit,
       totalSpent:     parseFloat(p.totalSpent.toFixed(2)),
       purchasesCount: p.purchasesCount,
     });

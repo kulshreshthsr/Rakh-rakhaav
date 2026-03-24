@@ -1473,6 +1473,53 @@ select.form-input { cursor: pointer; }
   margin-top: 20px;
 }
 
+.subscription-checkout-summary {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 118, 110, 0.94));
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.subscription-checkout-copy {
+  min-width: 0;
+}
+
+.subscription-checkout-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.subscription-checkout-name {
+  margin-top: 8px;
+  font-size: 20px;
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.subscription-checkout-note {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.subscription-checkout-price {
+  flex-shrink: 0;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+
 .subscription-trust-row span {
   padding: 9px 11px;
   border-radius: 999px;
@@ -2020,6 +2067,71 @@ select.form-input { cursor: pointer; }
     border-radius: 24px;
   }
 
+  .subscription-modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .subscription-modal {
+    max-width: none;
+    max-height: min(92vh, 100dvh - 10px);
+    overflow-y: auto;
+    border-radius: 26px 26px 0 0;
+    padding: 18px 14px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .subscription-modal-close {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .subscription-plan-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .subscription-plan-card {
+    padding: 16px 14px;
+    border-radius: 20px;
+  }
+
+  .subscription-plan-top {
+    align-items: flex-start;
+  }
+
+  .subscription-plan-price {
+    font-size: 22px;
+  }
+
+  .subscription-plan-badge {
+    white-space: normal;
+    text-align: center;
+    max-width: 110px;
+  }
+
+  .subscription-checkout-summary {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .subscription-checkout-name {
+    font-size: 18px;
+  }
+
+  .subscription-checkout-note {
+    font-size: 12px;
+  }
+
+  .subscription-checkout-price {
+    font-size: 26px;
+  }
+
   .subscription-modal-hero h2,
   .read-only-card h2,
   .pricing-hero h1,
@@ -2030,6 +2142,12 @@ select.form-input { cursor: pointer; }
   .subscription-modal-actions,
   .read-only-actions {
     flex-direction: column;
+    position: sticky;
+    bottom: 0;
+    padding-top: 14px;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 2px);
+    background: linear-gradient(180deg, rgba(245,248,255,0), rgba(245,248,255,0.96) 18%, rgba(245,248,255,1));
+    margin-top: 16px;
   }
 
   .pricing-page-shell {

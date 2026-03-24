@@ -146,6 +146,17 @@ export default function UpgradeModal({
           ))}
         </div>
 
+        <div className="subscription-checkout-summary">
+          <div className="subscription-checkout-copy">
+            <div className="subscription-checkout-label">Selected plan</div>
+            <div className="subscription-checkout-name">{selected?.label || 'Premium membership'}</div>
+            <div className="subscription-checkout-note">
+              {selected?.description || 'Secure premium access with one clean checkout.'}
+            </div>
+          </div>
+          <div className="subscription-checkout-price">{selected?.amount ? `Rs ${selected.amount}` : 'Rs 0'}</div>
+        </div>
+
         <div className="subscription-trust-row">
           <span>Secure payment via Razorpay</span>
           <span>No hidden charges</span>
