@@ -77,7 +77,18 @@ export default function LoginPage() {
           <div className="trust-auth-brand-row">
             <div className="trust-auth-logo">R</div>
             <div>
-              <div className="trust-auth-brand-name">Rakhrakhaav</div>
+              <div
+                className="trust-auth-brand-name"
+                style={{
+                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 28%, #fde68a 52%, #ffffff 76%, #99f6e4 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  textShadow: '0 0 22px rgba(255,255,255,0.12)',
+                }}
+              >
+                रखरखाव
+              </div>
               <div className="trust-auth-brand-subtitle">Built for disciplined, modern shop management</div>
             </div>
           </div>
