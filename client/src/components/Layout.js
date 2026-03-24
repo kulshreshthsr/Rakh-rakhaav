@@ -562,9 +562,9 @@ function LayoutInner({ children }) {
           flex-direction: column;
           gap: 14px;
           background:
-            radial-gradient(circle at 100% 0%, rgba(70, 167, 255, 0.24), transparent 26%),
-            radial-gradient(circle at 0% 100%, rgba(16, 185, 129, 0.16), transparent 26%),
-            linear-gradient(180deg, rgba(8, 16, 34, 0.98), rgba(14, 26, 51, 0.98) 48%, rgba(8, 16, 34, 0.99));
+            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.18), transparent 26%),
+            radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.14), transparent 26%),
+            linear-gradient(180deg, rgba(7, 17, 31, 0.99), rgba(12, 28, 49, 0.98) 48%, rgba(7, 17, 31, 1));
           border: 1px solid rgba(148, 163, 184, 0.12);
           box-shadow: 0 32px 80px rgba(2, 8, 23, 0.28);
         }
@@ -613,9 +613,9 @@ function LayoutInner({ children }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(16, 185, 129, 0.5));
-          border: 1px solid rgba(191, 219, 254, 0.22);
-          box-shadow: 0 18px 40px rgba(37, 99, 235, 0.22);
+          background: linear-gradient(135deg, rgba(8, 32, 50, 0.98), rgba(29, 78, 216, 0.82), rgba(245, 158, 11, 0.72));
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          box-shadow: 0 18px 40px rgba(8, 32, 50, 0.28);
           overflow: hidden;
           color: white;
         }
@@ -959,14 +959,14 @@ function LayoutInner({ children }) {
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          background: rgba(8, 16, 34, 0.82);
+          background: rgba(7, 17, 31, 0.84);
           backdrop-filter: blur(18px);
           border-bottom: 1px solid rgba(148, 163, 184, 0.08);
         }
 
         .premium-topbar.is-scrolled {
-          background: rgba(8, 16, 34, 0.94);
-          box-shadow: 0 14px 34px rgba(2, 8, 23, 0.18);
+          background: rgba(7, 17, 31, 0.96);
+          box-shadow: 0 14px 34px rgba(2, 8, 23, 0.22);
         }
 
         .mobile-topbar-brand,
@@ -1028,9 +1028,9 @@ function LayoutInner({ children }) {
           text-transform: uppercase;
           text-decoration: none;
           flex-shrink: 0;
-          box-shadow: 0 14px 30px rgba(37, 99, 235, 0.2);
-          background: linear-gradient(135deg, rgba(37,99,235,0.92), rgba(20,184,166,0.86));
-          border-color: rgba(191,219,254,0.18);
+          box-shadow: 0 16px 34px rgba(8, 32, 50, 0.28);
+          background: linear-gradient(135deg, rgba(8,32,50,0.98), rgba(29,78,216,0.84), rgba(245,158,11,0.82));
+          border-color: rgba(255,255,255,0.16);
         }
 
         .top-upgrade-chip.is-manage {
@@ -1101,8 +1101,8 @@ function LayoutInner({ children }) {
         }
 
         .premium-trial-banner {
-          border: 1px solid rgba(96, 165, 250, 0.18);
-          background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(20,184,166,0.08));
+          border: 1px solid rgba(29, 78, 216, 0.16);
+          background: linear-gradient(135deg, rgba(8,32,50,0.08), rgba(13,148,136,0.08));
         }
 
         .membership-spotlight-banner {
@@ -1112,13 +1112,14 @@ function LayoutInner({ children }) {
           padding: 22px;
           margin: 0 0 18px;
           border-radius: 28px;
-          border: 1px solid rgba(96, 165, 250, 0.14);
-          box-shadow: 0 26px 60px rgba(15, 23, 42, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 30px 70px rgba(7, 17, 31, 0.12);
           overflow: hidden;
           position: relative;
           background:
-            radial-gradient(circle at top right, rgba(14,165,233,0.18), transparent 28%),
-            linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,118,110,0.94));
+            radial-gradient(circle at top right, rgba(245,158,11,0.2), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(45,212,191,0.14), transparent 30%),
+            linear-gradient(135deg, rgba(7,17,31,0.99), rgba(12,28,49,0.97), rgba(15,118,110,0.9));
         }
 
         .membership-spotlight-banner.accent-expired {
@@ -1235,9 +1236,9 @@ function LayoutInner({ children }) {
           gap: 6px;
           padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
           border-radius: 26px;
-          background: rgba(8,16,34,0.94);
+          background: rgba(7,17,31,0.96);
           border: 1px solid rgba(148,163,184,0.1);
-          box-shadow: 0 26px 60px rgba(2, 8, 23, 0.3);
+          box-shadow: 0 26px 60px rgba(2, 8, 23, 0.34);
           backdrop-filter: blur(18px);
         }
 

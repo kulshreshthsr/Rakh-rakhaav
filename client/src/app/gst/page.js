@@ -341,7 +341,7 @@ export default function GSTPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 24,
-                  background: isPayable ? '#fee2e2' : isRefund ? '#dcfce7' : '#eef2ff',
+                  background: isPayable ? '#fee2e2' : isRefund ? '#dcfce7' : '#e0f2fe',
                 }}>{isPayable ? '⚠️' : isRefund ? '🎉' : '✅'}</div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: 18, fontWeight: 900, color: isPayable ? '#991b1b' : isRefund ? '#065f46' : '#374151', lineHeight: 1.25 }}>
@@ -515,7 +515,7 @@ export default function GSTPage() {
                             <td style={tdStyle}>{p.product_name || (p.items?.length > 1 ? `${p.items.length} items` : p.items?.[0]?.product_name)}</td>
                             <td style={tdStyle}>{p.supplier_name || '—'}</td>
                             <td style={tdStyle}>₹{fmt(p.taxable_amount)}</td>
-                            <td style={{ ...tdStyle, color: '#2563eb', fontWeight: 700 }}>₹{fmt(p.total_gst)}</td>
+                    <td style={{ ...tdStyle, color: '#1d4ed8', fontWeight: 700 }}>₹{fmt(p.total_gst)}</td>
                             <td style={{ ...tdStyle, fontWeight: 700 }}>₹{fmt(p.total_amount)}</td>
                           </tr>
                         ))}
@@ -583,14 +583,14 @@ export default function GSTPage() {
                     <td style={tdStyle}>₹{fmt(summary.sales.cgst)}</td>
                     <td style={tdStyle}>₹{fmt(summary.sales.sgst)}</td>
                     <td style={tdStyle}>₹{fmt(summary.sales.igst)}</td>
-                    <td style={{ ...tdStyle, fontWeight: 800, color: '#059669' }}>₹{fmt(summary.sales.total_gst)}</td>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: '#0f766e' }}>₹{fmt(summary.sales.total_gst)}</td>
                   </tr>
                   <tr style={{ background: '#eff6ff' }}>
                     <td style={{ ...tdStyle, fontWeight: 700, color: '#1e40af' }}>🛒 Input / ITC (Purchase)</td>
                     <td style={tdStyle}>₹{fmt(summary.purchases.cgst)}</td>
                     <td style={tdStyle}>₹{fmt(summary.purchases.sgst)}</td>
                     <td style={tdStyle}>₹{fmt(summary.purchases.igst)}</td>
-                    <td style={{ ...tdStyle, fontWeight: 800, color: '#2563eb' }}>₹{fmt(summary.purchases.total_gst)}</td>
+                    <td style={{ ...tdStyle, fontWeight: 800, color: '#1d4ed8' }}>₹{fmt(summary.purchases.total_gst)}</td>
                   </tr>
                   <tr style={{ background: isPayable ? '#fef2f2' : '#f0fdf4', borderTop: '2px solid #e5e7eb' }}>
                     <td style={{ ...tdStyle, fontWeight: 800, color: isPayable ? '#991b1b' : '#065f46' }}>
@@ -610,19 +610,19 @@ export default function GSTPage() {
 
           {/* ── SECTION 4: B2B / B2C CARDS ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-            <div className="card" style={{ borderLeft: '4px solid #6366f1' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#6366f1', marginBottom: 4 }}>🏢 B2B</div>
+            <div className="card" style={{ borderLeft: '4px solid #1d4ed8' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#1d4ed8', marginBottom: 4 }}>🏢 B2B</div>
               <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>GSTIN वाले ग्राहक</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2b_count}</div>
               <div style={{ fontSize: 11, color: '#9ca3af' }}>invoices</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#6366f1' }}>₹{fmt(summary.sales.b2b_taxable)}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#1d4ed8' }}>₹{fmt(summary.sales.b2b_taxable)}</div>
             </div>
-            <div className="card" style={{ borderLeft: '4px solid #10b981' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#10b981', marginBottom: 4 }}>👤 B2C</div>
+            <div className="card" style={{ borderLeft: '4px solid #0f766e' }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#0f766e', marginBottom: 4 }}>👤 B2C</div>
               <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>बिना GSTIN ग्राहक</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2c_count}</div>
               <div style={{ fontSize: 11, color: '#9ca3af' }}>invoices</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#10b981' }}>₹{fmt(summary.sales.b2c_taxable)}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#0f766e' }}>₹{fmt(summary.sales.b2c_taxable)}</div>
             </div>
           </div>
 
@@ -656,14 +656,14 @@ export default function GSTPage() {
                   <tbody>
                     {summary.gstr1.b2b_invoices.map((inv, i) => (
                       <tr key={i}>
-                        <td style={{ color: '#6366f1', fontWeight: 600 }}>{inv.invoice_number}</td>
+                        <td style={{ color: '#1d4ed8', fontWeight: 600 }}>{inv.invoice_number}</td>
                         <td style={{ fontWeight: 600 }}>{inv.buyer_name || '—'}</td>
                         <td style={{ fontSize: 11, color: '#9ca3af' }}>{inv.buyer_gstin}</td>
                         <td>₹{fmt(inv.taxable_amount)}</td>
                         <td>{inv.gst_rate}%</td>
-                        <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(inv.total)}</td>
+                        <td style={{ fontWeight: 700, color: '#0f766e' }}>₹{fmt(inv.total)}</td>
                         <td>
-                          <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
+                          <span style={{ background: '#e0f2fe', color: '#0c4a6e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
                             {inv.gst_type}
                           </span>
                         </td>
@@ -676,10 +676,10 @@ export default function GSTPage() {
               {/* Mobile */}
               <div className="show-xs" style={{ flexDirection: 'column', gap: 10 }}>
                 {summary.gstr1.b2b_invoices.map((inv, i) => (
-                  <div key={i} className="card" style={{ borderLeft: '3px solid #6366f1' }}>
+                  <div key={i} className="card" style={{ borderLeft: '3px solid #1d4ed8' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <div style={{ fontWeight: 700, color: '#6366f1', fontSize: 13 }}>{inv.invoice_number}</div>
-                      <div style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(inv.total)}</div>
+                      <div style={{ fontWeight: 700, color: '#1d4ed8', fontSize: 13 }}>{inv.invoice_number}</div>
+                      <div style={{ fontWeight: 700, color: '#0f766e' }}>₹{fmt(inv.total)}</div>
                     </div>
                     <div style={{ fontSize: 12, color: '#374151', fontWeight: 600 }}>{inv.buyer_name}</div>
                     <div style={{ fontSize: 11, color: '#9ca3af' }}>GSTIN: {inv.buyer_gstin} • GST {inv.gst_rate}%</div>

@@ -500,19 +500,19 @@ export default function SalesPage() {
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>बिक्री / Sales</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing sales data...</div>}
             </div>
-            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-success" style={{ width: 'auto' }}>+ बिक्री दर्ज / Record Sale</button>
+            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ बिक्री दर्ज / Record Sale</button>
           </div>
         </section>
 
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Revenue</div>
-            <div className="metric-value" style={{ color: '#10b981' }}>₹{fmt(summary.totalRevenue)}</div>
+            <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmt(summary.totalRevenue)}</div>
             <div className="metric-note">Total billed amount</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">GST</div>
-            <div className="metric-value" style={{ color: '#6366f1' }}>₹{fmt(summary.totalGST)}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{fmt(summary.totalGST)}</div>
             <div className="metric-note">Collected in sales</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
@@ -743,9 +743,9 @@ export default function SalesPage() {
 
               {/* Bill Summary */}
               {billTotals.total > 0 && saleStep === 1 && (
-                <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: '#6d28d9', marginBottom: 6 }}>📋 Bill Summary</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, color: '#7c3aed' }}>
+                <div style={{ background: '#ecfeff', border: '1px solid #99f6e4', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
+                  <div style={{ fontWeight: 700, color: '#0f766e', marginBottom: 6 }}>📋 Bill Summary</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, color: '#134e4a' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Taxable:</span><strong>₹{fmt(billTotals.taxable)}</strong></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>GST:</span><strong>₹{fmt(billTotals.gst)}</strong></div>
                     {form.buyer_state && (

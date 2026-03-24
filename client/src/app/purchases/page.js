@@ -384,7 +384,7 @@ export default function PurchasesPage() {
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>खरीद / Purchases</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing purchase data...</div>}
             </div>
-            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-warning" style={{ width: 'auto' }}>
+            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
               + खरीद दर्ज / Record Purchase
             </button>
           </div>
@@ -393,17 +393,17 @@ export default function PurchasesPage() {
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Total Spend</div>
-            <div className="metric-value" style={{ color: '#f59e0b' }}>₹{(summary.totalPurchaseValue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#b45309' }}>₹{(summary.totalPurchaseValue || 0).toFixed(2)}</div>
             <div className="metric-note">Purchase outflow</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Input GST</div>
-            <div className="metric-value" style={{ color: '#6366f1' }}>₹{(summary.totalITC || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{(summary.totalITC || 0).toFixed(2)}</div>
             <div className="metric-note">ITC available</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Balance Due</div>
-            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#ef4444' : '#10b981' }}>₹{(summary.totalDue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#dc2626' : '#0f766e' }}>₹{(summary.totalDue || 0).toFixed(2)}</div>
             <div className="metric-note">Supplier credit outstanding</div>
           </div>
         </section>
@@ -647,14 +647,14 @@ export default function PurchasesPage() {
 
               {/* ── BILL SUMMARY ── */}
               {billTotals.total > 0 && purchaseStep === 1 && (
-                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: '#92400e', marginBottom: 6 }}>📋 Bill Summary</div>
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
+                  <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>📋 Bill Summary</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>Subtotal (Taxable):</span><strong>₹{billTotals.taxable.toFixed(2)}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Total GST (ITC):</span><strong style={{ color: '#6366f1' }}>₹{billTotals.gst.toFixed(2)}</strong>
+                      <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>₹{billTotals.gst.toFixed(2)}</strong>
                     </div>
                     {form.supplier_state && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
@@ -797,11 +797,11 @@ export default function PurchasesPage() {
                   </button>
                 )}
                 {purchaseStep < 2 ? (
-                  <button type="button" className="btn-warning" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current + 1)}>
+                  <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current + 1)}>
                     Continue
                   </button>
                 ) : (
-                <button type="button" onClick={handleSubmit} className="btn-warning" style={{ flex: 1 }} disabled={submitting}>
+                <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
                   {submitting ? 'दर्ज हो रहा है...' : editingPurchaseId ? '💾 Update Purchase' : form.payment_type === 'credit' ? '📒 Credit Purchase' : '💵 Purchase दर्ज करें'}
                 </button>
                 )}

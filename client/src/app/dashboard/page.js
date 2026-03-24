@@ -183,8 +183,8 @@ export default function DashboardPage() {
       label: 'बिक्री / Sales',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} invoices this month`,
-      color: '#10b981',
-      accent: 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.04))',
+      color: '#0f766e',
+      accent: 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.04))',
       href: '/sales',
       icon: 'Sales',
     },
@@ -192,9 +192,9 @@ export default function DashboardPage() {
       label: 'मुनाफ़ा / Profit',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
-      color: profit >= 0 ? '#2563eb' : '#dc2626',
+      color: profit >= 0 ? '#1d4ed8' : '#dc2626',
       accent: profit >= 0
-        ? 'linear-gradient(135deg, rgba(37,99,235,0.16), rgba(59,130,246,0.06))'
+        ? 'linear-gradient(135deg, rgba(29,78,216,0.16), rgba(56,189,248,0.06))'
         : 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))',
       href: '/reports',
       icon: 'Profit',
@@ -214,22 +214,22 @@ export default function DashboardPage() {
       label: 'GST देय / Payable',
       value: `₹${fmt(Math.abs(netGST))}`,
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
-      color: netGST >= 0 ? '#f59e0b' : '#10b981',
+      color: netGST >= 0 ? '#b45309' : '#0f766e',
       accent: netGST >= 0
-        ? 'linear-gradient(135deg, rgba(245,158,11,0.16), rgba(251,191,36,0.06))'
-        : 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.06))',
+        ? 'linear-gradient(135deg, rgba(180,83,9,0.16), rgba(245,158,11,0.06))'
+        : 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.06))',
       href: '/gst',
       icon: 'GST',
     },
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#059669' },
-    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#d97706' },
+    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(15,118,110,0.12)', color: '#0f766e' },
+    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(180,83,9,0.12)', color: '#b45309' },
     { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.1)', color: '#dc2626' },
-    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5' },
-    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(14,165,233,0.12)', color: '#2563eb' },
-    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(168,85,247,0.12)', color: '#7c3aed' },
+    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(29,78,216,0.12)', color: '#1d4ed8' },
+    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,32,50,0.12)', color: '#082032' },
+    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(245,158,11,0.12)', color: '#b45309' },
   ];
 
   return (

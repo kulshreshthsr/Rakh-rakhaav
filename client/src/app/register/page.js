@@ -45,58 +45,56 @@ export default function RegisterPage() {
   const strengthLabel = ['', 'Weak', 'Medium', 'Strong'][strength];
 
   return (
-    <div className="auth-root">
-      <div className="auth-shell">
-        <section className="auth-showcase">
-          <div>
-            <div className="auth-brand">
-              <div className="auth-logo">र</div>
-              <div>
-                <div className="auth-brand-name">
-                  रख<span style={{ color: '#6ee7b7' }}>रखाव</span>
-                </div>
-                <div className="auth-brand-sub">Start Smart From Day One</div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18, maxWidth: 420 }}>
-              <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: '-0.04em', fontWeight: 800 }}>
-                Start your business setup in minutes.
-              </h1>
-              <p style={{ marginTop: 12, color: 'rgba(255,255,255,0.68)', fontSize: 14, lineHeight: 1.6 }}>
-                Create your account once and begin billing, inventory tracking and GST-ready records right away.
-              </p>
-            </div>
-
-            <div className="auth-meta" style={{ marginTop: 14 }}>
-              {['Free', 'GST Ready', 'Mobile First'].map((item) => (
-                <div key={item} className="feature-chip">{item}</div>
-              ))}
-            </div>
-
-            <div className="auth-feature-list">
-              <div className="auth-feature-item">
-                <div className="auth-feature-icon">A</div>
-                <div>
-                  <div className="auth-feature-title">Simple first setup</div>
-                  <div className="auth-feature-text">No confusing steps, just create your account and start recording business activity.</div>
-                </div>
-              </div>
-              <div className="auth-feature-item">
-                <div className="auth-feature-icon">B</div>
-                <div>
-                  <div className="auth-feature-title">Built for real shop work</div>
-                  <div className="auth-feature-text">Designed for quick billing, stock updates and daily use on mobile devices.</div>
-                </div>
-              </div>
+    <div className="trust-auth-root trust-auth-root-register">
+      <div className="trust-auth-shell">
+        <section className="trust-auth-showcase">
+          <div className="trust-auth-kicker">Premium onboarding experience</div>
+          <div className="trust-auth-brand-row">
+            <div className="trust-auth-logo">R</div>
+            <div>
+              <div className="trust-auth-brand-name">Rakhrakhaav</div>
+              <div className="trust-auth-brand-subtitle">For business owners who want a sharper first impression</div>
             </div>
           </div>
 
-          <div />
+          <div className="trust-auth-copy">
+            <h1>Set up once. Look professional from the very first invoice.</h1>
+            <p>
+              Create your workspace and step into a more premium business system for billing, stock control, GST, and
+              customer dues.
+            </p>
+          </div>
+
+          <div className="trust-auth-proof-grid">
+            <article className="trust-proof-card">
+              <strong>Quick setup</strong>
+              <span>Open your account and move directly into real business actions without extra complexity.</span>
+            </article>
+            <article className="trust-proof-card">
+              <strong>Made for Indian retail</strong>
+              <span>Inventory, purchases, dues, and tax workflows are framed for everyday shop operations.</span>
+            </article>
+          </div>
+
+          <div className="trust-auth-stat-row">
+            <div>
+              <strong>Free</strong>
+              <span>Start with a trial-ready workspace</span>
+            </div>
+            <div>
+              <strong>GST</strong>
+              <span>Built around clean, dependable records</span>
+            </div>
+            <div>
+              <strong>Mobile</strong>
+              <span>Designed to feel strong on small screens too</span>
+            </div>
+          </div>
         </section>
 
-        <section className="auth-card-wrap">
-          <div className="auth-card" style={{ maxWidth: 420, padding: '24px 22px' }}>
+        <section className="trust-auth-card-wrap">
+          <div className="trust-auth-card">
+            <div className="trust-form-topline">Create secure workspace</div>
             <div className="auth-title">Create account</div>
             <div className="auth-subtitle">Start managing your business today.</div>
 
@@ -125,51 +123,32 @@ export default function RegisterPage() {
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, '_'))}
                   required
                 />
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                  Sirf lowercase letters, numbers aur underscore
-                </div>
+                <div className="trust-helper-text">Use lowercase letters, numbers, and underscore only.</div>
               </div>
 
               <div className="form-group">
                 <label className="form-label">Password</label>
-                <div style={{ position: 'relative' }}>
+                <div className="trust-password-wrap">
                   <input
-                    className="form-input"
+                    className="form-input trust-password-input"
                     type={showPass ? 'text' : 'password'}
-                    placeholder="Min. 6 characters"
+                    placeholder="Minimum 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    style={{ paddingRight: 48 }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    style={{
-                      position: 'absolute',
-                      right: 14,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: '#94a3b8',
-                      fontSize: 18,
-                    }}
-                  >
-                    {showPass ? '🙈' : '👁️'}
+                  <button type="button" onClick={() => setShowPass(!showPass)} className="trust-password-toggle">
+                    {showPass ? 'Hide' : 'Show'}
                   </button>
                 </div>
                 {password.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ height: 6, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
+                  <div className="trust-strength-wrap">
+                    <div className="trust-strength-bar">
                       <div
+                        className="trust-strength-fill"
                         style={{
                           width: `${[0, 33, 66, 100][strength]}%`,
-                          height: '100%',
                           background: strengthColor,
-                          borderRadius: 999,
-                          transition: 'width 0.22s ease',
                         }}
                       />
                     </div>
@@ -178,8 +157,8 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              <button type="submit" className="btn-success" style={{ width: '100%', marginTop: 6 }} disabled={loading}>
-                {loading ? '⏳ Creating account...' : 'Create account / अकाउंट बनाएं'}
+              <button type="submit" className="btn-primary trust-submit-btn" disabled={loading}>
+                {loading ? 'Creating account...' : 'Create account'}
               </button>
             </form>
 

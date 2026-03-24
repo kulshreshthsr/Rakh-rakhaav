@@ -163,13 +163,13 @@ export default function ProfilePage() {
                   width: 58,
                   height: 58,
                   borderRadius: 18,
-                  background: 'linear-gradient(135deg, #4f46e5, #0ea5e9)',
+                  background: 'linear-gradient(135deg, #082032, #1d4ed8 58%, #0f766e)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 24,
                   fontWeight: 800,
-                  boxShadow: '0 14px 32px rgba(79,70,229,0.22)',
+                  boxShadow: '0 14px 32px rgba(8,32,50,0.26)',
                   flexShrink: 0,
                 }}
               >

@@ -264,7 +264,7 @@ export default function ReportsPage() {
           <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
             <div className="metric-card" style={{ cursor: 'default' }}>
               <div className="metric-label">Revenue</div>
-              <div className="metric-value" style={{ color: '#10b981' }}>₹{fmtN(summary.totalRevenue)}</div>
+              <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmtN(summary.totalRevenue)}</div>
               <div className="metric-note">{summary.salesCount || 0} invoices</div>
             </div>
             <div className="metric-card" style={{ cursor: 'default' }}>
@@ -274,7 +274,7 @@ export default function ReportsPage() {
             </div>
             <div className="metric-card" style={{ cursor: 'default' }}>
               <div className="metric-label">GST Payable</div>
-              <div className="metric-value" style={{ color: '#f59e0b' }}>₹{fmtN(summary.netGST)}</div>
+              <div className="metric-value" style={{ color: '#b45309' }}>₹{fmtN(summary.netGST)}</div>
               <div className="metric-note">ITC ₹{fmtN(summary.totalITC)}</div>
             </div>
             <div className="metric-card" style={{ cursor: 'default' }}>
@@ -309,12 +309,12 @@ export default function ReportsPage() {
                 {
                   label: 'कुल बिक्री / Total Revenue',
                   value: summary.totalRevenue,
-                  color: '#10b981', prefix: '',
+                  color: '#0f766e', prefix: '',
                 },
                 {
                   label: 'GST वसूला / GST Collected',
                   value: summary.totalGST,
-                  color: '#6366f1', prefix: '−',
+                  color: '#1d4ed8', prefix: '−',
                   sub: 'सरकार का हिस्सा / not your income',
                 },
                 {
@@ -400,8 +400,8 @@ export default function ReportsPage() {
                         <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
                           <td style={tdS}>{d.date}</td>
                           <td style={tdS}>{d.count}</td>
-                          <td style={{ ...tdS, fontWeight: 700, color: '#10b981' }}>₹{fmtN(d.revenue)}</td>
-                          <td style={{ ...tdS, fontWeight: 700, color: d.profit >= 0 ? '#6366f1' : '#ef4444' }}>
+                          <td style={{ ...tdS, fontWeight: 700, color: '#0f766e' }}>₹{fmtN(d.revenue)}</td>
+                          <td style={{ ...tdS, fontWeight: 700, color: d.profit >= 0 ? '#1d4ed8' : '#ef4444' }}>
                             ₹{fmtN(d.profit)}
                           </td>
                           <td style={tdS}>
@@ -437,7 +437,7 @@ export default function ReportsPage() {
                   {topProducts.map((p, i) => (
                     <div key={i} className="stack-row">
                       <div className="stack-row-rank" style={{
-                        background: ['#10b981','#6366f1','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6'][i] || '#9ca3af',
+                        background: ['#0f766e','#1d4ed8','#b45309','#dc2626','#0f766e','#0891b2','#65a30d','#ea580c','#db2777','#0d9488'][i] || '#9ca3af',
                       }}>
                         {i + 1}
                       </div>
@@ -446,8 +446,8 @@ export default function ReportsPage() {
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>{p.qty} units • {p.count} orders</div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>₹{fmtN(p.revenue)}</div>
-                        <div style={{ fontSize: 11, color: '#6366f1' }}>₹{fmtN(p.profit)} profit</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f766e' }}>₹{fmtN(p.revenue)}</div>
+                        <div style={{ fontSize: 11, color: '#1d4ed8' }}>₹{fmtN(p.profit)} profit</div>
                       </div>
                     </div>
                   ))}
@@ -471,7 +471,7 @@ export default function ReportsPage() {
                   {topCustomers.map((c, i) => (
                     <div key={i} className="stack-row">
                       <div className="stack-row-rank" style={{
-                        background: ['#ef4444','#f59e0b','#10b981','#6366f1','#8b5cf6','#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6'][i] || '#9ca3af',
+                        background: ['#dc2626','#b45309','#0f766e','#1d4ed8','#7c3aed','#0891b2','#65a30d','#ea580c','#db2777','#0d9488'][i] || '#9ca3af',
                       }}>
                         {c.name.charAt(0).toUpperCase()}
                       </div>
@@ -480,7 +480,7 @@ export default function ReportsPage() {
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>{c.count} orders{c.phone ? ` • ${c.phone}` : ''}</div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>₹{fmtN(c.revenue)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f766e' }}>₹{fmtN(c.revenue)}</div>
                         {c.udhaar > 0 && (
                           <div style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>₹{fmtN(c.udhaar)} due</div>
                         )}

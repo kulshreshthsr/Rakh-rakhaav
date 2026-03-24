@@ -1,7 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { clearTrialGateSeen, hasWelcomePending, markTrialGateSeen, readStoredSubscription, setWelcomePending, writeStoredSubscription } from '../../lib/subscription';
+import {
+  clearTrialGateSeen,
+  hasWelcomePending,
+  markTrialGateSeen,
+  readStoredSubscription,
+  setWelcomePending,
+  writeStoredSubscription,
+} from '../../lib/subscription';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -63,60 +70,64 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-root">
-      <div className="auth-shell">
-        <section className="auth-showcase">
-          <div>
-            <div className="auth-brand">
-              <div className="auth-logo">र</div>
-              <div>
-                <div className="auth-brand-name">
-                  रख<span style={{ color: '#6ee7b7' }}>रखाव</span>
-                </div>
-                <div className="auth-brand-sub">Smart Business Manager</div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18, maxWidth: 420 }}>
-              <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: '-0.04em', fontWeight: 800 }}>
-                Sign in and keep your business moving.
-              </h1>
-              <p style={{ marginTop: 12, color: 'rgba(255,255,255,0.68)', fontSize: 14, lineHeight: 1.6 }}>
-                Orders, inventory, GST and udhaar are ready where you left them.
-              </p>
-            </div>
-
-            <div className="auth-meta" style={{ marginTop: 14 }}>
-              <div className="feature-chip">📦 Stock</div>
-              <div className="feature-chip">🧾 GST</div>
-              <div className="feature-chip">📒 Udhaar</div>
-            </div>
-
-            <div className="auth-feature-list">
-              <div className="auth-feature-item">
-                <div className="auth-feature-icon">1</div>
-                <div>
-                  <div className="auth-feature-title">Faster daily operations</div>
-                  <div className="auth-feature-text">Get to sales, purchases and stock changes in a single tap.</div>
-                </div>
-              </div>
-              <div className="auth-feature-item">
-                <div className="auth-feature-icon">2</div>
-                <div>
-                  <div className="auth-feature-title">Cleaner business records</div>
-                  <div className="auth-feature-text">Keep invoices, customer dues and GST numbers in one organized workspace.</div>
-                </div>
-              </div>
+    <div className="trust-auth-root">
+      <div className="trust-auth-shell">
+        <section className="trust-auth-showcase">
+          <div className="trust-auth-kicker">Trusted retail operating system</div>
+          <div className="trust-auth-brand-row">
+            <div className="trust-auth-logo">R</div>
+            <div>
+              <div className="trust-auth-brand-name">Rakhrakhaav</div>
+              <div className="trust-auth-brand-subtitle">Built for disciplined, modern shop management</div>
             </div>
           </div>
 
-          <div />
+          <div className="trust-auth-copy">
+            <h1>Bring authority to every bill, every stock count, and every customer ledger.</h1>
+            <p>
+              A sharper, more premium workspace for inventory, GST billing, purchases, and udhaar. Your first screen
+              should feel like a business system people can trust instantly.
+            </p>
+          </div>
+
+          <div className="trust-auth-proof-grid">
+            <article className="trust-proof-card">
+              <strong>GST-ready records</strong>
+              <span>Invoices, tax details, and reports stay organized from the first login.</span>
+            </article>
+            <article className="trust-proof-card">
+              <strong>Operational clarity</strong>
+              <span>Stock, sales, and dues live together so daily decisions feel faster and cleaner.</span>
+            </article>
+          </div>
+
+          <div className="trust-auth-stat-row">
+            <div>
+              <strong>01</strong>
+              <span>One dashboard for billing, stock, and reports</span>
+            </div>
+            <div>
+              <strong>24/7</strong>
+              <span>Mobile-friendly access for day-to-day shop work</span>
+            </div>
+            <div>
+              <strong>Pro</strong>
+              <span>Premium-first visual language that feels stable and credible</span>
+            </div>
+          </div>
         </section>
 
-        <section className="auth-card-wrap">
-          <div className="auth-card" style={{ maxWidth: 420, padding: '24px 22px' }}>
+        <section className="trust-auth-card-wrap">
+          <div className="trust-auth-card">
+            <div className="trust-form-topline">Secure sign in</div>
             <div className="auth-title">Welcome back</div>
-            <div className="auth-subtitle">Sign in to continue managing your business.</div>
+            <div className="auth-subtitle">Sign in to continue running your business with confidence.</div>
+
+            <div className="trust-mini-strip">
+              <span>Encrypted session</span>
+              <span>Fast login</span>
+              <span>Mobile ready</span>
+            </div>
 
             {error && <div className="alert-error">{error}</div>}
 
@@ -135,38 +146,23 @@ export default function LoginPage() {
 
               <div className="form-group">
                 <label className="form-label">Password</label>
-                <div style={{ position: 'relative' }}>
+                <div className="trust-password-wrap">
                   <input
                     type={showPass ? 'text' : 'password'}
-                    className="form-input"
-                    placeholder="••••••••"
+                    className="form-input trust-password-input"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    style={{ paddingRight: 48 }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    style={{
-                      position: 'absolute',
-                      right: 14,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: '#94a3b8',
-                      fontSize: 18,
-                    }}
-                  >
-                    {showPass ? '🙈' : '👁️'}
+                  <button type="button" onClick={() => setShowPass(!showPass)} className="trust-password-toggle">
+                    {showPass ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} className="btn-success" style={{ width: '100%', marginTop: 6 }}>
-                {loading ? '⏳ Signing in...' : 'Sign in / लॉगिन'}
+              <button type="submit" disabled={loading} className="btn-primary trust-submit-btn">
+                {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
 
@@ -175,12 +171,6 @@ export default function LoginPage() {
               <a href="/register" className="cta-link">
                 Create one free
               </a>
-            </div>
-
-            <div className="auth-meta" style={{ justifyContent: 'center' }}>
-              {['Secure', 'Fast', 'Mobile Ready'].map((item) => (
-                <div key={item} className="auth-meta-item">{item}</div>
-              ))}
             </div>
           </div>
         </section>

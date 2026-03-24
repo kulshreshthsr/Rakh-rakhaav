@@ -65,9 +65,10 @@ export default function PricingPage() {
     <div className="pricing-page-shell membership-page-shell">
       <section className="pricing-hero membership-hero">
         <div className="subscription-pill">Premium access</div>
-        <h1>Make premium impossible to miss.</h1>
+        <h1>Turn your business software into something customers trust at first glance.</h1>
         <p>
-          Billing, GST, udhaar, reports and daily operations in one clean premium plan. Easy to choose, easy to unlock.
+          Billing, GST, udhaar, reports and daily operations in one sharper premium system. Clear value, cleaner design,
+          and a more credible business presence from day one.
         </p>
 
         <div className="membership-hero-grid">
@@ -103,7 +104,7 @@ export default function PricingPage() {
             <div className="membership-summary-plan">{selected?.label || 'Choose a plan'}</div>
             <div className="membership-summary-price">{formatCurrency(selected?.amount || 0)}</div>
             <div className="membership-summary-copy">
-              {selected?.description || 'Choose the plan that fits your workflow.'}
+              {selected?.description || 'Choose the plan that fits your workflow and keeps every premium touchpoint active.'}
             </div>
             {selected?.savingsLabel && <div className="membership-summary-saving">{selected.savingsLabel}</div>}
 

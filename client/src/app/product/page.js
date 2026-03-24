@@ -223,7 +223,7 @@ export default function ProductsPage() {
 
   const GSTBadge = ({ rate }) => {
     if (!rate) return <span style={{ color: '#9ca3af', fontSize: 12 }}>No GST</span>;
-    return <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>GST {rate}%</span>;
+    return <span style={{ background: '#e0f2fe', color: '#0c4a6e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>GST {rate}%</span>;
   };
 
   const MarginBadge = ({ margin }) => {
@@ -257,12 +257,12 @@ export default function ProductsPage() {
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Total Products</div>
-            <div className="metric-value" style={{ color: '#2563eb' }}>{products.length}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>{products.length}</div>
             <div className="metric-note">Catalog in your inventory</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Low Stock</div>
-            <div className="metric-value" style={{ color: '#f59e0b' }}>{lowStockCount}</div>
+            <div className="metric-value" style={{ color: '#b45309' }}>{lowStockCount}</div>
             <div className="metric-note">Need reorder attention</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
@@ -272,7 +272,7 @@ export default function ProductsPage() {
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Inventory Value</div>
-            <div className="metric-value" style={{ color: '#10b981' }}>₹{totalValue.toFixed(0)}</div>
+            <div className="metric-value" style={{ color: '#0f766e' }}>₹{totalValue.toFixed(0)}</div>
             <div className="metric-note">Based on cost price</div>
           </div>
         </section>

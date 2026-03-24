@@ -42,20 +42,20 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="trial-gate-root welcome-gate-root">
-      <div className="trial-gate-shell">
-        <section className="trial-gate-hero">
+    <div className="trial-gate-root welcome-gate-root trust-welcome-root">
+      <div className="trial-gate-shell trust-welcome-shell">
+        <section className="trial-gate-hero trust-welcome-hero">
           <div className="subscription-pill">Welcome to Rakhrakhaav</div>
-          <h1>Everything your shop needs, ready from day one.</h1>
+          <h1>A premium business cockpit your customers will feel in every interaction.</h1>
           <p>
-            Billing, GST, stock, udhaar and reports are already part of your workspace. Start your free trial and
-            move into the dashboard with a cleaner, premium-first onboarding.
+            This experience is built to make your business feel more serious, more reliable, and more modern from the
+            first screen to the final bill.
           </p>
 
           <div className="trial-gate-chip-row">
             <span>5-day free trial</span>
-            <span>Mobile-friendly dashboard</span>
-            <span>Secure upgrades via Razorpay</span>
+            <span>Sharper premium theme</span>
+            <span>Razorpay-ready upgrades</span>
           </div>
 
           <div className="trial-gate-feature-grid">
@@ -68,16 +68,23 @@ export default function WelcomePage() {
           </div>
         </section>
 
-        <aside className="trial-gate-sidecard">
+        <aside className="trial-gate-sidecard trust-welcome-sidecard">
           <div className="trial-gate-side-kicker">Trial access</div>
           <div className="trial-gate-side-title">
             {subscription?.trialDaysLeft ? `${subscription.trialDaysLeft} days ready for you` : 'Trial ready to start'}
           </div>
           <p>
-            Walk through the dashboard first, and upgrade later from the shining top tab whenever you are ready.
+            Enter the dashboard and explore the new trust-focused visual system, built to make the product feel bold
+            without losing credibility.
           </p>
 
-          <button type="button" className="btn-primary" onClick={startTrial}>
+          <div className="trust-mini-strip trust-mini-strip-dark">
+            <span>Premium visuals</span>
+            <span>Business credibility</span>
+            <span>Cleaner hierarchy</span>
+          </div>
+
+          <button type="button" className="btn-primary trust-submit-btn" onClick={startTrial}>
             Start your free trial
           </button>
         </aside>

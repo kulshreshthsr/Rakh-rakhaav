@@ -293,9 +293,9 @@ export default function UdhaarPage() {
             <div className="metric-value" style={{ color: '#ef4444' }}>₹{totalCustomerUdhaar.toFixed(0)}</div>
             <div className="metric-note">{customers.filter(c => c.totalUdhaar > 0).length} pending • {customers.length} total</div>
           </div>
-          <div className="metric-card" style={{ cursor: 'default', background: 'linear-gradient(180deg, rgba(255,251,235,0.96), rgba(255,255,255,0.92))' }}>
+          <div className="metric-card" style={{ cursor: 'default', background: 'linear-gradient(180deg, rgba(255,248,240,0.96), rgba(255,255,255,0.92))' }}>
             <div className="metric-label">Supplier Due</div>
-            <div className="metric-value" style={{ color: '#f59e0b' }}>₹{totalSupplierUdhaar.toFixed(0)}</div>
+            <div className="metric-value" style={{ color: '#b45309' }}>₹{totalSupplierUdhaar.toFixed(0)}</div>
             <div className="metric-note">{suppliers.filter(s => s.totalUdhaar > 0).length} pending • {suppliers.length} total</div>
           </div>
         </section>
@@ -303,12 +303,12 @@ export default function UdhaarPage() {
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <button
           onClick={() => switchTab('customers')}
-          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: isCustomer ? '#ef4444' : '#f3f4f6', color: isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
+          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: isCustomer ? '#dc2626' : '#f3f4f6', color: isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
           👥 Customers ({customers.length})
         </button>
         <button
           onClick={() => switchTab('suppliers')}
-          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: !isCustomer ? '#f59e0b' : '#f3f4f6', color: !isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
+          style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: !isCustomer ? '#b45309' : '#f3f4f6', color: !isCustomer ? '#fff' : '#374151', transition: 'all 0.2s' }}>
           🏭 Suppliers ({suppliers.length})
         </button>
         </div>
