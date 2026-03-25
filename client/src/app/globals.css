@@ -729,62 +729,56 @@ textarea::placeholder {
 }
 
 .action-soft {
-  color: #17324e;
-  background: linear-gradient(180deg, rgba(253, 254, 255, 0.99), rgba(224, 236, 248, 0.99));
-  border: 1px solid rgba(90, 121, 156, 0.36);
+  color: #fff;
+  background: linear-gradient(135deg, #14314e, #24557c);
+  border: 1px solid rgba(36, 85, 124, 0.36);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 16px 30px rgba(8, 32, 50, 0.13);
+  box-shadow: 0 18px 34px rgba(8, 32, 50, 0.18);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .action-soft:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 34px rgba(8, 32, 50, 0.16);
+  box-shadow: 0 22px 40px rgba(8, 32, 50, 0.22);
 }
 
 .action-soft.print {
-  color: #173a63;
-  background: linear-gradient(180deg, rgba(244, 249, 255, 0.99), rgba(189, 214, 241, 0.99));
-  border-color: rgba(63, 100, 146, 0.4);
-  box-shadow: 0 16px 30px rgba(32, 74, 124, 0.14);
+  background: linear-gradient(135deg, #163654, #2b628f);
+  border-color: rgba(43, 98, 143, 0.38);
+  box-shadow: 0 18px 34px rgba(22, 54, 84, 0.22);
 }
 
 .action-soft.whatsapp {
-  color: #0f5f4d;
-  background: linear-gradient(180deg, rgba(239, 251, 246, 0.99), rgba(177, 226, 212, 0.99));
-  border-color: rgba(15, 118, 110, 0.3);
-  box-shadow: 0 16px 30px rgba(15, 118, 110, 0.14);
+  background: linear-gradient(135deg, #0f766e, #169b8a);
+  border-color: rgba(22, 155, 138, 0.34);
+  box-shadow: 0 18px 34px rgba(15, 118, 110, 0.22);
 }
 
 .action-soft.edit {
-  color: #173e6c;
-  background: linear-gradient(180deg, rgba(243, 248, 255, 0.99), rgba(183, 210, 244, 0.99));
-  border-color: rgba(29, 78, 216, 0.3);
-  box-shadow: 0 16px 30px rgba(29, 78, 216, 0.14);
+  background: linear-gradient(135deg, #1d4f7a, #2f75a8);
+  border-color: rgba(47, 117, 168, 0.36);
+  box-shadow: 0 18px 34px rgba(29, 79, 122, 0.22);
 }
 
 .action-soft.delete {
-  color: #8f2740;
-  background: linear-gradient(180deg, rgba(255, 244, 246, 0.99), rgba(243, 205, 214, 0.99));
-  border-color: rgba(184, 64, 82, 0.3);
-  box-shadow: 0 16px 30px rgba(184, 64, 82, 0.14);
+  background: linear-gradient(135deg, #8f2740, #c44c66);
+  border-color: rgba(196, 76, 102, 0.34);
+  box-shadow: 0 18px 34px rgba(143, 39, 64, 0.22);
 }
 
 .action-soft.stock {
-  color: #0f5d58;
-  background: linear-gradient(180deg, rgba(238, 251, 249, 0.99), rgba(171, 223, 214, 0.99));
-  border-color: rgba(13, 148, 136, 0.3);
-  box-shadow: 0 16px 30px rgba(13, 148, 136, 0.14);
+  background: linear-gradient(135deg, #11635d, #179383);
+  border-color: rgba(23, 147, 131, 0.34);
+  box-shadow: 0 18px 34px rgba(17, 99, 93, 0.22);
 }
 
 .action-soft.history {
-  color: #17385f;
-  background: linear-gradient(180deg, rgba(244, 248, 255, 0.99), rgba(191, 212, 241, 0.99));
-  border-color: rgba(17, 69, 111, 0.3);
-  box-shadow: 0 16px 30px rgba(17, 69, 111, 0.14);
+  background: linear-gradient(135deg, #203f66, #355d93);
+  border-color: rgba(53, 93, 147, 0.34);
+  box-shadow: 0 18px 34px rgba(32, 63, 102, 0.22);
 }
 
 .table-container {
