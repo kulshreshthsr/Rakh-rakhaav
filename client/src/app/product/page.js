@@ -44,6 +44,7 @@ export default function ProductsPage() {
   });
   const [productStep, setProductStep] = useState(0);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [lastScannedBarcode, setLastScannedBarcode] = useState('');
 
   // Stock adjust modal
   const [showStockModal, setShowStockModal]   = useState(false);
@@ -112,6 +113,7 @@ export default function ProductsPage() {
   const openAdd = () => {
     setEditProduct(null);
     setForm({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
+    setLastScannedBarcode('');
     setError('');
     setProductStep(0);
     setShowModal(true);
@@ -126,6 +128,7 @@ export default function ProductsPage() {
       barcode: p.barcode || '', hsn_code: p.hsn_code || '', gst_rate: p.gst_rate || 0,
       low_stock_threshold: p.low_stock_threshold || 5,
     });
+    setLastScannedBarcode('');
     setError('');
     setProductStep(0);
     setShowModal(true);
@@ -149,7 +152,9 @@ export default function ProductsPage() {
   };
 
   const handleBarcodeDetected = (detectedCode) => {
-    setForm((current) => ({ ...current, barcode: normalizeBarcode(detectedCode) }));
+    const normalizedBarcode = normalizeBarcode(detectedCode);
+    setForm((current) => ({ ...current, barcode: normalizedBarcode }));
+    setLastScannedBarcode(normalizedBarcode);
     setShowBarcodeScanner(false);
   };
 
@@ -480,7 +485,11 @@ export default function ProductsPage() {
                     style={{ flex: 1 }}
                     placeholder="Scan or type barcode"
                     value={form.barcode}
-                    onChange={e => setForm({ ...form, barcode: normalizeBarcode(e.target.value) })}
+                    onChange={e => {
+                      const normalizedBarcode = normalizeBarcode(e.target.value);
+                      setForm({ ...form, barcode: normalizedBarcode });
+                      setLastScannedBarcode((current) => (current === normalizedBarcode ? current : ''));
+                    }}
                   />
                   <button
                     type="button"
@@ -494,6 +503,11 @@ export default function ProductsPage() {
                 <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
                   Mobile camera scan yahan sirf barcode field fill karega.
                 </div>
+                {lastScannedBarcode && (
+                  <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: 12, fontWeight: 600 }}>
+                    Scanned successfully: <span style={{ fontFamily: 'monospace', fontSize: 13 }}>{lastScannedBarcode}</span>
+                  </div>
+                )}
               </div>
 
               </div>
