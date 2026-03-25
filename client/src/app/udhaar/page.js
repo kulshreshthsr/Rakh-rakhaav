@@ -192,20 +192,20 @@ export default function UdhaarPage() {
           {isCustomer && selected.phone && selected.totalUdhaar > 0 && (
             <button
               onClick={() => sendReminder(selected)}
-              style={{ padding: '8px 14px', background: '#25d366', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              style={{ padding: '9px 16px', background: 'linear-gradient(135deg, #16a34a, #25d366)', color: '#fff', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 24px rgba(22,163,74,0.2)' }}>
               WhatsApp Reminder
             </button>
           )}
           {selected.totalUdhaar > 0 && (
             <button
               onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}
-              style={{ padding: '8px 14px', background: isCustomer ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              style={{ padding: '9px 16px', background: isCustomer ? 'linear-gradient(135deg, #059669, #10b981)' : 'linear-gradient(135deg, #d97706, #f59e0b)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: isCustomer ? '0 12px 24px rgba(5,150,105,0.2)' : '0 12px 24px rgba(217,119,6,0.2)' }}>
               💰 {isCustomer ? 'Payment लें' : 'Payment करें'}
             </button>
           )}
           <button
             onClick={() => { setSelected(null); setLedger([]); }}
-            style={{ padding: '8px 12px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+            style={{ padding: '9px 14px', background: 'linear-gradient(180deg, #e2e8f0, #cbd5e1)', color: '#0f172a', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 20px rgba(15,23,42,0.08)' }}>
             ✕ बंद करें
           </button>
         </div>

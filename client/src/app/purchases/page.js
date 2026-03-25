@@ -482,11 +482,11 @@ export default function PurchasesPage() {
                     </td>
                     <td>
                       <button onClick={() => startEditPurchase(p)}
-                        style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                        style={{ color: '#fff', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: '1px solid rgba(37,99,235,0.22)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 22px rgba(37,99,235,0.2)' }}>
                         Edit
                       </button>
                       <button onClick={() => handleDelete(p._id)}
-                        style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                        style={{ color: '#fff', background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 22px rgba(220,38,38,0.18)' }}>
                         Delete
                       </button>
                     </td>
@@ -530,11 +530,11 @@ export default function PurchasesPage() {
                 </div>
 
                 <button onClick={() => startEditPurchase(p)}
-                  style={{ width: '100%', padding: '8px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
+                  style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', border: '1px solid rgba(37,99,235,0.22)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 8, boxShadow: '0 12px 24px rgba(37,99,235,0.18)' }}>
                   Edit
                 </button>
                 <button onClick={() => handleDelete(p._id)}
-                  style={{ width: '100%', padding: '8px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg, #dc2626, #ef4444)', color: '#fff', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(220,38,38,0.18)' }}>
                   Delete
                 </button>
               </div>
