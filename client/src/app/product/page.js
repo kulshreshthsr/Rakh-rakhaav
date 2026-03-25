@@ -454,15 +454,10 @@ export default function ProductsPage() {
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>
               {editProduct ? '✏️ उत्पाद संपादित / Edit Product' : '📦 उत्पाद जोड़ें / Add Product'}
                 </h3>
-                <div className="flow-modal-copy">Clean product setup with the same features, just more breathing room.</div>
               </div>
               <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
             </div>
             {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
-            <div className="flow-intro-card">
-              <div className="flow-intro-title">Simple 3-step product setup</div>
-              <div className="flow-intro-copy">Basics, pricing aur tax-stock ko separate panels me rakha gaya hai so mobile par form kam congested lage.</div>
-            </div>
             <div className="wizard-progress" style={{ marginBottom: 16 }}>
               {wizardSteps.map((step, index) => (
                 <div key={step.title} className={`wizard-step ${productStep === index ? 'is-active' : ''}`}>
@@ -473,11 +468,6 @@ export default function ProductsPage() {
               ))}
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="flow-compact-note">
-                {locale === 'hi'
-                  ? 'Guided wizard: basic details se shuru karein, phir pricing aur last mein tax-stock settings confirm karein.'
-                  : 'Guided wizard: add basics first, then pricing, and finish with tax and stock settings.'}
-              </div>
               <div className="flow-step-panel" style={{ display: productStep === 0 ? 'block' : 'none' }}>
               <div className="flow-section-kicker"><span>Basics</span><span>Identity + barcode</span></div>
               <div className="form-group">

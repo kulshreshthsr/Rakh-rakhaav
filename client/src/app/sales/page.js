@@ -775,16 +775,9 @@ export default function SalesPage() {
             {editingSaleId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
             ) : null}
-            <div className="flow-intro-card">
-              <div className="flow-intro-title">{editingSaleId ? 'Update sale with confidence' : 'Counter-friendly sales flow'}</div>
-              <div className="flow-intro-copy">Items, payment aur buyer details ko alag panels me group kiya gaya hai so mobile par screen zyada clean lage but all features same rahen.</div>
-            </div>
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
             )}
-              <div className="flow-compact-note">
-                {locale === 'hi' ? 'Guided wizard: item select करें, payment सेट करें, फिर buyer details review करें।' : 'Guided wizard: select items, confirm payment and finish buyer details.'}
-              </div>
               <div className="wizard-progress" style={{ marginBottom: 16 }}>
                 {wizardSteps.map((step, index) => (
                   <div key={step.title} className={`wizard-step ${saleStep === index ? 'is-active' : ''}`}>

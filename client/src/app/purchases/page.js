@@ -554,17 +554,12 @@ export default function PurchasesPage() {
             {editingPurchaseId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing purchase</div>
             ) : null}
-            <div className="flow-intro-card">
-              <div className="flow-intro-title">{editingPurchaseId ? 'Update purchase safely' : 'Cleaner purchase entry flow'}</div>
-              <div className="flow-intro-copy">Products, payment aur supplier details ko separate panels me group kiya gaya hai so mobile par form more comfortable aur trustworthy lage.</div>
-            </div>
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
                 {error}
               </div>
             )}
             <div className="flow-compact-note">
-              {locale === 'hi' ? 'Guided wizard: products चुनें, payment तय करें, फिर supplier details जोड़ें।' : 'Guided wizard: choose products, confirm payment and finish supplier details.'}
             </div>
             <div className="wizard-progress" style={{ marginBottom: 16 }}>
               {wizardSteps.map((step, index) => (
