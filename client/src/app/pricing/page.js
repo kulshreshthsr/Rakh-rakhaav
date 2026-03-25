@@ -6,13 +6,6 @@ import PlanCard from '../../components/subscription/PlanCard';
 import UpgradeModal from '../../components/subscription/UpgradeModal';
 import { API, FALLBACK_PLANS, formatCurrency, getToken, readStoredSubscription, writeStoredSubscription } from '../../lib/subscription';
 
-const MEMBERSHIP_FEATURES = [
-  'Unlimited billing and invoice printing',
-  'GST reports and exports ready anytime',
-  'Customer credit and collection workflows',
-  'WhatsApp sharing and daily business reporting',
-];
-
 export default function PricingPage() {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
@@ -48,86 +41,34 @@ export default function PricingPage() {
   );
 
   const membershipHeadline = subscription?.isPro
-    ? 'Your premium access is active.'
+    ? 'Premium active'
     : subscription?.isReadOnly
-      ? 'Reactivate premium and unlock your full workspace again.'
-      : 'Keep your business workflows active before the trial ends.';
+      ? 'Reactivate premium'
+      : 'Choose your plan';
 
   const membershipSubline = subscription?.isPro
-    ? 'You already have full access. You can still switch to a longer plan for better savings.'
+    ? 'You can switch to a longer plan anytime.'
     : subscription?.isReadOnly
-      ? 'Your data is safe. Upgrade to resume billing, GST exports, reports and credit actions.'
+      ? 'Upgrade to unlock billing and reports again.'
       : subscription?.trialDaysLeft
-        ? `Free trial has ${subscription.trialDaysLeft} day${subscription.trialDaysLeft === 1 ? '' : 's'} left.`
-        : 'Choose a plan once and continue billing, GST and reports without interruption.';
+        ? `${subscription.trialDaysLeft} trial day${subscription.trialDaysLeft === 1 ? '' : 's'} left.`
+        : 'Simple plans. Secure payment.';
 
   return (
     <div className="pricing-page-shell membership-page-shell">
-      <section className="pricing-hero membership-hero">
-        <div className="subscription-pill">Premium access</div>
-        <h1>Turn your business software into something customers trust at first glance.</h1>
-        <p>
-          Billing, GST, udhaar, reports and daily operations in one sharper premium system. Clear value, cleaner design,
-          and a more credible business presence from day one.
-        </p>
-
-        <div className="membership-hero-grid">
-          <div className="membership-spotlight-card">
-            <div className="membership-status-kicker">Business membership</div>
-            <h2>{membershipHeadline}</h2>
-            <p>{membershipSubline}</p>
-
-            <div className="membership-feature-list">
-              {MEMBERSHIP_FEATURES.map((feature) => (
-                <span key={feature}>{feature}</span>
-              ))}
-            </div>
-
-            <div className="membership-metrics-row">
-              <div>
-                <strong>5-day</strong>
-                <span>free trial</span>
-              </div>
-              <div>
-                <strong>24x7</strong>
-                <span>secure checkout</span>
-              </div>
-              <div>
-                <strong>{selected ? formatCurrency(selected.amount) : formatCurrency(449)}</strong>
-                <span>selected today</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="membership-summary-card">
-            <div className="membership-summary-label">Selected membership</div>
-            <div className="membership-summary-plan">{selected?.label || 'Choose a plan'}</div>
-            <div className="membership-summary-price">{formatCurrency(selected?.amount || 0)}</div>
-            <div className="membership-summary-copy">
-              {selected?.description || 'Choose the plan that fits your workflow and keeps every premium touchpoint active.'}
-            </div>
-            {selected?.savingsLabel && <div className="membership-summary-saving">{selected.savingsLabel}</div>}
-
-            <div className="pricing-trust-strip membership-trust-strip">
-              <span>Secure payment via Razorpay</span>
-              <span>No hidden charges</span>
-              <span>Mobile-first checkout</span>
-              <span>Cancel anytime</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="membership-plan-section">
-        <div className="membership-section-head">
+      <section className="card" style={{ display: 'grid', gap: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
-            <div className="membership-status-kicker">Choose what fits</div>
-            <h2>Choose a plan and upgrade in one tap.</h2>
+            <div className="subscription-pill" style={{ background: 'rgba(8,17,31,0.06)', color: '#163654', borderColor: 'rgba(15,23,42,0.08)' }}>Premium access</div>
+            <h1 className="page-title" style={{ marginTop: 14, marginBottom: 8 }}>{membershipHeadline}</h1>
+            <p className="page-subtitle">{membershipSubline}</p>
           </div>
-          <div className="membership-section-note">
-            {subscription?.trialDaysLeft
-              ? `Trial reminder: ${subscription.trialDaysLeft} day${subscription.trialDaysLeft === 1 ? '' : 's'} left.`
-              : 'The selected plan stays pinned at the bottom on mobile.'}
+
+          <div className="soft-panel" style={{ padding: 16, minWidth: 240, maxWidth: 320 }}>
+            <div className="membership-summary-label">Selected plan</div>
+            <div className="membership-summary-plan" style={{ marginTop: 6 }}>{selected?.label || 'Choose a plan'}</div>
+            <div className="membership-summary-price" style={{ marginTop: 10 }}>{formatCurrency(selected?.amount || 0)}</div>
+            {selected?.savingsLabel && <div className="membership-summary-saving" style={{ marginTop: 10 }}>{selected.savingsLabel}</div>}
           </div>
         </div>
 
@@ -141,14 +82,17 @@ export default function PricingPage() {
             />
           ))}
         </div>
-      </section>
 
-      <section className="membership-bottom-panel">
-        <div className="membership-bottom-copy">
-          <div className="membership-summary-label">Ready to unlock</div>
-          <div className="membership-bottom-title">{selected?.label || 'Premium membership'}</div>
-          <div className="membership-bottom-subtitle">
-            {selected?.savingsLabel || 'All premium workflows unlock instantly after successful payment.'}
+        <div className="soft-panel" style={{ padding: 18, display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div>
+            <div className="membership-summary-label">Payment</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 6 }}>{selected?.label || 'Premium membership'}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Secure Razorpay checkout. No extra steps.</div>
+          </div>
+          <div className="pricing-trust-strip membership-trust-strip" style={{ margin: 0 }}>
+            <span>Secure payment</span>
+            <span>No hidden charges</span>
+            <span>Cancel anytime</span>
           </div>
         </div>
 

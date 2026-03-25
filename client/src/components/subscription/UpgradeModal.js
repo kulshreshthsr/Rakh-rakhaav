@@ -13,7 +13,7 @@ export default function UpgradeModal({
   onSuccess,
   initialPlan = 'six_month',
   title = 'Unlock premium access',
-  subtitle = 'Continue billing, GST, reports and credit workflows without interruption.',
+  subtitle = 'Choose a plan and complete secure payment.',
 }) {
   const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [loading, setLoading] = useState(false);
@@ -80,7 +80,7 @@ export default function UpgradeModal({
         name: 'Rakh-Rakhaav',
         description: `${selected.label} premium subscription`,
         order_id: orderData.order.id,
-        theme: { color: '#4f46e5' },
+        theme: { color: '#163654' },
         notes: orderData.order.notes,
         handler: async (response) => {
           const verifyRes = await fetch(`${API}/api/payments/verify`, {
@@ -126,7 +126,12 @@ export default function UpgradeModal({
   return (
     <div className="subscription-modal-backdrop">
       <div className="subscription-modal">
-        <button type="button" onClick={onClose} className="subscription-modal-close">×</button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="subscription-modal-close"
+          aria-label="Close upgrade modal"
+        >x</button>
 
         <div className="subscription-modal-hero">
           <div className="subscription-pill">Premium membership</div>
@@ -150,9 +155,7 @@ export default function UpgradeModal({
           <div className="subscription-checkout-copy">
             <div className="subscription-checkout-label">Selected plan</div>
             <div className="subscription-checkout-name">{selected?.label || 'Premium membership'}</div>
-            <div className="subscription-checkout-note">
-              {selected?.description || 'Secure premium access with one clean checkout.'}
-            </div>
+            <div className="subscription-checkout-note">Secure payment. Premium stays active right away.</div>
           </div>
           <div className="subscription-checkout-price">{selected?.amount ? `Rs ${selected.amount}` : 'Rs 0'}</div>
         </div>
@@ -161,7 +164,6 @@ export default function UpgradeModal({
           <span>Secure payment via Razorpay</span>
           <span>No hidden charges</span>
           <span>Cancel anytime</span>
-          <span>Used by growing businesses</span>
         </div>
 
         {subscription?.shouldWarnTrial && (
