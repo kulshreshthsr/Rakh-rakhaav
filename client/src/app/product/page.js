@@ -448,11 +448,21 @@ export default function ProductsPage() {
       {/* ── Add/Edit Modal ── */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxHeight: '92vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 16 }}>
+          <div className="modal flow-modal">
+            <div className="flow-modal-header">
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>
               {editProduct ? '✏️ उत्पाद संपादित / Edit Product' : '📦 उत्पाद जोड़ें / Add Product'}
-            </h3>
+                </h3>
+                <div className="flow-modal-copy">Clean product setup with the same features, just more breathing room.</div>
+              </div>
+              <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
+            </div>
             {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            <div className="flow-intro-card">
+              <div className="flow-intro-title">Simple 3-step product setup</div>
+              <div className="flow-intro-copy">Basics, pricing aur tax-stock ko separate panels me rakha gaya hai so mobile par form kam congested lage.</div>
+            </div>
             <div className="wizard-progress" style={{ marginBottom: 16 }}>
               {wizardSteps.map((step, index) => (
                 <div key={step.title} className={`wizard-step ${productStep === index ? 'is-active' : ''}`}>
@@ -463,12 +473,13 @@ export default function ProductsPage() {
               ))}
             </div>
             <form onSubmit={handleSubmit}>
-              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+              <div className="flow-compact-note">
                 {locale === 'hi'
                   ? 'Guided wizard: basic details se shuru karein, phir pricing aur last mein tax-stock settings confirm karein.'
                   : 'Guided wizard: add basics first, then pricing, and finish with tax and stock settings.'}
               </div>
-              <div style={{ display: productStep === 0 ? 'block' : 'none' }}>
+              <div className="flow-step-panel" style={{ display: productStep === 0 ? 'block' : 'none' }}>
+              <div className="flow-section-kicker"><span>Basics</span><span>Identity + barcode</span></div>
               <div className="form-group">
                 <label className="form-label">नाम / Name *</label>
                 <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
@@ -512,7 +523,8 @@ export default function ProductsPage() {
 
               </div>
 
-              <div style={{ display: productStep === 1 ? 'block' : 'none' }}>
+              <div className="flow-step-panel" style={{ display: productStep === 1 ? 'block' : 'none' }}>
+              <div className="flow-section-kicker"><span>Pricing</span><span>Cost and margin</span></div>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">लागत मूल्य / Cost Price ₹</label>
@@ -539,7 +551,8 @@ export default function ProductsPage() {
 
               </div>
 
-              <div style={{ display: productStep === 2 ? 'block' : 'none' }}>
+              <div className="flow-step-panel" style={{ display: productStep === 2 ? 'block' : 'none' }}>
+              <div className="flow-section-kicker"><span>Tax & Stock</span><span>GST, unit and alerts</span></div>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">
@@ -621,7 +634,7 @@ export default function ProductsPage() {
 
               </div>
 
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div className="flow-actions">
                 {productStep > 0 && (
                   <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setProductStep((current) => current - 1)}>
                     Back

@@ -547,19 +547,23 @@ export default function PurchasesPage() {
       {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxHeight: '92vh', overflowY: 'auto', width: '100%', maxWidth: 560 }}>
+          <div className="modal flow-modal" style={{ maxWidth: 560 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>
               खरीद दर्ज करें / Record Purchase
             </h3>
             {editingPurchaseId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing purchase</div>
             ) : null}
+            <div className="flow-intro-card">
+              <div className="flow-intro-title">{editingPurchaseId ? 'Update purchase safely' : 'Cleaner purchase entry flow'}</div>
+              <div className="flow-intro-copy">Products, payment aur supplier details ko separate panels me group kiya gaya hai so mobile par form more comfortable aur trustworthy lage.</div>
+            </div>
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
                 {error}
               </div>
             )}
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+            <div className="flow-compact-note">
               {locale === 'hi' ? 'Guided wizard: products चुनें, payment तय करें, फिर supplier details जोड़ें।' : 'Guided wizard: choose products, confirm payment and finish supplier details.'}
             </div>
             <div className="wizard-progress" style={{ marginBottom: 16 }}>
@@ -575,7 +579,7 @@ export default function PurchasesPage() {
             <form onSubmit={(e) => e.preventDefault()}>
 
               {/* ── ITEMS ── */}
-              <div style={{ marginBottom: 12, display: purchaseStep === 0 ? 'block' : 'none' }}>
+              <div className="flow-step-panel" style={{ display: purchaseStep === 0 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   🛒 Products
                 </div>
@@ -681,9 +685,11 @@ export default function PurchasesPage() {
               )}
 
               {/* ── PAYMENT TYPE ── */}
-              <div className="form-group" style={{ display: purchaseStep === 1 ? 'block' : 'none' }}>
+              <div className="flow-step-panel" style={{ display: purchaseStep === 1 ? 'block' : 'none' }}>
+                <div className="flow-section-kicker"><span>Payment</span><span>Method + advance</span></div>
+                <div className="form-group">
                 <label className="form-label">भुगतान प्रकार / Payment Type *</label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="flow-choice-grid">
                   {[
                     { val: 'cash',   label: '💵 Cash',  color: '#10b981' },
                     { val: 'credit', label: '📒 Credit', color: '#ef4444' },
@@ -693,12 +699,12 @@ export default function PurchasesPage() {
                     <button key={opt.val} type="button"
                       onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
                       style={{
-                        flex: 1, minWidth: 80, padding: '9px 4px', borderRadius: 8, border: '2px solid',
+                        padding: '11px 10px', borderRadius: 14, border: '2px solid',
                         borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
                         background: form.payment_type === opt.val ? opt.color : '#f9fafb',
                         color: form.payment_type === opt.val ? '#fff' : '#374151',
-                        cursor: 'pointer', fontWeight: 700, fontSize: 12,
-                      }}>
+                      }}
+                      className={`flow-choice-pill ${form.payment_type === opt.val ? `is-active ${opt.val === 'cash' ? 'is-success' : opt.val === 'credit' ? 'is-danger' : opt.val === 'upi' ? 'is-purple' : 'is-blue'}` : ''}`}>
                       {opt.label}
                     </button>
                   ))}
@@ -720,7 +726,9 @@ export default function PurchasesPage() {
               </div>
 
               {/* ── SUPPLIER DETAILS ── */}
-              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14, display: purchaseStep === 2 ? 'block' : 'none' }}>
+              </div>
+
+              <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: purchaseStep === 2 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
                   🏭 Supplier Details {form.payment_type === 'credit' ? '(जरूरी *)' : '(वैकल्पिक)'}
                 </div>
@@ -790,7 +798,7 @@ export default function PurchasesPage() {
               </div>
 
               {/* ── SUBMIT ── */}
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div className="flow-actions">
                 {purchaseStep > 0 && (
                   <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current - 1)}>
                     Back

@@ -743,7 +743,7 @@ export default function SalesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>₹{fmt(s.total_gst)}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="flow-choice-grid">
                   <button onClick={() => startEditSale(s)} style={{ flex: 1, padding: '8px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                     Edit
                   </button>
@@ -770,15 +770,19 @@ export default function SalesPage() {
       {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxHeight: '92vh', overflowY: 'auto', maxWidth: 560 }}>
+          <div className="modal flow-modal" style={{ maxWidth: 560 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>बिक्री दर्ज करें / Record Sale</h3>
             {editingSaleId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
             ) : null}
+            <div className="flow-intro-card">
+              <div className="flow-intro-title">{editingSaleId ? 'Update sale with confidence' : 'Counter-friendly sales flow'}</div>
+              <div className="flow-intro-copy">Items, payment aur buyer details ko alag panels me group kiya gaya hai so mobile par screen zyada clean lage but all features same rahen.</div>
+            </div>
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
             )}
-              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+              <div className="flow-compact-note">
                 {locale === 'hi' ? 'Guided wizard: item select करें, payment सेट करें, फिर buyer details review करें।' : 'Guided wizard: select items, confirm payment and finish buyer details.'}
               </div>
               <div className="wizard-progress" style={{ marginBottom: 16 }}>
@@ -793,7 +797,7 @@ export default function SalesPage() {
               <form onSubmit={(e) => e.preventDefault()}>
 
               {/* Items */}
-              <div style={{ marginBottom: 12, display: saleStep === 0 ? 'block' : 'none' }}>
+              <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>🛍️ Items</div>
                 <div className="fast-billing-toolbar">
                   <div>
@@ -947,9 +951,11 @@ export default function SalesPage() {
               )}
 
               {/* Payment Type */}
-              <div className="form-group" style={{ display: saleStep === 1 ? 'block' : 'none' }}>
+              <div className="flow-step-panel" style={{ display: saleStep === 1 ? 'block' : 'none' }}>
+                <div className="flow-section-kicker"><span>Payment</span><span>Method + partial payment</span></div>
+                <div className="form-group">
                 <label className="form-label">Payment Type *</label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="flow-choice-grid">
                   {[
                     { val: 'cash',   label: '💵 Cash',   color: '#10b981' },
                     { val: 'credit', label: '📒 Credit', color: '#ef4444' },
@@ -959,12 +965,13 @@ export default function SalesPage() {
                     <button key={opt.val} type="button"
                       onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
                       style={{
-                        flex: 1, minWidth: 70, padding: '9px 4px', borderRadius: 8, border: '2px solid',
+                        padding: '11px 10px', borderRadius: 14, border: '2px solid',
                         borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
                         background: form.payment_type === opt.val ? opt.color : '#f9fafb',
                         color: form.payment_type === opt.val ? '#fff' : '#374151',
                         cursor: 'pointer', fontWeight: 700, fontSize: 12,
-                      }}>
+                      }}
+                      className={`flow-choice-pill ${form.payment_type === opt.val ? `is-active ${opt.val === 'cash' ? 'is-success' : opt.val === 'credit' ? 'is-danger' : opt.val === 'upi' ? 'is-purple' : 'is-blue'}` : ''}`}>
                       {opt.label}
                     </button>
                   ))}
@@ -989,7 +996,9 @@ export default function SalesPage() {
               </div>
 
               {/* Buyer Details */}
-              <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 14, marginBottom: 14, display: saleStep === 2 ? 'block' : 'none' }}>
+              </div>
+
+              <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: saleStep === 2 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
                   👤 {form.payment_type === 'credit' ? 'Customer Details (जरूरी *)' : 'Buyer Details (वैकल्पिक)'}
                 </div>
@@ -1043,7 +1052,7 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              <div className="fast-billing-actions">
+              <div className="flow-actions fast-billing-actions">
                 {saleStep > 0 && (
                   <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setSaleStep((current) => current - 1)}>
                     Back
