@@ -19,15 +19,19 @@ export default function CameraBarcodeScanner({
   description = 'Point the camera at the product barcode.',
   onClose,
   onDetected,
+  continuous = false,
+  cooldownMs = 1400,
 }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const detectorRef = useRef(null);
   const frameRef = useRef(null);
   const lockRef = useRef(false);
+  const lastScanRef = useRef({ value: '', at: 0 });
   const [error, setError] = useState('');
   const [supported, setSupported] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [lastScannedValue, setLastScannedValue] = useState('');
 
   useEffect(() => {
     if (!open) return undefined;
@@ -69,8 +73,30 @@ export default function CameraBarcodeScanner({
         if (barcodes?.length) {
           const value = String(barcodes[0].rawValue || '').trim();
           if (value) {
+            const now = Date.now();
+            const duplicateWithinCooldown =
+              continuous &&
+              lastScanRef.current.value === value &&
+              now - lastScanRef.current.at < cooldownMs;
+
+            if (duplicateWithinCooldown) {
+              frameRef.current = requestAnimationFrame(scanFrame);
+              return;
+            }
+
             lockRef.current = true;
-            onDetected?.(value);
+            lastScanRef.current = { value, at: now };
+            setLastScannedValue(value);
+            await onDetected?.(value);
+
+            if (continuous) {
+              window.setTimeout(() => {
+                lockRef.current = false;
+              }, 700);
+              frameRef.current = requestAnimationFrame(scanFrame);
+              return;
+            }
+
             stopScanner();
             return;
           }
@@ -85,6 +111,7 @@ export default function CameraBarcodeScanner({
     const startScanner = async () => {
       setError('');
       setStarting(true);
+      setLastScannedValue('');
 
       try {
         const DetectorClass = window.BarcodeDetector;
@@ -153,14 +180,26 @@ export default function CameraBarcodeScanner({
           </div>
         ) : null}
 
+        {continuous && supported ? (
+          <div className="alert-info" style={{ marginBottom: 12 }}>
+            Continuous scan is on. Keep scanning products and tap Close when you are done.
+          </div>
+        ) : null}
+
         <div className="scanner-video-frame">
           <video ref={videoRef} className="scanner-video" muted playsInline autoPlay />
           <div className="scanner-target-box" />
         </div>
 
         <div className="scanner-help-text">
-          {starting ? 'Starting camera...' : 'Keep the barcode inside the box and hold the phone steady.'}
+          {starting ? 'Starting camera...' : continuous ? 'Barcode add hote hi scanner open rahega for next item.' : 'Keep the barcode inside the box and hold the phone steady.'}
         </div>
+
+        {lastScannedValue ? (
+          <div className="alert-success" style={{ marginTop: 12 }}>
+            Last scanned: <strong>{lastScannedValue}</strong>
+          </div>
+        ) : null}
       </div>
     </div>
   );

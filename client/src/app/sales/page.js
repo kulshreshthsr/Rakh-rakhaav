@@ -396,13 +396,11 @@ export default function SalesPage() {
 
     if (!matchedProduct) {
       setError('Scanned barcode kisi product se match nahi hua.');
-      setShowBarcodeScanner(false);
       return;
     }
 
     setError('');
     addOrIncrementProduct(matchedProduct);
-    setShowBarcodeScanner(false);
   };
 
   const addItem    = () => setItems([...items, emptyItem()]);
@@ -1071,9 +1069,10 @@ export default function SalesPage() {
       <CameraBarcodeScanner
         open={showBarcodeScanner}
         title="Scan product barcode"
-        description="Camera se barcode scan karo aur item bill me auto-add ho jayega."
+        description="Continuous scan mode me har successful barcode bill me add hota rahega."
         onClose={() => setShowBarcodeScanner(false)}
         onDetected={handleBarcodeDetected}
+        continuous
       />
 
       <style>{`
