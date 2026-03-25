@@ -22,6 +22,7 @@ const productSchema = new mongoose.Schema({
   cost_price: { type: Number, default: 0 },      // purchase/cost price
   quantity: { type: Number, default: 0 },        // current stock
   unit: { type: String, default: 'pcs' },
+  barcode: { type: String, trim: true, default: '' },
   hsn_code: { type: String },
   gst_rate: { type: Number, default: 0, enum: [0, 5, 12, 18, 28] },
 

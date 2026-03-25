@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { useAppLocale } from '../../components/AppLocale';
+import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
 const API = 'https://rakh-rakhaav.onrender.com';
@@ -17,6 +18,7 @@ const HSN_GST_HINTS = {
   90: 18,
 };
 const PRODUCTS_CACHE_KEY = 'products-page';
+const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -37,10 +39,11 @@ export default function ProductsPage() {
   const [editProduct, setEditProduct] = useState(null);
   const [form, setForm] = useState({
     name: '', description: '', price: '', cost_price: '',
-    quantity: '', unit: 'pcs', hsn_code: '', gst_rate: 0,
+    quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0,
     low_stock_threshold: 5,
   });
   const [productStep, setProductStep] = useState(0);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   // Stock adjust modal
   const [showStockModal, setShowStockModal]   = useState(false);
@@ -77,7 +80,8 @@ export default function ProductsPage() {
     let result = [...products];
     if (search) result = result.filter(p =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.description && p.description.toLowerCase().includes(search.toLowerCase()))
+      (p.description && p.description.toLowerCase().includes(search.toLowerCase())) ||
+      (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase()))
     );
     if (filterStock === 'low')     result = result.filter(p => p.quantity > 0 && p.is_low_stock);
     if (filterStock === 'out')     result = result.filter(p => p.quantity === 0);
@@ -107,7 +111,7 @@ export default function ProductsPage() {
   // ── Add / Edit ───────────────────────────────────────────────────────────────
   const openAdd = () => {
     setEditProduct(null);
-    setForm({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
+    setForm({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
     setError('');
     setProductStep(0);
     setShowModal(true);
@@ -119,7 +123,7 @@ export default function ProductsPage() {
       name: p.name, description: p.description || '',
       price: p.price, cost_price: p.cost_price || '',
       quantity: p.quantity, unit: p.unit || 'pcs',
-      hsn_code: p.hsn_code || '', gst_rate: p.gst_rate || 0,
+      barcode: p.barcode || '', hsn_code: p.hsn_code || '', gst_rate: p.gst_rate || 0,
       low_stock_threshold: p.low_stock_threshold || 5,
     });
     setError('');
@@ -142,6 +146,11 @@ export default function ProductsPage() {
       if (res.ok) { setShowModal(false); fetchProducts(); }
       else setError(data.message || 'सहेजने में विफल');
     } catch { setError('Server error'); }
+  };
+
+  const handleBarcodeDetected = (detectedCode) => {
+    setForm((current) => ({ ...current, barcode: normalizeBarcode(detectedCode) }));
+    setShowBarcodeScanner(false);
   };
 
   const handleDelete = async (id) => {
@@ -343,6 +352,7 @@ export default function ProductsPage() {
                     <td>
                       <div style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.name}</div>
                       <div style={{ color: '#9ca3af', fontSize: 11 }}>
+                        {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
                         {p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}
                         {p.low_stock_threshold !== 5 && ` • Alert ≤${p.low_stock_threshold}`}
                       </div>
@@ -389,7 +399,10 @@ export default function ProductsPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{p.name}</div>
-                    <div style={{ color: '#9ca3af', fontSize: 11 }}>{p.description || (p.unit ? `Unit: ${p.unit}` : '')}</div>
+                    <div style={{ color: '#9ca3af', fontSize: 11 }}>
+                      {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
+                      {p.description || (p.unit ? `Unit: ${p.unit}` : '')}
+                    </div>
                   </div>
                   <StockBadge p={p} />
                 </div>
@@ -458,6 +471,29 @@ export default function ProductsPage() {
               <div className="form-group">
                 <label className="form-label">विवरण / Description</label>
                 <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Barcode</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                  <input
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    placeholder="Scan or type barcode"
+                    value={form.barcode}
+                    onChange={e => setForm({ ...form, barcode: normalizeBarcode(e.target.value) })}
+                  />
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ whiteSpace: 'nowrap' }}
+                    onClick={() => setShowBarcodeScanner(true)}
+                  >
+                    Scan
+                  </button>
+                </div>
+                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                  Mobile camera scan yahan sirf barcode field fill karega.
+                </div>
               </div>
 
               </div>
@@ -723,6 +759,14 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      <CameraBarcodeScanner
+        open={showBarcodeScanner}
+        title="Scan product barcode"
+        description="Camera scan se barcode field auto-fill ho jayegi."
+        onClose={() => setShowBarcodeScanner(false)}
+        onDetected={handleBarcodeDetected}
+      />
 
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

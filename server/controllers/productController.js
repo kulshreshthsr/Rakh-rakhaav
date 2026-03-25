@@ -7,6 +7,8 @@ const getOrCreateShop = async (userId) => {
   return shop;
 };
 
+const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL PRODUCTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -36,12 +38,24 @@ const getProducts = async (req, res) => {
 // CREATE PRODUCT
 // ─────────────────────────────────────────────────────────────────────────────
 const createProduct = async (req, res) => {
-  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate, low_stock_threshold } = req.body;
+  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate, low_stock_threshold, barcode } = req.body;
   try {
     if (!name) return res.status(400).json({ message: 'Product name is required' });
 
     const shop = await getOrCreateShop(req.user.id);
     const qty = Number(quantity) || 0;
+    const normalizedBarcode = normalizeBarcode(barcode);
+
+    if (normalizedBarcode) {
+      const existingBarcodeProduct = await Product.findOne({
+        shop: shop._id,
+        barcode: normalizedBarcode,
+        isActive: { $ne: false },
+      });
+      if (existingBarcodeProduct) {
+        return res.status(400).json({ message: 'This barcode is already used by another product' });
+      }
+    }
 
     const product = await Product.create({
       shop: shop._id,
@@ -51,6 +65,7 @@ const createProduct = async (req, res) => {
       cost_price: Number(cost_price) || 0,
       quantity: qty,
       unit: unit || 'pcs',
+      barcode: normalizedBarcode,
       hsn_code: hsn_code || '',
       gst_rate: Number(gst_rate) || 0,
       low_stock_threshold: Number(low_stock_threshold) || 5,
@@ -86,7 +101,20 @@ const updateProduct = async (req, res) => {
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold } = req.body;
+    const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold, barcode } = req.body;
+    const normalizedBarcode = normalizeBarcode(barcode);
+
+    if (normalizedBarcode) {
+      const existingBarcodeProduct = await Product.findOne({
+        shop: shop._id,
+        barcode: normalizedBarcode,
+        isActive: { $ne: false },
+        _id: { $ne: product._id },
+      });
+      if (existingBarcodeProduct) {
+        return res.status(400).json({ message: 'This barcode is already used by another product' });
+      }
+    }
 
     // Note: quantity is NOT updated here — use /adjust-stock for that
     product.name = name?.trim() || product.name;
@@ -94,6 +122,7 @@ const updateProduct = async (req, res) => {
     product.price = price !== undefined ? Number(price) : product.price;
     product.cost_price = cost_price !== undefined ? Number(cost_price) : product.cost_price;
     product.unit = unit || product.unit;
+    product.barcode = barcode !== undefined ? normalizedBarcode : product.barcode;
     product.hsn_code = hsn_code ?? product.hsn_code;
     product.gst_rate = gst_rate !== undefined ? Number(gst_rate) : product.gst_rate;
     product.low_stock_threshold = low_stock_threshold !== undefined ? Number(low_stock_threshold) : product.low_stock_threshold;

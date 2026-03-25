@@ -7,7 +7,7 @@ export default function SearchableProductSelect({
   onChange,
   onSelectProduct,
   placeholder = 'Search product...',
-  searchPlaceholder = 'Type product or HSN...',
+  searchPlaceholder = 'Type product, barcode or HSN...',
   disabled = false,
 }) {
   const [query, setQuery] = useState('');
@@ -23,6 +23,7 @@ export default function SearchableProductSelect({
     const nextQuery = query.toLowerCase();
     return (
       product.name.toLowerCase().includes(nextQuery) ||
+      (product.barcode && product.barcode.toLowerCase().includes(nextQuery)) ||
       (product.hsn_code && product.hsn_code.toLowerCase().includes(nextQuery))
     );
   });
@@ -310,6 +311,7 @@ export default function SearchableProductSelect({
                           flexWrap: 'wrap',
                         }}
                       >
+                        {product.barcode && <span>Barcode: {product.barcode}</span>}
                         {product.hsn_code && <span>HSN: {product.hsn_code}</span>}
                         {product.gst_rate > 0 && <span>GST {product.gst_rate}%</span>}
                         {product.unit && <span>{product.unit}</span>}
