@@ -778,15 +778,6 @@ export default function SalesPage() {
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
             )}
-              <div className="wizard-progress" style={{ marginBottom: 16 }}>
-                {wizardSteps.map((step, index) => (
-                  <div key={step.title} className={`wizard-step ${saleStep === index ? 'is-active' : ''}`}>
-                    <div className="wizard-step-index">{index + 1}</div>
-                    <div className="wizard-step-title">{step.title}</div>
-                    <div className="wizard-step-copy">{step.copy}</div>
-                  </div>
-                ))}
-              </div>
               <form onSubmit={(e) => e.preventDefault()}>
 
               {/* Items */}

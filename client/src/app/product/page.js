@@ -458,15 +458,6 @@ export default function ProductsPage() {
               <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
             </div>
             {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
-            <div className="wizard-progress" style={{ marginBottom: 16 }}>
-              {wizardSteps.map((step, index) => (
-                <div key={step.title} className={`wizard-step ${productStep === index ? 'is-active' : ''}`}>
-                  <div className="wizard-step-index">{index + 1}</div>
-                  <div className="wizard-step-title">{step.title}</div>
-                  <div className="wizard-step-copy">{step.copy}</div>
-                </div>
-              ))}
-            </div>
             <form onSubmit={handleSubmit}>
               <div className="flow-step-panel" style={{ display: productStep === 0 ? 'block' : 'none' }}>
               <div className="flow-section-kicker"><span>Basics</span><span>Identity + barcode</span></div>
