@@ -730,56 +730,56 @@ textarea::placeholder {
 }
 
 .action-soft {
-  color: #18324d;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.92));
-  border: 1px solid rgba(148, 163, 184, 0.26);
+  color: #17324e;
+  background: linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(232, 240, 249, 0.96));
+  border: 1px solid rgba(125, 145, 170, 0.32);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.1);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .action-soft:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.13);
 }
 
 .action-soft.print {
-  color: #254260;
-  background: linear-gradient(180deg, rgba(245, 248, 255, 0.98), rgba(225, 236, 250, 0.94));
-  border-color: rgba(148, 163, 184, 0.28);
+  color: #224261;
+  background: linear-gradient(180deg, rgba(244, 248, 255, 0.99), rgba(215, 229, 247, 0.97));
+  border-color: rgba(110, 137, 168, 0.3);
 }
 
 .action-soft.whatsapp {
-  color: #14532d;
-  background: linear-gradient(180deg, rgba(241, 250, 244, 0.98), rgba(220, 243, 229, 0.94));
-  border-color: rgba(34, 197, 94, 0.18);
+  color: #166534;
+  background: linear-gradient(180deg, rgba(239, 250, 243, 0.99), rgba(208, 238, 220, 0.97));
+  border-color: rgba(34, 197, 94, 0.22);
 }
 
 .action-soft.edit {
-  color: #1e3a5f;
-  background: linear-gradient(180deg, rgba(243, 247, 255, 0.98), rgba(223, 235, 250, 0.94));
-  border-color: rgba(59, 130, 246, 0.18);
+  color: #1d3f67;
+  background: linear-gradient(180deg, rgba(242, 247, 255, 0.99), rgba(209, 226, 248, 0.97));
+  border-color: rgba(59, 130, 246, 0.22);
 }
 
 .action-soft.delete {
-  color: #7f1d1d;
-  background: linear-gradient(180deg, rgba(254, 244, 244, 0.98), rgba(252, 231, 231, 0.94));
-  border-color: rgba(239, 68, 68, 0.16);
+  color: #8a2323;
+  background: linear-gradient(180deg, rgba(255, 244, 244, 0.99), rgba(248, 221, 221, 0.97));
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .action-soft.stock {
-  color: #134e4a;
-  background: linear-gradient(180deg, rgba(241, 252, 250, 0.98), rgba(217, 245, 239, 0.94));
-  border-color: rgba(20, 184, 166, 0.18);
+  color: #115e59;
+  background: linear-gradient(180deg, rgba(239, 251, 249, 0.99), rgba(205, 239, 233, 0.97));
+  border-color: rgba(20, 184, 166, 0.22);
 }
 
 .action-soft.history {
-  color: #312e81;
-  background: linear-gradient(180deg, rgba(245, 245, 255, 0.98), rgba(231, 229, 255, 0.94));
-  border-color: rgba(99, 102, 241, 0.18);
+  color: #3730a3;
+  background: linear-gradient(180deg, rgba(245, 245, 255, 0.99), rgba(223, 220, 255, 0.97));
+  border-color: rgba(99, 102, 241, 0.22);
 }
 
 .table-container {
