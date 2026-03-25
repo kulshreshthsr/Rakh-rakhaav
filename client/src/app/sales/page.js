@@ -770,11 +770,12 @@ export default function SalesPage() {
       {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal flow-modal" style={{ maxWidth: 560 }}>
+          <div className="modal flow-modal" style={{ maxWidth: 520 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>बिक्री दर्ज करें / Record Sale</h3>
             {editingSaleId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
             ) : null}
+            {!editingSaleId && <div className="flow-muted-chip" style={{ marginBottom: 10 }}>Ready to bill</div>}
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
             )}
@@ -791,7 +792,7 @@ export default function SalesPage() {
                   <div className="fast-billing-toolbar-actions">
                     <button
                       type="button"
-                      className="fast-billing-chip"
+                      className="fast-billing-chip fast-billing-scan-chip"
                       onClick={() => setShowBarcodeScanner(true)}
                       style={{ cursor: 'pointer', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8' }}
                     >
@@ -1115,6 +1116,16 @@ export default function SalesPage() {
           padding: 6px 10px;
           font-size: 11px;
           font-weight: 800;
+        }
+        .fast-billing-scan-chip {
+          padding: 10px 14px;
+          font-size: 12.5px;
+          font-weight: 900;
+          letter-spacing: 0.01em;
+          border: 1px solid rgba(13, 148, 136, 0.34) !important;
+          background: linear-gradient(135deg, rgba(8, 32, 50, 0.98), rgba(15, 118, 110, 0.96)) !important;
+          color: #fff !important;
+          box-shadow: 0 16px 30px rgba(15, 118, 110, 0.22);
         }
         .fast-qty-pill.is-active {
           background: #0f766e;
