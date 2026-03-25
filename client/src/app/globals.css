@@ -13,6 +13,10 @@
   --navy-light: #25537d;
   --navy-soft: #11243c;
   --navy-deep: #040b15;
+  --royal: #1d4ed8;
+  --sky: #38bdf8;
+  --rose: #f43f5e;
+  --violet: #7c3aed;
 
   --primary: #0f766e;
   --primary-2: #0d9488;
@@ -86,11 +90,11 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 92% 8%, rgba(245, 158, 11, 0.22), transparent 22%),
-    radial-gradient(circle at 8% 10%, rgba(59, 130, 246, 0.18), transparent 20%),
-    radial-gradient(circle at 100% 30%, rgba(13, 148, 136, 0.16), transparent 24%),
-    radial-gradient(circle at 18% 100%, rgba(168, 85, 247, 0.1), transparent 24%),
-    linear-gradient(180deg, #fcfeff 0%, #eef6fb 38%, #dde8f5 100%);
+    radial-gradient(circle at 92% 8%, rgba(245, 158, 11, 0.26), transparent 22%),
+    radial-gradient(circle at 8% 10%, rgba(59, 130, 246, 0.22), transparent 20%),
+    radial-gradient(circle at 100% 30%, rgba(13, 148, 136, 0.18), transparent 24%),
+    radial-gradient(circle at 18% 100%, rgba(168, 85, 247, 0.12), transparent 24%),
+    linear-gradient(180deg, #fcfeff 0%, #edf6ff 34%, #dbe8f6 100%);
 }
 
 body::before {
@@ -3045,6 +3049,143 @@ textarea.form-input:focus {
   box-shadow: 0 24px 56px rgba(7, 17, 31, 0.09);
 }
 
+.page-shell {
+  gap: 22px;
+}
+
+.page-shell > section {
+  animation: pageRiseIn 0.42s ease both;
+}
+
+.page-shell > section:nth-child(2) {
+  animation-delay: 0.03s;
+}
+
+.page-shell > section:nth-child(3) {
+  animation-delay: 0.06s;
+}
+
+.page-shell > section:nth-child(4) {
+  animation-delay: 0.09s;
+}
+
+.card,
+.toolbar-card,
+.soft-panel,
+.table-container,
+.flow-modal,
+.empty-state {
+  position: relative;
+  overflow: hidden;
+}
+
+.card {
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 30px 72px rgba(9, 23, 40, 0.1), 0 12px 30px rgba(37, 99, 235, 0.06);
+}
+
+.card::before,
+.toolbar-card::before,
+.soft-panel::before,
+.empty-state::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.64), transparent 34%),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.09), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(13, 148, 136, 0.08), transparent 22%);
+}
+
+.hero-panel {
+  box-shadow: 0 42px 110px rgba(7, 17, 31, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.hero-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.toolbar-card,
+.soft-panel,
+.table-container {
+  box-shadow: 0 26px 62px rgba(7, 17, 31, 0.09), 0 12px 28px rgba(29, 78, 216, 0.05);
+}
+
+.metric-card,
+.stat-card {
+  box-shadow: 0 30px 72px rgba(7, 17, 31, 0.12), 0 12px 28px rgba(14, 165, 233, 0.07);
+}
+
+.metric-card::after,
+.stat-card::after {
+  height: 4px;
+  left: 18px;
+  right: 18px;
+  background: linear-gradient(90deg, var(--primary), var(--sky), var(--gold-2));
+}
+
+.page-title {
+  color: #081a33;
+  text-shadow: 0 10px 24px rgba(255, 255, 255, 0.36);
+}
+
+.table-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.54), transparent 30%),
+    radial-gradient(circle at 82% 18%, rgba(45, 212, 191, 0.08), transparent 20%);
+}
+
+tbody tr:nth-child(even) td {
+  background: rgba(248, 250, 252, 0.6);
+}
+
+tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 rgba(13, 148, 136, 0.58);
+}
+
+.badge {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+}
+
+.form-input,
+select.form-input,
+textarea.form-input {
+  border-radius: 16px !important;
+  border-color: rgba(148, 163, 184, 0.24) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+.soft-outline-button {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.flow-modal {
+  box-shadow: 0 34px 94px rgba(2, 8, 23, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.flow-section-card {
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.04);
+}
+
+@keyframes pageRiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .trust-welcome-root {
   background:
     radial-gradient(circle at 10% 18%, rgba(29, 78, 216, 0.14), transparent 18%),
@@ -3078,6 +3219,10 @@ textarea.form-input:focus {
 }
 
 @media (max-width: 640px) {
+  .page-shell {
+    gap: 16px;
+  }
+
   .trust-auth-root {
     padding: 14px;
   }
@@ -3103,5 +3248,16 @@ textarea.form-input:focus {
 
   .wizard-progress {
     grid-template-columns: 1fr;
+  }
+
+  .card,
+  .toolbar-card,
+  .soft-panel,
+  .table-container {
+    border-radius: 20px;
+  }
+
+  .page-title {
+    font-size: 25px;
   }
 }
