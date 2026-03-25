@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
@@ -114,6 +114,7 @@ const getStateFromGstin = (gstin) => {
   if (normalized.length < 2) return null;
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
+const QUICK_QUANTITY_OPTIONS = [1, 2, 5, 10];
 
 const numberToWords = (num) => {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -255,6 +256,8 @@ export default function SalesPage() {
     buyer_address: '', buyer_state: '', notes: '',
   });
   const [saleStep, setSaleStep] = useState(0);
+  const amountPaidInputRef = useRef(null);
+  const buyerNameInputRef = useRef(null);
 
   async function fetchAll() {
     setLoading(true);
@@ -331,6 +334,35 @@ export default function SalesPage() {
     setItems(updated);
   };
 
+  const updateItemQuantityBy = (index, delta) => {
+    setItems((current) => current.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      const nextQuantity = Math.max(1, Number(item.quantity || 1) + delta);
+      return { ...item, quantity: nextQuantity };
+    }));
+  };
+
+  const applyQuickQuantity = (index, quantity) => {
+    updateItem(index, 'quantity', quantity);
+  };
+
+  const duplicateItem = (index) => {
+    setItems((current) => {
+      const source = current[index];
+      if (!source) return current;
+      const nextItems = [...current];
+      nextItems.splice(index + 1, 0, { ...source });
+      return nextItems;
+    });
+  };
+
+  const handleProductSelect = (index, product) => {
+    updateItem(index, 'product_id', product._id);
+    setItems((current) => current.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, quantity: item.quantity || 1, price_per_unit: product.price || item.price_per_unit } : item
+    )));
+  };
+
   const addItem    = () => setItems([...items, emptyItem()]);
   const removeItem = (i) => { if (items.length > 1) setItems(items.filter((_, idx) => idx !== i)); };
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
@@ -372,6 +404,46 @@ export default function SalesPage() {
     { title: locale === 'hi' ? 'भुगतान' : 'Payment', copy: locale === 'hi' ? 'टोटल और मोड' : 'Totals and method' },
     { title: locale === 'hi' ? 'ग्राहक' : 'Buyer', copy: locale === 'hi' ? 'ग्राहक और GST' : 'Buyer and GST' },
   ];
+
+  const selectedItemsCount = items.filter((item) => item.product_id).length;
+  const currentStep = wizardSteps[saleStep];
+  const canMoveToPayment = items.some((item) => item.product_id && item.quantity && item.price_per_unit);
+  const canMoveToBuyer = billTotals.total > 0;
+
+  useEffect(() => {
+    if (!showModal) return undefined;
+
+    if (saleStep === 1) {
+      const timeoutId = window.setTimeout(() => amountPaidInputRef.current?.focus(), 80);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    if (saleStep === 2) {
+      const timeoutId = window.setTimeout(() => buyerNameInputRef.current?.focus(), 80);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    return undefined;
+  }, [saleStep, showModal]);
+
+  useEffect(() => {
+    if (!showModal) return undefined;
+
+    const onKeyDown = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter' && saleStep === 2) {
+        event.preventDefault();
+        handleSubmit();
+      }
+
+      if (event.altKey && event.key.toLowerCase() === 'a' && saleStep === 0) {
+        event.preventDefault();
+        addItem();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [saleStep, showModal, items, form, editingSaleId]);
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
@@ -681,13 +753,30 @@ export default function SalesPage() {
               {/* Items */}
               <div style={{ marginBottom: 12, display: saleStep === 0 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>🛍️ Items</div>
+                <div className="fast-billing-toolbar">
+                  <div>
+                    <div className="fast-billing-title">Fast Billing</div>
+                    <div className="fast-billing-subtitle">Quick item entry for mobile and laptop both.</div>
+                  </div>
+                  <div className="fast-billing-toolbar-actions">
+                    <span className="fast-billing-chip">{selectedItemsCount} selected</span>
+                    <span className="fast-billing-chip">Rs {fmt(billTotals.total)}</span>
+                  </div>
+                </div>
                 {items.map((item, index) => {
                   const g    = rowGST(item);
                   const prod = products.find(p => p._id === item.product_id);
                   return (
-                    <div key={index} style={{ background: '#f9fafb', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e5e7eb' }}>
+                    <div key={index} className="fast-item-card" style={{ background: '#f9fafb', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e5e7eb' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => duplicateItem(index)}
+                          style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 12, fontWeight: 700, marginLeft: 'auto', marginRight: 4 }}
+                        >
+                          Duplicate
+                        </button>
                         {items.length > 1 && (
                           <button type="button" onClick={() => removeItem(index)}
                             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
@@ -700,16 +789,35 @@ export default function SalesPage() {
                           products={products}
                           value={item.product_id}
                           onChange={(id) => updateItem(index, 'product_id', id)}
+                          onSelectProduct={(product) => handleProductSelect(index, product)}
+                          placeholder="Tap to pick product"
+                          searchPlaceholder="Search name or HSN"
                         />
                       </div>
 
                       <div className="grid-2">
                         <div className="form-group">
                           <label className="form-label">Quantity *</label>
-                          <input className="form-input" type="number" min="1"
-                            max={prod ? prod.quantity : undefined}
-                            value={item.quantity}
-                            onChange={e => updateItem(index, 'quantity', e.target.value)} required />
+                          <div className="fast-qty-control">
+                            <button type="button" className="fast-qty-button" onClick={() => updateItemQuantityBy(index, -1)}>-</button>
+                            <input className="form-input fast-qty-input" type="number" min="1"
+                              max={prod ? prod.quantity : undefined}
+                              value={item.quantity}
+                              onChange={e => updateItem(index, 'quantity', e.target.value)} required />
+                            <button type="button" className="fast-qty-button" onClick={() => updateItemQuantityBy(index, 1)}>+</button>
+                          </div>
+                          <div className="fast-qty-pills">
+                            {QUICK_QUANTITY_OPTIONS.map((quantity) => (
+                              <button
+                                key={quantity}
+                                type="button"
+                                className={`fast-qty-pill ${Number(item.quantity) === quantity ? 'is-active' : ''}`}
+                                onClick={() => applyQuickQuantity(index, quantity)}
+                              >
+                                {quantity}
+                              </button>
+                            ))}
+                          </div>
                           {prod && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Available: {prod.quantity}</div>}
                         </div>
                         <div className="form-group">
@@ -720,7 +828,7 @@ export default function SalesPage() {
                         </div>
                       </div>
                       {g && (
-                        <div style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ede9fe' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        <div className="fast-item-summary" style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ede9fe' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                           <span>Taxable: <strong>₹{fmt(g.taxable)}</strong></span>
                           {g.gst_rate > 0 && (
                             <span>
@@ -735,10 +843,26 @@ export default function SalesPage() {
                     </div>
                   );
                 })}
-                <button type="button" onClick={addItem}
-                  style={{ width: '100%', padding: '9px', background: '#fff', border: '1.5px dashed #d1d5db', borderRadius: 8, color: '#6b7280', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  + Add Another Product
-                </button>
+                <div className="fast-item-footer">
+                  <button type="button" onClick={addItem} className="fast-add-row-button">
+                    + Add Another Product
+                  </button>
+                  <div className="fast-footer-hint">Alt + A adds a new line on laptop. Compact controls stay easy to tap on mobile.</div>
+                </div>
+              </div>
+
+              <div className="fast-bill-sticky-summary">
+                <div>
+                  <div className="fast-summary-kicker">{currentStep?.title || 'Step'}</div>
+                  <div className="fast-summary-value">Rs {fmt(billTotals.total)}</div>
+                  <div className="fast-summary-copy">
+                    {selectedItemsCount} item(s) · Rounded Rs {fmt(roundedBill.roundedTotal)}
+                  </div>
+                </div>
+                <div className="fast-summary-side">
+                  <span>{form.payment_type.toUpperCase()}</span>
+                  {form.payment_type === 'credit' && <strong>Due Rs {fmt(balanceDue)}</strong>}
+                </div>
               </div>
 
               {/* Bill Summary */}
@@ -798,10 +922,15 @@ export default function SalesPage() {
                 {form.payment_type === 'credit' && (
                   <div style={{ marginTop: 10 }}>
                     <label className="form-label">Advance Payment (optional)</label>
-                    <input className="form-input" type="number" step="0.01" min="0"
+                    <input ref={amountPaidInputRef} className="form-input" type="number" step="0.01" min="0"
                       placeholder={`Max ₹${fmt(billTotals.total)}`}
                       value={form.amount_paid}
                       onChange={e => updateForm({ amount_paid: e.target.value })} />
+                    <div className="fast-qty-pills" style={{ marginTop: 8 }}>
+                      <button type="button" className={`fast-qty-pill ${amountPaidNum === 0 ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: '0' })}>0</button>
+                      <button type="button" className="fast-qty-pill" onClick={() => updateForm({ amount_paid: String((billTotals.total / 2).toFixed(2)) })}>50%</button>
+                      <button type="button" className={`fast-qty-pill ${amountPaidNum === billTotals.total ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: String(billTotals.total.toFixed(2)) })}>Full</button>
+                    </div>
                     <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
                       ⚠️ बाकी ₹{fmt(balanceDue)} customer ledger में automatically जाएगा
                     </div>
@@ -817,6 +946,7 @@ export default function SalesPage() {
                 <div className="form-group">
                   <label className="form-label">नाम / Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}</label>
                   <input className="form-input" placeholder="ग्राहक का नाम"
+                    ref={buyerNameInputRef}
                     value={form.buyer_name} onChange={e => updateForm({ buyer_name: e.target.value })}
                     required={form.payment_type === 'credit'} />
                 </div>
@@ -863,14 +993,20 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div className="fast-billing-actions">
                 {saleStep > 0 && (
                   <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setSaleStep((current) => current - 1)}>
                     Back
                   </button>
                 )}
                 {saleStep < 2 ? (
-                  <button type="button" className="btn-success" style={{ flex: 1 }} onClick={() => setSaleStep((current) => current + 1)}>
+                  <button
+                    type="button"
+                    className="btn-success"
+                    style={{ flex: 1 }}
+                    disabled={(saleStep === 0 && !canMoveToPayment) || (saleStep === 1 && !canMoveToBuyer)}
+                    onClick={() => setSaleStep((current) => current + 1)}
+                  >
                     Continue
                   </button>
                 ) : (
@@ -891,6 +1027,150 @@ export default function SalesPage() {
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
+        .fast-billing-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-bottom: 12px;
+          padding: 12px 14px;
+          border-radius: 14px;
+          background: linear-gradient(180deg, rgba(239,246,255,0.96), rgba(240,253,250,0.9));
+          border: 1px solid rgba(191,219,254,0.9);
+        }
+        .fast-billing-title {
+          font-size: 14px;
+          font-weight: 800;
+          color: #0f172a;
+        }
+        .fast-billing-subtitle {
+          margin-top: 4px;
+          font-size: 12px;
+          color: #64748b;
+        }
+        .fast-billing-toolbar-actions,
+        .fast-qty-pills {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .fast-billing-chip,
+        .fast-qty-pill {
+          border: 1px solid rgba(148,163,184,0.28);
+          background: rgba(255,255,255,0.9);
+          color: #334155;
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-size: 11px;
+          font-weight: 800;
+        }
+        .fast-qty-pill.is-active {
+          background: #0f766e;
+          border-color: #0f766e;
+          color: #fff;
+        }
+        .fast-qty-control {
+          display: grid;
+          grid-template-columns: 42px minmax(0, 1fr) 42px;
+          gap: 8px;
+          align-items: center;
+        }
+        .fast-qty-button {
+          min-height: 46px;
+          border: 1px solid rgba(148,163,184,0.24);
+          border-radius: 14px;
+          background: rgba(248,250,252,0.94);
+          font-size: 18px;
+          font-weight: 800;
+          color: #0f172a;
+        }
+        .fast-qty-input {
+          text-align: center;
+        }
+        .fast-item-card {
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+        }
+        .fast-item-summary {
+          align-items: center;
+        }
+        .fast-item-footer {
+          display: grid;
+          gap: 8px;
+        }
+        .fast-add-row-button {
+          width: 100%;
+          padding: 11px 12px;
+          background: #fff;
+          border: 1.5px dashed #cbd5e1;
+          border-radius: 12px;
+          color: #475569;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .fast-footer-hint,
+        .fast-summary-copy,
+        .fast-summary-kicker {
+          font-size: 11px;
+          color: #64748b;
+        }
+        .fast-bill-sticky-summary {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+          margin-bottom: 14px;
+          padding: 12px 14px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,118,110,0.94));
+          color: #fff;
+          position: sticky;
+          bottom: 0;
+          z-index: 2;
+        }
+        .fast-summary-value {
+          font-size: 22px;
+          font-weight: 900;
+          line-height: 1.1;
+        }
+        .fast-summary-side {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          align-items: flex-end;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .fast-billing-actions {
+          position: sticky;
+          bottom: 0;
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          padding-top: 8px;
+          background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.98) 28%);
+        }
+        @media (max-width: 640px) {
+          .fast-item-card {
+            padding: 12px 10px !important;
+          }
+          .fast-item-summary {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px !important;
+          }
+          .fast-billing-toolbar,
+          .fast-bill-sticky-summary {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+          }
+          .fast-billing-actions {
+            padding-bottom: env(safe-area-inset-bottom);
+          }
+        }
       `}</style>
     </Layout>
   );

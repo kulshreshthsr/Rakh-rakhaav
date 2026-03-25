@@ -5,55 +5,97 @@ export default function SearchableProductSelect({
   products = [],
   value,
   onChange,
-  placeholder = 'उत्पाद खोजें / Search product...',
+  onSelectProduct,
+  placeholder = 'Search product...',
+  searchPlaceholder = 'Type product or HSN...',
   disabled = false,
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
 
-  const selected = products.find((p) => p._id === value);
+  const selected = products.find((product) => product._id === value);
 
-  const filtered = products.filter((p) => {
+  const filtered = products.filter((product) => {
     if (!query) return true;
-    const q = query.toLowerCase();
-    return p.name.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q));
+    const nextQuery = query.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(nextQuery) ||
+      (product.hsn_code && product.hsn_code.toLowerCase().includes(nextQuery))
+    );
   });
 
+  const enabledOptions = filtered.filter((product) => (product.quantity ?? product.stock ?? 0) > 0);
+
   useEffect(() => {
-    const handler = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+    const handler = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setOpen(false);
         setQuery('');
+        setActiveIndex(0);
       }
     };
+
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSelect = (prod) => {
-    onChange(prod._id);
+  const handleSelect = (product) => {
+    onChange(product._id);
+    onSelectProduct?.(product);
     setOpen(false);
     setQuery('');
+    setActiveIndex(0);
   };
 
   const handleOpen = () => {
     if (disabled) return;
     setOpen(true);
     setQuery('');
+    setActiveIndex(0);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  const stockColor = (qty) => {
-    if (qty === 0) return '#dc2626';
-    if (qty <= 5) return '#b45309';
+  const handleSearchKeyDown = (event) => {
+    if (!open) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((current) => (enabledOptions.length ? Math.min(current + 1, enabledOptions.length - 1) : 0));
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((current) => Math.max(current - 1, 0));
+      return;
+    }
+
+    if (event.key === 'Enter' && enabledOptions[activeIndex]) {
+      event.preventDefault();
+      handleSelect(enabledOptions[activeIndex]);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setOpen(false);
+      setQuery('');
+      setActiveIndex(0);
+    }
+  };
+
+  const stockColor = (quantity) => {
+    if (quantity === 0) return '#dc2626';
+    if (quantity <= 5) return '#b45309';
     return '#059669';
   };
 
-  const stockBackground = (qty) => {
-    if (qty === 0) return '#fff1f2';
-    if (qty <= 5) return '#fff8eb';
+  const stockBackground = (quantity) => {
+    if (quantity === 0) return '#fff1f2';
+    if (quantity <= 5) return '#fff8eb';
     return '#ecfdf5';
   };
 
@@ -70,10 +112,9 @@ export default function SearchableProductSelect({
           borderRadius: 16,
           fontSize: 13.5,
           color: selected ? 'var(--text, #0f172a)' : 'var(--text-4, #94a3b8)',
-          background:
-            open
-              ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,253,250,0.84))'
-              : 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,251,255,0.8))',
+          background: open
+            ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,253,250,0.84))'
+            : 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,251,255,0.8))',
           cursor: disabled ? 'not-allowed' : 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -170,9 +211,10 @@ export default function SearchableProductSelect({
             <input
               ref={inputRef}
               type="text"
-              placeholder="नाम या HSN से खोजें..."
+              placeholder={searchPlaceholder}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
               style={{
                 flex: 1,
                 border: 'none',
@@ -186,7 +228,10 @@ export default function SearchableProductSelect({
             {query && (
               <button
                 type="button"
-                onClick={() => setQuery('')}
+                onClick={() => {
+                  setQuery('');
+                  setActiveIndex(0);
+                }}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -204,19 +249,21 @@ export default function SearchableProductSelect({
           <div style={{ maxHeight: 248, overflowY: 'auto', padding: 6 }}>
             {filtered.length === 0 ? (
               <div style={{ padding: '18px 14px', textAlign: 'center', color: 'var(--text-4, #94a3b8)', fontSize: 13 }}>
-                कोई product नहीं मिला
+                No products found
               </div>
             ) : (
-              filtered.map((prod) => {
-                const stock = prod.quantity ?? prod.stock ?? 0;
-                const isSelected = prod._id === value;
+              filtered.map((product) => {
+                const stock = product.quantity ?? product.stock ?? 0;
+                const isSelected = product._id === value;
                 const isOut = stock === 0;
+                const optionIndex = enabledOptions.findIndex((option) => option._id === product._id);
+                const isActive = !isOut && optionIndex === activeIndex;
 
                 return (
                   <button
-                    key={prod._id}
+                    key={product._id}
                     type="button"
-                    onClick={() => !isOut && handleSelect(prod)}
+                    onClick={() => !isOut && handleSelect(product)}
                     disabled={isOut}
                     style={{
                       width: '100%',
@@ -224,8 +271,10 @@ export default function SearchableProductSelect({
                       cursor: isOut ? 'not-allowed' : 'pointer',
                       background: isSelected
                         ? 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(37,99,235,0.08))'
-                        : 'transparent',
-                      border: '1px solid transparent',
+                        : isActive
+                          ? 'rgba(240,253,250,0.96)'
+                          : 'transparent',
+                      border: `1px solid ${isActive ? 'rgba(16,185,129,0.24)' : 'transparent'}`,
                       borderBottom: '1px solid rgba(241,245,249,0.9)',
                       borderRadius: 16,
                       display: 'flex',
@@ -236,18 +285,6 @@ export default function SearchableProductSelect({
                       transition: 'background 0.14s ease, border-color 0.14s ease',
                       textAlign: 'left',
                       marginBottom: 4,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isOut && !isSelected) {
-                        e.currentTarget.style.background = 'rgba(248,250,252,0.92)';
-                        e.currentTarget.style.borderColor = 'rgba(226,232,240,0.7)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isOut && !isSelected) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.borderColor = 'transparent';
-                      }
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -261,7 +298,7 @@ export default function SearchableProductSelect({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {prod.name}
+                        {product.name}
                       </div>
                       <div
                         style={{
@@ -273,9 +310,9 @@ export default function SearchableProductSelect({
                           flexWrap: 'wrap',
                         }}
                       >
-                        {prod.hsn_code && <span>HSN: {prod.hsn_code}</span>}
-                        {prod.gst_rate > 0 && <span>GST {prod.gst_rate}%</span>}
-                        {prod.unit && <span>{prod.unit}</span>}
+                        {product.hsn_code && <span>HSN: {product.hsn_code}</span>}
+                        {product.gst_rate > 0 && <span>GST {product.gst_rate}%</span>}
+                        {product.unit && <span>{product.unit}</span>}
                       </div>
                     </div>
 
@@ -293,12 +330,24 @@ export default function SearchableProductSelect({
                       >
                         {isOut ? 'Out' : `${stock} left`}
                       </div>
-                      {prod.price && <div style={{ fontSize: 11, color: 'var(--text-4, #94a3b8)', marginTop: 4 }}>₹{prod.price}</div>}
+                      {product.price && <div style={{ fontSize: 11, color: 'var(--text-4, #94a3b8)', marginTop: 4 }}>Rs {product.price}</div>}
                     </div>
                   </button>
                 );
               })
             )}
+          </div>
+
+          <div
+            style={{
+              borderTop: '1px solid rgba(226,232,240,0.85)',
+              padding: '8px 12px',
+              fontSize: 11,
+              color: 'var(--text-3, #64748b)',
+              background: 'rgba(248,250,252,0.8)',
+            }}
+          >
+            Enter to select, arrow keys for laptop, tap-friendly list for mobile.
           </div>
         </div>
       )}
