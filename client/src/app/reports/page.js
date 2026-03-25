@@ -226,9 +226,9 @@ export default function ReportsPage() {
   const { label } = getRange(filter);
   const marginColor = summary.margin >= 20 ? '#22c55e' : summary.margin >= 10 ? '#f59e0b' : '#ef4444';
   const reportFilters = [
-    { val: 'today', label: 'à¤†à¤œ / Today' },
-    { val: 'week', label: 'à¤‡à¤¸ à¤¹à¤«à¥à¤¤à¥‡ / Week' },
-    { val: 'month', label: 'à¤‡à¤¸ à¤®à¤¹à¥€à¤¨à¥‡ / Month' },
+    { val: 'today', label: 'Today' },
+    { val: 'week', label: 'Week' },
+    { val: 'month', label: 'Month' },
   ];
 
   return (
@@ -237,7 +237,7 @@ export default function ReportsPage() {
         <section className="hero-panel reports-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>à¤°à¤¿à¤ªà¥‹à¤°à¥à¤Ÿ / Reports</div>
+              <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>Reports</div>
               <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', maxWidth: 420 }}>
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
@@ -268,8 +268,8 @@ export default function ReportsPage() {
 
         {loading ? (
           <div className="ui-empty">
-            <div style={{ fontSize: 32, marginBottom: 12 }}>â³</div>
-            <div>à¤°à¤¿à¤ªà¥‹à¤°à¥à¤Ÿ à¤²à¥‹à¤¡ à¤¹à¥‹ à¤°à¤¹à¥€ à¤¹à¥ˆ...</div>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>Loading</div>
+            <div>Reports are loading...</div>
           </div>
         ) : (
           <>
@@ -279,10 +279,10 @@ export default function ReportsPage() {
               subtitle="Revenue, GST and profit in one clear stack"
               actions={<ActionButton variant="secondary" onClick={() => exportCSV('profit')}>CSV Download</ActionButton>}
             >
-              <DataRow label="à¤•à¥à¤² à¤¬à¤¿à¤•à¥à¤°à¥€ / Total Revenue" value={`₹${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
-              <DataRow label="GST à¤µà¤¸à¥‚à¤²à¤¾ / GST Collected" note="à¤¸à¤°à¤•à¤¾à¤° à¤•à¤¾ à¤¹à¤¿à¤¸à¥à¤¸à¤¾ / not your income" prefix="−" value={`₹${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
-              <DataRow label="Taxable Revenue (à¤¬à¤¿à¤•à¥à¤°à¥€ − GST)" prefix="=" value={`₹${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
-              <DataRow label="à¤®à¥à¤¨à¤¾à¤«à¤¼à¤¾ / Profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
+              <DataRow label="Total Revenue" value={`₹${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
+              <DataRow label="GST Collected" note="Tax collected on behalf of the government" prefix="-" value={`₹${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
+              <DataRow label="Taxable Revenue (Revenue - GST)" prefix="=" value={`₹${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
+              <DataRow label="Profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
 
               {(summary.totalRevenue || 0) > 0 && (
                 <div style={{ marginTop: 16 }}>
@@ -313,7 +313,7 @@ export default function ReportsPage() {
                   <table className="ui-table">
                     <thead>
                       <tr>
-                        <th>à¤¤à¤¾à¤°à¥€à¤– / Date</th>
+                        <th>Date</th>
                         <th>Orders</th>
                         <th>Revenue</th>
                         <th>Profit</th>
@@ -346,7 +346,7 @@ export default function ReportsPage() {
             <div className="split-grid reports-split-grid" style={{ marginBottom: 20 }}>
               <Card title="Top Products" actions={<ActionButton variant="secondary" onClick={() => exportCSV('products')}>CSV</ActionButton>}>
                 {topProducts.length === 0 ? (
-                  <div className="ui-empty">à¤•à¥‹à¤ˆ data à¤¨à¤¹à¥€à¤‚</div>
+                  <div className="ui-empty">No data</div>
                 ) : (
                   <div className="stack-list">
                     {topProducts.map((product, index) => (
@@ -370,7 +370,7 @@ export default function ReportsPage() {
 
               <Card title="Top Customers" actions={<ActionButton variant="secondary" onClick={() => exportCSV('customers')}>CSV</ActionButton>}>
                 {topCustomers.length === 0 ? (
-                  <div className="ui-empty">à¤•à¥‹à¤ˆ data à¤¨à¤¹à¥€à¤‚</div>
+                  <div className="ui-empty">No data</div>
                 ) : (
                   <div className="stack-list">
                     {topCustomers.map((customer, index) => (
@@ -395,8 +395,8 @@ export default function ReportsPage() {
 
             {sales.length === 0 && purchases.length === 0 && (
               <div className="ui-empty">
-                <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ“Š</div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>à¤•à¥‹à¤ˆ data à¤¨à¤¹à¥€à¤‚ / No data</div>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>Chart</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>No data</div>
                 <div style={{ fontSize: 13 }}>{label} mein koi sales ya purchases nahi hain</div>
               </div>
             )}

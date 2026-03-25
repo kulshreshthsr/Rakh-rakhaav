@@ -5,7 +5,7 @@ import Layout from '../../components/Layout';
 import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const MONTHS_HI = ['à¤œà¤¨à¤µà¤°à¥€', 'à¤«à¤°à¤µà¤°à¥€', 'à¤®à¤¾à¤°à¥à¤š', 'à¤…à¤ªà¥à¤°à¥ˆà¤²', 'à¤®à¤ˆ', 'à¤œà¥‚à¤¨', 'à¤œà¥à¤²à¤¾à¤ˆ', 'à¤…à¤—à¤¸à¥à¤¤', 'à¤¸à¤¿à¤¤à¤‚à¤¬à¤°', 'à¤…à¤•à¥à¤Ÿà¥‚à¤¬à¤°', 'à¤¨à¤µà¤‚à¤¬à¤°', 'à¤¦à¤¿à¤¸à¤‚à¤¬à¤°'];
+const MONTHS_HI = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
@@ -201,8 +201,8 @@ export default function GSTPage() {
     : null;
 
   const renderDrillRows = (type) => {
-    if (drillLoading) return <div className="ui-empty">â³ à¤²à¥‹à¤¡ à¤¹à¥‹ à¤°à¤¹à¤¾ à¤¹à¥ˆ...</div>;
-    if (drillData.length === 0) return <div className="ui-empty">{type === 'sales' ? 'à¤‡à¤¸ à¤®à¤¹à¥€à¤¨à¥‡ à¤•à¥‹à¤ˆ sales à¤¨à¤¹à¥€à¤‚' : 'à¤‡à¤¸ à¤®à¤¹à¥€à¤¨à¥‡ à¤•à¥‹à¤ˆ purchases à¤¨à¤¹à¥€à¤‚'}</div>;
+    if (drillLoading) return <div className="ui-empty">Loading details...</div>;
+    if (drillData.length === 0) return <div className="ui-empty">{type === 'sales' ? 'No sales found for this month' : 'No purchases found for this month'}</div>;
 
     return (
       <div className="ui-table-wrap">
@@ -222,7 +222,7 @@ export default function GSTPage() {
               <tr key={index}>
                 <td>{item.invoice_number}</td>
                 <td>{item.product_name || (item.items?.length > 1 ? `${item.items.length} items` : item.items?.[0]?.product_name)}</td>
-                <td>{item.buyer_name || item.supplier_name || '—'}</td>
+                <td>{item.buyer_name || item.supplier_name || '-'}</td>
                 <td>₹{fmt(item.taxable_amount)}</td>
                 <td className={type === 'sales' ? 'ui-value-money' : 'ui-value-secondary'}>₹{fmt(item.total_gst)}</td>
                 <td>₹{fmt(item.total_amount)}</td>
@@ -241,7 +241,7 @@ export default function GSTPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="kicker" style={{ marginBottom: 10 }}>Tax centre</div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST à¤¸à¤¾à¤°à¤¾à¤‚à¤¶ / GST Summary</div>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST Summary</div>
               <div style={{ marginTop: 10, color: 'rgba(226,232,240,0.72)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
@@ -261,14 +261,14 @@ export default function GSTPage() {
 
         {!summary ? (
           <div className="ui-empty">
-            <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ§¾</div>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>{loading ? 'â³ à¤²à¥‹à¤¡ à¤¹à¥‹ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'Summary unavailable'}</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>Tax</div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>{loading ? 'Loading summary...' : 'Summary unavailable'}</div>
           </div>
         ) : (
           <>
             <Card
               tone={isPayable ? 'danger' : 'success'}
-              title={`${monthHi} ${year}: ${isPayable ? `₹${fmt(payableTotal)} GST à¤­à¤°à¤¨à¤¾ à¤¹à¥ˆ` : 'à¤•à¥‹à¤ˆ GST à¤¦à¥‡à¤¯ à¤¨à¤¹à¥€à¤‚'}`}
+              title={`${monthHi} ${year}: ${isPayable ? `₹${fmt(payableTotal)} GST payable` : 'No GST payable'}`}
               subtitle={`${monthEn} ${year} GST position after ITC set-off`}
               actions={returnStatus ? <StatusBadge tone={returnStatus.ok ? 'success' : 'warning'}>{returnStatus.msg}</StatusBadge> : null}
             >
@@ -279,10 +279,10 @@ export default function GSTPage() {
               </div>
             </Card>
 
-            <Card title="GST à¤¹à¤¿à¤¸à¤¾à¤¬ / Calculation" subtitle="Drill into output GST and purchase ITC">
+            <Card title="GST Calculation" subtitle="Drill into output GST and purchase ITC">
               <DataRow
-                label="âœ… GST à¤µà¤¸à¥‚à¤²à¤¾ (Output)"
-                note={`Customers à¤¸à¥‡ à¤¬à¤¿à¤•à¥à¤°à¥€ à¤®à¥‡à¤‚ à¤²à¤¿à¤¯à¤¾ • CGST ₹${fmt(summary.sales.cgst)} + SGST ₹${fmt(summary.sales.sgst)} + IGST ₹${fmt(summary.sales.igst)}`}
+                label="GST Collected (Output)"
+                note={`Collected from customers through sales. CGST ₹${fmt(summary.sales.cgst)} + SGST ₹${fmt(summary.sales.sgst)} + IGST ₹${fmt(summary.sales.igst)}`}
                 value={`₹${fmt(gstCollected)}`}
                 valueTone="ui-value-money"
               />
@@ -296,8 +296,8 @@ export default function GSTPage() {
               <div style={{ height: 1, background: 'rgba(148,163,184,0.14)', margin: '16px 0' }} />
 
               <DataRow
-                label="ðŸ›’ GST Input Credit (ITC)"
-                note={`Suppliers à¤•à¥‹ à¤–à¤°à¥€à¤¦ à¤®à¥‡à¤‚ à¤¦à¤¿à¤¯à¤¾ • CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}
+                label="GST Input Credit (ITC)"
+                note={`Paid to suppliers on purchases. CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}
                 value={`₹${fmt(gstITC)}`}
                 valueTone="ui-value-secondary"
               />
@@ -310,14 +310,14 @@ export default function GSTPage() {
 
               {gstITC === 0 ? (
                 <div style={{ marginTop: 14 }}>
-                  <StatusBadge tone="warning">No ITC claimed — you may be overpaying tax</StatusBadge>
+                  <StatusBadge tone="warning">No ITC claimed - you may be overpaying tax</StatusBadge>
                 </div>
               ) : null}
 
               <div style={{ marginTop: 16 }}>
                 <DataRow
-                  label={isPayable ? 'ðŸ’¸ à¤¶à¥à¤¦à¥à¤§ à¤¦à¥‡à¤¯ (Net Payable)' : 'ðŸ§¾ Excess ITC Available'}
-                  note="ITC set-off ke baad remaining position"
+                  label={isPayable ? 'Net GST Payable' : 'Excess ITC Available'}
+                  note="Remaining position after ITC set-off"
                   value={`₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`}
                   valueTone={isPayable ? 'ui-value-danger' : 'ui-value-money'}
                   tone={isPayable ? 'danger' : 'success'}
@@ -325,12 +325,12 @@ export default function GSTPage() {
               </div>
             </Card>
 
-            <Card title="GSTR-3B à¤¸à¤¾à¤°à¤¾à¤‚à¤¶ / Summary">
+            <Card title="GSTR-3B Summary">
               <div className="ui-table-wrap">
                 <table className="ui-table">
                   <thead>
                     <tr>
-                      <th>à¤µà¤¿à¤µà¤°à¤£ / Description</th>
+                      <th>Description</th>
                       <th>CGST</th>
                       <th>SGST</th>
                       <th>IGST</th>
@@ -371,8 +371,8 @@ export default function GSTPage() {
 
             {summary.gstr1.b2b_invoices.length === 0 ? (
               <div className="ui-empty">
-                <div style={{ fontSize: 24, marginBottom: 8 }}>ðŸ“‹</div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>à¤•à¥‹à¤ˆ B2B Invoice à¤¨à¤¹à¥€à¤‚ / No B2B Invoices</div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}>List</div>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>No B2B Invoices</div>
                 <div style={{ fontSize: 12 }}>Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
               </div>
             ) : (
@@ -394,7 +394,7 @@ export default function GSTPage() {
                       {summary.gstr1.b2b_invoices.map((invoice, index) => (
                         <tr key={index}>
                           <td>{invoice.invoice_number}</td>
-                          <td>{invoice.buyer_name || '—'}</td>
+                          <td>{invoice.buyer_name || '-'}</td>
                           <td>{invoice.buyer_gstin}</td>
                           <td>₹{fmt(invoice.taxable_amount)}</td>
                           <td>{invoice.gst_rate}%</td>
@@ -423,7 +423,7 @@ export default function GSTPage() {
               </Card>
             )}
 
-            <Card title="B2C à¤¸à¤¾à¤°à¤¾à¤‚à¤¶ / Summary" subtitle="à¤¸à¤¾à¤®à¤¾à¤¨à¥à¤¯ à¤—à¥à¤°à¤¾à¤¹à¤• â€” à¤¬à¤¿à¤¨à¤¾ GSTIN">
+            <Card title="B2C Summary" subtitle="Regular customers without GSTIN">
               <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
                 <StatCard label="Invoices" value={String(summary.gstr1.b2c_summary.count)} note="B2C count" />
                 <StatCard label="Taxable" value={`₹${fmt(summary.gstr1.b2c_summary.taxable_amount)}`} />
@@ -433,7 +433,7 @@ export default function GSTPage() {
             </Card>
 
             <Card
-              title="CA à¤•à¥‹ à¤¦à¥‡à¤‚ / Export for CA"
+              title="Export for CA"
               subtitle="Share directly with your CA"
               actions={<StatusBadge tone="neutral">{MONTHS[month - 1]} {year}</StatusBadge>}
             >
@@ -444,7 +444,7 @@ export default function GSTPage() {
               </div>
               <div style={{ borderTop: '1px solid rgba(148,163,184,0.14)', paddingTop: 14 }}>
                 <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 10 }}>
-                  ZIP à¤®à¥‡à¤‚ à¤¸à¤¬ à¤à¤• à¤¸à¤¾à¤¥: GSTR1 + GSTR3B, CSV à¤”à¤° JSON à¤¦à¥‹à¤¨à¥‹à¤‚
+                  Download everything in one ZIP: GSTR1 + GSTR3B, CSV and JSON together.
                 </div>
                 <ActionButton variant="secondary" onClick={exportZIP} disabled={zipping}>
                   {zipping ? 'Building ZIP...' : 'Download ZIP (GSTR1 + GSTR3B)'}
