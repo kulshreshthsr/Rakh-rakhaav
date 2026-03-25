@@ -239,7 +239,7 @@ export default function ReportsPage() {
 
   return (
     <Layout>
-      <div className="page-shell">
+      <div className="page-shell reports-page-shell">
         <section className="hero-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
             <div>
@@ -302,7 +302,7 @@ export default function ReportsPage() {
 
           {/* ── PROFIT BREAKDOWN ── */}
           {/* UPGRADE 4: COGS row removed. Layout: Revenue → −GST → =Taxable → =Profit */}
-          <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card reports-dark-card" style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>📊 मुनाफ़ा विवरण / Profit Breakdown</div>
               <button onClick={() => exportCSV('profit')} className="panel-action"
@@ -381,7 +381,7 @@ export default function ReportsPage() {
 
           {/* ── DAILY SALES (unchanged) ── */}
           {dailySales.length > 0 && (
-            <div className="card" style={{ marginBottom: 20 }}>
+            <div className="card reports-dark-card" style={{ marginBottom: 20 }}>
               <div className="panel-head">
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>📅 Daily Sales</div>
                 <button onClick={() => exportCSV('sales')}
@@ -429,7 +429,7 @@ export default function ReportsPage() {
           <div className="split-grid" style={{ marginBottom: 20 }}>
 
             {/* Top Products */}
-            <div className="card">
+            <div className="card reports-dark-card">
               <div className="panel-head">
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>🏆 Top Products</div>
                 <button onClick={() => exportCSV('products')} className="panel-action"
@@ -463,7 +463,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Top Customers */}
-            <div className="card">
+            <div className="card reports-dark-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e' }}>👥 Top Customers</div>
                 <button onClick={() => exportCSV('customers')} className="panel-action"
@@ -512,6 +512,56 @@ export default function ReportsPage() {
       </div>
 
       <style>{`
+        .reports-page-shell .reports-dark-card {
+          color: #e5e7eb;
+        }
+
+        .reports-page-shell .reports-dark-card div[style*='color: #1a1a2e'],
+        .reports-page-shell .reports-dark-card div[style*='color: #374151'],
+        .reports-page-shell .reports-dark-card td[style*='color: #374151'] {
+          color: #ffffff !important;
+        }
+
+        .reports-page-shell .reports-dark-card div[style*='color: #9ca3af'],
+        .reports-page-shell .reports-dark-card div[style*='color: #6b7280'],
+        .reports-page-shell .reports-dark-card td[style*='color: #9ca3af'],
+        .reports-page-shell .reports-dark-card th[style*='color: #6b7280'] {
+          color: #9ca3af !important;
+        }
+
+        .reports-page-shell .reports-dark-card div[style*='background: #f9fafb'],
+        .reports-page-shell .reports-dark-card tr[style*='background: #f9fafb'] td,
+        .reports-page-shell .reports-dark-card tr[style*='background: #f9fafb'] th {
+          background: rgba(255,255,255,0.03) !important;
+        }
+
+        .reports-page-shell .reports-dark-card div[style*='background: #f0fdf4'] {
+          background: rgba(34,197,94,0.08) !important;
+        }
+
+        .reports-page-shell .reports-dark-card div[style*='background: #fef2f2'] {
+          background: rgba(239,68,68,0.08) !important;
+        }
+
+        .reports-page-shell .reports-dark-card div[style*='background: #fef9c3'] {
+          background: rgba(245,158,11,0.08) !important;
+        }
+
+        .reports-page-shell .reports-dark-card div[style*='background: #dcfce7'],
+        .reports-page-shell .reports-dark-card span[style*='background: #dcfce7'] {
+          background: rgba(34,197,94,0.14) !important;
+          color: #86efac !important;
+        }
+
+        .reports-page-shell .reports-dark-card span[style*='background: #fee2e2'] {
+          background: rgba(239,68,68,0.14) !important;
+          color: #fca5a5 !important;
+        }
+
+        .reports-page-shell .reports-dark-card table tr[style*='borderBottom: 1px solid #f3f4f6'] td {
+          border-bottom: 1px solid rgba(148,163,184,0.1) !important;
+        }
+
         @media (max-width: 640px) {
           .grid-reports { grid-template-columns: 1fr !important; }
         }

@@ -267,7 +267,7 @@ export default function GSTPage() {
 
   return (
     <Layout>
-      <div className="page-shell">
+      <div className="page-shell gst-page-shell">
         <section className="hero-panel">
           <div className="gst-hero-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -321,7 +321,7 @@ export default function GSTPage() {
       ) : (
         <>
           {/* ── SECTION 1: NET PAYABLE BANNER ── */}
-          <div className="soft-panel" style={{
+          <div className="soft-panel gst-soft-panel gst-payable-banner" style={{
             background: isPayable
               ? 'linear-gradient(180deg, rgba(255,245,245,0.96), rgba(255,255,255,0.94))'
               : isRefund
@@ -375,7 +375,7 @@ export default function GSTPage() {
           </div>
 
           {/* ── SECTION 2: GST CALCULATION ── */}
-          <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card gst-dark-card" style={{ marginBottom: 20 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 16 }}>
               🧮 GST हिसाब / Calculation
             </div>
@@ -562,7 +562,7 @@ export default function GSTPage() {
           </div>
 
           {/* ── SECTION 3: GSTR-3B TABLE ── */}
-          <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card gst-dark-card" style={{ marginBottom: 20 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#1a1a2e', marginBottom: 14 }}>
               📋 GSTR-3B सारांश / Summary
             </div>
@@ -610,14 +610,14 @@ export default function GSTPage() {
 
           {/* ── SECTION 4: B2B / B2C CARDS ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-            <div className="card" style={{ borderLeft: '4px solid #1d4ed8' }}>
+            <div className="card gst-dark-card" style={{ borderLeft: '4px solid #1d4ed8' }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: '#1d4ed8', marginBottom: 4 }}>🏢 B2B</div>
               <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>GSTIN वाले ग्राहक</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2b_count}</div>
               <div style={{ fontSize: 11, color: '#9ca3af' }}>invoices</div>
               <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#1d4ed8' }}>₹{fmt(summary.sales.b2b_taxable)}</div>
             </div>
-            <div className="card" style={{ borderLeft: '4px solid #0f766e' }}>
+            <div className="card gst-dark-card" style={{ borderLeft: '4px solid #0f766e' }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: '#0f766e', marginBottom: 4 }}>👤 B2C</div>
               <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>बिना GSTIN ग्राहक</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: '#1a1a2e' }}>{summary.sales.b2c_count}</div>
@@ -628,7 +628,7 @@ export default function GSTPage() {
 
           {/* ── SECTION 5: B2B INVOICE LIST ── */}
           {summary.gstr1.b2b_invoices.length === 0 ? (
-            <div className="card" style={{ marginBottom: 20, textAlign: 'center', padding: 24, color: '#9ca3af' }}>
+            <div className="card gst-dark-card" style={{ marginBottom: 20, textAlign: 'center', padding: 24, color: '#9ca3af' }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>📋</div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>कोई B2B Invoice नहीं / No B2B Invoices</div>
               <div style={{ fontSize: 12 }}>💡 Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
@@ -676,7 +676,7 @@ export default function GSTPage() {
               {/* Mobile */}
               <div className="show-xs" style={{ flexDirection: 'column', gap: 10 }}>
                 {summary.gstr1.b2b_invoices.map((inv, i) => (
-                  <div key={i} className="card" style={{ borderLeft: '3px solid #1d4ed8' }}>
+                  <div key={i} className="card gst-dark-card" style={{ borderLeft: '3px solid #1d4ed8' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <div style={{ fontWeight: 700, color: '#1d4ed8', fontSize: 13 }}>{inv.invoice_number}</div>
                       <div style={{ fontWeight: 700, color: '#0f766e' }}>₹{fmt(inv.total)}</div>
@@ -690,7 +690,7 @@ export default function GSTPage() {
           )}
 
           {/* ── SECTION 6: B2C SUMMARY ── */}
-          <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #10b981' }}>
+          <div className="card gst-dark-card" style={{ marginBottom: 20, borderLeft: '4px solid #10b981' }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>👥 B2C सारांश / Summary</div>
             <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>सामान्य ग्राहक — बिना GSTIN</div>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
@@ -709,7 +709,7 @@ export default function GSTPage() {
           </div>
 
           {/* ── SECTION 7: EXPORT ── */}
-          <div className="card">
+          <div className="card gst-dark-card">
             <div style={{ fontWeight: 700, fontSize: 14, color: '#374151', marginBottom: 4 }}>
               📤 CA को दें / Export for CA
             </div>
@@ -766,6 +766,72 @@ export default function GSTPage() {
       </div>
 
       <style>{`
+        .gst-page-shell .gst-dark-card,
+        .gst-page-shell .gst-soft-panel {
+          color: #e5e7eb;
+        }
+
+        .gst-page-shell .gst-dark-card > div:first-child,
+        .gst-page-shell .gst-dark-card strong,
+        .gst-page-shell .gst-dark-card b {
+          color: inherit;
+        }
+
+        .gst-page-shell .gst-payable-banner {
+          background: linear-gradient(180deg, rgba(15,23,42,0.98), rgba(31,41,55,0.98)) !important;
+          border-color: rgba(148,163,184,0.16) !important;
+        }
+
+        .gst-page-shell .mini-stat-value {
+          color: #ffffff !important;
+        }
+
+        .gst-page-shell .gst-dark-card div[style*='color: #1a1a2e'],
+        .gst-page-shell .gst-dark-card div[style*='color: #374151'],
+        .gst-page-shell .gst-dark-card td[style*='color: #374151'],
+        .gst-page-shell .gst-soft-panel div[style*='color: #374151'] {
+          color: #ffffff !important;
+        }
+
+        .gst-page-shell .gst-dark-card div[style*='color: #6b7280'],
+        .gst-page-shell .gst-dark-card div[style*='color: #9ca3af'],
+        .gst-page-shell .gst-dark-card td[style*='color: #9ca3af'],
+        .gst-page-shell .gst-soft-panel div[style*='color: #6b7280'] {
+          color: #9ca3af !important;
+        }
+
+        .gst-page-shell .gst-dark-card tr[style*='background: #f0fdf4'] td {
+          background: rgba(34, 197, 94, 0.08) !important;
+        }
+
+        .gst-page-shell .gst-dark-card tr[style*='background: #eff6ff'] td,
+        .gst-page-shell .gst-dark-card tr[style*='background: #dbeafe'] th {
+          background: rgba(6, 182, 212, 0.08) !important;
+        }
+
+        .gst-page-shell .gst-dark-card tr[style*='background: #fef2f2'] td {
+          background: rgba(239, 68, 68, 0.08) !important;
+        }
+
+        .gst-page-shell .gst-dark-card tr[style*='borderBottom: 1px solid #e5e7eb'] td {
+          border-bottom: 1px solid rgba(148,163,184,0.1) !important;
+        }
+
+        .gst-page-shell .gst-dark-card span[style*='background: #e0f2fe'] {
+          background: rgba(6,182,212,0.18) !important;
+          color: #67e8f9 !important;
+        }
+
+        .gst-page-shell .gst-dark-card button,
+        .gst-page-shell .gst-soft-panel button {
+          box-shadow: 0 14px 28px rgba(2,6,23,0.2);
+        }
+
+        .gst-page-shell code {
+          background: rgba(255,255,255,0.08) !important;
+          color: #e5e7eb !important;
+        }
+
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
 
