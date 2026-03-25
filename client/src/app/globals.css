@@ -808,6 +808,7 @@ tbody tr:hover td {
   justify-content: center;
   z-index: 100;
   padding: 18px;
+  overflow-y: auto;
   animation: fadeIn 0.18s ease;
 }
 
@@ -2357,6 +2358,7 @@ select.form-input { cursor: pointer; }
   max-width: 620px;
   max-height: 92vh;
   overflow-y: auto;
+  margin: auto;
   padding: 20px;
   background:
     radial-gradient(circle at top right, rgba(45, 212, 191, 0.12), transparent 30%),
@@ -2527,8 +2529,11 @@ select.form-input { cursor: pointer; }
   }
 
   .flow-modal {
+    width: min(100%, 560px);
+    max-height: calc(100dvh - 32px);
     padding: 16px;
-    border-radius: 22px 22px 0 0;
+    margin: auto;
+    border-radius: 24px;
   }
 
   .flow-modal-header {
@@ -2548,9 +2553,9 @@ select.form-input { cursor: pointer; }
 
   .flow-actions {
     position: sticky;
-    bottom: -18px;
-    margin: 18px -4px -4px;
-    padding: 12px 4px 4px;
+    bottom: 0;
+    margin: 16px 0 0;
+    padding: 12px 0 0;
     background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.94) 20%, rgba(244,248,252,0.98));
     z-index: 4;
   }
