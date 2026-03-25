@@ -56,10 +56,15 @@ const purchaseSchema = new mongoose.Schema({
   supplier_state: { type: String },  // ← WAS MISSING — needed for IGST calculation
 
   // ── Bill ──────────────────────────────────────────────────────
-  invoice_number: { type: String },
+  invoice_number: { type: String, required: true },
   notes: { type: String },
 
 }, { timestamps: true });
+
+purchaseSchema.index(
+  { shop: 1, invoice_number: 1 },
+  { unique: true }
+);
 
 // Auto-set payment_status before save
 purchaseSchema.pre('save', async function () {

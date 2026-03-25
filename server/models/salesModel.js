@@ -64,10 +64,15 @@ const saleSchema = new mongoose.Schema({
   buyer_state: { type: String },
 
   // ── Bill ──────────────────────────────────────────────────────
-  invoice_number: { type: String, unique: true },
+  invoice_number: { type: String, required: true },
   notes: { type: String },
 
 }, { timestamps: true });
+
+saleSchema.index(
+  { shop: 1, invoice_number: 1 },
+  { unique: true }
+);
 
 saleSchema.pre('save', async function () {
   if (this.amount_paid >= this.total_amount) {
