@@ -257,8 +257,8 @@ export default function ProductsPage() {
 
   return (
     <Layout>
-      <div className="page-shell">
-        <section className="hero-panel">
+      <div className="page-shell product-shell">
+        <section className="hero-panel product-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>उत्पाद / Products</div>
@@ -353,17 +353,17 @@ export default function ProductsPage() {
               </thead>
               <tbody>
                 {filtered.map(p => (
-                  <tr key={p._id} style={{ background: p.quantity === 0 ? '#fef2f2' : p.is_low_stock ? '#fffbeb' : 'white' }}>
+                  <tr key={p._id} style={{ background: p.quantity === 0 ? 'rgba(239,68,68,0.08)' : p.is_low_stock ? 'rgba(245,158,11,0.08)' : 'transparent' }}>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#1a1a2e' }}>{p.name}</div>
+                      <div style={{ fontWeight: 600, color: '#ffffff' }}>{p.name}</div>
                       <div style={{ color: '#9ca3af', fontSize: 11 }}>
                         {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
                         {p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}
                         {p.low_stock_threshold !== 5 && ` • Alert ≤${p.low_stock_threshold}`}
                       </div>
                     </td>
-                    <td style={{ color: '#6b7280' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
-                    <td style={{ fontWeight: 600 }}>₹{p.price}</td>
+                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
+                    <td style={{ fontWeight: 600, color: '#e5e7eb' }}>₹{p.price}</td>
                     <td><MarginBadge margin={p.margin} /></td>
                     <td><GSTBadge rate={p.gst_rate} /></td>
                     <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>
@@ -407,7 +407,7 @@ export default function ProductsPage() {
                 style={{ borderLeft: `3px solid ${p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#10b981'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>{p.name}</div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#ffffff' }}>{p.name}</div>
                     <div style={{ color: '#9ca3af', fontSize: 11 }}>
                       {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
                       {p.description || (p.unit ? `Unit: ${p.unit}` : '')}
@@ -417,8 +417,8 @@ export default function ProductsPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700 }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700 }}>₹{p.price}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#e5e7eb' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#e5e7eb' }}>₹{p.price}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>{p.quantity} <span style={{ color: '#cbd5e1', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
@@ -459,13 +459,13 @@ export default function ProductsPage() {
           <div className="modal flow-modal">
             <div className="flow-modal-header">
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>
               {editProduct ? '✏️ उत्पाद संपादित / Edit Product' : '📦 उत्पाद जोड़ें / Add Product'}
                 </h3>
               </div>
               <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
             </div>
-            {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
             <form onSubmit={handleSubmit}>
               <div className="flow-step-panel" style={{ display: productStep === 0 ? 'block' : 'none' }}>
               <div className="flow-section-kicker"><span>Basics</span><span>Identity + barcode</span></div>
@@ -639,7 +639,7 @@ export default function ProductsPage() {
                 </button>
                 )}
                 <button type="button" onClick={() => setShowModal(false)}
-                  style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel
                 </button>
               </div>
@@ -652,13 +652,13 @@ export default function ProductsPage() {
       {showStockModal && stockProduct && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>
               📦 Stock Adjust — {stockProduct.name}
             </h3>
             <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 14 }}>
-              Current Stock: <strong style={{ color: '#374151' }}>{stockProduct.quantity} {stockProduct.unit || 'pcs'}</strong>
+              Current Stock: <strong style={{ color: '#ffffff' }}>{stockProduct.quantity} {stockProduct.unit || 'pcs'}</strong>
             </div>
-            {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
             <form onSubmit={handleStockAdjust}>
               <div className="form-group">
                 <label className="form-label">Type *</label>
@@ -708,11 +708,11 @@ export default function ProductsPage() {
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="submit" disabled={stockSubmitting}
-                  style={{ flex: 1, padding: '10px', background: '#10b981', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#04150b', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                   {stockSubmitting ? '⏳ Saving...' : '✅ Update Stock'}
                 </button>
                 <button type="button" onClick={() => { setShowStockModal(false); setError(''); }}
-                  style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel
                 </button>
               </div>
@@ -727,7 +727,7 @@ export default function ProductsPage() {
           <div className="modal" style={{ maxHeight: '85vh', overflowY: 'auto', maxWidth: 520 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a2e', marginBottom: 2 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#ffffff', marginBottom: 2 }}>
                   📋 Stock History — {historyProduct.name}
                 </h3>
                 <div style={{ fontSize: 12, color: '#9ca3af' }}>
@@ -735,7 +735,7 @@ export default function ProductsPage() {
                 </div>
               </div>
               <button onClick={() => setShowHistory(false)}
-                style={{ padding: '6px 12px', background: '#f3f4f6', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
+                style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
                 ✕
               </button>
             </div>
@@ -749,11 +749,11 @@ export default function ProductsPage() {
                 {historyData.map((h, i) => (
                   <div key={i} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 12px', background: '#f9fafb', borderRadius: 8,
+                    padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 8,
                     borderLeft: `3px solid ${h.quantity_change > 0 ? '#10b981' : '#ef4444'}`,
                   }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
                         {historyTypeLabel(h.type)}
                       </div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>
@@ -785,6 +785,15 @@ export default function ProductsPage() {
       />
 
       <style>{`
+        .product-shell .product-hero {
+          border: 1px solid rgba(34, 197, 94, 0.14);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
+        }
+
+        .product-shell .card[style*='borderLeft'] {
+          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
+        }
+
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
       `}</style>

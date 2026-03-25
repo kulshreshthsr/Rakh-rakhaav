@@ -155,7 +155,7 @@ export default function CameraBarcodeScanner({
       cancelled = true;
       stopScanner();
     };
-  }, [open, onDetected]);
+  }, [continuous, cooldownMs, onDetected, open]);
 
   if (!open) return null;
 

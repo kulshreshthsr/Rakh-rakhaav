@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
@@ -450,6 +450,74 @@ export default function SalesPage() {
   const canMoveToPayment = items.some((item) => item.product_id && item.quantity && item.price_per_unit);
   const canMoveToBuyer = billTotals.total > 0;
 
+  function resetForm() {
+    setEditingSaleId('');
+    setItems([emptyItem()]);
+    setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
+    setSaleStep(0);
+    setGstinTouched(false);
+    setError('');
+  }
+
+  async function handleSubmit(e) {
+    e?.preventDefault();
+    setError('');
+    setGstinTouched(true);
+    if (form.payment_type === 'credit' && !form.buyer_name) {
+      setError('à¤‰à¤§à¤¾à¤° à¤¬à¤¿à¤•à¥à¤°à¥€ à¤•à¥‡ à¤²à¤¿à¤ à¤—à¥à¤°à¤¾à¤¹à¤• à¤•à¤¾ à¤¨à¤¾à¤® à¤œà¤°à¥‚à¤°à¥€ à¤¹à¥ˆ!');
+      return;
+    }
+    if (!gstinValid) {
+      setError('Invalid GSTIN format');
+      return;
+    }
+    const validItems = items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
+    if (validItems.length === 0) {
+      setError('à¤•à¤® à¤¸à¥‡ à¤•à¤® à¤à¤• product à¤šà¥à¤¨à¥‡à¤‚');
+      return;
+    }
+    for (const item of validItems) {
+      const prod = products.find((p) => p._id === item.product_id);
+      if (prod && Number(item.quantity) > (prod.quantity || 0)) {
+        setError(prod.name + ': à¤¸à¤¿à¤°à¥à¤« ' + prod.quantity + ' stock available à¤¹à¥ˆ');
+        return;
+      }
+    }
+    setSubmitting(true);
+    try {
+      const isEditing = Boolean(editingSaleId);
+      const res = await fetch(isEditing ? `${API}/api/sales/${editingSaleId}` : `${API}/api/sales`, {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({
+          items: validItems,
+          ...form,
+          buyer_gstin: gstinValue,
+          amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowModal(false);
+        resetForm();
+        fetchAll();
+      } else {
+        setError(data.message || 'à¤µà¤¿à¤«à¤²');
+      }
+    } catch {
+      setError('à¤¸à¤°à¥à¤µà¤° à¤¤à¥à¤°à¥à¤Ÿà¤¿');
+    }
+    setSubmitting(false);
+  }
+
+  const handleShortcutSubmit = useEffectEvent(() => {
+    handleSubmit();
+  });
+
+  const handleShortcutAddItem = useEffectEvent(() => {
+    addItem();
+  });
+
   useEffect(() => {
     if (!showModal) return undefined;
 
@@ -472,20 +540,20 @@ export default function SalesPage() {
     const onKeyDown = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter' && saleStep === 2) {
         event.preventDefault();
-        handleSubmit();
+        handleShortcutSubmit();
       }
 
       if (event.altKey && event.key.toLowerCase() === 'a' && saleStep === 0) {
         event.preventDefault();
-        addItem();
+        handleShortcutAddItem();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [saleStep, showModal, items, form, editingSaleId]);
+  }, [saleStep, showModal]);
 
-  const handleSubmit = async (e) => {
+  async function handleSubmitLegacy(e) {
     e?.preventDefault();
     setError('');
     setGstinTouched(true);
@@ -519,16 +587,16 @@ export default function SalesPage() {
       else setError(data.message || 'विफल');
     } catch { setError('सर्वर त्रुटि'); }
     setSubmitting(false);
-  };
+  }
 
-  const resetForm = () => {
+  function resetFormLegacy() {
     setEditingSaleId('');
     setItems([emptyItem()]);
     setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
-  };
+  }
 
   const startEditSale = (sale) => {
     const sourceItems = sale.items && sale.items.length > 0
@@ -605,8 +673,8 @@ export default function SalesPage() {
 
   return (
     <Layout>
-      <div className="page-shell">
-        <section className="hero-panel">
+      <div className="page-shell sales-shell">
+        <section className="hero-panel sales-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>बिक्री / Sales</div>
@@ -667,7 +735,7 @@ export default function SalesPage() {
                   <tr key={s._id}>
                     <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#1a1a2e', fontSize: 13 }}>
+                      <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>
                         {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
                       </div>
                       {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
@@ -727,7 +795,7 @@ export default function SalesPage() {
               <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#ffffff' }}>
                       {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
                     </div>
                     <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
@@ -774,7 +842,7 @@ export default function SalesPage() {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal flow-modal sale-entry-modal" style={{ maxWidth: 500 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>बिक्री दर्ज करें / Record Sale</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#ffffff' }}>बिक्री दर्ज करें / Record Sale</h3>
             {editingSaleId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
             ) : null}
@@ -786,7 +854,7 @@ export default function SalesPage() {
 
               {/* Items */}
               <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>🛍️ Items</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>🛍️ Items</div>
                 <div className="fast-billing-toolbar">
                   <div>
                     <div className="fast-billing-title">Fast Billing</div>
@@ -809,7 +877,7 @@ export default function SalesPage() {
                   const g    = rowGST(item);
                   const prod = products.find(p => p._id === item.product_id);
                   return (
-                    <div key={index} className="fast-item-card" style={{ background: '#f9fafb', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e5e7eb' }}>
+                    <div key={index} className="fast-item-card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid rgba(148,163,184,0.14)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
                         <button
@@ -1062,7 +1130,7 @@ export default function SalesPage() {
                 </button>
                 )}
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
-                  style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel
                 </button>
               </div>
@@ -1083,6 +1151,13 @@ export default function SalesPage() {
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
+        .sales-shell .sales-hero {
+          border: 1px solid rgba(59, 130, 246, 0.14);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
+        }
+        .sales-shell .card[style*='borderLeft'] {
+          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
+        }
         .fast-billing-toolbar {
           display: flex;
           justify-content: space-between;
@@ -1092,18 +1167,18 @@ export default function SalesPage() {
           margin-bottom: 12px;
           padding: 12px 14px;
           border-radius: 14px;
-          background: linear-gradient(180deg, rgba(239,246,255,0.96), rgba(240,253,250,0.9));
-          border: 1px solid rgba(191,219,254,0.9);
+          background: linear-gradient(180deg, rgba(15,23,42,0.92), rgba(17,24,39,0.92));
+          border: 1px solid rgba(148,163,184,0.14);
         }
         .fast-billing-title {
           font-size: 14px;
           font-weight: 800;
-          color: #0f172a;
+          color: #ffffff;
         }
         .fast-billing-subtitle {
           margin-top: 4px;
           font-size: 12px;
-          color: #64748b;
+          color: #9ca3af;
         }
         .fast-billing-toolbar-actions,
         .fast-qty-pills {
@@ -1113,9 +1188,9 @@ export default function SalesPage() {
         }
         .fast-billing-chip,
         .fast-qty-pill {
-          border: 1px solid rgba(148,163,184,0.28);
-          background: rgba(255,255,255,0.9);
-          color: #334155;
+          border: 1px solid rgba(148,163,184,0.18);
+          background: rgba(255,255,255,0.06);
+          color: #cbd5e1;
           border-radius: 999px;
           padding: 6px 10px;
           font-size: 11px;
@@ -1144,12 +1219,12 @@ export default function SalesPage() {
         }
         .fast-qty-button {
           min-height: 46px;
-          border: 1px solid rgba(148,163,184,0.24);
+          border: 1px solid rgba(148,163,184,0.18);
           border-radius: 14px;
-          background: rgba(248,250,252,0.94);
+          background: rgba(255,255,255,0.06);
           font-size: 18px;
           font-weight: 800;
-          color: #0f172a;
+          color: #ffffff;
         }
         .fast-qty-input {
           text-align: center;
@@ -1167,10 +1242,10 @@ export default function SalesPage() {
         .fast-add-row-button {
           width: 100%;
           padding: 11px 12px;
-          background: #fff;
-          border: 1.5px dashed #cbd5e1;
+          background: rgba(255,255,255,0.04);
+          border: 1.5px dashed rgba(148,163,184,0.22);
           border-radius: 12px;
-          color: #475569;
+          color: #cbd5e1;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
@@ -1216,7 +1291,7 @@ export default function SalesPage() {
           gap: 10px;
           flex-wrap: wrap;
           padding-top: 8px;
-          background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.98) 28%);
+          background: linear-gradient(180deg, rgba(11,18,32,0), rgba(11,18,32,0.98) 28%);
         }
         .sale-entry-modal {
           display: flex;
