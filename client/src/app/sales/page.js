@@ -768,7 +768,7 @@ export default function SalesPage() {
       {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal flow-modal" style={{ maxWidth: 520 }}>
+          <div className="modal flow-modal sale-entry-modal" style={{ maxWidth: 500 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#1a1a2e' }}>बिक्री दर्ज करें / Record Sale</h3>
             {editingSaleId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>

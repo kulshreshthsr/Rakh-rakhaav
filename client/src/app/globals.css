@@ -2365,6 +2365,10 @@ select.form-input { cursor: pointer; }
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 249, 252, 0.97));
 }
 
+.sale-entry-modal {
+  max-height: calc(100dvh - 72px);
+}
+
 .flow-modal-header {
   display: flex;
   justify-content: space-between;
@@ -2534,6 +2538,11 @@ select.form-input { cursor: pointer; }
     padding: 16px;
     margin: auto;
     border-radius: 24px;
+  }
+
+  .sale-entry-modal {
+    width: min(100%, 500px);
+    max-height: calc(100dvh - 48px);
   }
 
   .flow-modal-header {
