@@ -782,7 +782,7 @@ export default function SalesPage() {
             {error && (
               <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
             )}
-              <form onSubmit={(e) => e.preventDefault()}>
+              <form onSubmit={(e) => e.preventDefault()} className="sale-entry-form">
 
               {/* Items */}
               <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none' }}>
@@ -1218,6 +1218,22 @@ export default function SalesPage() {
           padding-top: 8px;
           background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.98) 28%);
         }
+        .sale-entry-modal {
+          display: flex;
+          flex-direction: column;
+          max-height: min(calc(100dvh - 40px), 860px);
+          overflow: hidden;
+        }
+        .sale-entry-form {
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding-right: 2px;
+          padding-bottom: 8px;
+          overscroll-behavior: contain;
+        }
         @media (max-width: 640px) {
           .fast-item-card {
             padding: 12px 10px !important;
@@ -1229,9 +1245,14 @@ export default function SalesPage() {
           }
           .fast-billing-toolbar,
           .fast-bill-sticky-summary {
-            position: sticky;
-            top: 0;
-            z-index: 2;
+            position: static;
+          }
+          .sale-entry-modal {
+            max-height: calc(100dvh - 28px);
+          }
+          .sale-entry-form {
+            max-height: calc(100dvh - 170px);
+            padding-bottom: 12px;
           }
           .fast-billing-actions {
             padding-bottom: env(safe-area-inset-bottom);
