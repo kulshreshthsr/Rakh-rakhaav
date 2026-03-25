@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
+import { StatCard, StatusBadge } from '../../components/ui/AppUI';
 
 const API = 'https://rakh-rakhaav.onrender.com';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -277,30 +278,16 @@ export default function DashboardPage() {
 
         <section className="metric-grid">
           {statCards.map((card) => (
-            <div
+            <StatCard
               key={card.label}
-              className="metric-card dashboard-stat-card"
+              className="dashboard-stat-card"
+              tone={card.color === '#0f766e' ? 'money' : card.color === '#b45309' ? 'warning' : card.color === '#dc2626' ? 'danger' : 'secondary'}
+              label={card.label}
+              value={card.value}
+              note={card.note}
+              icon={card.icon}
               onClick={() => router.push(card.href)}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                <div>
-                  <div className="metric-label">{card.label}</div>
-                  <div className="metric-value" style={{ color: card.color, marginTop: 8 }}>{card.value}</div>
-                </div>
-                <div
-                  className="dashboard-stat-icon"
-                  style={{
-                    minWidth: 56,
-                    height: 32,
-                    padding: '0 10px',
-                    borderRadius: 999,
-                  }}
-                >
-                  {card.icon}
-                </div>
-              </div>
-              <div className="metric-note">{card.note}</div>
-            </div>
+            />
           ))}
         </section>
 
@@ -311,7 +298,7 @@ export default function DashboardPage() {
                 <div className="section-title">मुनाफ़ा विवरण / Profit Breakdown</div>
                 <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
               </div>
-              <div className="badge badge-blue">Margin {margin}%</div>
+              <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
             </div>
 
             <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
@@ -383,7 +370,7 @@ export default function DashboardPage() {
                       {product.name} ({product.quantity ?? 0})
                     </span>
                   ))}
-                  {lowStockCount > 5 && <span className="badge badge-yellow">+{lowStockCount - 5} more</span>}
+                  {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
                 </div>
               </div>
               <div className="btn-warning" style={{ width: 'auto' }}>Open Products</div>
@@ -397,7 +384,7 @@ export default function DashboardPage() {
               <div className="section-title">त्वरित कार्य / Quick Actions</div>
               <div className="section-subtitle">Fast access to your most-used screens</div>
             </div>
-            <div className="badge badge-navy">{quickActions.length} shortcuts</div>
+            <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
           <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
             {quickActions.map((action) => (
