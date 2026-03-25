@@ -729,6 +729,59 @@ textarea::placeholder {
   box-shadow: none;
 }
 
+.action-soft {
+  color: #18324d;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.92));
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.action-soft:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+}
+
+.action-soft.print {
+  color: #254260;
+  background: linear-gradient(180deg, rgba(245, 248, 255, 0.98), rgba(225, 236, 250, 0.94));
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.action-soft.whatsapp {
+  color: #14532d;
+  background: linear-gradient(180deg, rgba(241, 250, 244, 0.98), rgba(220, 243, 229, 0.94));
+  border-color: rgba(34, 197, 94, 0.18);
+}
+
+.action-soft.edit {
+  color: #1e3a5f;
+  background: linear-gradient(180deg, rgba(243, 247, 255, 0.98), rgba(223, 235, 250, 0.94));
+  border-color: rgba(59, 130, 246, 0.18);
+}
+
+.action-soft.delete {
+  color: #7f1d1d;
+  background: linear-gradient(180deg, rgba(254, 244, 244, 0.98), rgba(252, 231, 231, 0.94));
+  border-color: rgba(239, 68, 68, 0.16);
+}
+
+.action-soft.stock {
+  color: #134e4a;
+  background: linear-gradient(180deg, rgba(241, 252, 250, 0.98), rgba(217, 245, 239, 0.94));
+  border-color: rgba(20, 184, 166, 0.18);
+}
+
+.action-soft.history {
+  color: #312e81;
+  background: linear-gradient(180deg, rgba(245, 245, 255, 0.98), rgba(231, 229, 255, 0.94));
+  border-color: rgba(99, 102, 241, 0.18);
+}
+
 .table-container {
   background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(242, 248, 255, 0.97));
   border-radius: 24px;

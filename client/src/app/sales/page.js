@@ -690,23 +690,27 @@ export default function SalesPage() {
                         <button
                           onClick={() => printInvoice(s)}
                           title="Print Invoice"
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #4338ca, #6366f1)', border: '1px solid rgba(99,102,241,0.22)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700, boxShadow: '0 10px 22px rgba(99,102,241,0.18)' }}>
+                          className="action-soft print"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           🖨️ Print
                         </button>
                         <button
                           onClick={() => shareWhatsApp(s)}
                           title="Share on WhatsApp"
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #16a34a, #25d366)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 22px rgba(22,163,74,0.22)' }}>
+                          className="action-soft whatsapp"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           📲 WA
                         </button>
                         <button
                           onClick={() => startEditSale(s)}
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: '1px solid rgba(37,99,235,0.22)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 22px rgba(37,99,235,0.2)' }}>
+                          className="action-soft edit"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(s._id)}
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 22px rgba(220,38,38,0.18)' }}>
+                          className="action-soft delete"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           Del
                         </button>
                       </div>
@@ -742,19 +746,20 @@ export default function SalesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
                 </div>
                 <div className="flow-choice-grid">
-                  <button onClick={() => startEditSale(s)} style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', border: '1px solid rgba(37,99,235,0.22)', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(37,99,235,0.18)' }}>
+                  <button onClick={() => startEditSale(s)} className="action-soft edit" style={{ flex: 1, padding: '9px' }}>
                     Edit
                   </button>
-                  <button onClick={() => printInvoice(s)} style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg, #4338ca, #6366f1)', color: '#fff', border: '1px solid rgba(99,102,241,0.22)', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(99,102,241,0.18)' }}>
+                  <button onClick={() => printInvoice(s)} className="action-soft print" style={{ flex: 1, padding: '9px' }}>
                     🖨️ Print
                   </button>
                   <button
                     onClick={() => shareWhatsApp(s)}
                     title="Share on WhatsApp"
-                    style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg, #16a34a, #25d366)', color: '#fff', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, fontSize: 12, fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 24px rgba(22,163,74,0.2)' }}>
+                    className="action-soft whatsapp"
+                    style={{ flex: 1, padding: '9px' }}>
                     📲 WhatsApp
                   </button>
-                  <button onClick={() => handleDelete(s._id)} style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg, #dc2626, #ef4444)', color: '#fff', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(220,38,38,0.18)' }}>
+                  <button onClick={() => handleDelete(s._id)} className="action-soft delete" style={{ flex: 1, padding: '9px' }}>
                     Delete
                   </button>
                 </div>

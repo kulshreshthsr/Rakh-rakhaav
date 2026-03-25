@@ -482,11 +482,13 @@ export default function PurchasesPage() {
                     </td>
                     <td>
                       <button onClick={() => startEditPurchase(p)}
-                        style={{ color: '#fff', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: '1px solid rgba(37,99,235,0.22)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 22px rgba(37,99,235,0.2)' }}>
+                        className="action-soft edit"
+                        style={{ borderRadius: 999, padding: '6px 10px' }}>
                         Edit
                       </button>
                       <button onClick={() => handleDelete(p._id)}
-                        style={{ color: '#fff', background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 800, boxShadow: '0 10px 22px rgba(220,38,38,0.18)' }}>
+                        className="action-soft delete"
+                        style={{ borderRadius: 999, padding: '6px 10px' }}>
                         Delete
                       </button>
                     </td>
@@ -530,11 +532,13 @@ export default function PurchasesPage() {
                 </div>
 
                 <button onClick={() => startEditPurchase(p)}
-                  style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', border: '1px solid rgba(37,99,235,0.22)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 8, boxShadow: '0 12px 24px rgba(37,99,235,0.18)' }}>
+                  className="action-soft edit"
+                  style={{ width: '100%', padding: '9px', marginBottom: 8 }}>
                   Edit
                 </button>
                 <button onClick={() => handleDelete(p._id)}
-                  style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg, #dc2626, #ef4444)', color: '#fff', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(220,38,38,0.18)' }}>
+                  className="action-soft delete"
+                  style={{ width: '100%', padding: '9px' }}>
                   Delete
                 </button>
               </div>

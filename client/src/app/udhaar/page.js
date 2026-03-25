@@ -376,7 +376,8 @@ export default function UdhaarPage() {
                         <button
                           type="button"
                           onClick={(event) => { event.stopPropagation(); sendReminder(item); }}
-                          style={{ padding: '7px 10px', background: '#dcfce7', color: '#15803d', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                          className="action-soft whatsapp"
+                          style={{ padding: '7px 10px', borderRadius: 8 }}>
                           WA
                         </button>
                       )}

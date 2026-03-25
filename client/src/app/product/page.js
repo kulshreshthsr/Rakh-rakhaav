@@ -373,19 +373,23 @@ export default function ProductsPage() {
                     <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button onClick={() => openStockAdjust(p)}
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #059669, #10b981)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700, boxShadow: '0 10px 22px rgba(5,150,105,0.18)' }}>
+                          className="action-soft stock"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           Stock
                         </button>
                         <button onClick={() => openHistory(p)}
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #4338ca, #6366f1)', border: '1px solid rgba(99,102,241,0.18)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700, boxShadow: '0 10px 22px rgba(99,102,241,0.18)' }}>
+                          className="action-soft history"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           History
                         </button>
                         <button onClick={() => openEdit(p)}
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #d97706, #f59e0b)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700, boxShadow: '0 10px 22px rgba(217,119,6,0.18)' }}>
+                          className="action-soft edit"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           Edit
                         </button>
                         <button onClick={() => handleDelete(p._id)}
-                          style={{ color: '#fff', background: 'linear-gradient(135deg, #dc2626, #ef4444)', border: '1px solid rgba(239,68,68,0.18)', borderRadius: 999, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700, boxShadow: '0 10px 22px rgba(220,38,38,0.16)' }}>
+                          className="action-soft delete"
+                          style={{ borderRadius: 999, padding: '6px 10px' }}>
                           Del
                         </button>
                       </div>
@@ -422,19 +426,23 @@ export default function ProductsPage() {
 
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={() => openStockAdjust(p)}
-                    style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', border: '1px solid rgba(16,185,129,0.18)', borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(5,150,105,0.18)' }}>
+                    className="action-soft stock"
+                    style={{ flex: 1, padding: '8px' }}>
                     📦 Stock
                   </button>
                   <button onClick={() => openHistory(p)}
-                    style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg, #4338ca, #6366f1)', color: '#fff', border: '1px solid rgba(99,102,241,0.18)', borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(99,102,241,0.18)' }}>
+                    className="action-soft history"
+                    style={{ flex: 1, padding: '8px' }}>
                     📋 History
                   </button>
                   <button onClick={() => openEdit(p)}
-                    style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg, #d97706, #f59e0b)', color: '#fff', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(217,119,6,0.18)' }}>
+                    className="action-soft edit"
+                    style={{ flex: 1, padding: '8px' }}>
                     ✏️ Edit
                   </button>
                   <button onClick={() => handleDelete(p._id)}
-                    style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg, #dc2626, #ef4444)', color: '#fff', border: '1px solid rgba(239,68,68,0.18)', borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 24px rgba(220,38,38,0.16)' }}>
+                    className="action-soft delete"
+                    style={{ flex: 1, padding: '8px' }}>
                     🗑️ Del
                   </button>
                 </div>
