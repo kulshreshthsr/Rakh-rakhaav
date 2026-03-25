@@ -480,53 +480,6 @@ export default function UdhaarPage() {
         </div>
       )}
 
-      <style>{`
-        .udhaar-page-shell .card {
-          color: #e5e7eb;
-        }
-
-        .udhaar-page-shell .card div[style*='color: #1a1a2e'],
-        .udhaar-page-shell .card div[style*='color: #374151'],
-        .udhaar-page-shell .card td[style*='color: #374151'],
-        .udhaar-page-shell .card span[style*='color: #374151'] {
-          color: #ffffff !important;
-        }
-
-        .udhaar-page-shell .card div[style*='color: #9ca3af'],
-        .udhaar-page-shell .card td[style*='color: #9ca3af'],
-        .udhaar-page-shell .card th[style*='color: #6b7280'],
-        .udhaar-page-shell .card div[style*='color: #6b7280'] {
-          color: #9ca3af !important;
-        }
-
-        .udhaar-page-shell .card div[style*='background: #f9fafb'],
-        .udhaar-page-shell .card tr[style*='background: #f9fafb'] th {
-          background: rgba(255,255,255,0.03) !important;
-        }
-
-        .udhaar-page-shell .card div[style*='background: #fef2f2'] {
-          background: rgba(239,68,68,0.08) !important;
-        }
-
-        .udhaar-page-shell .card div[style*='background: #fffbeb'],
-        .udhaar-page-shell .card div[style*='background: #fef3c7'] {
-          background: rgba(245,158,11,0.08) !important;
-        }
-
-        .udhaar-page-shell .card div[style*='background: #f0fdf4'] {
-          background: rgba(34,197,94,0.08) !important;
-        }
-
-        .udhaar-page-shell .card div[style*='background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.92))'],
-        .udhaar-page-shell .card div[style*='background: rgba(255,255,255,0.9)'] {
-          background: rgba(255,255,255,0.04) !important;
-        }
-
-        .udhaar-page-shell .card tr[style*='borderBottom: 1px solid #f3f4f6'] td,
-        .udhaar-page-shell .card tr[style*='borderBottom: 1px solid #e5e7eb'] th {
-          border-bottom: 1px solid rgba(148,163,184,0.1) !important;
-        }
-      `}</style>
       </div>
     </Layout>
   );
