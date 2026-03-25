@@ -366,8 +366,8 @@ export default function ProductsPage() {
                     <td style={{ fontWeight: 600 }}>₹{p.price}</td>
                     <td><MarginBadge margin={p.margin} /></td>
                     <td><GSTBadge rate={p.gst_rate} /></td>
-                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#d97706' : '#374151' }}>
-                      {p.quantity} {p.unit || ''}
+                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>
+                      {p.quantity} <span style={{ color: '#cbd5e1', fontWeight: 800 }}>{p.unit || ''}</span>
                     </td>
                     <td><StockBadge p={p} /></td>
                     <td>
@@ -420,7 +420,7 @@ export default function ProductsPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700 }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700 }}>₹{p.price}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#d97706' : '#374151' }}>{p.quantity} {p.unit || ''}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>{p.quantity} <span style={{ color: '#cbd5e1', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
                 </div>
 
