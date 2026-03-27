@@ -184,8 +184,7 @@ export default function DashboardPage() {
       label: 'बिक्री / Sales',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} invoices this month`,
-      color: '#0f766e',
-      accent: 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.04))',
+      color: '#e5e7eb',
       href: '/sales',
       icon: 'Sales',
     },
@@ -193,10 +192,7 @@ export default function DashboardPage() {
       label: 'मुनाफ़ा / Profit',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
-      color: profit >= 0 ? '#1d4ed8' : '#dc2626',
-      accent: profit >= 0
-        ? 'linear-gradient(135deg, rgba(29,78,216,0.16), rgba(56,189,248,0.06))'
-        : 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))',
+      color: '#e5e7eb',
       href: '/reports',
       icon: 'Profit',
     },
@@ -204,10 +200,7 @@ export default function DashboardPage() {
       label: 'उधार / Credit',
       value: `₹${fmt(totalCustomerUdhaar)}`,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
-      color: totalCustomerUdhaar > 0 ? '#dc2626' : '#10b981',
-      accent: totalCustomerUdhaar > 0
-        ? 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))'
-        : 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.06))',
+      color: '#e5e7eb',
       href: '/udhaar',
       icon: 'Credit',
     },
@@ -215,22 +208,19 @@ export default function DashboardPage() {
       label: 'GST देय / Payable',
       value: `₹${fmt(Math.abs(netGST))}`,
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
-      color: netGST >= 0 ? '#b45309' : '#0f766e',
-      accent: netGST >= 0
-        ? 'linear-gradient(135deg, rgba(180,83,9,0.16), rgba(245,158,11,0.06))'
-        : 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.06))',
+      color: '#e5e7eb',
       href: '/gst',
       icon: 'GST',
     },
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(22,163,74,0.14)', color: '#15803d', semantic: 'sales' },
-    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.14)', color: '#b45309', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.12)', color: '#dc2626', semantic: 'credit' },
-    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(37,99,235,0.12)', color: '#2563eb', semantic: 'stock' },
-    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,145,178,0.12)', color: '#0f766e', semantic: 'gst' },
-    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
+    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(255,255,255,0.08)', color: '#e5e7eb', semantic: 'sales' },
+    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(255,255,255,0.08)', color: '#e5e7eb', semantic: 'purchase' },
+    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(255,255,255,0.08)', color: '#e5e7eb', semantic: 'credit' },
+    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(255,255,255,0.08)', color: '#e5e7eb', semantic: 'stock' },
+    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(255,255,255,0.08)', color: '#e5e7eb', semantic: 'gst' },
+    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(255,255,255,0.08)', color: '#e5e7eb', semantic: 'premium' },
   ];
 
   return (
@@ -281,7 +271,7 @@ export default function DashboardPage() {
             <StatCard
               key={card.label}
               className="dashboard-stat-card"
-              tone={card.color === '#0f766e' ? 'money' : card.color === '#b45309' ? 'warning' : card.color === '#dc2626' ? 'danger' : 'secondary'}
+              tone="secondary"
               label={card.label}
               value={card.value}
               note={card.note}
@@ -303,11 +293,11 @@ export default function DashboardPage() {
 
             <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
               {[
-                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
-                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
-                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
+                { label: 'Revenue', value: stats?.totalRevenue, color: '#e5e7eb', prefix: '' },
+                { label: 'Profit', value: profit, color: '#e5e7eb', prefix: profit >= 0 ? '+' : '' },
+                { label: 'GST Collected', value: stats?.gstCollected, color: '#e5e7eb', prefix: '' },
+                { label: 'ITC', value: stats?.gstITC, color: '#e5e7eb', prefix: '-' },
+                { label: 'Net GST', value: netGST, color: '#e5e7eb', prefix: '' },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -330,7 +320,7 @@ export default function DashboardPage() {
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#475569', marginBottom: 6 }}>
                 <span>Profit Margin</span>
-                <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
+                <strong style={{ color: '#e5e7eb' }}>{margin}%</strong>
               </div>
               <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
                 <div
@@ -339,7 +329,7 @@ export default function DashboardPage() {
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
                     height: '100%',
                     borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #22c55e, #06b6d4)' : 'linear-gradient(90deg, #ef4444, #fb7185)',
+                    background: 'linear-gradient(90deg, #475569, #cbd5e1)',
                   }}
                 />
               </div>
@@ -355,8 +345,8 @@ export default function DashboardPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <div>
-                <div className="section-title" style={{ color: '#b45309' }}>कम स्टॉक / Low Stock</div>
-                <div className="section-subtitle" style={{ color: '#d97706' }}>
+                <div className="section-title">कम स्टॉक / Low Stock</div>
+                <div className="section-subtitle">
                   {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
@@ -441,11 +431,11 @@ export default function DashboardPage() {
                       height: 38,
                       borderRadius: 14,
                       background: [
-                        'linear-gradient(135deg, #10b981, #34d399)',
-                        'linear-gradient(135deg, #4f46e5, #818cf8)',
-                        'linear-gradient(135deg, #f59e0b, #fbbf24)',
-                        'linear-gradient(135deg, #ef4444, #fb7185)',
-                        'linear-gradient(135deg, #2563eb, #38bdf8)',
+                        'linear-gradient(135deg, #475569, #1f2937)',
+                        'linear-gradient(135deg, #475569, #1f2937)',
+                        'linear-gradient(135deg, #475569, #1f2937)',
+                        'linear-gradient(135deg, #475569, #1f2937)',
+                        'linear-gradient(135deg, #475569, #1f2937)',
                       ][index],
                       color: '#fff',
                       display: 'flex',
@@ -461,7 +451,7 @@ export default function DashboardPage() {
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
                     <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#e5e7eb', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
                 </div>
               ))}
             </div>

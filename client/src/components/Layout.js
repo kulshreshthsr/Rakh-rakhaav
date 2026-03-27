@@ -1460,12 +1460,12 @@ function LayoutInner({ children }) {
 
         .app-shell-root .sidebar-user-menu .danger,
         .app-shell-root .sidebar-logout {
-          color: #fecaca;
+          color: #e5e7eb;
         }
 
         .app-shell-root .sidebar-logout {
-          border-color: rgba(239, 68, 68, 0.16);
-          background: linear-gradient(180deg, rgba(127,29,29,0.2), rgba(127,29,29,0.12));
+          border-color: rgba(255, 255, 255, 0.12);
+          background: linear-gradient(180deg, rgba(71,85,105,0.22), rgba(31,41,55,0.18));
         }
 
         .app-shell-root .premium-topbar {
@@ -1546,9 +1546,9 @@ function LayoutInner({ children }) {
 
         .app-shell-root .mobile-nav-link.is-active {
           color: #ffffff;
-          border-color: rgba(59,130,246,0.2);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 28px rgba(59, 130, 246, 0.16);
-          background: linear-gradient(135deg, #3b82f6, #a78bfa);
+          border-color: rgba(255,255,255,0.12);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 28px rgba(15, 23, 42, 0.22);
+          background: linear-gradient(135deg, #475569, #1f2937);
         }
 
         @media (max-width: 900px) {
