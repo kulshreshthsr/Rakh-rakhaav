@@ -17,9 +17,11 @@ export default function ReadOnlyOverlay({
   return (
     <div className="read-only-overlay">
       <div className="read-only-card">
-        <div className="subscription-pill">Trial ended</div>
-        <h2>Your trial has ended</h2>
-        <p>Upgrade to unlock billing, GST, reports and udhaar again.</p>
+        <div className="read-only-header">
+          <div className="subscription-pill">Trial ended</div>
+          <h2>Your trial has ended</h2>
+          <p>Choose a plan to continue, or log out for now.</p>
+        </div>
 
         <div className="subscription-plan-grid">
           {plans.map((plan) => (
@@ -42,7 +44,7 @@ export default function ReadOnlyOverlay({
           <button type="button" className="btn-primary" onClick={onUpgrade} disabled={loading}>
             {loading ? 'Preparing upgrade...' : 'Upgrade Now'}
           </button>
-          <button type="button" className="btn-ghost" onClick={onLogout}>
+          <button type="button" className="read-only-logout-btn" onClick={onLogout}>
             Logout
           </button>
         </div>
