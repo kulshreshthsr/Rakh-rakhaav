@@ -1066,10 +1066,10 @@ textarea::placeholder {
 }
 
 .btn-primary {
-  color: #0b1220;
-  border: 1px solid rgba(34, 197, 94, 0.18);
-  background: linear-gradient(135deg, #3b82f6, #22c55e);
-  box-shadow: 0 20px 38px rgba(59, 130, 246, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  background: linear-gradient(135deg, #2563eb, #16a34a);
+  box-shadow: 0 20px 38px rgba(37, 99, 235, 0.24);
 }
 
 .btn-primary:hover {
@@ -1079,9 +1079,9 @@ textarea::placeholder {
 
 .btn-success {
   color: #fff;
-  border: 1px solid rgba(8, 32, 50, 0.08);
-  background: linear-gradient(135deg, #0b5d56, #118579);
-  box-shadow: 0 16px 32px rgba(11, 93, 86, 0.22);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  background: linear-gradient(135deg, #15803d, #16a34a);
+  box-shadow: 0 16px 32px rgba(22, 163, 74, 0.24);
 }
 
 .btn-success:hover {
@@ -1090,10 +1090,10 @@ textarea::placeholder {
 }
 
 .btn-warning {
-  color: #201505;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  box-shadow: 0 16px 30px rgba(245, 158, 11, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(217, 119, 6, 0.22);
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  box-shadow: 0 16px 30px rgba(217, 119, 6, 0.22);
 }
 
 .btn-warning:hover {
@@ -1114,14 +1114,14 @@ textarea::placeholder {
 }
 
 .btn-ghost {
-  color: #e5e7eb;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(31, 41, 55, 0.94));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 24px rgba(2, 6, 23, 0.18);
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.94));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .btn-ghost:hover {
-  background: rgba(31, 41, 55, 0.96);
+  background: rgba(248, 250, 252, 0.98);
   transform: translateY(-2px);
 }
 
@@ -1138,8 +1138,8 @@ textarea::placeholder {
 
 .action-soft {
   color: #fff;
-  background: linear-gradient(135deg, #1f2937, #0f172a);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(135deg, #334155, #0f172a);
+  border: 1px solid rgba(51, 65, 85, 0.16);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
@@ -3941,9 +3941,9 @@ textarea.form-input {
 
 .app-shell-root .btn-primary {
   background: linear-gradient(135deg, var(--app-secondary), var(--app-primary)) !important;
-  color: #0f172a !important;
-  border-color: rgba(34, 197, 94, 0.22) !important;
-  box-shadow: 0 18px 36px rgba(59, 130, 246, 0.22) !important;
+  color: #ffffff !important;
+  border-color: rgba(37, 99, 235, 0.22) !important;
+  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.22) !important;
 }
 
 .app-shell-root .btn-success {
@@ -3954,7 +3954,7 @@ textarea.form-input {
 
 .app-shell-root .btn-warning {
   background: linear-gradient(135deg, #d97706, var(--app-warning)) !important;
-  color: #111827 !important;
+  color: #ffffff !important;
 }
 
 .app-shell-root .btn-danger {
@@ -3963,9 +3963,9 @@ textarea.form-input {
 }
 
 .app-shell-root .btn-ghost {
-  background: rgba(255,255,255,0.06) !important;
-  color: #e5e7eb !important;
-  border-color: rgba(148, 163, 184, 0.14) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(241,245,249,0.96)) !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
 }
 
 .app-shell-root .action-soft {
@@ -4000,21 +4000,21 @@ textarea.form-input {
 }
 
 .app-shell-root .badge-green {
-  background: rgba(34, 197, 94, 0.14) !important;
-  color: #bbf7d0 !important;
-  border-color: rgba(34, 197, 94, 0.28) !important;
+  background: rgba(22, 163, 74, 0.14) !important;
+  color: #166534 !important;
+  border-color: rgba(22, 163, 74, 0.28) !important;
 }
 
 .app-shell-root .badge-yellow {
   background: rgba(245, 158, 11, 0.14) !important;
-  color: #fde68a !important;
+  color: #b45309 !important;
   border-color: rgba(245, 158, 11, 0.28) !important;
 }
 
 .app-shell-root .badge-red {
-  background: rgba(239, 68, 68, 0.14) !important;
-  color: #fecaca !important;
-  border-color: rgba(239, 68, 68, 0.28) !important;
+  background: rgba(220, 38, 38, 0.12) !important;
+  color: #b91c1c !important;
+  border-color: rgba(220, 38, 38, 0.22) !important;
 }
 
 .app-shell-root .empty-state-icon,

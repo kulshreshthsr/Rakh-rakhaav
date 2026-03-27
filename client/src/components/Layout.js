@@ -1402,10 +1402,10 @@ function LayoutInner({ children }) {
 
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .nav-link.is-active {
-          color: #0f172a;
-          background: linear-gradient(135deg, rgba(37,99,235,0.14), rgba(6,182,212,0.12), rgba(255,255,255,0.9));
-          border-color: rgba(37,99,235,0.16);
-          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.08);
+          color: #ffffff;
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          border-color: rgba(37,99,235,0.22);
+          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.18);
         }
 
         .app-shell-root .nav-link:hover {
@@ -1447,15 +1447,17 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .top-upgrade-chip {
-          box-shadow: 0 20px 42px rgba(37, 99, 235, 0.14);
-          background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(219,234,254,0.96), rgba(224,242,254,0.94));
-          border-color: rgba(37, 99, 235, 0.16);
-          color: #0f172a;
+          box-shadow: 0 20px 42px rgba(37, 99, 235, 0.2);
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          border-color: rgba(37, 99, 235, 0.22);
+          color: #ffffff;
         }
 
         .app-shell-root .top-upgrade-chip.is-manage {
-          background: rgba(255,255,255,0.94);
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+          background: linear-gradient(135deg, #0f766e, #16a34a);
+          border-color: rgba(22, 163, 74, 0.2);
+          box-shadow: 0 12px 28px rgba(22, 163, 74, 0.16);
+          color: #ffffff;
         }
 
         .app-shell-root .premium-trial-banner {
@@ -1509,9 +1511,10 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .mobile-nav-link.is-active {
-          color: #0f172a;
-          border-color: rgba(37,99,235,0.16);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+          color: #ffffff;
+          border-color: rgba(37,99,235,0.18);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 12px 28px rgba(37, 99, 235, 0.14);
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
         }
 
         @media (max-width: 900px) {
