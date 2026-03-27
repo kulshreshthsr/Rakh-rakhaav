@@ -406,8 +406,16 @@ export default function ReportsPage() {
 
       <style>{`
         .reports-shell .reports-hero {
-          border: 1px solid rgba(59, 130, 246, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
+          border: 1px solid rgba(37, 99, 235, 0.14);
+          background:
+            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.36), transparent 20%),
+            linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #eef4ff 100%);
+          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+        }
+
+        .reports-shell .page-title,
+        .reports-shell div[style*="color: '#fff'"] {
+          color: #0f172a !important;
         }
 
         .reports-shell .reports-filter-pills {
@@ -417,16 +425,16 @@ export default function ReportsPage() {
         .reports-shell .reports-stats-grid .ui-stat-card,
         .reports-shell .reports-profit-card,
         .reports-shell .stack-row {
-          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
+          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
         }
 
         .reports-shell .stack-row {
-          background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 24, 39, 0.96));
-          border: 1px solid rgba(148, 163, 184, 0.12);
+          background: linear-gradient(180deg, #ffffff, #f8fafc);
+          border: 1px solid #e2e8f0;
         }
 
         .reports-shell .stack-row-title {
-          color: #ffffff;
+          color: #0f172a;
         }
 
         .reports-shell .reports-split-grid {

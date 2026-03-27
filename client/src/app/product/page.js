@@ -786,12 +786,35 @@ export default function ProductsPage() {
 
       <style>{`
         .product-shell .product-hero {
-          border: 1px solid rgba(34, 197, 94, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
+          border: 1px solid rgba(37, 99, 235, 0.14);
+          background:
+            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.32), transparent 20%),
+            linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #eef5ff 100%);
+          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
         }
 
-        .product-shell .card[style*='borderLeft'] {
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
+        .product-shell .page-title,
+        .product-shell .modal h3,
+        .product-shell strong[style*="color: '#ffffff'"],
+        .product-shell div[style*="color: '#ffffff'"],
+        .product-shell div[style*="color: '#fff'"],
+        .product-shell div[style*="color: '#e5e7eb'"],
+        .product-shell td[style*="color: '#e5e7eb'"] {
+          color: #0f172a !important;
+        }
+
+        .product-shell .card[style*='borderLeft'],
+        .product-shell .modal,
+        .product-shell div[style*='background: rgba(255,255,255,0.04)'] {
+          background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+        }
+
+        .product-shell button[style*='background: rgba(255,255,255,0.06)'] {
+          background: #ffffff !important;
+          color: #334155 !important;
+          border-color: #cbd5e1 !important;
         }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

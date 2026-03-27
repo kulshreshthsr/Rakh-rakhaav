@@ -1121,11 +1121,21 @@ export default function SalesPage() {
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
         .sales-shell .sales-hero {
-          border: 1px solid rgba(59, 130, 246, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
+          border: 1px solid rgba(37, 99, 235, 0.14);
+          background:
+            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.36), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #eef4ff 100%);
+          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+        }
+        .sales-shell .page-title,
+        .sales-shell .modal h3,
+        .sales-shell .card[style*='borderLeft'] div[style*='color: #ffffff'] {
+          color: #0f172a !important;
         }
         .sales-shell .card[style*='borderLeft'] {
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
+          background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
         }
         .fast-billing-toolbar {
           display: flex;
@@ -1136,18 +1146,19 @@ export default function SalesPage() {
           margin-bottom: 12px;
           padding: 12px 14px;
           border-radius: 14px;
-          background: linear-gradient(180deg, rgba(15,23,42,0.92), rgba(17,24,39,0.92));
-          border: 1px solid rgba(148,163,184,0.14);
+          background: linear-gradient(180deg, #ffffff, #f8fafc);
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
         }
         .fast-billing-title {
           font-size: 14px;
           font-weight: 800;
-          color: #ffffff;
+          color: #0f172a;
         }
         .fast-billing-subtitle {
           margin-top: 4px;
           font-size: 12px;
-          color: #9ca3af;
+          color: #64748b;
         }
         .fast-billing-toolbar-actions,
         .fast-qty-pills {
@@ -1157,9 +1168,9 @@ export default function SalesPage() {
         }
         .fast-billing-chip,
         .fast-qty-pill {
-          border: 1px solid rgba(148,163,184,0.18);
-          background: rgba(255,255,255,0.06);
-          color: #cbd5e1;
+          border: 1px solid #dbe4ee;
+          background: #ffffff;
+          color: #475569;
           border-radius: 999px;
           padding: 6px 10px;
           font-size: 11px;
@@ -1170,14 +1181,14 @@ export default function SalesPage() {
           font-size: 12.5px;
           font-weight: 900;
           letter-spacing: 0.01em;
-          border: 1px solid rgba(13, 148, 136, 0.34) !important;
-          background: linear-gradient(135deg, rgba(8, 32, 50, 0.98), rgba(15, 118, 110, 0.96)) !important;
+          border: 1px solid rgba(37, 99, 235, 0.18) !important;
+          background: linear-gradient(135deg, #2563eb, #0f172a) !important;
           color: #fff !important;
-          box-shadow: 0 16px 30px rgba(15, 118, 110, 0.22);
+          box-shadow: 0 16px 30px rgba(37, 99, 235, 0.22);
         }
         .fast-qty-pill.is-active {
-          background: #0f766e;
-          border-color: #0f766e;
+          background: #2563eb;
+          border-color: #2563eb;
           color: #fff;
         }
         .fast-qty-control {
@@ -1188,17 +1199,19 @@ export default function SalesPage() {
         }
         .fast-qty-button {
           min-height: 46px;
-          border: 1px solid rgba(148,163,184,0.18);
+          border: 1px solid #dbe4ee;
           border-radius: 14px;
-          background: rgba(255,255,255,0.06);
+          background: #ffffff;
           font-size: 18px;
           font-weight: 800;
-          color: #ffffff;
+          color: #0f172a;
         }
         .fast-qty-input {
           text-align: center;
         }
         .fast-item-card {
+          background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
+          border: 1px solid #e2e8f0 !important;
           box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
         }
         .fast-item-summary {
@@ -1211,10 +1224,10 @@ export default function SalesPage() {
         .fast-add-row-button {
           width: 100%;
           padding: 11px 12px;
-          background: rgba(255,255,255,0.04);
-          border: 1.5px dashed rgba(148,163,184,0.22);
+          background: #ffffff;
+          border: 1.5px dashed #cbd5e1;
           border-radius: 12px;
-          color: #cbd5e1;
+          color: #475569;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
@@ -1234,11 +1247,13 @@ export default function SalesPage() {
           margin-bottom: 14px;
           padding: 12px 14px;
           border-radius: 16px;
-          background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,118,110,0.94));
-          color: #fff;
+          background: linear-gradient(135deg, #ffffff, #f8fbff);
+          color: #0f172a;
           position: sticky;
           bottom: 0;
           z-index: 2;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
         }
         .fast-summary-value {
           font-size: 22px;
@@ -1260,7 +1275,25 @@ export default function SalesPage() {
           gap: 10px;
           flex-wrap: wrap;
           padding-top: 8px;
-          background: linear-gradient(180deg, rgba(11,18,32,0), rgba(11,18,32,0.98) 28%);
+          background: linear-gradient(180deg, rgba(246,248,251,0), rgba(246,248,251,0.98) 28%);
+        }
+        .sales-shell .modal,
+        .sales-shell .fast-item-card,
+        .sales-shell div[style*='background: rgba(255,255,255,0.04)'] {
+          background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+          color: #0f172a !important;
+          border-color: #e2e8f0 !important;
+        }
+        .sales-shell div[style*="color: '#fff'"],
+        .sales-shell div[style*="color: '#ffffff'"],
+        .sales-shell div[style*="color: '#e5e7eb'"],
+        .sales-shell h3[style*="color: '#ffffff'"] {
+          color: #0f172a !important;
+        }
+        .sales-shell button[style*='background: rgba(255,255,255,0.06)'] {
+          background: #ffffff !important;
+          color: #334155 !important;
+          border-color: #cbd5e1 !important;
         }
         .sale-entry-modal {
           display: flex;

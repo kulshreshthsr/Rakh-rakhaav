@@ -815,11 +815,33 @@ export default function PurchasesPage() {
       <style>{`
         .purchases-shell .purchases-hero {
           border: 1px solid rgba(245, 158, 11, 0.16);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
+          background:
+            radial-gradient(circle at 85% 16%, rgba(253, 230, 138, 0.28), transparent 20%),
+            linear-gradient(135deg, #ffffff 0%, #fffaf2 52%, #fff7ed 100%);
+          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
         }
 
-        .purchases-shell .card[style*='borderLeft'] {
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
+        .purchases-shell .page-title,
+        .purchases-shell .modal h3,
+        .purchases-shell div[style*="color: '#ffffff'"],
+        .purchases-shell div[style*="color: '#fff'"],
+        .purchases-shell div[style*="color: '#e5e7eb'"] {
+          color: #0f172a !important;
+        }
+
+        .purchases-shell .card[style*='borderLeft'],
+        .purchases-shell .modal,
+        .purchases-shell div[style*='background: rgba(255,255,255,0.04)'] {
+          background: linear-gradient(180deg, #ffffff, #fffaf5) !important;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+        }
+
+        .purchases-shell button[style*='background: rgba(255,255,255,0.06)'],
+        .purchases-shell button[style*='background: rgba(255,255,255,0.04)'] {
+          background: #ffffff !important;
+          color: #334155 !important;
+          border-color: #cbd5e1 !important;
         }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

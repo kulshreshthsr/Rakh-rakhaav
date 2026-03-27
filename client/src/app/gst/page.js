@@ -457,17 +457,23 @@ export default function GSTPage() {
 
       <style>{`
         .gst-shell .gst-hero {
-          border: 1px solid rgba(34, 197, 94, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
+          border: 1px solid rgba(6, 182, 212, 0.14);
+          background:
+            radial-gradient(circle at 85% 16%, rgba(186, 230, 253, 0.34), transparent 20%),
+            linear-gradient(135deg, #ffffff 0%, #f5fbff 54%, #eef8ff 100%);
+          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+        }
+
+        .gst-shell .page-title,
+        .gst-shell .ui-list-card strong,
+        .gst-shell div[style*="color: '#fff'"],
+        .gst-shell div[style*="color: '#ffffff'"] {
+          color: #0f172a !important;
         }
 
         .gst-shell .ui-empty,
         .gst-shell .ui-list-card {
-          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.24);
-        }
-
-        .gst-shell .ui-list-card strong {
-          color: #ffffff;
+          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
         }
 
         @media (max-width: 640px) {

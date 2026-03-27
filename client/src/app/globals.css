@@ -7,44 +7,44 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --app-bg: #f5f5f4;
+  --app-bg: #f6f8fb;
   --app-card: #ffffff;
-  --app-card-2: #f8fafc;
-  --app-primary: #e5e7eb;
-  --app-secondary: #cbd5e1;
-  --app-accent: #94a3b8;
-  --app-danger: #f1f5f9;
-  --app-warning: #d1d5db;
+  --app-card-2: #f8fbff;
+  --app-primary: #2563eb;
+  --app-secondary: #0f172a;
+  --app-accent: #0ea5e9;
+  --app-danger: #dc2626;
+  --app-warning: #d97706;
   --app-text: #0f172a;
   --app-muted: #64748b;
-  --navy: #e7e5e4;
-  --navy-2: #f5f5f4;
-  --navy-3: #fafaf9;
+  --navy: #e8eef8;
+  --navy-2: #f6f8fb;
+  --navy-3: #f8fbff;
   --navy-light: #cbd5e1;
   --navy-soft: #e2e8f0;
   --navy-deep: #ffffff;
-  --royal: #cbd5e1;
-  --sky: #cbd5e1;
-  --rose: #cbd5e1;
-  --violet: #cbd5e1;
+  --royal: #2563eb;
+  --sky: #0ea5e9;
+  --rose: #dc2626;
+  --violet: #7c3aed;
 
-  --primary: #e5e7eb;
-  --primary-2: #cbd5e1;
-  --primary-3: #94a3b8;
-  --primary-light: rgba(203, 213, 225, 0.12);
-  --primary-border: rgba(203, 213, 225, 0.2);
+  --primary: #2563eb;
+  --primary-2: #0f172a;
+  --primary-3: #0ea5e9;
+  --primary-light: rgba(37, 99, 235, 0.12);
+  --primary-border: rgba(37, 99, 235, 0.2);
 
-  --emerald: #e5e7eb;
-  --emerald-2: #cbd5e1;
-  --emerald-3: #94a3b8;
-  --emerald-4: rgba(255, 255, 255, 0.06);
-  --emerald-light: rgba(255, 255, 255, 0.06);
-  --emerald-border: rgba(255, 255, 255, 0.12);
+  --emerald: #16a34a;
+  --emerald-2: #22c55e;
+  --emerald-3: #86efac;
+  --emerald-4: rgba(22, 163, 74, 0.08);
+  --emerald-light: rgba(22, 163, 74, 0.08);
+  --emerald-border: rgba(22, 163, 74, 0.18);
 
-  --gold: #d1d5db;
-  --gold-2: #cbd5e1;
-  --gold-3: #94a3b8;
-  --gold-light: rgba(255, 255, 255, 0.06);
+  --gold: #d97706;
+  --gold-2: #f59e0b;
+  --gold-3: #fcd34d;
+  --gold-light: rgba(245, 158, 11, 0.08);
 
   --bg: #f5f5f4;
   --surface: rgba(255, 255, 255, 0.96);
@@ -55,18 +55,18 @@
   --border: #e2e8f0;
   --border-strong: rgba(148, 163, 184, 0.24);
 
-  --success: #e5e7eb;
-  --success-bg: rgba(255, 255, 255, 0.06);
-  --success-border: rgba(255, 255, 255, 0.12);
-  --danger: #e5e7eb;
-  --danger-bg: rgba(255, 255, 255, 0.06);
-  --danger-border: rgba(255, 255, 255, 0.12);
-  --warning: #e5e7eb;
-  --warning-bg: rgba(255, 255, 255, 0.06);
-  --warning-border: rgba(255, 255, 255, 0.12);
-  --info: #e5e7eb;
-  --info-bg: rgba(255, 255, 255, 0.06);
-  --info-border: rgba(255, 255, 255, 0.12);
+  --success: #15803d;
+  --success-bg: rgba(22, 163, 74, 0.08);
+  --success-border: rgba(22, 163, 74, 0.18);
+  --danger: #b91c1c;
+  --danger-bg: rgba(220, 38, 38, 0.08);
+  --danger-border: rgba(220, 38, 38, 0.18);
+  --warning: #b45309;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.2);
+  --info: #1d4ed8;
+  --info-bg: rgba(37, 99, 235, 0.08);
+  --info-border: rgba(37, 99, 235, 0.18);
 
   --text: #0f172a;
   --text-2: #334155;
@@ -76,12 +76,12 @@
 
   --sidebar: rgba(255, 255, 255, 0.96);
 
-  --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-  --shadow-md: 0 24px 56px rgba(15, 23, 42, 0.1);
-  --shadow-lg: 0 36px 88px rgba(15, 23, 42, 0.12);
-  --shadow-green: 0 18px 40px rgba(15, 23, 42, 0.08);
-  --shadow-premium: 0 28px 72px rgba(15, 23, 42, 0.12);
-  --ring: 0 0 0 1px rgba(148, 163, 184, 0.16), 0 12px 30px rgba(15, 23, 42, 0.08);
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+  --shadow-md: 0 24px 56px rgba(15, 23, 42, 0.09);
+  --shadow-lg: 0 34px 84px rgba(15, 23, 42, 0.12);
+  --shadow-green: 0 18px 40px rgba(22, 163, 74, 0.12);
+  --shadow-premium: 0 30px 72px rgba(15, 23, 42, 0.11);
+  --ring: 0 0 0 1px rgba(37, 99, 235, 0.14), 0 12px 30px rgba(15, 23, 42, 0.08);
 
   --radius: 20px;
   --radius-sm: 14px;
@@ -89,7 +89,7 @@
 }
 
 .ui-card {
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
   border: 1px solid #e2e8f0;
   border-radius: 24px;
   padding: 20px;
@@ -97,15 +97,15 @@
 }
 
 .ui-card.ui-card-subtle {
-  background: linear-gradient(180deg, #fafaf9, #f8fafc);
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
 }
 
 .ui-card.ui-card-danger {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(220, 38, 38, 0.14);
 }
 
 .ui-card.ui-card-success {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(22, 163, 74, 0.14);
 }
 
 .ui-card-head {
@@ -153,7 +153,7 @@
 
 .ui-stat-card.is-clickable:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(37, 99, 235, 0.18);
 }
 
 .ui-stat-top {
@@ -192,25 +192,26 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #334155;
-  background: #f1f5f9;
+  color: #1d4ed8;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(14, 165, 233, 0.08));
   border: 1px solid #e2e8f0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.08);
 }
 
 .ui-tone-money .ui-stat-value,
-.ui-value-money,
+.ui-value-money { color: var(--emerald); }
+
 .ui-tone-secondary .ui-stat-value,
-.ui-value-secondary,
+.ui-value-secondary { color: var(--royal); }
+
 .ui-tone-danger .ui-stat-value,
-.ui-value-danger,
+.ui-value-danger { color: var(--danger); }
+
 .ui-tone-warning .ui-stat-value,
-.ui-value-warning {
-  color: var(--app-text);
-}
+.ui-value-warning { color: var(--gold); }
 
 .ui-action-btn {
   border: 1px solid transparent;
@@ -236,27 +237,28 @@
 
 .ui-action-primary {
   color: #f8fafc;
-  background: linear-gradient(135deg, #475569, #1f2937);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24);
+  background: linear-gradient(135deg, #2563eb, #0f172a);
+  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.2);
 }
 
 .ui-action-secondary {
-  color: #eff6ff;
-  background: linear-gradient(135deg, #334155, #111827);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+  color: #0f172a;
+  background: linear-gradient(135deg, #ffffff, #f1f5f9);
+  border-color: #dbe2ea;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .ui-action-dark {
-  color: #e5e7eb;
-  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
-  border-color: rgba(255,255,255,0.1);
-  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.22);
+  color: #ffffff;
+  background: linear-gradient(135deg, #334155, #0f172a);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
 }
 
 .ui-action-danger {
   color: #ffffff;
-  background: linear-gradient(135deg, #475569, #1f2937);
-  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.24);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 16px 32px rgba(220, 38, 38, 0.18);
 }
 
 .ui-action-warning {
@@ -3911,14 +3913,14 @@ textarea.form-input {
 .app-shell-root .soft-outline-button,
 .app-shell-root .panel-action,
 .app-shell-root .flow-choice-pill {
-  background: rgba(255,255,255,0.04) !important;
+  background: #ffffff !important;
   color: var(--text-3) !important;
-  border-color: rgba(255,255,255,0.08) !important;
-  box-shadow: 0 12px 28px rgba(2,6,23,0.18) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05) !important;
 }
 
 .app-shell-root .filter-pill.is-active {
-  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
   color: #ffffff !important;
   border-color: transparent !important;
 }
@@ -3933,35 +3935,35 @@ textarea.form-input {
 }
 
 .app-shell-root .btn-primary {
-  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  background: linear-gradient(135deg, #2563eb, #0f172a) !important;
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
+  border-color: rgba(37, 99, 235, 0.16) !important;
+  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.18) !important;
 }
 
 .app-shell-root .btn-success {
-  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
+  border-color: rgba(22, 163, 74, 0.16) !important;
+  box-shadow: 0 18px 36px rgba(22, 163, 74, 0.16) !important;
 }
 
 .app-shell-root .btn-warning {
-  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   color: #ffffff !important;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
+  box-shadow: 0 18px 36px rgba(245, 158, 11, 0.16) !important;
 }
 
 .app-shell-root .btn-danger {
-  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
   color: #ffffff !important;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
+  box-shadow: 0 18px 36px rgba(220, 38, 38, 0.16) !important;
 }
 
 .app-shell-root .btn-ghost {
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)) !important;
+  background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
   color: var(--app-text) !important;
-  border-color: rgba(255,255,255,0.1) !important;
+  border-color: #dbe2ea !important;
 }
 
 .app-shell-root .action-soft {
@@ -3996,21 +3998,21 @@ textarea.form-input {
 }
 
 .app-shell-root .badge-green {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #cbd5e1 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(22, 163, 74, 0.08) !important;
+  color: #166534 !important;
+  border-color: rgba(22, 163, 74, 0.14) !important;
 }
 
 .app-shell-root .badge-yellow {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #cbd5e1 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #a16207 !important;
+  border-color: rgba(245, 158, 11, 0.16) !important;
 }
 
 .app-shell-root .badge-red {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #cbd5e1 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+  color: #b91c1c !important;
+  border-color: rgba(220, 38, 38, 0.14) !important;
 }
 
 .app-shell-root .empty-state-icon,
@@ -4054,10 +4056,10 @@ textarea.form-input {
 .app-shell-root .wizard-step.is-active .wizard-step-index,
 .app-shell-root .empty-state-icon,
 .app-shell-root .customer-chip-avatar {
-  background: linear-gradient(135deg, #475569, #1f2937) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: linear-gradient(135deg, #2563eb, #0f172a) !important;
+  border-color: rgba(37, 99, 235, 0.14) !important;
   color: #ffffff !important;
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.24) !important;
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.16) !important;
 }
 
 .app-shell-root .badge-green,
@@ -4072,9 +4074,9 @@ textarea.form-input {
 .app-shell-root .ui-badge-neutral,
 .app-shell-root .brand-live-pill,
 .app-shell-root .dashboard-chip-warning {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #cbd5e1 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
   box-shadow: none !important;
 }
 
