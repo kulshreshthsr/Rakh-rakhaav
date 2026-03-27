@@ -8,7 +8,6 @@ import { StatCard, StatusBadge } from '../../components/ui/AppUI';
 const API = 'https://rakh-rakhaav.onrender.com';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v2';
-const DASHBOARD_THEME_KEY = 'rr-dashboard-theme';
 
 const getToken = () => localStorage.getItem('token');
 const getUserCacheNamespace = () => {
@@ -105,22 +104,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cacheLoaded, setCacheLoaded] = useState(false);
-  const [dashboardTheme, setDashboardTheme] = useState('light');
-
-  useEffect(() => {
-    try {
-      const storedTheme = localStorage.getItem(DASHBOARD_THEME_KEY);
-      if (storedTheme === 'light' || storedTheme === 'dark') {
-        setDashboardTheme(storedTheme);
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(DASHBOARD_THEME_KEY, dashboardTheme);
-    } catch {}
-  }, [dashboardTheme]);
 
   useEffect(() => {
     const token = getToken();
@@ -195,7 +178,6 @@ export default function DashboardPage() {
   const revenue = stats?.totalRevenue || 0;
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
   const lowStockCount = lowStockProducts.length;
-  const isDarkTheme = dashboardTheme === 'dark';
 
   const statCards = [
     {
@@ -253,52 +235,43 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className={`page-shell dashboard-shell ${isDarkTheme ? 'theme-dark' : 'theme-light'}`}>
+      <div className="page-shell dashboard-shell">
         <section className="hero-panel dashboard-hero">
           <div className="dashboard-hero-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ maxWidth: 680, flex: 1, minWidth: 0 }}>
               <div className="kicker" style={{ marginBottom: 12 }}>Business overview</div>
-              <div className="page-title" style={{ color: 'var(--dashboard-hero-title)', marginBottom: 0 }}>डैशबोर्ड / Dashboard</div>
-              <div style={{ marginTop: 10, color: 'var(--dashboard-hero-muted)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
+              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>डैशबोर्ड / Dashboard</div>
+              <div style={{ marginTop: 10, color: 'rgba(226,232,240,0.72)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
                 Revenue, profit, credit and GST at one glance for the active month.
               </div>
               {refreshing && (
-                <div style={{ marginTop: 10, fontSize: 11.5, color: 'var(--dashboard-hero-muted)' }}>
+                <div style={{ marginTop: 10, fontSize: 11.5, color: 'rgba(226,232,240,0.62)' }}>
                   Refreshing latest data...
                 </div>
               )}
             </div>
 
-            <div className="dashboard-toolbar">
-              <button
-                type="button"
-                className="dashboard-theme-toggle"
-                onClick={() => setDashboardTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+            <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="form-input"
+                style={{ minWidth: 0, height: 44 }}
               >
-                {isDarkTheme ? 'Light Theme' : 'Dark Theme'}
-              </button>
-              <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="form-input"
-                  style={{ minWidth: 0, height: 44 }}
-                >
-                  {MONTHS.map((month, index) => (
-                    <option key={month} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="form-input"
-                  style={{ minWidth: 0, height: 44 }}
-                >
-                  {[2023, 2024, 2025, 2026].map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
+                {MONTHS.map((month, index) => (
+                  <option key={month} value={index + 1}>{month}</option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="form-input"
+                style={{ minWidth: 0, height: 44 }}
+              >
+                {[2023, 2024, 2025, 2026].map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
             </div>
           </div>
         </section>
@@ -344,7 +317,7 @@ export default function DashboardPage() {
                     borderRadius: 18,
                   }}
                 >
-                    <div style={{ fontSize: 11, color: 'var(--dashboard-card-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                       {item.label}
                     </div>
                   <div style={{ fontSize: 24, color: item.color, fontWeight: 800, letterSpacing: '-0.05em', marginTop: 8 }}>
@@ -355,7 +328,7 @@ export default function DashboardPage() {
             </div>
 
             <div style={{ marginTop: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: 'var(--dashboard-card-muted)', marginBottom: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#64748b', marginBottom: 6 }}>
                 <span>Profit Margin</span>
                 <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
               </div>
@@ -382,8 +355,8 @@ export default function DashboardPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <div>
-                <div className="section-title" style={{ color: 'var(--dashboard-warning-title)' }}>कम स्टॉक / Low Stock</div>
-                <div className="section-subtitle" style={{ color: 'var(--dashboard-warning-subtitle)' }}>
+                <div className="section-title" style={{ color: '#92400e' }}>कम स्टॉक / Low Stock</div>
+                <div className="section-subtitle" style={{ color: '#a16207' }}>
                   {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
@@ -427,8 +400,8 @@ export default function DashboardPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: 'var(--dashboard-card-title)' }}>{action.hi} / {action.en}</div>
-                    <div style={{ fontSize: 11, color: 'var(--dashboard-card-muted)', marginTop: 4, lineHeight: 1.45 }}>{action.sub}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#ffffff' }}>{action.hi} / {action.en}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, lineHeight: 1.45 }}>{action.sub}</div>
                   </div>
                   <div className="dashboard-quick-icon" style={{ minWidth: 34, height: 34, borderRadius: 12, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0 }}>{action.icon}</div>
                 </div>
@@ -485,8 +458,8 @@ export default function DashboardPage() {
                     {index + 1}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--dashboard-card-title)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--dashboard-card-muted)' }}>{product.qty} units sold</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{product.qty} units sold</div>
                   </div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
                 </div>
@@ -498,146 +471,47 @@ export default function DashboardPage() {
 
       <style>{`
         .dashboard-shell {
-          --dashboard-page-text: #0f172a;
-          --dashboard-hero-border: rgba(13, 148, 136, 0.14);
-          --dashboard-hero-bg:
-            radial-gradient(circle at 85% 16%, rgba(45, 212, 191, 0.24), transparent 20%),
-            radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.18), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f8fbff 48%, #eef6ff 100%);
-          --dashboard-hero-shadow: 0 28px 60px rgba(15, 23, 42, 0.08);
-          --dashboard-hero-title: #0f172a;
-          --dashboard-hero-muted: #526277;
-          --dashboard-input-bg: rgba(255, 255, 255, 0.88);
-          --dashboard-input-color: #0f172a;
-          --dashboard-input-border: rgba(148, 163, 184, 0.22);
-          --dashboard-input-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
-          --dashboard-card-bg: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%);
-          --dashboard-card-border: rgba(148, 163, 184, 0.16);
-          --dashboard-card-shadow: 0 20px 46px rgba(15, 23, 42, 0.08);
-          --dashboard-card-surface: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,255,0.94));
-          --dashboard-card-surface-border: rgba(148, 163, 184, 0.16);
-          --dashboard-card-surface-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 16px 34px rgba(15,23,42,0.06);
-          --dashboard-card-title: #0f172a;
-          --dashboard-card-muted: #64748b;
-          --dashboard-stat-icon-bg: rgba(255,255,255,0.9);
-          --dashboard-stat-icon-color: #334155;
-          --dashboard-stat-icon-border: rgba(148, 163, 184, 0.18);
-          --dashboard-hover-border: rgba(37, 99, 235, 0.18);
-          --dashboard-hover-shadow: 0 20px 40px rgba(15,23,42,0.1);
-          --dashboard-progress-bg: rgba(148,163,184,0.14);
-          --dashboard-progress-border: rgba(148,163,184,0.16);
-          --dashboard-warning-bg: linear-gradient(180deg, rgba(255,251,235,0.98), rgba(255,247,237,0.98)) !important;
-          --dashboard-warning-border: rgba(245, 158, 11, 0.22);
-          --dashboard-warning-title: #92400e;
-          --dashboard-warning-subtitle: #a16207;
-          --dashboard-warning-chip-bg: rgba(245, 158, 11, 0.12);
-          --dashboard-warning-chip-color: #b45309;
-          --dashboard-warning-chip-border: rgba(245, 158, 11, 0.18);
-          --dashboard-badge-bg: rgba(255,255,255,0.9);
-          --dashboard-badge-color: #475569;
-          --dashboard-badge-border: rgba(148,163,184,0.16);
-          color: var(--dashboard-page-text);
-        }
-
-        .dashboard-shell.theme-dark {
-          --dashboard-page-text: #ffffff;
-          --dashboard-hero-border: rgba(34, 197, 94, 0.14);
-          --dashboard-hero-bg:
-            radial-gradient(circle at 85% 16%, rgba(34, 197, 94, 0.2), transparent 20%),
-            radial-gradient(circle at 18% 12%, rgba(6, 182, 212, 0.18), transparent 22%),
-            linear-gradient(135deg, #0f172a 0%, #111827 48%, #1f2937 100%);
-          --dashboard-hero-shadow: 0 28px 60px rgba(2, 6, 23, 0.45);
-          --dashboard-hero-title: #ffffff;
-          --dashboard-hero-muted: rgba(226,232,240,0.72);
-          --dashboard-input-bg: #0f172a;
-          --dashboard-input-color: #ffffff;
-          --dashboard-input-border: rgba(148, 163, 184, 0.18);
-          --dashboard-input-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 28px rgba(2,6,23,0.2);
-          --dashboard-card-bg: linear-gradient(180deg, #111827 0%, #1f2937 100%);
-          --dashboard-card-border: rgba(148, 163, 184, 0.14);
-          --dashboard-card-shadow: 0 20px 46px rgba(2, 6, 23, 0.32);
-          --dashboard-card-surface: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 24, 39, 0.96));
-          --dashboard-card-surface-border: rgba(148, 163, 184, 0.12);
-          --dashboard-card-surface-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 16px 34px rgba(2,6,23,0.24);
-          --dashboard-card-title: #ffffff;
-          --dashboard-card-muted: #9ca3af;
-          --dashboard-stat-icon-bg: rgba(255,255,255,0.06);
-          --dashboard-stat-icon-color: #e5e7eb;
-          --dashboard-stat-icon-border: rgba(255,255,255,0.08);
-          --dashboard-hover-border: rgba(6, 182, 212, 0.3);
-          --dashboard-hover-shadow: 0 20px 40px rgba(2,6,23,0.32);
-          --dashboard-progress-bg: rgba(255,255,255,0.08);
-          --dashboard-progress-border: rgba(148, 163, 184, 0.12);
-          --dashboard-warning-bg: linear-gradient(180deg, rgba(69, 39, 4, 0.96), rgba(31, 41, 55, 0.98)) !important;
-          --dashboard-warning-border: rgba(245, 158, 11, 0.24);
-          --dashboard-warning-title: #fbbf24;
-          --dashboard-warning-subtitle: #fcd34d;
-          --dashboard-warning-chip-bg: rgba(245, 158, 11, 0.12);
-          --dashboard-warning-chip-color: #fde68a;
-          --dashboard-warning-chip-border: rgba(245, 158, 11, 0.18);
-          --dashboard-badge-bg: rgba(255,255,255,0.06);
-          --dashboard-badge-color: #e5e7eb;
-          --dashboard-badge-border: rgba(148,163,184,0.14);
+          color: #ffffff;
         }
 
         .dashboard-hero {
-          border: 1px solid var(--dashboard-hero-border);
-          background: var(--dashboard-hero-bg);
-          box-shadow: var(--dashboard-hero-shadow);
+          border: 1px solid rgba(34, 197, 94, 0.14);
+          background:
+            radial-gradient(circle at 85% 16%, rgba(34, 197, 94, 0.2), transparent 20%),
+            radial-gradient(circle at 18% 12%, rgba(6, 182, 212, 0.18), transparent 22%),
+            linear-gradient(135deg, #0f172a 0%, #111827 48%, #1f2937 100%);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.45);
         }
 
         .dashboard-shell .page-title {
-          color: var(--dashboard-hero-title) !important;
+          color: #ffffff !important;
           text-shadow: none;
           font-weight: 900;
           letter-spacing: -0.06em;
         }
 
         .dashboard-shell .section-title {
-          color: var(--dashboard-card-title);
+          color: #ffffff;
         }
 
         .dashboard-shell .section-subtitle,
         .dashboard-shell .metric-label,
         .dashboard-shell .metric-note,
         .dashboard-shell .page-subtitle {
-          color: var(--dashboard-card-muted) !important;
+          color: #9ca3af !important;
         }
 
         .dashboard-period-shell .form-input {
-          background: var(--dashboard-input-bg) !important;
-          color: var(--dashboard-input-color) !important;
-          border: 1px solid var(--dashboard-input-border) !important;
-          box-shadow: var(--dashboard-input-shadow);
-        }
-
-        .dashboard-toolbar {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .dashboard-theme-toggle {
-          min-height: 44px;
-          padding: 0 16px;
-          border-radius: 14px;
-          border: 1px solid var(--dashboard-input-border);
-          background: var(--dashboard-input-bg);
-          color: var(--dashboard-input-color);
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          cursor: pointer;
-          box-shadow: var(--dashboard-input-shadow);
+          background: #0f172a !important;
+          color: #ffffff !important;
+          border: 1px solid rgba(148, 163, 184, 0.18) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 28px rgba(2,6,23,0.2);
         }
 
         .dashboard-stat-card {
-          background: var(--dashboard-card-bg) !important;
-          border: 1px solid var(--dashboard-card-border);
-          box-shadow: var(--dashboard-card-shadow);
+          background: linear-gradient(180deg, #111827 0%, #1f2937 100%) !important;
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.32);
         }
 
         .dashboard-stat-card::before {
@@ -648,51 +522,51 @@ export default function DashboardPage() {
 
         .dashboard-stat-card .metric-label,
         .dashboard-stat-card .metric-note {
-          color: var(--dashboard-card-muted) !important;
+          color: #9ca3af !important;
         }
 
         .dashboard-stat-card .metric-value {
-          color: var(--dashboard-card-title) !important;
+          color: #ffffff !important;
           font-weight: 900;
         }
 
         .dashboard-stat-icon {
-          background: var(--dashboard-stat-icon-bg) !important;
-          color: var(--dashboard-stat-icon-color) !important;
-          border: 1px solid var(--dashboard-stat-icon-border);
+          background: rgba(255,255,255,0.06) !important;
+          color: #e5e7eb !important;
+          border: 1px solid rgba(255,255,255,0.08);
           box-shadow: none !important;
         }
 
         .dashboard-section-card {
-          background: var(--dashboard-card-bg) !important;
-          border: 1px solid var(--dashboard-card-border) !important;
-          box-shadow: var(--dashboard-card-shadow) !important;
+          background: linear-gradient(180deg, #111827 0%, #1f2937 100%) !important;
+          border: 1px solid rgba(148, 163, 184, 0.14) !important;
+          box-shadow: 0 20px 46px rgba(2, 6, 23, 0.32) !important;
         }
 
         .dashboard-breakdown-card,
         .dashboard-top-card,
         .dashboard-quick-card {
-          background: var(--dashboard-card-surface) !important;
-          border: 1px solid var(--dashboard-card-surface-border) !important;
-          box-shadow: var(--dashboard-card-surface-shadow);
+          background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 24, 39, 0.96)) !important;
+          border: 1px solid rgba(148, 163, 184, 0.12) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 16px 34px rgba(2,6,23,0.24);
         }
 
         .dashboard-quick-card:hover,
         .dashboard-top-card:hover {
           transform: translateY(-3px);
-          border-color: var(--dashboard-hover-border) !important;
-          box-shadow: var(--dashboard-hover-shadow);
+          border-color: rgba(6, 182, 212, 0.3) !important;
+          box-shadow: 0 20px 40px rgba(2,6,23,0.32);
         }
 
         .dashboard-quick-card,
         .dashboard-top-card {
-          color: var(--dashboard-card-title) !important;
+          color: #ffffff !important;
         }
 
         .dashboard-quick-card div[style*='color: #64748b'],
         .dashboard-top-card div[style*='color: #64748b'],
         .dashboard-breakdown-card div[style*='color: #64748b'] {
-          color: var(--dashboard-card-muted) !important;
+          color: #9ca3af !important;
         }
 
         .dashboard-quick-icon {
@@ -700,33 +574,33 @@ export default function DashboardPage() {
         }
 
         .dashboard-progress-track {
-          background: var(--dashboard-progress-bg);
-          border: 1px solid var(--dashboard-progress-border);
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(148, 163, 184, 0.12);
         }
 
         .dashboard-warning-card {
-          background: var(--dashboard-warning-bg);
-          border-color: var(--dashboard-warning-border) !important;
+          background: linear-gradient(180deg, rgba(69, 39, 4, 0.96), rgba(31, 41, 55, 0.98)) !important;
+          border-color: rgba(245, 158, 11, 0.24) !important;
         }
 
         .dashboard-warning-card .section-title {
-          color: var(--dashboard-warning-title) !important;
+          color: #fbbf24 !important;
         }
 
         .dashboard-warning-card .section-subtitle {
-          color: var(--dashboard-warning-subtitle) !important;
+          color: #fcd34d !important;
         }
 
         .dashboard-chip-warning {
-          background: var(--dashboard-warning-chip-bg) !important;
-          color: var(--dashboard-warning-chip-color) !important;
-          border: 1px solid var(--dashboard-warning-chip-border) !important;
+          background: rgba(245, 158, 11, 0.12) !important;
+          color: #fde68a !important;
+          border: 1px solid rgba(245, 158, 11, 0.18) !important;
         }
 
         .dashboard-shell .badge-navy {
-          background: var(--dashboard-badge-bg);
-          color: var(--dashboard-badge-color);
-          border-color: var(--dashboard-badge-border);
+          background: rgba(255,255,255,0.06);
+          color: #e5e7eb;
+          border-color: rgba(148,163,184,0.14);
         }
 
         .dashboard-shell .btn-warning {
@@ -760,14 +634,6 @@ export default function DashboardPage() {
             flex-direction: column !important;
             align-items: stretch !important;
             gap: 12px !important;
-          }
-
-          .dashboard-toolbar {
-            width: 100%;
-          }
-
-          .dashboard-theme-toggle {
-            width: 100%;
           }
 
           .dashboard-period-controls {
