@@ -7,22 +7,22 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --app-bg: #0f172a;
-  --app-card: rgba(255, 255, 255, 0.04);
-  --app-card-2: rgba(17, 24, 39, 0.94);
+  --app-bg: #f5f5f4;
+  --app-card: #ffffff;
+  --app-card-2: #f8fafc;
   --app-primary: #e5e7eb;
   --app-secondary: #cbd5e1;
   --app-accent: #94a3b8;
   --app-danger: #f1f5f9;
   --app-warning: #d1d5db;
-  --app-text: #e5e7eb;
-  --app-muted: #9ca3af;
-  --navy: #0f172a;
-  --navy-2: #111827;
-  --navy-3: #1f2937;
-  --navy-light: #334155;
-  --navy-soft: #172033;
-  --navy-deep: #0b1120;
+  --app-text: #0f172a;
+  --app-muted: #64748b;
+  --navy: #e7e5e4;
+  --navy-2: #f5f5f4;
+  --navy-3: #fafaf9;
+  --navy-light: #cbd5e1;
+  --navy-soft: #e2e8f0;
+  --navy-deep: #ffffff;
   --royal: #cbd5e1;
   --sky: #cbd5e1;
   --rose: #cbd5e1;
@@ -46,14 +46,14 @@
   --gold-3: #94a3b8;
   --gold-light: rgba(255, 255, 255, 0.06);
 
-  --bg: #0f172a;
-  --surface: rgba(17, 24, 39, 0.86);
-  --surface-2: rgba(255, 255, 255, 0.06);
-  --surface-3: rgba(255, 255, 255, 0.08);
-  --surface-4: rgba(15, 23, 42, 0.82);
-  --surface-5: rgba(17, 24, 39, 0.92);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --bg: #f5f5f4;
+  --surface: rgba(255, 255, 255, 0.96);
+  --surface-2: #f8fafc;
+  --surface-3: #e2e8f0;
+  --surface-4: rgba(255, 255, 255, 0.88);
+  --surface-5: #ffffff;
+  --border: #e2e8f0;
+  --border-strong: rgba(148, 163, 184, 0.24);
 
   --success: #e5e7eb;
   --success-bg: rgba(255, 255, 255, 0.06);
@@ -68,20 +68,20 @@
   --info-bg: rgba(255, 255, 255, 0.06);
   --info-border: rgba(255, 255, 255, 0.12);
 
-  --text: #e5e7eb;
-  --text-2: #cbd5e1;
-  --text-3: #9ca3af;
+  --text: #0f172a;
+  --text-2: #334155;
+  --text-3: #64748b;
   --text-4: #6b7280;
-  --text-5: rgba(229, 231, 235, 0.28);
+  --text-5: rgba(100, 116, 139, 0.22);
 
-  --sidebar: rgba(17, 24, 39, 0.84);
+  --sidebar: rgba(255, 255, 255, 0.96);
 
-  --shadow: 0 24px 54px rgba(2, 6, 23, 0.34);
-  --shadow-md: 0 30px 72px rgba(2, 6, 23, 0.42);
-  --shadow-lg: 0 44px 110px rgba(2, 6, 23, 0.48);
-  --shadow-green: 0 22px 52px rgba(15, 23, 42, 0.24);
-  --shadow-premium: 0 40px 100px rgba(2, 6, 23, 0.44);
-  --ring: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 20px 48px rgba(2, 6, 23, 0.36);
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 24px 56px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 36px 88px rgba(15, 23, 42, 0.12);
+  --shadow-green: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --shadow-premium: 0 28px 72px rgba(15, 23, 42, 0.12);
+  --ring: 0 0 0 1px rgba(148, 163, 184, 0.16), 0 12px 30px rgba(15, 23, 42, 0.08);
 
   --radius: 20px;
   --radius-sm: 14px;
@@ -89,20 +89,15 @@
 }
 
 .ui-card {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.035)),
-    rgba(17, 24, 39, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
   padding: 20px;
-  box-shadow: 0 26px 54px rgba(2, 6, 23, 0.34);
-  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
 }
 
 .ui-card.ui-card-subtle {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.025)),
-    rgba(17, 24, 39, 0.78);
+  background: linear-gradient(180deg, #fafaf9, #f8fafc);
 }
 
 .ui-card.ui-card-danger {
@@ -144,14 +139,11 @@
 
 .ui-stat-card {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.03)),
-    rgba(17, 24, 39, 0.8);
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
   border-radius: 24px;
   padding: 18px;
-  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
   text-align: left;
 }
 
@@ -200,13 +192,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #f8fafc;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #334155;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 34px rgba(2, 6, 23, 0.28);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
 
 .ui-tone-money .ui-stat-value,
@@ -3766,9 +3758,9 @@ textarea.form-input {
 .app-shell-root {
   color: var(--app-text);
   background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.06), transparent 20%),
-    radial-gradient(circle at 16% 12%, rgba(255, 255, 255, 0.04), transparent 18%),
-    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.04), transparent 24%),
+    radial-gradient(circle at top right, rgba(148, 163, 184, 0.12), transparent 20%),
+    radial-gradient(circle at 16% 12%, rgba(226, 232, 240, 0.4), transparent 18%),
+    radial-gradient(circle at bottom left, rgba(203, 213, 225, 0.2), transparent 24%),
     var(--app-bg);
 }
 
@@ -3782,7 +3774,7 @@ textarea.form-input {
 .app-shell-root .metric-value,
 .app-shell-root .stat-value {
   color: var(--app-text) !important;
-  text-shadow: 0 10px 26px rgba(2, 6, 23, 0.2);
+  text-shadow: none;
 }
 
 .app-shell-root .page-subtitle,
@@ -3817,12 +3809,9 @@ textarea.form-input {
 .app-shell-root .flow-section-card,
 .app-shell-root .flow-intro-card,
 .app-shell-root .modal {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)),
-    rgba(17, 24, 39, 0.86) !important;
-  border-color: rgba(255,255,255,0.08) !important;
-  box-shadow: 0 26px 56px rgba(2, 6, 23, 0.36) !important;
-  backdrop-filter: blur(18px);
+  background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.1) !important;
 }
 
 .app-shell-root .card::before,
@@ -3847,22 +3836,19 @@ textarea.form-input {
 
 .app-shell-root .hero-panel {
   background:
-    radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.06), transparent 18%),
-    radial-gradient(circle at 14% 16%, rgba(255, 255, 255, 0.05), transparent 20%),
-    radial-gradient(circle at 62% 72%, rgba(255, 255, 255, 0.04), transparent 26%),
-    linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(17,24,39,0.92) 54%, rgba(15,23,42,0.96) 100%) !important;
-  border-color: rgba(255,255,255,0.08) !important;
-  box-shadow: 0 28px 64px rgba(2, 6, 23, 0.42) !important;
+    radial-gradient(circle at 84% 12%, rgba(226, 232, 240, 0.72), transparent 18%),
+    radial-gradient(circle at 14% 16%, rgba(241, 245, 249, 0.92), transparent 20%),
+    linear-gradient(135deg, #ffffff 0%, #f8fafc 58%, #f1f5f9 100%) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.08) !important;
 }
 
 .app-shell-root .hero-panel::after {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 68%);
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.14), transparent 68%);
 }
 
 .app-shell-root .table-container {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)),
-    rgba(17,24,39,0.84) !important;
+  background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
 }
 
 .app-shell-root .table-container::before,
@@ -3871,7 +3857,7 @@ textarea.form-input {
 }
 
 .app-shell-root thead {
-  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04), rgba(255,255,255,0.03)) !important;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9, #eef2f7) !important;
 }
 
 .app-shell-root th {
@@ -3880,15 +3866,15 @@ textarea.form-input {
 
 .app-shell-root td {
   color: var(--app-text) !important;
-  border-bottom-color: rgba(255,255,255,0.06) !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 
 .app-shell-root tbody tr:nth-child(even) td {
-  background: rgba(255, 255, 255, 0.018) !important;
+  background: rgba(248, 250, 252, 0.88) !important;
 }
 
 .app-shell-root tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: rgba(241, 245, 249, 0.92) !important;
 }
 
 .app-shell-root tbody tr:hover td:first-child {
@@ -3901,10 +3887,10 @@ textarea.form-input {
 .app-shell-root input,
 .app-shell-root select,
 .app-shell-root textarea {
-  background: rgba(15, 23, 42, 0.76) !important;
+  background: #ffffff !important;
   color: var(--app-text) !important;
-  border-color: rgba(255,255,255,0.1) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 28px rgba(2,6,23,0.24) !important;
+  border-color: #dbe2ea !important;
+  box-shadow: 0 10px 22px rgba(15,23,42,0.05) !important;
 }
 
 .app-shell-root .form-input::placeholder,
@@ -3915,8 +3901,8 @@ textarea.form-input {
 .app-shell-root .form-input:focus,
 .app-shell-root select.form-input:focus,
 .app-shell-root textarea.form-input:focus {
-  border-color: rgba(59, 130, 246, 0.5) !important;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14), 0 18px 34px rgba(59, 130, 246, 0.16) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.14), 0 14px 28px rgba(15, 23, 42, 0.08) !important;
 }
 
 .app-shell-root .badge-navy,
