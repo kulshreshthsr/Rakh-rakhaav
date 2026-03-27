@@ -477,16 +477,16 @@ export default function DashboardPage() {
         .dashboard-hero {
           border: 1px solid rgba(255, 255, 255, 0.08);
           background:
-            radial-gradient(circle at 85% 16%, rgba(34, 197, 94, 0.16), transparent 20%),
-            radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.16), transparent 22%),
-            radial-gradient(circle at 70% 70%, rgba(167, 139, 250, 0.12), transparent 22%),
+            radial-gradient(circle at 85% 16%, rgba(255, 255, 255, 0.06), transparent 20%),
+            radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.05), transparent 22%),
+            radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.04), transparent 22%),
             linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(17,24,39,0.92) 48%, rgba(15,23,42,0.98) 100%);
           box-shadow: 0 28px 60px rgba(2, 6, 23, 0.32);
         }
 
         .dashboard-shell .page-title {
           color: #f8fafc !important;
-          text-shadow: 0 10px 24px rgba(59, 130, 246, 0.16);
+          text-shadow: none;
           font-weight: 900;
           letter-spacing: -0.06em;
         }
@@ -517,8 +517,8 @@ export default function DashboardPage() {
 
         .dashboard-stat-card::before {
           background:
-            radial-gradient(circle at top right, rgba(34, 197, 94, 0.14), transparent 24%),
-            radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.12), transparent 22%);
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.05), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.04), transparent 22%);
         }
 
         .dashboard-stat-card .metric-label,
@@ -532,7 +532,7 @@ export default function DashboardPage() {
         }
 
         .dashboard-stat-icon {
-          background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(167,139,250,0.16)) !important;
+          background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06)) !important;
           color: #f8fafc !important;
           border: 1px solid rgba(255,255,255,0.08);
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 28px rgba(2,6,23,0.24) !important;
@@ -555,38 +555,38 @@ export default function DashboardPage() {
         .dashboard-quick-card:hover,
         .dashboard-top-card:hover {
           transform: translateY(-3px);
-          border-color: rgba(59, 130, 246, 0.18) !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
           box-shadow: 0 20px 40px rgba(2,6,23,0.3);
         }
 
         .dashboard-quick-card-sales {
-          background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(59,130,246,0.06), rgba(255,255,255,0.03)) !important;
-          border-color: rgba(34,197,94,0.14) !important;
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(255,255,255,0.08) !important;
         }
 
         .dashboard-quick-card-purchase {
-          background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(249,115,22,0.08), rgba(255,255,255,0.03)) !important;
-          border-color: rgba(245,158,11,0.16) !important;
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(255,255,255,0.08) !important;
         }
 
         .dashboard-quick-card-credit {
-          background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(251,113,133,0.08), rgba(255,255,255,0.03)) !important;
-          border-color: rgba(239,68,68,0.16) !important;
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(255,255,255,0.08) !important;
         }
 
         .dashboard-quick-card-stock {
-          background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(6,182,212,0.08), rgba(255,255,255,0.03)) !important;
-          border-color: rgba(59,130,246,0.16) !important;
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(255,255,255,0.08) !important;
         }
 
         .dashboard-quick-card-gst {
-          background: linear-gradient(135deg, rgba(6,182,212,0.12), rgba(59,130,246,0.08), rgba(255,255,255,0.03)) !important;
-          border-color: rgba(6,182,212,0.16) !important;
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(255,255,255,0.08) !important;
         }
 
         .dashboard-quick-card-premium {
-          background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(59,130,246,0.08), rgba(255,255,255,0.03)) !important;
-          border-color: rgba(167,139,250,0.16) !important;
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(255,255,255,0.08) !important;
         }
 
         .dashboard-quick-card,
@@ -613,22 +613,22 @@ export default function DashboardPage() {
         }
 
         .dashboard-warning-card {
-          background: linear-gradient(180deg, rgba(245,158,11,0.12), rgba(249,115,22,0.08)) !important;
-          border-color: rgba(245, 158, 11, 0.2) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
         }
 
         .dashboard-warning-card .section-title {
-          color: #fde68a !important;
+          color: #f3f4f6 !important;
         }
 
         .dashboard-warning-card .section-subtitle {
-          color: #fdba74 !important;
+          color: #9ca3af !important;
         }
 
         .dashboard-chip-warning {
-          background: rgba(245, 158, 11, 0.14) !important;
-          color: #fde68a !important;
-          border: 1px solid rgba(245, 158, 11, 0.2) !important;
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: #cbd5e1 !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
         }
 
         .dashboard-shell .badge-navy {
@@ -638,9 +638,9 @@ export default function DashboardPage() {
         }
 
         .dashboard-shell .btn-warning {
-          background: linear-gradient(135deg, #f59e0b, #f97316);
-          color: #fff7ed;
-          box-shadow: 0 16px 32px rgba(249, 115, 22, 0.2);
+          background: linear-gradient(135deg, #475569, #1f2937);
+          color: #ffffff;
+          box-shadow: 0 16px 32px rgba(15, 23, 42, 0.24);
         }
 
         .top-products-row,

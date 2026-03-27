@@ -10,11 +10,11 @@
   --app-bg: #0f172a;
   --app-card: rgba(255, 255, 255, 0.04);
   --app-card-2: rgba(17, 24, 39, 0.94);
-  --app-primary: #22c55e;
-  --app-secondary: #3b82f6;
-  --app-accent: #a78bfa;
-  --app-danger: #ef4444;
-  --app-warning: #f59e0b;
+  --app-primary: #e5e7eb;
+  --app-secondary: #cbd5e1;
+  --app-accent: #94a3b8;
+  --app-danger: #f1f5f9;
+  --app-warning: #d1d5db;
   --app-text: #e5e7eb;
   --app-muted: #9ca3af;
   --navy: #0f172a;
@@ -23,28 +23,28 @@
   --navy-light: #334155;
   --navy-soft: #172033;
   --navy-deep: #0b1120;
-  --royal: #3b82f6;
-  --sky: #38bdf8;
-  --rose: #fb7185;
-  --violet: #a78bfa;
+  --royal: #cbd5e1;
+  --sky: #cbd5e1;
+  --rose: #cbd5e1;
+  --violet: #cbd5e1;
 
-  --primary: #22c55e;
-  --primary-2: #3b82f6;
-  --primary-3: #a78bfa;
-  --primary-light: rgba(59, 130, 246, 0.16);
-  --primary-border: rgba(59, 130, 246, 0.28);
+  --primary: #e5e7eb;
+  --primary-2: #cbd5e1;
+  --primary-3: #94a3b8;
+  --primary-light: rgba(203, 213, 225, 0.12);
+  --primary-border: rgba(203, 213, 225, 0.2);
 
-  --emerald: #22c55e;
-  --emerald-2: #4ade80;
-  --emerald-3: #86efac;
-  --emerald-4: rgba(34, 197, 94, 0.12);
-  --emerald-light: rgba(34, 197, 94, 0.12);
-  --emerald-border: rgba(34, 197, 94, 0.24);
+  --emerald: #e5e7eb;
+  --emerald-2: #cbd5e1;
+  --emerald-3: #94a3b8;
+  --emerald-4: rgba(255, 255, 255, 0.06);
+  --emerald-light: rgba(255, 255, 255, 0.06);
+  --emerald-border: rgba(255, 255, 255, 0.12);
 
-  --gold: #f59e0b;
-  --gold-2: #fbbf24;
-  --gold-3: #fcd34d;
-  --gold-light: rgba(245, 158, 11, 0.14);
+  --gold: #d1d5db;
+  --gold-2: #cbd5e1;
+  --gold-3: #94a3b8;
+  --gold-light: rgba(255, 255, 255, 0.06);
 
   --bg: #0f172a;
   --surface: rgba(17, 24, 39, 0.86);
@@ -55,18 +55,18 @@
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
 
-  --success: #22c55e;
-  --success-bg: rgba(34, 197, 94, 0.12);
-  --success-border: rgba(34, 197, 94, 0.24);
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.12);
-  --danger-border: rgba(239, 68, 68, 0.24);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.12);
-  --warning-border: rgba(245, 158, 11, 0.24);
-  --info: #3b82f6;
-  --info-bg: rgba(59, 130, 246, 0.12);
-  --info-border: rgba(59, 130, 246, 0.24);
+  --success: #e5e7eb;
+  --success-bg: rgba(255, 255, 255, 0.06);
+  --success-border: rgba(255, 255, 255, 0.12);
+  --danger: #e5e7eb;
+  --danger-bg: rgba(255, 255, 255, 0.06);
+  --danger-border: rgba(255, 255, 255, 0.12);
+  --warning: #e5e7eb;
+  --warning-bg: rgba(255, 255, 255, 0.06);
+  --warning-border: rgba(255, 255, 255, 0.12);
+  --info: #e5e7eb;
+  --info-bg: rgba(255, 255, 255, 0.06);
+  --info-border: rgba(255, 255, 255, 0.12);
 
   --text: #e5e7eb;
   --text-2: #cbd5e1;
@@ -79,7 +79,7 @@
   --shadow: 0 24px 54px rgba(2, 6, 23, 0.34);
   --shadow-md: 0 30px 72px rgba(2, 6, 23, 0.42);
   --shadow-lg: 0 44px 110px rgba(2, 6, 23, 0.48);
-  --shadow-green: 0 22px 52px rgba(34, 197, 94, 0.16);
+  --shadow-green: 0 22px 52px rgba(15, 23, 42, 0.24);
   --shadow-premium: 0 40px 100px rgba(2, 6, 23, 0.44);
   --ring: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 20px 48px rgba(2, 6, 23, 0.36);
 
@@ -106,11 +106,11 @@
 }
 
 .ui-card.ui-card-danger {
-  border-color: rgba(239, 68, 68, 0.32);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ui-card.ui-card-success {
-  border-color: rgba(34, 197, 94, 0.28);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ui-card-head {
@@ -161,7 +161,7 @@
 
 .ui-stat-card.is-clickable:hover {
   transform: translateY(-2px);
-  border-color: rgba(6, 182, 212, 0.26);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .ui-stat-top {
@@ -201,7 +201,7 @@
   align-items: center;
   justify-content: center;
   color: #f8fafc;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(167, 139, 250, 0.16));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11px;
   font-weight: 800;
@@ -210,23 +210,14 @@
 }
 
 .ui-tone-money .ui-stat-value,
-.ui-value-money {
-  color: var(--app-primary);
-}
-
+.ui-value-money,
 .ui-tone-secondary .ui-stat-value,
-.ui-value-secondary {
-  color: var(--app-secondary);
-}
-
+.ui-value-secondary,
 .ui-tone-danger .ui-stat-value,
-.ui-value-danger {
-  color: var(--app-danger);
-}
-
+.ui-value-danger,
 .ui-tone-warning .ui-stat-value,
 .ui-value-warning {
-  color: var(--app-warning);
+  color: var(--app-text);
 }
 
 .ui-action-btn {
@@ -253,14 +244,14 @@
 
 .ui-action-primary {
   color: #f8fafc;
-  background: linear-gradient(135deg, #3b82f6, #22c55e);
-  box-shadow: 0 18px 36px rgba(34, 197, 94, 0.2);
+  background: linear-gradient(135deg, #475569, #1f2937);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24);
 }
 
 .ui-action-secondary {
   color: #eff6ff;
-  background: linear-gradient(135deg, #3b82f6, #a78bfa);
-  box-shadow: 0 18px 36px rgba(59, 130, 246, 0.22);
+  background: linear-gradient(135deg, #334155, #111827);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
 }
 
 .ui-action-dark {
@@ -272,20 +263,20 @@
 
 .ui-action-danger {
   color: #ffffff;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 16px 32px rgba(239, 68, 68, 0.22);
+  background: linear-gradient(135deg, #475569, #1f2937);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.24);
 }
 
 .ui-action-warning {
   color: #fff7ed;
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  box-shadow: 0 16px 32px rgba(249, 115, 22, 0.2);
+  background: linear-gradient(135deg, #475569, #1f2937);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.24);
 }
 
 .ui-action-whatsapp {
   color: #f0fdf4;
-  background: linear-gradient(135deg, #25D366, #16a34a);
-  box-shadow: 0 14px 30px rgba(37, 211, 102, 0.2);
+  background: linear-gradient(135deg, #475569, #1f2937);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.24);
 }
 
 .ui-badge {
@@ -301,27 +292,27 @@
 }
 
 .ui-badge-success {
-  background: rgba(34, 197, 94, 0.14);
-  color: #86efac;
-  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ui-badge-warning {
-  background: rgba(245, 158, 11, 0.16);
-  color: #fcd34d;
-  border-color: rgba(245, 158, 11, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ui-badge-danger {
-  background: rgba(239, 68, 68, 0.14);
-  color: #fda4af;
-  border-color: rgba(239, 68, 68, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ui-badge-secondary {
-  background: rgba(59, 130, 246, 0.16);
-  color: #bfdbfe;
-  border-color: rgba(59, 130, 246, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ui-badge-neutral {
@@ -3775,9 +3766,9 @@ textarea.form-input {
 .app-shell-root {
   color: var(--app-text);
   background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.14), transparent 20%),
-    radial-gradient(circle at 16% 12%, rgba(167, 139, 250, 0.12), transparent 18%),
-    radial-gradient(circle at bottom left, rgba(34, 197, 94, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.06), transparent 20%),
+    radial-gradient(circle at 16% 12%, rgba(255, 255, 255, 0.04), transparent 18%),
+    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.04), transparent 24%),
     var(--app-bg);
 }
 
@@ -3842,7 +3833,7 @@ textarea.form-input {
 .app-shell-root .stat-card::before {
   background:
     linear-gradient(135deg, rgba(255,255,255,0.08), transparent 34%),
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 26%) !important;
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.05), transparent 26%) !important;
 }
 
 .app-shell-root .card::after,
@@ -3856,9 +3847,9 @@ textarea.form-input {
 
 .app-shell-root .hero-panel {
   background:
-    radial-gradient(circle at 84% 12%, rgba(34, 197, 94, 0.16), transparent 18%),
-    radial-gradient(circle at 14% 16%, rgba(59, 130, 246, 0.16), transparent 20%),
-    radial-gradient(circle at 62% 72%, rgba(167, 139, 250, 0.12), transparent 26%),
+    radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.06), transparent 18%),
+    radial-gradient(circle at 14% 16%, rgba(255, 255, 255, 0.05), transparent 20%),
+    radial-gradient(circle at 62% 72%, rgba(255, 255, 255, 0.04), transparent 26%),
     linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(17,24,39,0.92) 54%, rgba(15,23,42,0.96) 100%) !important;
   border-color: rgba(255,255,255,0.08) !important;
   box-shadow: 0 28px 64px rgba(2, 6, 23, 0.42) !important;
@@ -3880,7 +3871,7 @@ textarea.form-input {
 }
 
 .app-shell-root thead {
-  background: linear-gradient(135deg, rgba(59,130,246,0.14), rgba(167,139,250,0.12), rgba(255,255,255,0.04)) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04), rgba(255,255,255,0.03)) !important;
 }
 
 .app-shell-root th {
@@ -3897,11 +3888,11 @@ textarea.form-input {
 }
 
 .app-shell-root tbody tr:hover td {
-  background: rgba(59, 130, 246, 0.08) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
 .app-shell-root tbody tr:hover td:first-child {
-  box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.6);
+  box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.22);
 }
 
 .app-shell-root .form-input,
@@ -3941,7 +3932,7 @@ textarea.form-input {
 }
 
 .app-shell-root .filter-pill.is-active {
-  background: linear-gradient(135deg, var(--app-secondary), var(--app-accent)) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
   color: #ffffff !important;
   border-color: transparent !important;
 }
@@ -3956,29 +3947,29 @@ textarea.form-input {
 }
 
 .app-shell-root .btn-primary {
-  background: linear-gradient(135deg, var(--app-secondary), var(--app-accent)) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
   color: #ffffff !important;
-  border-color: rgba(59, 130, 246, 0.22) !important;
-  box-shadow: 0 18px 36px rgba(59, 130, 246, 0.24) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
 }
 
 .app-shell-root .btn-success {
-  background: linear-gradient(135deg, #16a34a, var(--app-primary)) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
   color: #ffffff !important;
-  border-color: rgba(34, 197, 94, 0.24) !important;
-  box-shadow: 0 18px 36px rgba(34, 197, 94, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
 }
 
 .app-shell-root .btn-warning {
-  background: linear-gradient(135deg, #f59e0b, #f97316) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
   color: #ffffff !important;
-  box-shadow: 0 18px 36px rgba(249, 115, 22, 0.18) !important;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
 }
 
 .app-shell-root .btn-danger {
-  background: linear-gradient(135deg, #ef4444, #fb7185) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
   color: #ffffff !important;
-  box-shadow: 0 18px 36px rgba(239, 68, 68, 0.2) !important;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
 }
 
 .app-shell-root .btn-ghost {
@@ -3993,53 +3984,53 @@ textarea.form-input {
 }
 
 .app-shell-root .action-soft.print {
-  background: linear-gradient(135deg, #1e3a5f, var(--app-secondary)) !important;
-  border-color: rgba(59, 130, 246, 0.26) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .app-shell-root .action-soft.whatsapp {
-  background: linear-gradient(135deg, #16a34a, #25D366) !important;
-  border-color: rgba(37, 211, 102, 0.24) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .app-shell-root .action-soft.edit {
-  background: linear-gradient(135deg, #1d4f7a, var(--app-secondary)) !important;
-  border-color: rgba(59, 130, 246, 0.24) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .app-shell-root .action-soft.delete {
-  background: linear-gradient(135deg, #dc2626, #ef4444) !important;
-  border-color: rgba(239, 68, 68, 0.24) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .app-shell-root .action-soft.stock,
 .app-shell-root .action-soft.history {
-  background: linear-gradient(135deg, #134e4a, var(--app-accent)) !important;
-  border-color: rgba(6, 182, 212, 0.24) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 .app-shell-root .badge-green {
-  background: rgba(34, 197, 94, 0.14) !important;
-  color: #86efac !important;
-  border-color: rgba(34, 197, 94, 0.24) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .app-shell-root .badge-yellow {
-  background: rgba(245, 158, 11, 0.14) !important;
-  color: #fcd34d !important;
-  border-color: rgba(245, 158, 11, 0.24) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .app-shell-root .badge-red {
-  background: rgba(239, 68, 68, 0.12) !important;
-  color: #fda4af !important;
-  border-color: rgba(239, 68, 68, 0.22) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .app-shell-root .empty-state-icon,
 .app-shell-root .customer-chip-avatar,
 .app-shell-root .wizard-step.is-active .wizard-step-index {
-  background: linear-gradient(135deg, var(--app-secondary), var(--app-accent)) !important;
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
   color: #ffffff !important;
 }
 
@@ -4049,13 +4040,72 @@ textarea.form-input {
 }
 
 .app-shell-root .wizard-step.is-active {
-  background: linear-gradient(180deg, rgba(59,130,246,0.16), rgba(167,139,250,0.1)) !important;
-  border-color: rgba(59, 130, 246, 0.24) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04)) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-.app-shell-root .status-dot.is-green { background: #22c55e; }
-.app-shell-root .status-dot.is-yellow { background: #f59e0b; }
-.app-shell-root .status-dot.is-red { background: #ef4444; }
+.app-shell-root .status-dot.is-green,
+.app-shell-root .status-dot.is-yellow,
+.app-shell-root .status-dot.is-red { background: #cbd5e1; }
+
+.app-shell-root .btn-primary,
+.app-shell-root .btn-success,
+.app-shell-root .btn-warning,
+.app-shell-root .btn-danger,
+.app-shell-root .ui-action-primary,
+.app-shell-root .ui-action-secondary,
+.app-shell-root .ui-action-danger,
+.app-shell-root .ui-action-warning,
+.app-shell-root .ui-action-whatsapp,
+.app-shell-root .top-upgrade-chip,
+.app-shell-root .top-upgrade-chip.is-manage,
+.app-shell-root .fast-billing-scan-chip,
+.app-shell-root .fast-qty-pill.is-active,
+.app-shell-root .mobile-nav-link.is-active,
+.app-shell-root .nav-link.is-active,
+.app-shell-root .segmented-option.is-active,
+.app-shell-root .filter-pill.is-active,
+.app-shell-root .wizard-step.is-active .wizard-step-index,
+.app-shell-root .empty-state-icon,
+.app-shell-root .customer-chip-avatar {
+  background: linear-gradient(135deg, #475569, #1f2937) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.24) !important;
+}
+
+.app-shell-root .badge-green,
+.app-shell-root .badge-yellow,
+.app-shell-root .badge-red,
+.app-shell-root .badge-blue,
+.app-shell-root .badge-secondary,
+.app-shell-root .ui-badge-success,
+.app-shell-root .ui-badge-warning,
+.app-shell-root .ui-badge-danger,
+.app-shell-root .ui-badge-secondary,
+.app-shell-root .ui-badge-neutral,
+.app-shell-root .brand-live-pill,
+.app-shell-root .dashboard-chip-warning {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.app-shell-root .nav-link-accent,
+.app-shell-root .mobile-nav-glow,
+.app-shell-root .sidebar-orb,
+.app-shell-root .sidebar-orb-top,
+.app-shell-root .sidebar-orb-bottom {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.app-shell-root .status-dot.is-green,
+.app-shell-root .status-dot.is-yellow,
+.app-shell-root .status-dot.is-red,
+.app-shell-root .status-dot {
+  background: #cbd5e1 !important;
+}
 
 @media (max-width: 1024px) {
   .trust-auth-shell {

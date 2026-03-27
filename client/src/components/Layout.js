@@ -1312,17 +1312,17 @@ function LayoutInner({ children }) {
 
         .app-shell-root {
           background:
-            radial-gradient(circle at top right, rgba(59, 130, 246, 0.16), transparent 20%),
-            radial-gradient(circle at 12% 10%, rgba(167, 139, 250, 0.12), transparent 18%),
-            radial-gradient(circle at bottom left, rgba(34, 197, 94, 0.12), transparent 24%),
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.06), transparent 20%),
+            radial-gradient(circle at 12% 10%, rgba(255, 255, 255, 0.04), transparent 18%),
+            radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.04), transparent 24%),
             linear-gradient(180deg, #0f172a 0%, #111827 100%);
         }
 
         .app-shell-root .sidebar-panel {
           background:
-            radial-gradient(circle at 100% 0%, rgba(249, 115, 22, 0.18), transparent 28%),
-            radial-gradient(circle at 0% 100%, rgba(34, 197, 94, 0.12), transparent 28%),
-            radial-gradient(circle at 50% 12%, rgba(59, 130, 246, 0.14), transparent 32%),
+            radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.05), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(255, 255, 255, 0.04), transparent 28%),
+            radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.05), transparent 32%),
             linear-gradient(180deg, rgba(17,24,39,0.92), rgba(15,23,42,0.94) 48%, rgba(11,17,32,0.98));
           border: 1px solid rgba(255, 255, 255, 0.08);
           box-shadow: 0 36px 90px rgba(2, 6, 23, 0.42);
@@ -1338,7 +1338,7 @@ function LayoutInner({ children }) {
         .app-shell-root .brand-title,
         .app-shell-root .mobile-brand-title {
           color: #f8fafc;
-          text-shadow: 0 12px 28px rgba(59, 130, 246, 0.16);
+          text-shadow: none;
         }
 
         .app-shell-root .brand-subtitle,
@@ -1376,20 +1376,20 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .brand-live-pill {
-          background: rgba(59, 130, 246, 0.14) !important;
-          color: #bfdbfe !important;
-          border-color: rgba(59, 130, 246, 0.22) !important;
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: #cbd5e1 !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
         }
 
         .app-shell-root .sidebar-shortcut {
           color: #e5e7eb;
-          background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(167,139,250,0.08), rgba(255,255,255,0.03));
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
           border: 1px solid rgba(255,255,255,0.08);
           box-shadow: 0 18px 34px rgba(2, 6, 23, 0.22);
         }
 
         .app-shell-root .sidebar-shortcut.is-secondary {
-          background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(59,130,246,0.06), rgba(255,255,255,0.03));
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
           border-color: rgba(255,255,255,0.08);
         }
 
@@ -1406,72 +1406,37 @@ function LayoutInner({ children }) {
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .nav-link.is-active {
           color: #ffffff;
-          background: linear-gradient(135deg, #3b82f6, #a78bfa);
-          border-color: rgba(59,130,246,0.24);
-          box-shadow: 0 18px 34px rgba(59, 130, 246, 0.2);
-        }
-
-        .app-shell-root .nav-tone-home.is-active,
-        .app-shell-root .mobile-nav-tone-home.is-active {
-          background: linear-gradient(135deg, #3b82f6, #60a5fa);
-        }
-
-        .app-shell-root .nav-tone-stock.is-active,
-        .app-shell-root .mobile-nav-tone-stock.is-active {
-          background: linear-gradient(135deg, #3b82f6, #06b6d4);
-        }
-
-        .app-shell-root .nav-tone-sales.is-active,
-        .app-shell-root .mobile-nav-tone-sales.is-active {
-          background: linear-gradient(135deg, #22c55e, #3b82f6);
-        }
-
-        .app-shell-root .nav-tone-purchase.is-active,
-        .app-shell-root .mobile-nav-tone-purchase.is-active {
-          background: linear-gradient(135deg, #f59e0b, #f97316);
-        }
-
-        .app-shell-root .nav-tone-credit.is-active,
-        .app-shell-root .mobile-nav-tone-credit.is-active {
-          background: linear-gradient(135deg, #ef4444, #fb7185);
-        }
-
-        .app-shell-root .nav-tone-gst.is-active,
-        .app-shell-root .mobile-nav-tone-gst.is-active {
-          background: linear-gradient(135deg, #06b6d4, #3b82f6);
-        }
-
-        .app-shell-root .nav-tone-reports.is-active,
-        .app-shell-root .mobile-nav-tone-reports.is-active {
-          background: linear-gradient(135deg, #6366f1, #a78bfa);
+          background: linear-gradient(135deg, #475569, #1f2937);
+          border-color: rgba(255,255,255,0.12);
+          box-shadow: 0 18px 34px rgba(15, 23, 42, 0.22);
         }
 
         .app-shell-root .nav-tone-home .nav-link-accent {
-          background: linear-gradient(180deg, #2563eb, #06b6d4);
+          background: linear-gradient(180deg, #e5e7eb, #94a3b8);
         }
 
         .app-shell-root .nav-tone-stock .nav-link-accent {
-          background: linear-gradient(180deg, #2563eb, #0ea5e9);
+          background: linear-gradient(180deg, #e5e7eb, #94a3b8);
         }
 
         .app-shell-root .nav-tone-sales .nav-link-accent {
-          background: linear-gradient(180deg, #16a34a, #06b6d4);
+          background: linear-gradient(180deg, #e5e7eb, #94a3b8);
         }
 
         .app-shell-root .nav-tone-purchase .nav-link-accent {
-          background: linear-gradient(180deg, #d97706, #f59e0b);
+          background: linear-gradient(180deg, #e5e7eb, #94a3b8);
         }
 
         .app-shell-root .nav-tone-credit .nav-link-accent {
-          background: linear-gradient(180deg, #dc2626, #f43f5e);
+          background: linear-gradient(180deg, #e5e7eb, #94a3b8);
         }
 
         .app-shell-root .nav-tone-gst .nav-link-accent {
-          background: linear-gradient(180deg, #0f766e, #2563eb);
+          background: linear-gradient(180deg, #e5e7eb, #94a3b8);
         }
 
         .app-shell-root .nav-tone-reports .nav-link-accent {
-          background: linear-gradient(180deg, #4f46e5, #2563eb);
+          background: linear-gradient(180deg, #e5e7eb, #94a3b8);
         }
 
         .app-shell-root .nav-link:hover {
@@ -1515,42 +1480,42 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .top-upgrade-chip {
-          box-shadow: 0 20px 42px rgba(59, 130, 246, 0.22);
-          background: linear-gradient(135deg, #3b82f6, #a78bfa);
-          border-color: rgba(59, 130, 246, 0.22);
+          box-shadow: 0 20px 42px rgba(15, 23, 42, 0.22);
+          background: linear-gradient(135deg, #475569, #1f2937);
+          border-color: rgba(255, 255, 255, 0.12);
           color: #ffffff;
         }
 
         .app-shell-root .top-upgrade-chip.is-manage {
-          background: linear-gradient(135deg, #22c55e, #16a34a);
-          border-color: rgba(22, 163, 74, 0.2);
-          box-shadow: 0 12px 28px rgba(22, 163, 74, 0.16);
+          background: linear-gradient(135deg, #475569, #1f2937);
+          border-color: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
           color: #ffffff;
         }
 
         .app-shell-root .premium-trial-banner {
-          border: 1px solid rgba(59, 130, 246, 0.14);
-          background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(167,139,250,0.08), rgba(255,255,255,0.03));
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
         }
 
         .app-shell-root .membership-spotlight-banner {
           border: 1px solid rgba(255,255,255,0.08);
           box-shadow: 0 30px 70px rgba(2, 6, 23, 0.28);
           background:
-            radial-gradient(circle at top right, rgba(249,115,22,0.16), transparent 28%),
-            radial-gradient(circle at 0% 100%, rgba(34,197,94,0.1), transparent 30%),
+            radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(255,255,255,0.04), transparent 30%),
             linear-gradient(135deg, rgba(255,255,255,0.06), rgba(17,24,39,0.92), rgba(15,23,42,0.96));
         }
 
         .app-shell-root .membership-spotlight-banner.accent-expired {
           background:
-            radial-gradient(circle at top right, rgba(248,113,113,0.16), transparent 28%),
+            radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent 28%),
             linear-gradient(135deg, rgba(127,29,29,0.28), rgba(15,23,42,0.96));
         }
 
         .app-shell-root .membership-spotlight-banner.accent-active {
           background:
-            radial-gradient(circle at top right, rgba(52,211,153,0.14), transparent 28%),
+            radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent 28%),
             linear-gradient(135deg, rgba(6,78,59,0.24), rgba(15,23,42,0.96));
         }
 
