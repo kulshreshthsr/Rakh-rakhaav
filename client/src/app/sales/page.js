@@ -1123,9 +1123,16 @@ export default function SalesPage() {
         .sales-shell .sales-hero {
           border: 1px solid rgba(37, 99, 235, 0.14);
           background:
-            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.36), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #eef4ff 100%);
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(34, 197, 94, 0.18), transparent 22%),
+            radial-gradient(circle at 8% 18%, rgba(59, 130, 246, 0.14), transparent 20%),
+            linear-gradient(135deg, #ffffff 0%, #f5fbff 52%, #eefcf5 100%);
+          box-shadow: 0 22px 48px rgba(37, 99, 235, 0.1);
+        }
+        .sales-shell .metric-card {
+          background:
+            radial-gradient(circle at top right, rgba(34,197,94,0.12), transparent 24%),
+            linear-gradient(180deg, #ffffff, #f8fffb) !important;
+          border-color: rgba(34,197,94,0.16) !important;
         }
         .sales-shell .page-title,
         .sales-shell .modal h3,

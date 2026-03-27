@@ -788,9 +788,16 @@ export default function ProductsPage() {
         .product-shell .product-hero {
           border: 1px solid rgba(37, 99, 235, 0.14);
           background:
-            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.32), transparent 20%),
-            linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #eef5ff 100%);
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(34, 197, 94, 0.16), transparent 20%),
+            radial-gradient(circle at 14% 16%, rgba(59, 130, 246, 0.16), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #f5fbff 54%, #eefcf6 100%);
+          box-shadow: 0 22px 48px rgba(37, 99, 235, 0.1);
+        }
+        .product-shell .metric-card {
+          background:
+            radial-gradient(circle at top right, rgba(59,130,246,0.1), transparent 24%),
+            linear-gradient(180deg, #ffffff, #f5fbff) !important;
+          border-color: rgba(37,99,235,0.16) !important;
         }
 
         .product-shell .page-title,

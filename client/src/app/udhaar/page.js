@@ -427,9 +427,17 @@ export default function UdhaarPage() {
         .ledger-shell .ledger-hero {
           border: 1px solid rgba(239, 68, 68, 0.12);
           background:
-            radial-gradient(circle at 85% 16%, rgba(254, 202, 202, 0.3), transparent 20%),
-            linear-gradient(135deg, #ffffff 0%, #fff9f9 54%, #fff3f3 100%);
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(239, 68, 68, 0.16), transparent 20%),
+            radial-gradient(circle at 14% 16%, rgba(251, 113, 133, 0.14), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #fff9f9 54%, #fff1f2 100%);
+          box-shadow: 0 22px 48px rgba(239, 68, 68, 0.1);
+        }
+        .ledger-shell .ui-stat-card,
+        .ledger-shell .ui-list-card.is-active,
+        .ledger-shell .ledger-detail-card {
+          background:
+            radial-gradient(circle at top right, rgba(239,68,68,0.08), transparent 24%),
+            linear-gradient(180deg, #ffffff, #fff7f7) !important;
         }
 
         .ledger-shell .page-title,

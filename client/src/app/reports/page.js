@@ -408,9 +408,16 @@ export default function ReportsPage() {
         .reports-shell .reports-hero {
           border: 1px solid rgba(37, 99, 235, 0.14);
           background:
-            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.36), transparent 20%),
-            linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #eef4ff 100%);
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(124, 58, 237, 0.14), transparent 20%),
+            radial-gradient(circle at 12% 18%, rgba(59, 130, 246, 0.16), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #f8f9ff 54%, #eef4ff 100%);
+          box-shadow: 0 22px 48px rgba(59, 130, 246, 0.1);
+        }
+        .reports-shell .reports-stats-grid .ui-stat-card,
+        .reports-shell .reports-profit-card {
+          background:
+            radial-gradient(circle at top right, rgba(99,102,241,0.1), transparent 24%),
+            linear-gradient(180deg, #ffffff, #f8f9ff) !important;
         }
 
         .reports-shell .page-title,
@@ -429,8 +436,8 @@ export default function ReportsPage() {
         }
 
         .reports-shell .stack-row {
-          background: linear-gradient(180deg, #ffffff, #f8fafc);
-          border: 1px solid #e2e8f0;
+          background: linear-gradient(180deg, #ffffff, #f8f9ff);
+          border: 1px solid rgba(99, 102, 241, 0.12);
         }
 
         .reports-shell .stack-row-title {

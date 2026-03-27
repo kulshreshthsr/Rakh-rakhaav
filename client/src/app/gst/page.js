@@ -459,9 +459,16 @@ export default function GSTPage() {
         .gst-shell .gst-hero {
           border: 1px solid rgba(6, 182, 212, 0.14);
           background:
-            radial-gradient(circle at 85% 16%, rgba(186, 230, 253, 0.34), transparent 20%),
-            linear-gradient(135deg, #ffffff 0%, #f5fbff 54%, #eef8ff 100%);
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(6, 182, 212, 0.16), transparent 20%),
+            radial-gradient(circle at 14% 16%, rgba(59, 130, 246, 0.14), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #f4fdff 54%, #eef8ff 100%);
+          box-shadow: 0 22px 48px rgba(14, 165, 233, 0.1);
+        }
+        .gst-shell .ui-stat-card,
+        .gst-shell .ui-card {
+          background:
+            radial-gradient(circle at top right, rgba(6,182,212,0.08), transparent 24%),
+            linear-gradient(180deg, #ffffff, #f4fdff) !important;
         }
 
         .gst-shell .page-title,

@@ -528,7 +528,9 @@ export default function DashboardPage() {
         }
 
         .dashboard-section-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          background:
+            radial-gradient(circle at top right, rgba(37,99,235,0.08), transparent 24%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
           border: 1px solid #e2e8f0 !important;
           box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
         }
@@ -606,8 +608,8 @@ export default function DashboardPage() {
         }
 
         .dashboard-warning-card {
-          background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
-          border-color: #e2e8f0 !important;
+          background: linear-gradient(180deg, #ffffff, #fff9f1) !important;
+          border-color: rgba(245,158,11,0.18) !important;
         }
 
         .dashboard-warning-card .section-title {

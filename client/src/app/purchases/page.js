@@ -816,9 +816,16 @@ export default function PurchasesPage() {
         .purchases-shell .purchases-hero {
           border: 1px solid rgba(245, 158, 11, 0.16);
           background:
-            radial-gradient(circle at 85% 16%, rgba(253, 230, 138, 0.28), transparent 20%),
-            linear-gradient(135deg, #ffffff 0%, #fffaf2 52%, #fff7ed 100%);
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(245, 158, 11, 0.18), transparent 20%),
+            radial-gradient(circle at 12% 18%, rgba(251, 191, 36, 0.16), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #fffaf2 52%, #fff6ea 100%);
+          box-shadow: 0 22px 48px rgba(217, 119, 6, 0.1);
+        }
+        .purchases-shell .metric-card {
+          background:
+            radial-gradient(circle at top right, rgba(245,158,11,0.12), transparent 24%),
+            linear-gradient(180deg, #ffffff, #fffaf4) !important;
+          border-color: rgba(245,158,11,0.16) !important;
         }
 
         .purchases-shell .page-title,

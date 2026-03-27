@@ -364,9 +364,10 @@ export default function ProfilePage() {
         <style>{`
           .page-shell .hero-panel {
             background:
-              radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.32), transparent 20%),
-              linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #eef4ff 100%);
-            box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+              radial-gradient(circle at 85% 16%, rgba(37, 99, 235, 0.16), transparent 20%),
+              radial-gradient(circle at 10% 16%, rgba(14, 165, 233, 0.14), transparent 22%),
+              linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #edf5ff 100%);
+            box-shadow: 0 22px 48px rgba(37, 99, 235, 0.1);
           }
 
           .page-shell .page-title,
@@ -375,8 +376,8 @@ export default function ProfilePage() {
           }
 
           .page-shell div[style*='background: rgba(255,255,255,0.09)'] {
-            background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
-            border: 1px solid #e2e8f0 !important;
+            background: linear-gradient(180deg, #ffffff, #f4f9ff) !important;
+            border: 1px solid rgba(37, 99, 235, 0.12) !important;
           }
 
           @media (max-width: 900px) {
