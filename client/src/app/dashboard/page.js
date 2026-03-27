@@ -583,10 +583,6 @@ export default function DashboardPage() {
           color: #0f172a !important;
         }
 
-        .dashboard-shell div[style*='color: #0f172a'] {
-          color: #f8fafc !important;
-        }
-
         .dashboard-shell div[style*='color: #475569'],
         .dashboard-shell div[style*='color: #64748b'] {
           color: #64748b !important;
@@ -602,28 +598,28 @@ export default function DashboardPage() {
         }
 
         .dashboard-warning-card {
-          background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03)) !important;
-          border-color: rgba(255, 255, 255, 0.08) !important;
+          background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+          border-color: #e2e8f0 !important;
         }
 
         .dashboard-warning-card .section-title {
-          color: #f3f4f6 !important;
+          color: #0f172a !important;
         }
 
         .dashboard-warning-card .section-subtitle {
-          color: #9ca3af !important;
+          color: #64748b !important;
         }
 
         .dashboard-chip-warning {
-          background: rgba(255, 255, 255, 0.05) !important;
-          color: #cbd5e1 !important;
-          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          background: #f8fafc !important;
+          color: #475569 !important;
+          border: 1px solid #e2e8f0 !important;
         }
 
         .dashboard-shell .badge-navy {
-          background: rgba(255,255,255,0.05);
-          color: #cbd5e1;
-          border-color: rgba(255,255,255,0.08);
+          background: #f8fafc;
+          color: #475569;
+          border-color: #e2e8f0;
         }
 
         .dashboard-shell .btn-warning {
