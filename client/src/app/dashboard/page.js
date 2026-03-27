@@ -559,33 +559,33 @@ export default function DashboardPage() {
         }
 
         .dashboard-quick-card-sales {
-          background: linear-gradient(180deg, rgba(240,253,244,0.98), rgba(236,253,245,0.98)) !important;
-          border-color: rgba(22, 163, 74, 0.18) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
+          border-color: #e2e8f0 !important;
         }
 
         .dashboard-quick-card-purchase {
-          background: linear-gradient(180deg, rgba(255,251,235,0.98), rgba(255,247,237,0.98)) !important;
-          border-color: rgba(245, 158, 11, 0.18) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
+          border-color: #e2e8f0 !important;
         }
 
         .dashboard-quick-card-credit {
-          background: linear-gradient(180deg, rgba(254,242,242,0.98), rgba(255,241,242,0.98)) !important;
-          border-color: rgba(220, 38, 38, 0.18) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
+          border-color: #e2e8f0 !important;
         }
 
         .dashboard-quick-card-stock {
-          background: linear-gradient(180deg, rgba(239,246,255,0.98), rgba(224,242,254,0.98)) !important;
-          border-color: rgba(37, 99, 235, 0.18) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
+          border-color: #e2e8f0 !important;
         }
 
         .dashboard-quick-card-gst {
-          background: linear-gradient(180deg, rgba(240,249,255,0.98), rgba(236,254,255,0.98)) !important;
-          border-color: rgba(8, 145, 178, 0.18) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
+          border-color: #e2e8f0 !important;
         }
 
         .dashboard-quick-card-premium {
-          background: linear-gradient(180deg, rgba(245,243,255,0.98), rgba(238,242,255,0.98)) !important;
-          border-color: rgba(79, 70, 229, 0.18) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
+          border-color: #e2e8f0 !important;
         }
 
         .dashboard-quick-card,

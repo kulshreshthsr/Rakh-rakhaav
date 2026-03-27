@@ -1380,14 +1380,14 @@ function LayoutInner({ children }) {
 
         .app-shell-root .sidebar-shortcut {
           color: #0f172a;
-          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(239,246,255,0.98), rgba(241,245,249,0.94));
-          border: 1px solid #dbeafe;
+          background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98), rgba(241,245,249,0.96));
+          border: 1px solid #e2e8f0;
           box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
         }
 
         .app-shell-root .sidebar-shortcut.is-secondary {
-          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(236,253,245,0.98));
-          border-color: rgba(22, 163, 74, 0.16);
+          background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+          border-color: #e2e8f0;
         }
 
         .app-shell-root .sidebar-shortcut-icon,
@@ -1403,44 +1403,44 @@ function LayoutInner({ children }) {
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .nav-link.is-active {
           color: #ffffff;
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
           border-color: rgba(37,99,235,0.22);
           box-shadow: 0 18px 34px rgba(37, 99, 235, 0.18);
         }
 
         .app-shell-root .nav-tone-home.is-active,
         .app-shell-root .mobile-nav-tone-home.is-active {
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         .app-shell-root .nav-tone-stock.is-active,
         .app-shell-root .mobile-nav-tone-stock.is-active {
-          background: linear-gradient(135deg, #2563eb, #0ea5e9);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         .app-shell-root .nav-tone-sales.is-active,
         .app-shell-root .mobile-nav-tone-sales.is-active {
-          background: linear-gradient(135deg, #16a34a, #06b6d4);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         .app-shell-root .nav-tone-purchase.is-active,
         .app-shell-root .mobile-nav-tone-purchase.is-active {
-          background: linear-gradient(135deg, #d97706, #f59e0b);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         .app-shell-root .nav-tone-credit.is-active,
         .app-shell-root .mobile-nav-tone-credit.is-active {
-          background: linear-gradient(135deg, #dc2626, #f43f5e);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         .app-shell-root .nav-tone-gst.is-active,
         .app-shell-root .mobile-nav-tone-gst.is-active {
-          background: linear-gradient(135deg, #0f766e, #2563eb);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         .app-shell-root .nav-tone-reports.is-active,
         .app-shell-root .mobile-nav-tone-reports.is-active {
-          background: linear-gradient(135deg, #4f46e5, #2563eb);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         .app-shell-root .nav-tone-home .nav-link-accent {
@@ -1511,7 +1511,7 @@ function LayoutInner({ children }) {
 
         .app-shell-root .top-upgrade-chip {
           box-shadow: 0 20px 42px rgba(37, 99, 235, 0.2);
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
           border-color: rgba(37, 99, 235, 0.22);
           color: #ffffff;
         }
@@ -1577,7 +1577,7 @@ function LayoutInner({ children }) {
           color: #ffffff;
           border-color: rgba(37,99,235,0.18);
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 12px 28px rgba(37, 99, 235, 0.14);
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
         @media (max-width: 900px) {
