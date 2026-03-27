@@ -471,172 +471,176 @@ export default function DashboardPage() {
 
       <style>{`
         .dashboard-shell {
-          color: #0f172a;
+          color: #e5e7eb;
         }
 
         .dashboard-hero {
-          border: 1px solid #e2e8f0;
+          border: 1px solid rgba(255, 255, 255, 0.08);
           background:
-            radial-gradient(circle at 85% 16%, rgba(22, 163, 74, 0.16), transparent 20%),
-            radial-gradient(circle at 18% 12%, rgba(6, 182, 212, 0.14), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f8fafc 48%, #f1f5f9 100%);
-          box-shadow: 0 28px 60px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(34, 197, 94, 0.16), transparent 20%),
+            radial-gradient(circle at 18% 12%, rgba(59, 130, 246, 0.16), transparent 22%),
+            radial-gradient(circle at 70% 70%, rgba(167, 139, 250, 0.12), transparent 22%),
+            linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(17,24,39,0.92) 48%, rgba(15,23,42,0.98) 100%);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.32);
         }
 
         .dashboard-shell .page-title {
-          color: #0f172a !important;
-          text-shadow: none;
+          color: #f8fafc !important;
+          text-shadow: 0 10px 24px rgba(59, 130, 246, 0.16);
           font-weight: 900;
           letter-spacing: -0.06em;
         }
 
         .dashboard-shell .section-title {
-          color: #0f172a;
+          color: #f3f4f6;
         }
 
         .dashboard-shell .section-subtitle,
         .dashboard-shell .metric-label,
         .dashboard-shell .metric-note,
         .dashboard-shell .page-subtitle {
-          color: #475569 !important;
+          color: #9ca3af !important;
         }
 
         .dashboard-period-shell .form-input {
-          background: #ffffff !important;
-          color: #0f172a !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 14px 28px rgba(15,23,42,0.06);
+          background: rgba(15, 23, 42, 0.76) !important;
+          color: #e5e7eb !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 28px rgba(2,6,23,0.24);
         }
 
         .dashboard-stat-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+          background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%), rgba(17,24,39,0.82) !important;
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
         }
 
         .dashboard-stat-card::before {
           background:
-            radial-gradient(circle at top right, rgba(22, 163, 74, 0.14), transparent 24%),
-            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.12), transparent 22%);
+            radial-gradient(circle at top right, rgba(34, 197, 94, 0.14), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.12), transparent 22%);
         }
 
         .dashboard-stat-card .metric-label,
         .dashboard-stat-card .metric-note {
-          color: #475569 !important;
+          color: #94a3b8 !important;
         }
 
         .dashboard-stat-card .metric-value {
-          color: #0f172a !important;
+          color: #f8fafc !important;
           font-weight: 900;
         }
 
         .dashboard-stat-icon {
-          background: rgba(241,245,249,0.96) !important;
-          color: #0f172a !important;
-          border: 1px solid #e2e8f0;
-          box-shadow: none !important;
+          background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(167,139,250,0.16)) !important;
+          color: #f8fafc !important;
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 28px rgba(2,6,23,0.24) !important;
         }
 
         .dashboard-section-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 20px 46px rgba(15, 23, 42, 0.08) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%), rgba(17,24,39,0.82) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          box-shadow: 0 20px 46px rgba(2, 6, 23, 0.28) !important;
         }
 
         .dashboard-breakdown-card,
         .dashboard-top-card,
         .dashboard-quick-card {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98)) !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 16px 34px rgba(15,23,42,0.06);
+          background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025)) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 34px rgba(2,6,23,0.24);
         }
 
         .dashboard-quick-card:hover,
         .dashboard-top-card:hover {
           transform: translateY(-3px);
-          border-color: rgba(37, 99, 235, 0.18) !important;
-          box-shadow: 0 20px 40px rgba(15,23,42,0.1);
+          border-color: rgba(59, 130, 246, 0.18) !important;
+          box-shadow: 0 20px 40px rgba(2,6,23,0.3);
         }
 
         .dashboard-quick-card-sales {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
-          border-color: #e2e8f0 !important;
+          background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(59,130,246,0.06), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(34,197,94,0.14) !important;
         }
 
         .dashboard-quick-card-purchase {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
-          border-color: #e2e8f0 !important;
+          background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(249,115,22,0.08), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(245,158,11,0.16) !important;
         }
 
         .dashboard-quick-card-credit {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
-          border-color: #e2e8f0 !important;
+          background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(251,113,133,0.08), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(239,68,68,0.16) !important;
         }
 
         .dashboard-quick-card-stock {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
-          border-color: #e2e8f0 !important;
+          background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(6,182,212,0.08), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(59,130,246,0.16) !important;
         }
 
         .dashboard-quick-card-gst {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
-          border-color: #e2e8f0 !important;
+          background: linear-gradient(135deg, rgba(6,182,212,0.12), rgba(59,130,246,0.08), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(6,182,212,0.16) !important;
         }
 
         .dashboard-quick-card-premium {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98)) !important;
-          border-color: #e2e8f0 !important;
+          background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(59,130,246,0.08), rgba(255,255,255,0.03)) !important;
+          border-color: rgba(167,139,250,0.16) !important;
         }
 
         .dashboard-quick-card,
         .dashboard-top-card {
-          color: #0f172a !important;
+          color: #e5e7eb !important;
         }
 
-        .dashboard-quick-card div[style*='color: #64748b'],
-        .dashboard-top-card div[style*='color: #64748b'],
-        .dashboard-breakdown-card div[style*='color: #64748b'] {
-          color: #475569 !important;
+        .dashboard-shell div[style*='color: #0f172a'] {
+          color: #f8fafc !important;
+        }
+
+        .dashboard-shell div[style*='color: #475569'],
+        .dashboard-shell div[style*='color: #64748b'] {
+          color: #94a3b8 !important;
         }
 
         .dashboard-quick-icon {
-          box-shadow: 0 12px 24px rgba(2,6,23,0.2);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 24px rgba(2,6,23,0.28);
         }
 
         .dashboard-progress-track {
-          background: rgba(226, 232, 240, 0.8);
-          border: 1px solid #e2e8f0;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.08);
         }
 
         .dashboard-warning-card {
-          background: linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 247, 237, 0.98)) !important;
-          border-color: rgba(245, 158, 11, 0.22) !important;
+          background: linear-gradient(180deg, rgba(245,158,11,0.12), rgba(249,115,22,0.08)) !important;
+          border-color: rgba(245, 158, 11, 0.2) !important;
         }
 
         .dashboard-warning-card .section-title {
-          color: #b45309 !important;
+          color: #fde68a !important;
         }
 
         .dashboard-warning-card .section-subtitle {
-          color: #d97706 !important;
+          color: #fdba74 !important;
         }
 
         .dashboard-chip-warning {
-          background: rgba(245, 158, 11, 0.12) !important;
-          color: #b45309 !important;
-          border: 1px solid rgba(245, 158, 11, 0.18) !important;
+          background: rgba(245, 158, 11, 0.14) !important;
+          color: #fde68a !important;
+          border: 1px solid rgba(245, 158, 11, 0.2) !important;
         }
 
         .dashboard-shell .badge-navy {
-          background: rgba(255,255,255,0.92);
-          color: #475569;
-          border-color: #e2e8f0;
+          background: rgba(255,255,255,0.05);
+          color: #cbd5e1;
+          border-color: rgba(255,255,255,0.08);
         }
 
         .dashboard-shell .btn-warning {
-          background: linear-gradient(135deg, #f59e0b, #d97706);
-          color: #111827;
-          box-shadow: 0 16px 32px rgba(245, 158, 11, 0.24);
+          background: linear-gradient(135deg, #f59e0b, #f97316);
+          color: #fff7ed;
+          box-shadow: 0 16px 32px rgba(249, 115, 22, 0.2);
         }
 
         .top-products-row,
