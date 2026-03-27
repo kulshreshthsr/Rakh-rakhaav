@@ -519,6 +519,7 @@ function LayoutInner({ children }) {
         selectedPlan={paywallPlan}
         onSelectPlan={setPaywallPlan}
         onUpgrade={() => setShowUpgradeModal(true)}
+        onLogout={logout}
       />
 
       <UpgradeModal

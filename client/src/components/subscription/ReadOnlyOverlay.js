@@ -9,6 +9,7 @@ export default function ReadOnlyOverlay({
   selectedPlan,
   onSelectPlan,
   onUpgrade,
+  onLogout,
   loading,
 }) {
   if (!visible) return null;
@@ -42,6 +43,9 @@ export default function ReadOnlyOverlay({
         <div className="read-only-actions">
           <button type="button" className="btn-primary" onClick={onUpgrade} disabled={loading}>
             {loading ? 'Preparing upgrade...' : 'Upgrade Now'}
+          </button>
+          <button type="button" className="btn-ghost" onClick={onLogout}>
+            Logout
           </button>
         </div>
       </div>
