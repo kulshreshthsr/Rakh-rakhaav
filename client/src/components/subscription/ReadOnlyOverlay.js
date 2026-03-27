@@ -19,7 +19,7 @@ export default function ReadOnlyOverlay({
       <div className="read-only-card">
         <div className="subscription-pill">Trial ended</div>
         <h2>Your trial has ended</h2>
-        <p>Subscribe to continue using the platform with billing, GST exports, reports, udhaar and premium workflows.</p>
+        <p>Upgrade to unlock billing, GST, reports and udhaar again.</p>
 
         <div className="subscription-plan-grid">
           {plans.map((plan) => (
@@ -35,9 +35,7 @@ export default function ReadOnlyOverlay({
 
         <div className="subscription-trust-row" style={{ marginTop: 18 }}>
           <span>Secure payment via Razorpay</span>
-          <span>No hidden charges</span>
           <span>Cancel anytime</span>
-          <span>Used by growing businesses</span>
         </div>
 
         <div className="read-only-actions">
