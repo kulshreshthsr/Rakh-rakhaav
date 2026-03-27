@@ -225,12 +225,12 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(15,118,110,0.12)', color: '#0f766e' },
-    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(180,83,9,0.12)', color: '#b45309' },
-    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.1)', color: '#dc2626' },
-    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(29,78,216,0.12)', color: '#1d4ed8' },
-    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,32,50,0.12)', color: '#082032' },
-    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(245,158,11,0.12)', color: '#b45309' },
+    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(22,163,74,0.14)', color: '#15803d', semantic: 'sales' },
+    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.14)', color: '#b45309', semantic: 'purchase' },
+    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.12)', color: '#dc2626', semantic: 'credit' },
+    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(37,99,235,0.12)', color: '#2563eb', semantic: 'stock' },
+    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,145,178,0.12)', color: '#0f766e', semantic: 'gst' },
+    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
   ];
 
   return (
@@ -390,7 +390,7 @@ export default function DashboardPage() {
               <a
                 key={action.href}
                 href={action.href}
-                className="dashboard-quick-card"
+                className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
                 style={{
                   textDecoration: 'none',
                   borderRadius: 18,
@@ -556,6 +556,36 @@ export default function DashboardPage() {
           transform: translateY(-3px);
           border-color: rgba(37, 99, 235, 0.18) !important;
           box-shadow: 0 20px 40px rgba(15,23,42,0.1);
+        }
+
+        .dashboard-quick-card-sales {
+          background: linear-gradient(180deg, rgba(240,253,244,0.98), rgba(236,253,245,0.98)) !important;
+          border-color: rgba(22, 163, 74, 0.18) !important;
+        }
+
+        .dashboard-quick-card-purchase {
+          background: linear-gradient(180deg, rgba(255,251,235,0.98), rgba(255,247,237,0.98)) !important;
+          border-color: rgba(245, 158, 11, 0.18) !important;
+        }
+
+        .dashboard-quick-card-credit {
+          background: linear-gradient(180deg, rgba(254,242,242,0.98), rgba(255,241,242,0.98)) !important;
+          border-color: rgba(220, 38, 38, 0.18) !important;
+        }
+
+        .dashboard-quick-card-stock {
+          background: linear-gradient(180deg, rgba(239,246,255,0.98), rgba(224,242,254,0.98)) !important;
+          border-color: rgba(37, 99, 235, 0.18) !important;
+        }
+
+        .dashboard-quick-card-gst {
+          background: linear-gradient(180deg, rgba(240,249,255,0.98), rgba(236,254,255,0.98)) !important;
+          border-color: rgba(8, 145, 178, 0.18) !important;
+        }
+
+        .dashboard-quick-card-premium {
+          background: linear-gradient(180deg, rgba(245,243,255,0.98), rgba(238,242,255,0.98)) !important;
+          border-color: rgba(79, 70, 229, 0.18) !important;
         }
 
         .dashboard-quick-card,

@@ -8,13 +8,13 @@ import { API, FALLBACK_PLANS, hasTrialGateSeen, hasWelcomePending, readStoredSub
 import { useAppLocale } from './AppLocale';
 
 const navItems = [
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home' },
-  { href: '/product', key: 'products', shortLabel: 'Stock' },
-  { href: '/sales', key: 'sales', shortLabel: 'Sales' },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Buy' },
-  { href: '/udhaar', key: 'udhaar', shortLabel: 'Ledger' },
-  { href: '/gst', key: 'gst', shortLabel: 'GST' },
-  { href: '/reports', key: 'reports', shortLabel: 'Reports' },
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home', tone: 'home' },
+  { href: '/product', key: 'products', shortLabel: 'Stock', tone: 'stock' },
+  { href: '/sales', key: 'sales', shortLabel: 'Sales', tone: 'sales' },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Buy', tone: 'purchase' },
+  { href: '/udhaar', key: 'udhaar', shortLabel: 'Ledger', tone: 'credit' },
+  { href: '/gst', key: 'gst', shortLabel: 'GST', tone: 'gst' },
+  { href: '/reports', key: 'reports', shortLabel: 'Reports', tone: 'reports' },
 ];
 
 function readStoredUser() {
@@ -410,7 +410,7 @@ function LayoutInner({ children }) {
               {translatedNav.map((item) => {
                 const active = pathname === item.href;
                 return (
-                  <a key={item.href} href={item.href} className={`nav-link ${active ? 'is-active' : ''}`}>
+                  <a key={item.href} href={item.href} className={`nav-link nav-tone-${item.tone} ${active ? 'is-active' : ''}`}>
                     <span className="nav-link-accent" />
                     <span className="nav-icon-wrap">
                       <Glyph name={item.key} size={18} />
@@ -502,7 +502,7 @@ function LayoutInner({ children }) {
             {translatedNav.map((item) => {
               const active = pathname === item.href;
               return (
-                <a key={item.href} href={item.href} className={`mobile-nav-link ${active ? 'is-active' : ''}`}>
+                <a key={item.href} href={item.href} className={`mobile-nav-link mobile-nav-tone-${item.tone} ${active ? 'is-active' : ''}`}>
                   <span className="mobile-nav-glow" />
                   <Glyph name={item.key} size={18} />
                   <span>{item.label}</span>
@@ -1406,6 +1406,69 @@ function LayoutInner({ children }) {
           background: linear-gradient(135deg, #2563eb, #06b6d4);
           border-color: rgba(37,99,235,0.22);
           box-shadow: 0 18px 34px rgba(37, 99, 235, 0.18);
+        }
+
+        .app-shell-root .nav-tone-home.is-active,
+        .app-shell-root .mobile-nav-tone-home.is-active {
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
+        }
+
+        .app-shell-root .nav-tone-stock.is-active,
+        .app-shell-root .mobile-nav-tone-stock.is-active {
+          background: linear-gradient(135deg, #2563eb, #0ea5e9);
+        }
+
+        .app-shell-root .nav-tone-sales.is-active,
+        .app-shell-root .mobile-nav-tone-sales.is-active {
+          background: linear-gradient(135deg, #16a34a, #06b6d4);
+        }
+
+        .app-shell-root .nav-tone-purchase.is-active,
+        .app-shell-root .mobile-nav-tone-purchase.is-active {
+          background: linear-gradient(135deg, #d97706, #f59e0b);
+        }
+
+        .app-shell-root .nav-tone-credit.is-active,
+        .app-shell-root .mobile-nav-tone-credit.is-active {
+          background: linear-gradient(135deg, #dc2626, #f43f5e);
+        }
+
+        .app-shell-root .nav-tone-gst.is-active,
+        .app-shell-root .mobile-nav-tone-gst.is-active {
+          background: linear-gradient(135deg, #0f766e, #2563eb);
+        }
+
+        .app-shell-root .nav-tone-reports.is-active,
+        .app-shell-root .mobile-nav-tone-reports.is-active {
+          background: linear-gradient(135deg, #4f46e5, #2563eb);
+        }
+
+        .app-shell-root .nav-tone-home .nav-link-accent {
+          background: linear-gradient(180deg, #2563eb, #06b6d4);
+        }
+
+        .app-shell-root .nav-tone-stock .nav-link-accent {
+          background: linear-gradient(180deg, #2563eb, #0ea5e9);
+        }
+
+        .app-shell-root .nav-tone-sales .nav-link-accent {
+          background: linear-gradient(180deg, #16a34a, #06b6d4);
+        }
+
+        .app-shell-root .nav-tone-purchase .nav-link-accent {
+          background: linear-gradient(180deg, #d97706, #f59e0b);
+        }
+
+        .app-shell-root .nav-tone-credit .nav-link-accent {
+          background: linear-gradient(180deg, #dc2626, #f43f5e);
+        }
+
+        .app-shell-root .nav-tone-gst .nav-link-accent {
+          background: linear-gradient(180deg, #0f766e, #2563eb);
+        }
+
+        .app-shell-root .nav-tone-reports .nav-link-accent {
+          background: linear-gradient(180deg, #4f46e5, #2563eb);
         }
 
         .app-shell-root .nav-link:hover {
