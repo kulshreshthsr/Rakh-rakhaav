@@ -325,11 +325,11 @@ export default function ReportsPage() {
                         const currentMargin = day.revenue > 0 ? (day.profit / day.revenue) * 100 : 0;
                         return (
                           <tr key={index}>
-                            <td data-label="Date">{day.date}</td>
-                            <td data-label="Orders">{day.count}</td>
-                            <td data-label="Revenue" className="ui-value-money">₹{fmtN(day.revenue)}</td>
-                            <td data-label="Profit" className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'}>₹{fmtN(day.profit)}</td>
-                            <td data-label="Margin">
+                            <td>{day.date}</td>
+                            <td>{day.count}</td>
+                            <td className="ui-value-money">₹{fmtN(day.revenue)}</td>
+                            <td className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'}>₹{fmtN(day.profit)}</td>
+                            <td>
                               <StatusBadge tone={currentMargin >= 20 ? 'success' : currentMargin >= 10 ? 'warning' : 'danger'}>
                                 {currentMargin.toFixed(1)}%
                               </StatusBadge>

@@ -702,8 +702,8 @@ export default function SalesPage() {
               <tbody>
                 {sales.map(s => (
                   <tr key={s._id}>
-                    <td data-label="Invoice" style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
-                    <td data-label="Items">
+                    <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
+                    <td>
                       <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>
                         {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
                       </div>
@@ -711,18 +711,18 @@ export default function SalesPage() {
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
                       )}
                     </td>
-                    <td data-label="Taxable">�{fmt(s.taxable_amount)}</td>
-                    <td data-label="GST">
+                    <td>�{fmt(s.taxable_amount)}</td>
+                    <td>
                       {(s.total_gst || 0) > 0
                         ? <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>�{fmt(s.total_gst)}</span>
                         : <span style={{ color: '#9ca3af' }}></span>}
                     </td>
-                    <td data-label="Total" style={{ fontWeight: 700, color: '#10b981' }}>Rs {fmt(s.total_amount)}</td>
-                    <td data-label="Payment"><PayBadge type={s.payment_type} /></td>
-                    <td data-label="Date" style={{ color: '#9ca3af', fontSize: 12 }}>
+                    <td style={{ fontWeight: 700, color: '#10b981' }}>Rs {fmt(s.total_amount)}</td>
+                    <td><PayBadge type={s.payment_type} /></td>
+                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
                       {formatFullDateTime(s.createdAt || s.sold_at)}
                     </td>
-                    <td data-label="Actions">
+                    <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           onClick={() => printInvoice(s)}

@@ -354,7 +354,7 @@ export default function ProductsPage() {
               <tbody>
                 {filtered.map(p => (
                   <tr key={p._id} style={{ background: p.quantity === 0 ? 'rgba(239,68,68,0.08)' : p.is_low_stock ? 'rgba(245,158,11,0.08)' : 'transparent' }}>
-                    <td data-label="Name">
+                    <td>
                       <div style={{ fontWeight: 600, color: '#ffffff' }}>{p.name}</div>
                       <div style={{ color: '#9ca3af', fontSize: 11 }}>
                         {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
@@ -362,15 +362,15 @@ export default function ProductsPage() {
                         {p.low_stock_threshold !== 5 && ` • Alert ≤${p.low_stock_threshold}`}
                       </div>
                     </td>
-                    <td data-label="Cost" style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
-                    <td data-label="Price" style={{ fontWeight: 600, color: '#e5e7eb' }}>₹{p.price}</td>
-                    <td data-label="Margin"><MarginBadge margin={p.margin} /></td>
-                    <td data-label="GST"><GSTBadge rate={p.gst_rate} /></td>
-                    <td data-label="Qty" style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>
+                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
+                    <td style={{ fontWeight: 600, color: '#e5e7eb' }}>₹{p.price}</td>
+                    <td><MarginBadge margin={p.margin} /></td>
+                    <td><GSTBadge rate={p.gst_rate} /></td>
+                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>
                       {p.quantity} <span style={{ color: '#cbd5e1', fontWeight: 800 }}>{p.unit || ''}</span>
                     </td>
-                    <td data-label="Status"><StockBadge p={p} /></td>
-                    <td data-label="Actions">
+                    <td><StockBadge p={p} /></td>
+                    <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button onClick={() => openStockAdjust(p)}
                           className="action-soft stock"

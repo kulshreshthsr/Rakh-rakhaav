@@ -91,39 +91,6 @@ const DashboardSkeleton = () => (
   </div>
 );
 
-function GlowLineChart({ points, stroke = '#2be6a0' }) {
-  const width = 320;
-  const height = 120;
-  const safe = points.length ? points : [24, 30, 26, 34, 32, 40];
-  const max = Math.max(...safe, 1);
-  const min = Math.min(...safe, 0);
-  const normalize = (value, index) => {
-    const x = (index / (safe.length - 1 || 1)) * (width - 12) + 6;
-    const y = height - ((value - min) / (max - min || 1)) * (height - 18) - 8;
-    return `${x},${y}`;
-  };
-  const polylinePoints = safe.map(normalize).join(' ');
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="dash-glow-chart" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id={`gradient-${stroke.replace('#', '')}`} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={stroke} stopOpacity="0.35" />
-          <stop offset="100%" stopColor={stroke} stopOpacity="1" />
-        </linearGradient>
-      </defs>
-      <polyline
-        points={polylinePoints}
-        fill="none"
-        stroke={`url(#gradient-${stroke.replace('#', '')})`}
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export default function DashboardPage() {
   const router = useRouter();
   const now = new Date();
@@ -211,16 +178,6 @@ export default function DashboardPage() {
   const revenue = stats?.totalRevenue || 0;
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
   const lowStockCount = lowStockProducts.length;
-  const totalStockValue = stats?.stockValue ?? stats?.inventoryValue ?? 0;
-  const todayProfit = stats?.todayProfit ?? stats?.grossProfitToday ?? profit;
-  const profitSeries = [0.44, 0.56, 0.48, 0.64, 0.59, 0.68, 0.82].map((point) => Math.round(Math.max(todayProfit, 1) * point));
-  const gstSeries = [0.36, 0.4, 0.46, 0.56, 0.52, 0.67, 0.72].map((point) => Math.round(Math.max(Math.abs(netGST), 1) * point));
-  const ledgerRows = [
-    { label: 'Today Profit', amount: todayProfit, tone: todayProfit >= 0 ? 'up' : 'down', ref: 'P&L / Live' },
-    { label: 'Total Stock Value', amount: totalStockValue, tone: 'stock', ref: 'Inventory / Live' },
-    { label: 'Net GST Position', amount: netGST, tone: netGST >= 0 ? 'gst' : 'up', ref: 'GST / Compliance' },
-    { label: 'Receivable Credit', amount: totalCustomerUdhaar, tone: totalCustomerUdhaar > 0 ? 'down' : 'stock', ref: 'Ledger / Customers' },
-  ];
 
   const statCards = [
     {
@@ -309,34 +266,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="dashboard-kpi-strip">
-          <article className="dashboard-kpi-card dashboard-kpi-profit">
-            <div className="dashboard-kpi-meta">
-              <span>Live Profit Tracking</span>
-              <strong>Today Profit: ₹{fmt(todayProfit)}</strong>
-            </div>
-            <GlowLineChart points={profitSeries} stroke="#2be6a0" />
-          </article>
-          <article className="dashboard-kpi-card dashboard-kpi-stock">
-            <div className="dashboard-kpi-meta">
-              <span>GST Compliance Status</span>
-              <strong>{netGST >= 0 ? 'Payable' : 'Refund'}: ₹{fmt(Math.abs(netGST))}</strong>
-            </div>
-            <GlowLineChart points={gstSeries} stroke="#2ea8ff" />
-          </article>
-        </section>
-
-        <section className="dashboard-speed-cards">
-          <article className="dashboard-speed-card">
-            <span>Total Stock Value</span>
-            <strong>₹{fmt(totalStockValue)}</strong>
-          </article>
-          <article className="dashboard-speed-card dashboard-speed-profit">
-            <span>Today's Profit</span>
-            <strong>₹{fmt(todayProfit)}</strong>
-          </article>
-        </section>
-
         <section className="metric-grid">
           {statCards.map((card) => (
             <StatCard
@@ -407,45 +336,6 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
-
-        <section className="card dashboard-section-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div>
-              <div className="section-title">Real-time Ledger</div>
-              <div className="section-subtitle">Hover rows for details, tap cards on mobile.</div>
-            </div>
-            <StatusBadge tone="secondary">Live</StatusBadge>
-          </div>
-          <div className="ui-table-wrap dashboard-ledger-table-wrap hidden-xs">
-            <table className="ui-table dashboard-ledger-table">
-              <thead>
-                <tr>
-                  <th>Entry</th>
-                  <th>Reference</th>
-                  <th style={{ textAlign: 'right' }}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ledgerRows.map((row) => (
-                  <tr key={row.label} className={`ledger-row ledger-row-${row.tone}`}>
-                    <td data-label="Entry">{row.label}</td>
-                    <td data-label="Reference">{row.ref}</td>
-                    <td data-label="Amount" style={{ textAlign: 'right', fontWeight: 800 }}>₹{fmt(row.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="dashboard-ledger-cards show-xs">
-            {ledgerRows.map((row) => (
-              <article key={row.label} className={`dashboard-ledger-card ledger-row-${row.tone}`}>
-                <span>{row.label}</span>
-                <small>{row.ref}</small>
-                <strong>₹{fmt(row.amount)}</strong>
-              </article>
-            ))}
-          </div>
-        </section>
 
         {lowStockCount > 0 && (
           <section
@@ -571,241 +461,186 @@ export default function DashboardPage() {
 
       <style>{`
         .dashboard-shell {
-          color: #e2e8f0;
+          color: #0f172a;
         }
 
-        .dashboard-hero,
-        .dashboard-stat-card,
-        .dashboard-section-card,
-        .dashboard-breakdown-card,
-        .dashboard-top-card,
-        .dashboard-quick-card {
-          border: 1px solid rgba(148, 163, 184, 0.26) !important;
-          background: linear-gradient(135deg, rgba(7, 18, 32, 0.94), rgba(8, 26, 44, 0.9)) !important;
-          box-shadow: 0 20px 50px rgba(2, 8, 23, 0.36) !important;
+        .dashboard-hero {
+          border: 1px solid #e2e8f0;
+          background:
+            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.4), transparent 20%),
+            radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.98), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #f8fbff 42%, #edf4ff 100%);
+          box-shadow: 0 24px 52px rgba(15, 23, 42, 0.08);
         }
 
-        .dashboard-shell .page-title,
+        .dashboard-shell .page-title {
+          color: #0f172a !important;
+          text-shadow: none;
+          font-weight: 900;
+          letter-spacing: -0.06em;
+        }
+
         .dashboard-shell .section-title {
-          color: #f8fafc !important;
+          color: #0f172a;
         }
 
         .dashboard-shell .section-subtitle,
         .dashboard-shell .metric-label,
         .dashboard-shell .metric-note,
         .dashboard-shell .page-subtitle {
-          color: #94a3b8 !important;
+          color: #64748b !important;
         }
 
         .dashboard-period-shell .form-input {
-          background: rgba(8, 17, 29, 0.86) !important;
-          color: #f8fafc !important;
-          border: 1px solid rgba(96, 165, 250, 0.3) !important;
-          box-shadow: none;
+          background: #ffffff !important;
+          color: #0f172a !important;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 10px 22px rgba(15,23,42,0.05);
+        }
+
+        .dashboard-stat-card {
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+        }
+
+        .dashboard-stat-card::before {
+          background:
+            radial-gradient(circle at top right, rgba(191, 219, 254, 0.3), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(219, 234, 254, 0.26), transparent 22%);
+        }
+
+        .dashboard-stat-card .metric-label,
+        .dashboard-stat-card .metric-note {
+          color: #64748b !important;
         }
 
         .dashboard-stat-card .metric-value {
-          color: #f8fafc !important;
+          color: #0f172a !important;
           font-weight: 900;
         }
 
         .dashboard-stat-icon {
-          background: linear-gradient(135deg, rgba(46, 168, 255, 0.2), rgba(43, 230, 160, 0.16)) !important;
-          color: #93c5fd !important;
-          border: 1px solid rgba(96, 165, 250, 0.28);
-          box-shadow: 0 10px 24px rgba(2, 8, 23, 0.28) !important;
+          background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.08)) !important;
+          color: #1d4ed8 !important;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 10px 22px rgba(15,23,42,0.05) !important;
         }
 
-        .dashboard-kpi-strip {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
+        .dashboard-section-card {
+          background:
+            radial-gradient(circle at top right, rgba(37,99,235,0.08), transparent 24%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
         }
 
-        .dashboard-kpi-card {
-          border: 1px solid rgba(148, 163, 184, 0.28);
-          border-radius: 8px;
-          background: linear-gradient(135deg, rgba(8, 20, 35, 0.95), rgba(11, 30, 49, 0.92));
-          box-shadow: 0 18px 40px rgba(2, 8, 23, 0.34);
-          padding: 14px;
+        .dashboard-breakdown-card,
+        .dashboard-top-card,
+        .dashboard-quick-card {
+          background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 14px 28px rgba(15,23,42,0.06);
         }
 
-        .dashboard-kpi-meta {
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
-          align-items: center;
-          margin-bottom: 8px;
-          flex-wrap: wrap;
+        .dashboard-quick-card:hover,
+        .dashboard-top-card:hover {
+          transform: translateY(-3px);
+          border-color: rgba(148, 163, 184, 0.24) !important;
+          box-shadow: 0 18px 36px rgba(15,23,42,0.08);
         }
 
-        .dashboard-kpi-meta span {
-          color: #94a3b8;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          font-weight: 700;
+        .dashboard-quick-card-sales {
+          background: linear-gradient(180deg, #ffffff, #f8fffb) !important;
+          border-color: rgba(34,197,94,0.16) !important;
         }
 
-        .dashboard-kpi-profit strong {
-          color: #2be6a0;
-          font-size: 14px;
+        .dashboard-quick-card-purchase {
+          background: linear-gradient(180deg, #ffffff, #fffaf2) !important;
+          border-color: rgba(245,158,11,0.16) !important;
         }
 
-        .dashboard-kpi-stock strong {
-          color: #2ea8ff;
-          font-size: 14px;
+        .dashboard-quick-card-credit {
+          background: linear-gradient(180deg, #ffffff, #fff7f7) !important;
+          border-color: rgba(239,68,68,0.14) !important;
         }
 
-        .dash-glow-chart {
-          width: 100%;
-          height: 90px;
-          filter: drop-shadow(0 0 8px rgba(46, 168, 255, 0.38));
+        .dashboard-quick-card-stock {
+          background: linear-gradient(180deg, #ffffff, #f6faff) !important;
+          border-color: rgba(37,99,235,0.14) !important;
         }
 
-        .dashboard-speed-cards {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
+        .dashboard-quick-card-gst {
+          background: linear-gradient(180deg, #ffffff, #f3fbff) !important;
+          border-color: rgba(6,182,212,0.14) !important;
         }
 
-        .dashboard-speed-card {
-          border: 1px solid rgba(148, 163, 184, 0.26);
-          border-radius: 8px;
-          padding: 12px;
-          background: linear-gradient(180deg, rgba(7, 18, 31, 0.96), rgba(10, 27, 44, 0.92));
-          display: grid;
-          gap: 6px;
+        .dashboard-quick-card-premium {
+          background: linear-gradient(180deg, #ffffff, #f7f9fc) !important;
+          border-color: rgba(37,99,235,0.12) !important;
         }
 
-        .dashboard-speed-card span {
-          font-size: 10px;
-          color: #93c5fd;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          font-weight: 700;
+        .dashboard-quick-card,
+        .dashboard-top-card {
+          color: #0f172a !important;
         }
 
-        .dashboard-speed-card strong {
-          font-size: 25px;
-          letter-spacing: -0.04em;
-          color: #f8fafc;
-        }
-
-        .dashboard-speed-card.dashboard-speed-profit strong {
-          color: #2be6a0;
-        }
-
-        .dashboard-ledger-table-wrap {
-          border-color: rgba(148, 163, 184, 0.24);
-          border-radius: 8px;
-        }
-
-        .dashboard-ledger-table th {
-          color: #93c5fd !important;
-          background: rgba(5, 14, 25, 0.95) !important;
-        }
-
-        .dashboard-ledger-table tbody tr:nth-child(even) td {
-          background: rgba(10, 24, 39, 0.74) !important;
-        }
-
-        .dashboard-ledger-table tbody tr:hover td {
-          background: rgba(46, 168, 255, 0.14) !important;
-          transform: translateY(-1px);
-        }
-
-        .ledger-row-up td:last-child {
-          color: #2be6a0 !important;
-        }
-
-        .ledger-row-stock td:last-child,
-        .ledger-row-gst td:last-child {
-          color: #2ea8ff !important;
-        }
-
-        .ledger-row-down td:last-child {
-          color: #f87171 !important;
-        }
-
-        .dashboard-ledger-cards {
-          display: none;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .dashboard-ledger-card {
-          border: 1px solid rgba(148, 163, 184, 0.26);
-          border-radius: 8px;
-          padding: 10px 12px;
-          background: linear-gradient(180deg, rgba(6, 17, 30, 0.95), rgba(11, 28, 46, 0.9));
-          display: grid;
-          gap: 4px;
-        }
-
-        .dashboard-ledger-card span {
-          font-size: 13px;
-          color: #f8fafc;
-          font-weight: 700;
-        }
-
-        .dashboard-ledger-card small {
-          color: #94a3b8;
-          font-size: 11px;
-        }
-
-        .dashboard-ledger-card strong {
-          font-size: 18px;
-          letter-spacing: -0.03em;
-          color: #2ea8ff;
-        }
-
-        .dashboard-ledger-card.ledger-row-up strong {
-          color: #2be6a0;
-        }
-
-        .dashboard-ledger-card.ledger-row-down strong {
-          color: #f87171;
+        .dashboard-top-card > div:last-child {
+          color: #0f172a !important;
         }
 
         .dashboard-shell div[style*='color: #475569'],
-        .dashboard-shell div[style*='color: #64748b'],
-        .dashboard-shell div[style*='color: #0f172a'],
+        .dashboard-shell div[style*='color: #64748b'] {
+          color: #64748b !important;
+        }
+
         .dashboard-shell div[style*='color: #e5e7eb'] {
-          color: #cbd5e1 !important;
+          color: #0f172a !important;
         }
 
         .dashboard-quick-icon {
-          box-shadow: 0 10px 26px rgba(2, 8, 23, 0.35);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 12px 24px rgba(15,23,42,0.08);
         }
 
         .dashboard-progress-track {
-          background: rgba(15, 23, 42, 0.62);
-          border: 1px solid rgba(148, 163, 184, 0.24);
+          background: #e2e8f0;
+          border: 1px solid #dbe2ea;
         }
 
         .dashboard-warning-card {
-          background: linear-gradient(180deg, rgba(44, 26, 7, 0.92), rgba(27, 18, 9, 0.88)) !important;
-          border-color: rgba(251, 191, 36, 0.3) !important;
+          background: linear-gradient(180deg, #ffffff, #fff9f1) !important;
+          border-color: rgba(245,158,11,0.18) !important;
+        }
+
+        .dashboard-warning-card .section-title {
+          color: #0f172a !important;
+        }
+
+        .dashboard-warning-card .section-subtitle {
+          color: #64748b !important;
         }
 
         .dashboard-chip-warning {
-          background: rgba(15, 23, 42, 0.86) !important;
-          color: #fbbf24 !important;
-          border: 1px solid rgba(251, 191, 36, 0.3) !important;
+          background: #f8fafc !important;
+          color: #475569 !important;
+          border: 1px solid #e2e8f0 !important;
+        }
+
+        .dashboard-shell .badge-navy {
+          background: #f8fafc;
+          color: #475569;
+          border-color: #e2e8f0;
+        }
+
+        .dashboard-shell .btn-warning {
+          background: linear-gradient(135deg, #d97706, #b45309);
+          color: #ffffff;
+          box-shadow: 0 16px 32px rgba(217, 119, 6, 0.22);
         }
 
         .top-products-row,
         .quick-actions-row {
           overflow-x: auto;
-        }
-
-        .show-xs {
-          display: none !important;
-        }
-
-        .hidden-xs {
-          display: block !important;
         }
 
         @media (max-width: 900px) {
@@ -821,11 +656,6 @@ export default function DashboardPage() {
         @media (max-width: 640px) {
           .hero-panel {
             padding: 16px !important;
-          }
-
-          .dashboard-kpi-strip,
-          .dashboard-speed-cards {
-            grid-template-columns: 1fr;
           }
 
           .dashboard-hero-header {
@@ -856,18 +686,6 @@ export default function DashboardPage() {
 
           .top-products-row {
             grid-template-columns: repeat(4, minmax(210px, 1fr)) !important;
-          }
-
-          .hidden-xs {
-            display: none !important;
-          }
-
-          .show-xs {
-            display: flex !important;
-          }
-
-          .dashboard-ledger-cards {
-            display: flex;
           }
         }
       `}</style>

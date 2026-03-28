@@ -135,12 +135,8 @@ function LayoutInner({ children }) {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileDropOpen, setMobileDropOpen] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false);
-  const [commandQuery, setCommandQuery] = useState('');
-  const [quickWidgetOpen, setQuickWidgetOpen] = useState(false);
   const dropdownRef = useRef(null);
   const mobileDropRef = useRef(null);
-  const commandInputRef = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -212,29 +208,6 @@ function LayoutInner({ children }) {
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
-
-  useEffect(() => {
-    const handleHotkeys = (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        setCommandOpen((value) => !value);
-      }
-      if (event.key === 'Escape') {
-        setCommandOpen(false);
-        setQuickWidgetOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleHotkeys);
-    return () => window.removeEventListener('keydown', handleHotkeys);
-  }, []);
-
-  useEffect(() => {
-    if (!commandOpen) return;
-    const timeoutId = window.setTimeout(() => {
-      commandInputRef.current?.focus();
-    }, 10);
-    return () => window.clearTimeout(timeoutId);
-  }, [commandOpen]);
 
   useEffect(() => {
     if (!pathname || pathname === '/pricing' || pathname === '/welcome' || pathname === '/trial-status') {
@@ -336,26 +309,6 @@ function LayoutInner({ children }) {
       })),
     [t]
   );
-  const commandItems = useMemo(() => {
-    const core = translatedNav.map((item) => ({
-      id: item.href,
-      label: item.label,
-      hint: item.shortLabel,
-      href: item.href,
-    }));
-    return [
-      ...core,
-      { id: '/pricing', label: 'Smart Invoicing', hint: 'Plans & billing', href: '/pricing' },
-      { id: '/udhaar-ledger', label: 'Real-time Ledger', hint: 'Customer balances', href: '/udhaar' },
-      { id: '/product-stock', label: 'Product Stock', hint: 'Inventory levels', href: '/product' },
-      { id: '/sales-invoice', label: 'New Invoice', hint: 'Jump to sales', href: '/sales' },
-    ];
-  }, [translatedNav]);
-  const filteredCommands = useMemo(() => {
-    const query = commandQuery.trim().toLowerCase();
-    if (!query) return commandItems;
-    return commandItems.filter((item) => `${item.label} ${item.hint}`.toLowerCase().includes(query));
-  }, [commandItems, commandQuery]);
 
   const upgradeButtonLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
   return (
@@ -451,7 +404,7 @@ function LayoutInner({ children }) {
               )}
             </div>
 
-            <div className="sidebar-section-label">Command Center</div>
+            <div className="sidebar-section-label">{t('mainMenu')}</div>
 
             <nav className="sidebar-nav">
               {translatedNav.map((item) => {
@@ -488,10 +441,6 @@ function LayoutInner({ children }) {
           </div>
 
           <div className="mobile-topbar-actions">
-            <button type="button" className="command-trigger mobile-command-trigger" onClick={() => setCommandOpen(true)}>
-              <span>Search</span>
-              <kbd>Ctrl K</kbd>
-            </button>
             <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
               <Glyph name="pricing" size={14} />
               {upgradeButtonLabel}
@@ -539,10 +488,6 @@ function LayoutInner({ children }) {
                   Open plans anytime from this top tab without cluttering your main workspace.
                 </div>
               </div>
-              <button type="button" className="command-trigger" onClick={() => setCommandOpen(true)}>
-                <span>Command Center Search</span>
-                <kbd>Ctrl K</kbd>
-              </button>
               <a href="/pricing" className={`top-upgrade-chip desktop-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
                 <Glyph name="pricing" size={15} />
                 {upgradeButtonLabel}
@@ -567,58 +512,6 @@ function LayoutInner({ children }) {
           </div>
         </nav>
       </div>
-
-      <button
-        type="button"
-        className={`smart-invoice-widget ${quickWidgetOpen ? 'is-open' : ''}`}
-        onClick={() => setQuickWidgetOpen((value) => !value)}
-      >
-        <span className="smart-invoice-title">Smart Invoicing</span>
-        <span className="smart-invoice-meta">{quickWidgetOpen ? 'Hide Actions' : 'Quick Actions'}</span>
-      </button>
-      {quickWidgetOpen && (
-        <div className="smart-invoice-panel">
-          <a href="/sales">Create Invoice</a>
-          <a href="/udhaar">Open Ledger</a>
-          <a href="/product">Check Stock</a>
-        </div>
-      )}
-
-      {commandOpen && (
-        <div className="command-palette-overlay" onClick={() => setCommandOpen(false)}>
-          <div className="command-palette" onClick={(event) => event.stopPropagation()}>
-            <div className="command-palette-head">
-              <span>Command Center</span>
-              <button type="button" onClick={() => setCommandOpen(false)}>Esc</button>
-            </div>
-            <input
-              ref={commandInputRef}
-              value={commandQuery}
-              onChange={(event) => setCommandQuery(event.target.value)}
-              className="command-palette-input"
-              placeholder="Jump to product, ledger, reports..."
-            />
-            <div className="command-results">
-              {filteredCommands.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="command-item"
-                  onClick={() => {
-                    setCommandOpen(false);
-                    setCommandQuery('');
-                    router.push(item.href);
-                  }}
-                >
-                  <span>{item.label}</span>
-                  <small>{item.hint}</small>
-                </button>
-              ))}
-              {filteredCommands.length === 0 && <div className="command-empty">No command matched your search.</div>}
-            </div>
-          </div>
-        </div>
-      )}
 
       <ReadOnlyOverlay
         visible={Boolean(subscription?.isReadOnly)}
@@ -1110,199 +1003,6 @@ function LayoutInner({ children }) {
 
         .mobile-topbar-actions {
           gap: 8px;
-        }
-
-        .command-trigger {
-          border: 1px solid rgba(52, 211, 153, 0.38);
-          background: rgba(7, 22, 33, 0.76);
-          color: #e2fef4;
-          border-radius: 10px;
-          min-height: 38px;
-          padding: 6px 10px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .command-trigger kbd {
-          border-radius: 6px;
-          padding: 2px 6px;
-          font-size: 10px;
-          color: #9dd8ff;
-          border: 1px solid rgba(96, 165, 250, 0.3);
-          background: rgba(8, 20, 35, 0.9);
-        }
-
-        .mobile-command-trigger {
-          min-height: 34px;
-          padding: 6px 9px;
-          font-size: 10px;
-          border-radius: 999px;
-        }
-
-        .smart-invoice-widget {
-          position: fixed;
-          right: 18px;
-          bottom: calc(96px + env(safe-area-inset-bottom));
-          z-index: 72;
-          border: 1px solid rgba(96, 165, 250, 0.42);
-          background: linear-gradient(135deg, rgba(4, 17, 29, 0.95), rgba(6, 78, 59, 0.92));
-          color: white;
-          border-radius: 10px;
-          min-width: 166px;
-          padding: 10px 12px;
-          text-align: left;
-          box-shadow: 0 18px 44px rgba(3, 8, 21, 0.4);
-        }
-
-        .smart-invoice-title {
-          display: block;
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 0.03em;
-        }
-
-        .smart-invoice-meta {
-          display: block;
-          margin-top: 4px;
-          font-size: 10px;
-          color: rgba(226, 232, 240, 0.8);
-        }
-
-        .smart-invoice-panel {
-          position: fixed;
-          right: 18px;
-          bottom: calc(170px + env(safe-area-inset-bottom));
-          z-index: 72;
-          width: 190px;
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.25);
-          background: linear-gradient(180deg, rgba(6, 17, 29, 0.98), rgba(8, 26, 43, 0.98));
-          box-shadow: 0 22px 56px rgba(2, 8, 23, 0.48);
-          overflow: hidden;
-        }
-
-        .smart-invoice-panel a {
-          display: block;
-          padding: 11px 12px;
-          color: #dbeafe;
-          text-decoration: none;
-          font-size: 12px;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-        }
-
-        .smart-invoice-panel a:hover {
-          background: rgba(59, 130, 246, 0.16);
-          color: #ffffff;
-        }
-
-        .smart-invoice-panel a:last-child {
-          border-bottom: none;
-        }
-
-        .command-palette-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 90;
-          background: rgba(2, 8, 23, 0.65);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 92px 14px 16px;
-        }
-
-        .command-palette {
-          width: min(700px, 100%);
-          border-radius: 12px;
-          border: 1px solid rgba(96, 165, 250, 0.3);
-          background: linear-gradient(180deg, rgba(2, 12, 22, 0.97), rgba(6, 18, 34, 0.98));
-          box-shadow: 0 30px 80px rgba(2, 8, 23, 0.55);
-          overflow: hidden;
-        }
-
-        .command-palette-head {
-          padding: 11px 14px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          color: #bae6fd;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-        }
-
-        .command-palette-head button {
-          border: 1px solid rgba(148, 163, 184, 0.32);
-          color: #cbd5e1;
-          background: rgba(15, 23, 42, 0.76);
-          border-radius: 6px;
-          min-width: 42px;
-          min-height: 28px;
-          font-size: 11px;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .command-palette-input {
-          width: calc(100% - 24px);
-          margin: 12px;
-          border-radius: 8px;
-          border: 1px solid rgba(96, 165, 250, 0.34);
-          background: rgba(8, 16, 28, 0.95);
-          color: #f8fafc;
-          min-height: 46px;
-          padding: 0 12px;
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .command-results {
-          max-height: 48vh;
-          overflow: auto;
-          padding: 0 12px 12px;
-          display: grid;
-          gap: 8px;
-        }
-
-        .command-item {
-          border: 1px solid rgba(148, 163, 184, 0.2);
-          background: linear-gradient(180deg, rgba(10, 20, 33, 0.92), rgba(6, 18, 30, 0.94));
-          color: #f8fafc;
-          border-radius: 8px;
-          padding: 10px 12px;
-          text-align: left;
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: center;
-          cursor: pointer;
-        }
-
-        .command-item:hover {
-          border-color: rgba(52, 211, 153, 0.42);
-          transform: translateY(-1px);
-        }
-
-        .command-item small {
-          color: #93c5fd;
-          font-size: 11px;
-          font-weight: 600;
-        }
-
-        .command-empty {
-          border: 1px dashed rgba(148, 163, 184, 0.3);
-          border-radius: 8px;
-          padding: 18px;
-          color: #94a3b8;
-          text-align: center;
-          font-size: 12px;
         }
 
         .mobile-brand-title {
@@ -1848,77 +1548,6 @@ function LayoutInner({ children }) {
           background: linear-gradient(135deg, #2563eb, #0f172a);
         }
 
-        .app-shell-root {
-          background:
-            radial-gradient(circle at 82% 10%, rgba(29, 78, 216, 0.18), transparent 26%),
-            radial-gradient(circle at 10% 22%, rgba(16, 185, 129, 0.14), transparent 24%),
-            linear-gradient(180deg, #020712 0%, #071224 52%, #0a172b 100%);
-        }
-
-        .app-shell-root .sidebar-panel,
-        .app-shell-root .brand-status-card,
-        .app-shell-root .language-switch-card,
-        .app-shell-root .sidebar-user-card,
-        .app-shell-root .sidebar-shortcut,
-        .app-shell-root .sidebar-shortcut.is-secondary,
-        .app-shell-root .membership-spotlight-pills span,
-        .app-shell-root .membership-spotlight-side,
-        .app-shell-root .membership-mini-plan,
-        .app-shell-root .mobile-bottom-nav-card {
-          background:
-            linear-gradient(135deg, rgba(9, 18, 31, 0.94), rgba(12, 29, 48, 0.92)) !important;
-          border-color: rgba(148, 163, 184, 0.26) !important;
-          box-shadow: 0 18px 44px rgba(2, 8, 23, 0.35) !important;
-        }
-
-        .app-shell-root .brand-title,
-        .app-shell-root .mobile-brand-title,
-        .app-shell-root .brand-status-copy,
-        .app-shell-root .language-subtitle,
-        .app-shell-root .sidebar-shortcut-title,
-        .app-shell-root .sidebar-user-name,
-        .app-shell-root .nav-link,
-        .app-shell-root .sidebar-user-menu button,
-        .app-shell-root .sidebar-user-menu a,
-        .app-shell-root .mobile-user-chip,
-        .app-shell-root .language-compact,
-        .app-shell-root .content-top-actions-kicker,
-        .app-shell-root .content-top-actions-subtitle {
-          color: #e2e8f0 !important;
-        }
-
-        .app-shell-root .brand-subtitle,
-        .app-shell-root .mobile-brand-subtitle,
-        .app-shell-root .brand-status-label,
-        .app-shell-root .sidebar-section-label,
-        .app-shell-root .language-title,
-        .app-shell-root .sidebar-shortcut-copy,
-        .app-shell-root .sidebar-user-email,
-        .app-shell-root .nav-short {
-          color: #94a3b8 !important;
-        }
-
-        .app-shell-root .brand-live-pill {
-          background: rgba(16, 185, 129, 0.16) !important;
-          color: #6ee7b7 !important;
-          border-color: rgba(16, 185, 129, 0.38) !important;
-        }
-
-        .app-shell-root .nav-link.is-active,
-        .app-shell-root .language-toggle .segmented-option.is-active,
-        .app-shell-root .mobile-nav-link.is-active {
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.88), rgba(37, 99, 235, 0.9)) !important;
-          border-color: rgba(147, 197, 253, 0.36) !important;
-          box-shadow: 0 16px 40px rgba(16, 185, 129, 0.25) !important;
-        }
-
-        .app-shell-root .premium-topbar,
-        .app-shell-root .premium-topbar.is-scrolled {
-          background: rgba(2, 8, 22, 0.9);
-          border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-          box-shadow: 0 18px 36px rgba(2, 8, 23, 0.26);
-        }
-
         @media (max-width: 900px) {
           .desktop-sidebar { display: none !important; }
           .mobile-topbar { display: flex !important; }
@@ -1929,17 +1558,6 @@ function LayoutInner({ children }) {
           }
           .content-top-actions {
             display: none;
-          }
-          .command-trigger {
-            display: none;
-          }
-          .smart-invoice-widget {
-            right: 14px;
-            bottom: calc(122px + env(safe-area-inset-bottom));
-          }
-          .smart-invoice-panel {
-            right: 14px;
-            bottom: calc(196px + env(safe-area-inset-bottom));
           }
         }
 
