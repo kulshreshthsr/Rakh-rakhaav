@@ -239,7 +239,7 @@ export default function ReportsPage() {
             <div>
               <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>Reports</div>
               <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', maxWidth: 420 }}>
+              <div style={{ fontSize: 13, color: '#64748b', maxWidth: 420 }}>
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
               </div>
             </div>

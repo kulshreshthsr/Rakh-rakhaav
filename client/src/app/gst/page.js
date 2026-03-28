@@ -242,7 +242,7 @@ export default function GSTPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="kicker" style={{ marginBottom: 10 }}>Tax centre</div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST Summary</div>
-              <div style={{ marginTop: 10, color: 'rgba(226,232,240,0.72)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
+              <div style={{ marginTop: 10, color: '#64748b', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
             </div>
