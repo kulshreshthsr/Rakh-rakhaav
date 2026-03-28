@@ -596,7 +596,7 @@ function LayoutInner({ children }) {
               value={commandQuery}
               onChange={(event) => setCommandQuery(event.target.value)}
               className="command-palette-input"
-              placeholder="Search products, ledgers, invoices, reports..."
+              placeholder="Jump to product, ledger, reports..."
             />
             <div className="command-results">
               {filteredCommands.map((item) => (
@@ -1850,16 +1850,12 @@ function LayoutInner({ children }) {
 
         .app-shell-root {
           background:
-            radial-gradient(circle at 84% 10%, rgba(26, 43, 71, 0.06), transparent 24%),
-            linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+            radial-gradient(circle at 82% 10%, rgba(29, 78, 216, 0.18), transparent 26%),
+            radial-gradient(circle at 10% 22%, rgba(16, 185, 129, 0.14), transparent 24%),
+            linear-gradient(180deg, #020712 0%, #071224 52%, #0a172b 100%);
         }
 
-        .app-shell-root .sidebar-panel {
-          background: linear-gradient(180deg, #1a2b47, #22385d) !important;
-          border-color: rgba(255, 255, 255, 0.18) !important;
-          box-shadow: 0 24px 60px rgba(26, 43, 71, 0.18) !important;
-        }
-
+        .app-shell-root .sidebar-panel,
         .app-shell-root .brand-status-card,
         .app-shell-root .language-switch-card,
         .app-shell-root .sidebar-user-card,
@@ -1869,31 +1865,26 @@ function LayoutInner({ children }) {
         .app-shell-root .membership-spotlight-side,
         .app-shell-root .membership-mini-plan,
         .app-shell-root .mobile-bottom-nav-card {
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.76)) !important;
-          border-color: rgba(214, 224, 235, 0.95) !important;
-          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08) !important;
+          background:
+            linear-gradient(135deg, rgba(9, 18, 31, 0.94), rgba(12, 29, 48, 0.92)) !important;
+          border-color: rgba(148, 163, 184, 0.26) !important;
+          box-shadow: 0 18px 44px rgba(2, 8, 23, 0.35) !important;
         }
 
         .app-shell-root .brand-title,
         .app-shell-root .mobile-brand-title,
-        .app-shell-root .content-top-actions-kicker {
-          color: #ffffff !important;
-        }
-
         .app-shell-root .brand-status-copy,
         .app-shell-root .language-subtitle,
         .app-shell-root .sidebar-shortcut-title,
         .app-shell-root .sidebar-user-name,
+        .app-shell-root .nav-link,
         .app-shell-root .sidebar-user-menu button,
         .app-shell-root .sidebar-user-menu a,
         .app-shell-root .mobile-user-chip,
         .app-shell-root .language-compact,
+        .app-shell-root .content-top-actions-kicker,
         .app-shell-root .content-top-actions-subtitle {
-          color: #0f172a !important;
-        }
-
-        .app-shell-root .nav-link {
-          color: rgba(255, 255, 255, 0.92) !important;
+          color: #e2e8f0 !important;
         }
 
         .app-shell-root .brand-subtitle,
@@ -1904,106 +1895,28 @@ function LayoutInner({ children }) {
         .app-shell-root .sidebar-shortcut-copy,
         .app-shell-root .sidebar-user-email,
         .app-shell-root .nav-short {
-          color: rgba(226, 232, 240, 0.72) !important;
+          color: #94a3b8 !important;
         }
 
         .app-shell-root .brand-live-pill {
-          background: rgba(5, 150, 105, 0.12) !important;
-          color: #059669 !important;
-          border-color: rgba(5, 150, 105, 0.24) !important;
+          background: rgba(16, 185, 129, 0.16) !important;
+          color: #6ee7b7 !important;
+          border-color: rgba(16, 185, 129, 0.38) !important;
         }
 
         .app-shell-root .nav-link.is-active,
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .mobile-nav-link.is-active {
-          background: #ffffff !important;
-          color: #1a2b47 !important;
-          border-color: rgba(255, 255, 255, 0.6) !important;
-          box-shadow: 0 12px 28px rgba(26, 43, 71, 0.18) !important;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.88), rgba(37, 99, 235, 0.9)) !important;
+          border-color: rgba(147, 197, 253, 0.36) !important;
+          box-shadow: 0 16px 40px rgba(16, 185, 129, 0.25) !important;
         }
 
         .app-shell-root .premium-topbar,
         .app-shell-root .premium-topbar.is-scrolled {
-          background: rgba(255, 255, 255, 0.82);
-          border-bottom: 1px solid #dbe4ee;
-          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
-        }
-
-        .app-shell-root .command-trigger {
-          background: rgba(255, 255, 255, 0.94);
-          color: #1a2b47;
-          border-color: #d3dde8;
-        }
-
-        .app-shell-root .command-trigger kbd {
-          background: #f5f7fa;
-          color: #64748b;
-          border-color: #d3dde8;
-        }
-
-        .app-shell-root .smart-invoice-widget {
-          background: linear-gradient(135deg, #1a2b47, #22385d);
-          border-color: rgba(26, 43, 71, 0.24);
-          box-shadow: 0 20px 42px rgba(26, 43, 71, 0.18);
-        }
-
-        .app-shell-root .smart-invoice-panel {
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 250, 0.98));
-          border-color: #dbe4ee;
-          box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
-        }
-
-        .app-shell-root .smart-invoice-panel a {
-          color: #1a2b47;
-          border-bottom-color: #e7edf3;
-        }
-
-        .app-shell-root .smart-invoice-panel a:hover {
-          background: #f0f9ff;
-          color: #0f172a;
-        }
-
-        .app-shell-root .command-palette-overlay {
-          background: rgba(245, 247, 250, 0.66);
-        }
-
-        .app-shell-root .command-palette {
-          border-color: #dbe4ee;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 247, 250, 0.98));
-          box-shadow: 0 30px 80px rgba(15, 23, 42, 0.14);
-        }
-
-        .app-shell-root .command-palette-head {
-          color: #1a2b47;
-          border-bottom-color: #e7edf3;
-        }
-
-        .app-shell-root .command-palette-head button {
-          border-color: #d3dde8;
-          color: #64748b;
-          background: #f8fafc;
-        }
-
-        .app-shell-root .command-palette-input {
-          background: #ffffff;
-          color: #0f172a;
-          border-color: #d3dde8;
-        }
-
-        .app-shell-root .command-results .command-item {
-          border-color: #e7edf3;
-          background: #ffffff;
-          color: #0f172a;
-        }
-
-        .app-shell-root .command-item:hover {
-          border-color: rgba(26, 43, 71, 0.24);
-          background: #f0f9ff;
-        }
-
-        .app-shell-root .command-item small,
-        .app-shell-root .command-empty {
-          color: #64748b;
+          background: rgba(2, 8, 22, 0.9);
+          border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+          box-shadow: 0 18px 36px rgba(2, 8, 23, 0.26);
         }
 
         @media (max-width: 900px) {
