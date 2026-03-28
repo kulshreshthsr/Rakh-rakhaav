@@ -320,14 +320,14 @@ export default function UdhaarPage() {
                                   const isDebit = entry.type === 'debit' || entry.type === 'diya';
                                   return (
                                     <tr key={index}>
-                                      <td>{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</td>
-                                      <td>
+                                      <td data-label="Date">{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</td>
+                                      <td data-label="Note">
                                         <div>{entry.note || (isDebit ? (isCustomer ? 'Credit Sale' : 'Credit Purchase') : 'Payment')}</div>
                                         {entry.reference_id ? <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 4 }}>{entry.reference_id}</div> : null}
                                       </td>
-                                      <td style={{ textAlign: 'right' }} className="ui-value-danger">{isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
-                                      <td style={{ textAlign: 'right' }} className="ui-value-money">{!isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
-                                      <td style={{ textAlign: 'right' }} className={(entry.running_balance ?? 0) > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'}>
+                                      <td data-label="Debit (+)" style={{ textAlign: 'right' }} className="ui-value-danger">{isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
+                                      <td data-label="Credit (-)" style={{ textAlign: 'right' }} className="ui-value-money">{!isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
+                                      <td data-label="Balance" style={{ textAlign: 'right' }} className={(entry.running_balance ?? 0) > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'}>
                                         ₹{fmt(entry.running_balance)}
                                       </td>
                                     </tr>

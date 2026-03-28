@@ -4158,3 +4158,181 @@ textarea.form-input {
     font-size: 25px;
   }
 }
+
+/* Cinematic Dark system-wide override */
+:root {
+  --app-bg: #040b17;
+  --app-card: rgba(8, 19, 34, 0.92);
+  --app-card-2: rgba(9, 24, 41, 0.88);
+  --app-primary: #2ea8ff;
+  --app-secondary: #0a172b;
+  --app-accent: #2ea8ff;
+  --app-text: #e2e8f0;
+  --app-muted: #94a3b8;
+  --emerald: #2be6a0;
+  --emerald-2: #2be6a0;
+  --text: #e2e8f0;
+  --text-2: #cbd5e1;
+  --text-3: #94a3b8;
+  --border: rgba(148, 163, 184, 0.22);
+  --radius: 8px;
+  --radius-sm: 8px;
+  --radius-lg: 12px;
+}
+
+body {
+  font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Devanagari', sans-serif;
+  background:
+    radial-gradient(circle at 82% 14%, rgba(46, 168, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 14% 22%, rgba(43, 230, 160, 0.14), transparent 24%),
+    linear-gradient(180deg, #020712 0%, #071224 52%, #0a172b 100%);
+  color: var(--text);
+}
+
+.app-shell-root .card,
+.app-shell-root .toolbar-card,
+.app-shell-root .soft-panel,
+.app-shell-root .table-container,
+.app-shell-root .metric-card,
+.app-shell-root .stat-card,
+.app-shell-root .mini-stat,
+.app-shell-root .stack-row,
+.app-shell-root .empty-state,
+.app-shell-root .flow-modal,
+.app-shell-root .flow-step-panel,
+.app-shell-root .flow-section-card,
+.app-shell-root .flow-intro-card,
+.app-shell-root .modal,
+.app-shell-root .hero-panel,
+.app-shell-root .ui-card,
+.app-shell-root .ui-stat-card,
+.app-shell-root .ui-table-wrap,
+.app-shell-root .ui-data-row {
+  background:
+    linear-gradient(135deg, rgba(8, 19, 34, 0.9), rgba(10, 28, 46, 0.88)) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 20px 48px rgba(2, 8, 23, 0.36) !important;
+  border-radius: 8px !important;
+}
+
+.app-shell-root .page-title,
+.app-shell-root .section-title,
+.app-shell-root .panel-title,
+.app-shell-root .metric-value,
+.app-shell-root .stat-value,
+.app-shell-root .ui-card-title,
+.app-shell-root .ui-stat-value {
+  color: #f8fafc !important;
+}
+
+.app-shell-root .metric-note,
+.app-shell-root .ui-card-subtitle,
+.app-shell-root .ui-stat-note,
+.app-shell-root .section-subtitle,
+.app-shell-root .page-subtitle,
+.app-shell-root .ui-stat-label,
+.app-shell-root .ui-data-row-note {
+  color: #94a3b8 !important;
+}
+
+.app-shell-root .ui-tone-money .ui-stat-value,
+.app-shell-root .ui-value-money,
+.app-shell-root .badge-green {
+  color: #2be6a0 !important;
+}
+
+.app-shell-root .ui-tone-secondary .ui-stat-value,
+.app-shell-root .ui-value-secondary,
+.app-shell-root .badge-blue {
+  color: #2ea8ff !important;
+}
+
+.app-shell-root .table-container table tbody tr:nth-child(even) td,
+.app-shell-root .ui-table tbody tr:nth-child(even) td {
+  background: rgba(15, 31, 53, 0.72) !important;
+}
+
+.app-shell-root .table-container table tbody tr:hover td,
+.app-shell-root .ui-table tbody tr:hover td {
+  background: rgba(46, 168, 255, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+.app-shell-root .table-container td,
+.app-shell-root .table-container th,
+.app-shell-root .ui-table td,
+.app-shell-root .ui-table th {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+.app-shell-root .table-container thead,
+.app-shell-root .ui-table thead {
+  background: linear-gradient(135deg, rgba(6, 20, 35, 0.98), rgba(10, 34, 57, 0.94)) !important;
+}
+
+.app-shell-root input,
+.app-shell-root select,
+.app-shell-root textarea {
+  background: rgba(7, 17, 30, 0.84) !important;
+  color: #f8fafc !important;
+  border-color: rgba(96, 165, 250, 0.32) !important;
+}
+
+.app-shell-root .btn-success,
+.app-shell-root .ui-action-whatsapp,
+.app-shell-root .ui-action-primary {
+  background: linear-gradient(135deg, #2be6a0, #0891b2) !important;
+  color: #032117 !important;
+}
+
+.app-shell-root .btn-primary,
+.app-shell-root .btn-warning,
+.app-shell-root .ui-action-secondary {
+  background: linear-gradient(135deg, #2ea8ff, #1d4ed8) !important;
+  color: #ecfeff !important;
+}
+
+@media (max-width: 640px) {
+  .app-shell-root .table-container table,
+  .app-shell-root .ui-table {
+    border: 0;
+  }
+
+  .app-shell-root .table-container thead,
+  .app-shell-root .ui-table thead {
+    display: none;
+  }
+
+  .app-shell-root .table-container tbody tr,
+  .app-shell-root .ui-table tbody tr {
+    display: block;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(96, 165, 250, 0.26);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(6, 18, 32, 0.95), rgba(11, 29, 48, 0.92));
+    box-shadow: 0 14px 30px rgba(2, 8, 23, 0.32);
+  }
+
+  .app-shell-root .table-container tbody td,
+  .app-shell-root .ui-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border: none !important;
+    padding: 8px 6px;
+  }
+
+  .app-shell-root .table-container tbody td::before,
+  .app-shell-root .ui-table tbody td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #93c5fd;
+    font-weight: 700;
+  }
+}

@@ -220,12 +220,12 @@ export default function GSTPage() {
           <tbody>
             {drillData.map((item, index) => (
               <tr key={index}>
-                <td>{item.invoice_number}</td>
-                <td>{item.product_name || (item.items?.length > 1 ? `${item.items.length} items` : item.items?.[0]?.product_name)}</td>
-                <td>{item.buyer_name || item.supplier_name || '-'}</td>
-                <td>₹{fmt(item.taxable_amount)}</td>
-                <td className={type === 'sales' ? 'ui-value-money' : 'ui-value-secondary'}>₹{fmt(item.total_gst)}</td>
-                <td>₹{fmt(item.total_amount)}</td>
+                <td data-label={type === 'sales' ? 'Invoice' : 'Bill No'}>{item.invoice_number}</td>
+                <td data-label="Product">{item.product_name || (item.items?.length > 1 ? `${item.items.length} items` : item.items?.[0]?.product_name)}</td>
+                <td data-label={type === 'sales' ? 'Party' : 'Supplier'}>{item.buyer_name || item.supplier_name || '-'}</td>
+                <td data-label="Taxable">₹{fmt(item.taxable_amount)}</td>
+                <td data-label={type === 'sales' ? 'GST' : 'ITC'} className={type === 'sales' ? 'ui-value-money' : 'ui-value-secondary'}>₹{fmt(item.total_gst)}</td>
+                <td data-label="Total">₹{fmt(item.total_amount)}</td>
               </tr>
             ))}
           </tbody>
@@ -339,25 +339,25 @@ export default function GSTPage() {
                   </thead>
                   <tbody>
                     <tr>
-                      <td>Output (Sales)</td>
-                      <td>₹{fmt(summary.sales.cgst)}</td>
-                      <td>₹{fmt(summary.sales.sgst)}</td>
-                      <td>₹{fmt(summary.sales.igst)}</td>
-                      <td className="ui-value-money">₹{fmt(summary.sales.total_gst)}</td>
+                      <td data-label="Description">Output (Sales)</td>
+                      <td data-label="CGST">₹{fmt(summary.sales.cgst)}</td>
+                      <td data-label="SGST">₹{fmt(summary.sales.sgst)}</td>
+                      <td data-label="IGST">₹{fmt(summary.sales.igst)}</td>
+                      <td data-label="Total" className="ui-value-money">₹{fmt(summary.sales.total_gst)}</td>
                     </tr>
                     <tr>
-                      <td>Input / ITC (Purchase)</td>
-                      <td>₹{fmt(summary.purchases.cgst)}</td>
-                      <td>₹{fmt(summary.purchases.sgst)}</td>
-                      <td>₹{fmt(summary.purchases.igst)}</td>
-                      <td className="ui-value-secondary">₹{fmt(summary.purchases.total_gst)}</td>
+                      <td data-label="Description">Input / ITC (Purchase)</td>
+                      <td data-label="CGST">₹{fmt(summary.purchases.cgst)}</td>
+                      <td data-label="SGST">₹{fmt(summary.purchases.sgst)}</td>
+                      <td data-label="IGST">₹{fmt(summary.purchases.igst)}</td>
+                      <td data-label="Total" className="ui-value-secondary">₹{fmt(summary.purchases.total_gst)}</td>
                     </tr>
                     <tr>
-                      <td>{isPayable ? 'Payable After ITC Set-Off' : 'Unused ITC / Nil Liability'}</td>
-                      <td>₹{fmt(isPayable ? payableByHead.cgst : excessCredit.cgst)}</td>
-                      <td>₹{fmt(isPayable ? payableByHead.sgst : excessCredit.sgst)}</td>
-                      <td>₹{fmt(isPayable ? payableByHead.igst : excessCredit.igst)}</td>
-                      <td className={isPayable ? 'ui-value-danger' : 'ui-value-money'}>₹{fmt(isPayable ? payableTotal : excessCreditTotal)}</td>
+                      <td data-label="Description">{isPayable ? 'Payable After ITC Set-Off' : 'Unused ITC / Nil Liability'}</td>
+                      <td data-label="CGST">₹{fmt(isPayable ? payableByHead.cgst : excessCredit.cgst)}</td>
+                      <td data-label="SGST">₹{fmt(isPayable ? payableByHead.sgst : excessCredit.sgst)}</td>
+                      <td data-label="IGST">₹{fmt(isPayable ? payableByHead.igst : excessCredit.igst)}</td>
+                      <td data-label="Total" className={isPayable ? 'ui-value-danger' : 'ui-value-money'}>₹{fmt(isPayable ? payableTotal : excessCreditTotal)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -393,13 +393,13 @@ export default function GSTPage() {
                     <tbody>
                       {summary.gstr1.b2b_invoices.map((invoice, index) => (
                         <tr key={index}>
-                          <td>{invoice.invoice_number}</td>
-                          <td>{invoice.buyer_name || '-'}</td>
-                          <td>{invoice.buyer_gstin}</td>
-                          <td>₹{fmt(invoice.taxable_amount)}</td>
-                          <td>{invoice.gst_rate}%</td>
-                          <td className="ui-value-money">₹{fmt(invoice.total)}</td>
-                          <td><StatusBadge tone="secondary">{invoice.gst_type}</StatusBadge></td>
+                          <td data-label="Invoice No">{invoice.invoice_number}</td>
+                          <td data-label="Buyer">{invoice.buyer_name || '-'}</td>
+                          <td data-label="GSTIN">{invoice.buyer_gstin}</td>
+                          <td data-label="Taxable">₹{fmt(invoice.taxable_amount)}</td>
+                          <td data-label="GST%">{invoice.gst_rate}%</td>
+                          <td data-label="Total" className="ui-value-money">₹{fmt(invoice.total)}</td>
+                          <td data-label="Type"><StatusBadge tone="secondary">{invoice.gst_type}</StatusBadge></td>
                         </tr>
                       ))}
                     </tbody>

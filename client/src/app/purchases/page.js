@@ -448,8 +448,8 @@ export default function PurchasesPage() {
               <tbody>
                 {purchases.map(p => (
                   <tr key={p._id}>
-                    <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>{p.invoice_number}</td>
-                    <td>
+                    <td data-label="Bill No" style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>{p.invoice_number}</td>
+                    <td data-label="Product">
                       <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>
                         {/* Show all item names if multi-item */}
                         {p.items && p.items.length > 1
@@ -460,27 +460,27 @@ export default function PurchasesPage() {
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>से: {p.supplier_name}</div>
                       )}
                     </td>
-                    <td style={{ fontSize: 12, color: '#6b7280' }}>
+                    <td data-label="Items" style={{ fontSize: 12, color: '#6b7280' }}>
                       {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
                     </td>
-                    <td>₹{(p.taxable_amount || 0).toFixed(2)}</td>
-                    <td>
+                    <td data-label="Taxable">₹{(p.taxable_amount || 0).toFixed(2)}</td>
+                    <td data-label="GST (ITC)">
                       {p.total_gst > 0
                         ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
                         : <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
                     </td>
-                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
-                    <td style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
-                    <td>
+                    <td data-label="Total" style={{ fontWeight: 700, color: '#f59e0b' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
+                    <td data-label="Paid" style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
+                    <td data-label="Balance Due">
                       {(p.balance_due || 0) > 0
                         ? <span style={{ color: '#ef4444', fontWeight: 700 }}>₹{p.balance_due.toFixed(2)}</span>
                         : <span style={{ color: '#10b981' }}>✓ Paid</span>}
                     </td>
-                    <td><PayBadge type={p.payment_type} /></td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
+                    <td data-label="Payment"><PayBadge type={p.payment_type} /></td>
+                    <td data-label="Date" style={{ color: '#9ca3af', fontSize: 12 }}>
                       {formatFullDateTime(p.createdAt)}
                     </td>
-                    <td>
+                    <td data-label="Action">
                       <button onClick={() => startEditPurchase(p)}
                         className="action-soft edit"
                         style={{ borderRadius: 999, padding: '6px 10px' }}>

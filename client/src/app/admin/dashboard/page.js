@@ -221,30 +221,30 @@ export default function AdminDashboardPage() {
                   ) : (
                     shops.map((shop) => (
                       <tr key={shop.id} className={rowClassName(shop)}>
-                        <td>
+                        <td data-label="Shop">
                           <div className="shop-primary">{shop.shopName}</div>
                         </td>
-                        <td>{shop.ownerName || '-'}</td>
-                        <td>{shop.phoneNumber || '-'}</td>
-                        <td>{shop.gstin || '-'}</td>
-                        <td className="admin-address-cell">{shop.shopAddress || '-'}</td>
-                        <td>
+                        <td data-label="Owner">{shop.ownerName || '-'}</td>
+                        <td data-label="Phone">{shop.phoneNumber || '-'}</td>
+                        <td data-label="GSTIN">{shop.gstin || '-'}</td>
+                        <td data-label="Address" className="admin-address-cell">{shop.shopAddress || '-'}</td>
+                        <td data-label="Plan">
                           <span className="admin-plan-pill">{shop.subscriptionPlanLabel}</span>
                         </td>
-                        <td>
+                        <td data-label="Status">
                           <span className={`admin-status-pill status-${shop.subscriptionStatus}`}>{shop.subscriptionStatus}</span>
                         </td>
-                        <td>
+                        <td data-label="Trial">
                           <div>{formatDate(shop.trial.startDate)}</div>
                           <div className="admin-subline">{formatDate(shop.trial.endDate)}</div>
                           <div className="admin-subline">{shop.trial.daysRemaining} days left</div>
                         </td>
-                        <td>
+                        <td data-label="Subscription">
                           <div>{formatDate(shop.subscription.startDate)}</div>
                           <div className="admin-subline">{formatDate(shop.subscription.endDate)}</div>
                           <div className="admin-subline">{shop.subscription.daysRemaining} days left</div>
                         </td>
-                        <td>
+                        <td data-label="Alerts">
                           <div className="admin-alert-stack">
                             {shop.alerts.expired ? <span className="admin-alert-chip alert-red">Expired</span> : null}
                             {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-yellow">Trial ending in 3 days</span> : null}
@@ -254,7 +254,7 @@ export default function AdminDashboardPage() {
                             ) : null}
                           </div>
                         </td>
-                        <td>
+                        <td data-label="Action">
                           <button
                             type="button"
                             className="admin-delete-btn"
