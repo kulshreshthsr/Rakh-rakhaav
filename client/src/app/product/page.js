@@ -95,6 +95,17 @@ export default function ProductsPage() {
     setFiltered(result);
   }, [search, sortBy, filterStock, products]);
 
+  useEffect(() => {
+    const handleKeydown = (event) => {
+      if (event.key === 'F2' && !showModal && !showStockModal && !showHistory) {
+        event.preventDefault();
+        openAdd();
+      }
+    };
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [showModal, showStockModal, showHistory]);
+
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${API}/api/products`, {

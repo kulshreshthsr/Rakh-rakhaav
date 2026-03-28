@@ -279,6 +279,59 @@ export default function GSTPage() {
               </div>
             </Card>
 
+            <section className="tax-pillar-grid">
+              <Card title="Tax Pillar" subtitle="Dedicated CGST, SGST and IGST view">
+                <div className="tax-pillar-stack">
+                  <div className="tax-pillar-row">
+                    <div>
+                      <span>Output CGST</span>
+                      <h3>Sales side</h3>
+                    </div>
+                    <strong>â‚¹{fmt(summary.sales.cgst)}</strong>
+                  </div>
+                  <div className="tax-pillar-row">
+                    <div>
+                      <span>Output SGST</span>
+                      <h3>Sales side</h3>
+                    </div>
+                    <strong>â‚¹{fmt(summary.sales.sgst)}</strong>
+                  </div>
+                  <div className="tax-pillar-row">
+                    <div>
+                      <span>Output IGST</span>
+                      <h3>Sales side</h3>
+                    </div>
+                    <strong>â‚¹{fmt(summary.sales.igst)}</strong>
+                  </div>
+                </div>
+              </Card>
+              <Card title="ITC Pillar" subtitle="Purchase credits ready for set-off">
+                <div className="tax-pillar-stack">
+                  <div className="tax-pillar-row">
+                    <div>
+                      <span>Input CGST</span>
+                      <h3>Purchase ITC</h3>
+                    </div>
+                    <strong>â‚¹{fmt(summary.purchases.cgst)}</strong>
+                  </div>
+                  <div className="tax-pillar-row">
+                    <div>
+                      <span>Input SGST</span>
+                      <h3>Purchase ITC</h3>
+                    </div>
+                    <strong>â‚¹{fmt(summary.purchases.sgst)}</strong>
+                  </div>
+                  <div className="tax-pillar-row">
+                    <div>
+                      <span>Input IGST</span>
+                      <h3>Purchase ITC</h3>
+                    </div>
+                    <strong>â‚¹{fmt(summary.purchases.igst)}</strong>
+                  </div>
+                </div>
+              </Card>
+            </section>
+
             <Card title="GST Calculation" subtitle="Drill into output GST and purchase ITC">
               <DataRow
                 label="GST Collected (Output)"

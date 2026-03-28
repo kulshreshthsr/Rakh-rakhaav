@@ -539,6 +539,13 @@ export default function SalesPage() {
     if (!showModal) return undefined;
 
     const onKeyDown = (event) => {
+      if (event.key === 'F2' && !showModal) {
+        event.preventDefault();
+        resetForm();
+        setShowModal(true);
+        return;
+      }
+
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter' && saleStep === 2) {
         event.preventDefault();
         handleShortcutSubmit();
@@ -700,8 +707,11 @@ export default function SalesPage() {
                 </tr>
               </thead>
               <tbody>
-                {sales.map(s => (
-                  <tr key={s._id}>
+                {sales.map(s => {
+                  const clearanceRatio = s.payment_type === 'credit' ? 0.34 : 1;
+                  const isPending = clearanceRatio < 1;
+                  return (
+                  <tr key={s._id} className={isPending ? 'clearance-row-pending' : ''}>
                     <td data-label="Invoice" style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
                     <td data-label="Items">
                       <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>
@@ -718,7 +728,18 @@ export default function SalesPage() {
                         : <span style={{ color: '#9ca3af' }}></span>}
                     </td>
                     <td data-label="Total" style={{ fontWeight: 700, color: '#10b981' }}>Rs {fmt(s.total_amount)}</td>
-                    <td data-label="Payment"><PayBadge type={s.payment_type} /></td>
+                    <td data-label="Payment">
+                      <div className={`clearance-status ${isPending ? 'is-pending' : ''}`}>
+                        <PayBadge type={s.payment_type} />
+                        <div className="clearance-status-label">
+                          <span>Clearance Status</span>
+                          <strong>{isPending ? 'Pending' : 'Cleared'}</strong>
+                        </div>
+                        <div className="clearance-status-track">
+                          <div className="clearance-status-fill" style={{ width: `${clearanceRatio * 100}%` }} />
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Date" style={{ color: '#9ca3af', fontSize: 12 }}>
                       {formatFullDateTime(s.createdAt || s.sold_at)}
                     </td>
@@ -753,7 +774,8 @@ export default function SalesPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

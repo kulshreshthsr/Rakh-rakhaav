@@ -171,6 +171,25 @@ export default function PurchasesPage() {
   }, [showModal, products.length]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'F2' && !showModal) {
+        event.preventDefault();
+        resetModal();
+        setShowModal(true);
+        return;
+      }
+
+      if (showModal && purchaseStep === 0 && event.altKey && event.key.toLowerCase() === 'a') {
+        event.preventDefault();
+        addItem();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [purchaseStep, showModal]);
+
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (shopState || !localStorage.getItem('token')) return;
@@ -446,8 +465,13 @@ export default function PurchasesPage() {
                 </tr>
               </thead>
               <tbody>
-                {purchases.map(p => (
-                  <tr key={p._id}>
+                {purchases.map(p => {
+                  const totalAmount = Number(p.total_amount || 0);
+                  const amountPaid = Number(p.amount_paid || 0);
+                  const clearanceRatio = totalAmount > 0 ? Math.max(0, Math.min(1, amountPaid / totalAmount)) : 1;
+                  const isPending = (p.balance_due || 0) > 0;
+                  return (
+                  <tr key={p._id} className={isPending ? 'clearance-row-pending' : ''}>
                     <td data-label="Bill No" style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>{p.invoice_number}</td>
                     <td data-label="Product">
                       <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>
@@ -476,7 +500,18 @@ export default function PurchasesPage() {
                         ? <span style={{ color: '#ef4444', fontWeight: 700 }}>₹{p.balance_due.toFixed(2)}</span>
                         : <span style={{ color: '#10b981' }}>✓ Paid</span>}
                     </td>
-                    <td data-label="Payment"><PayBadge type={p.payment_type} /></td>
+                    <td data-label="Payment">
+                      <div className={`clearance-status ${isPending ? 'is-pending' : ''}`}>
+                        <PayBadge type={p.payment_type} />
+                        <div className="clearance-status-label">
+                          <span>Clearance Status</span>
+                          <strong>{isPending ? 'Pending' : 'Cleared'}</strong>
+                        </div>
+                        <div className="clearance-status-track">
+                          <div className="clearance-status-fill" style={{ width: `${clearanceRatio * 100}%` }} />
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Date" style={{ color: '#9ca3af', fontSize: 12 }}>
                       {formatFullDateTime(p.createdAt)}
                     </td>
@@ -493,7 +528,8 @@ export default function PurchasesPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

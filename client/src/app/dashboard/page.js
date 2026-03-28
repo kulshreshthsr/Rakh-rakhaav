@@ -870,6 +870,96 @@ export default function DashboardPage() {
             display: flex;
           }
         }
+
+        .dashboard-shell,
+        .dashboard-shell .page-title,
+        .dashboard-shell .section-title,
+        .dashboard-shell .section-subtitle,
+        .dashboard-shell .metric-label,
+        .dashboard-shell .metric-note,
+        .dashboard-shell .page-subtitle,
+        .dashboard-shell div[style*='color: #475569'],
+        .dashboard-shell div[style*='color: #64748b'],
+        .dashboard-shell div[style*='color: #0f172a'],
+        .dashboard-shell div[style*='color: #e5e7eb'] {
+          color: #0f172a !important;
+        }
+
+        .dashboard-hero,
+        .dashboard-stat-card,
+        .dashboard-section-card,
+        .dashboard-breakdown-card,
+        .dashboard-top-card,
+        .dashboard-quick-card,
+        .dashboard-kpi-card,
+        .dashboard-speed-card,
+        .dashboard-ledger-card {
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.96)) !important;
+          border: 1px solid #dbe4ee !important;
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06) !important;
+        }
+
+        .dashboard-kpi-meta span,
+        .dashboard-ledger-card small {
+          color: #64748b;
+        }
+
+        .dashboard-kpi-profit strong,
+        .dashboard-speed-card.dashboard-speed-profit strong,
+        .ledger-row-up td:last-child,
+        .dashboard-ledger-card.ledger-row-up strong {
+          color: #059669 !important;
+        }
+
+        .dashboard-kpi-stock strong,
+        .ledger-row-stock td:last-child,
+        .ledger-row-gst td:last-child,
+        .dashboard-ledger-card strong {
+          color: #1a2b47 !important;
+        }
+
+        .dash-glow-chart {
+          height: 78px;
+          filter: none;
+        }
+
+        .dashboard-speed-card strong {
+          font-size: 30px;
+          color: #111827 !important;
+        }
+
+        .dashboard-progress-track {
+          background: #eef2f7;
+          border-color: #dbe4ee;
+        }
+
+        .dashboard-progress-fill {
+          background: linear-gradient(90deg, #1a2b47, #059669) !important;
+        }
+
+        .dashboard-ledger-table th {
+          background: #f8fbfd !important;
+          color: #64748b !important;
+        }
+
+        .dashboard-ledger-table tbody tr:nth-child(even) td {
+          background: #f0f9ff !important;
+        }
+
+        .dashboard-ledger-table tbody tr:hover td {
+          background: #eaf4ff !important;
+        }
+
+        .dashboard-warning-card {
+          background: linear-gradient(180deg, #fffaf2, #ffffff) !important;
+          border-color: rgba(217, 119, 6, 0.24) !important;
+        }
+
+        .dashboard-chip-warning {
+          background: #fff7ed !important;
+          color: #d97706 !important;
+          border-color: rgba(217, 119, 6, 0.18) !important;
+        }
       `}</style>
     </Layout>
   );
