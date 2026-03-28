@@ -218,9 +218,9 @@ export default function DashboardPage() {
     { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'linear-gradient(135deg, rgba(34,197,94,0.16), rgba(22,163,74,0.08))', color: '#15803d', semantic: 'sales' },
     { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'linear-gradient(135deg, rgba(245,158,11,0.16), rgba(217,119,6,0.08))', color: '#b45309', semantic: 'purchase' },
     { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'linear-gradient(135deg, rgba(239,68,68,0.14), rgba(220,38,38,0.08))', color: '#b91c1c', semantic: 'credit' },
-    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.08))', color: '#1d4ed8', semantic: 'stock' },
+    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'linear-gradient(135deg, rgba(124,58,237,0.16), rgba(168,85,247,0.08))', color: '#7c3aed', semantic: 'stock' },
     { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'linear-gradient(135deg, rgba(6,182,212,0.14), rgba(37,99,235,0.08))', color: '#0f766e', semantic: 'gst' },
-    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'linear-gradient(135deg, rgba(37,99,235,0.14), rgba(15,23,42,0.1))', color: '#0f172a', semantic: 'premium' },
+    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'linear-gradient(135deg, rgba(124,58,237,0.16), rgba(15,23,42,0.1))', color: '#6d28d9', semantic: 'premium' },
   ];
 
   return (
@@ -329,7 +329,7 @@ export default function DashboardPage() {
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
                     height: '100%',
                     borderRadius: 999,
-                    background: 'linear-gradient(90deg, #475569, #cbd5e1)',
+                    background: 'linear-gradient(90deg, #7c3aed, #c4b5fd)',
                   }}
                 />
               </div>
@@ -431,11 +431,11 @@ export default function DashboardPage() {
                       height: 38,
                       borderRadius: 14,
                       background: [
-                        'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                        'linear-gradient(135deg, #0ea5e9, #2563eb)',
-                        'linear-gradient(135deg, #22c55e, #15803d)',
+                        'linear-gradient(135deg, #7c3aed, #8b5cf6)',
+                        'linear-gradient(135deg, #a855f7, #c084fc)',
+                        'linear-gradient(135deg, #10b981, #059669)',
                         'linear-gradient(135deg, #f59e0b, #d97706)',
-                        'linear-gradient(135deg, #0f172a, #334155)',
+                        'linear-gradient(135deg, #1a2b47, #334155)',
                       ][index],
                       color: '#fff',
                       display: 'flex',
@@ -451,7 +451,7 @@ export default function DashboardPage() {
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
                     <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#e5e7eb', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
                 </div>
               ))}
             </div>
@@ -467,9 +467,9 @@ export default function DashboardPage() {
         .dashboard-hero {
           border: 1px solid #e2e8f0;
           background:
-            radial-gradient(circle at 85% 16%, rgba(191, 219, 254, 0.4), transparent 20%),
-            radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.98), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f8fbff 42%, #edf4ff 100%);
+            radial-gradient(circle at 85% 16%, rgba(168, 85, 247, 0.16), transparent 20%),
+            radial-gradient(circle at 18% 12%, rgba(240, 249, 255, 0.9), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #f8f6ff 44%, #f0f9ff 100%);
           box-shadow: 0 24px 52px rgba(15, 23, 42, 0.08);
         }
 
@@ -506,8 +506,8 @@ export default function DashboardPage() {
 
         .dashboard-stat-card::before {
           background:
-            radial-gradient(circle at top right, rgba(191, 219, 254, 0.3), transparent 24%),
-            radial-gradient(circle at bottom left, rgba(219, 234, 254, 0.26), transparent 22%);
+            radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(224, 231, 255, 0.42), transparent 22%);
         }
 
         .dashboard-stat-card .metric-label,
@@ -521,15 +521,15 @@ export default function DashboardPage() {
         }
 
         .dashboard-stat-icon {
-          background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(14,165,233,0.08)) !important;
-          color: #1d4ed8 !important;
+          background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08)) !important;
+          color: #7c3aed !important;
           border: 1px solid #e2e8f0;
           box-shadow: 0 10px 22px rgba(15,23,42,0.05) !important;
         }
 
         .dashboard-section-card {
           background:
-            radial-gradient(circle at top right, rgba(37,99,235,0.08), transparent 24%),
+            radial-gradient(circle at top right, rgba(168,85,247,0.08), transparent 24%),
             linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
           border: 1px solid #e2e8f0 !important;
           box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
@@ -566,8 +566,8 @@ export default function DashboardPage() {
         }
 
         .dashboard-quick-card-stock {
-          background: linear-gradient(180deg, #ffffff, #f6faff) !important;
-          border-color: rgba(37,99,235,0.14) !important;
+          background: linear-gradient(180deg, #ffffff, #faf5ff) !important;
+          border-color: rgba(124,58,237,0.18) !important;
         }
 
         .dashboard-quick-card-gst {
@@ -576,8 +576,8 @@ export default function DashboardPage() {
         }
 
         .dashboard-quick-card-premium {
-          background: linear-gradient(180deg, #ffffff, #f7f9fc) !important;
-          border-color: rgba(37,99,235,0.12) !important;
+          background: linear-gradient(180deg, #ffffff, #faf5ff) !important;
+          border-color: rgba(124,58,237,0.16) !important;
         }
 
         .dashboard-quick-card,
@@ -586,7 +586,7 @@ export default function DashboardPage() {
         }
 
         .dashboard-top-card > div:last-child {
-          color: #0f172a !important;
+          color: #10b981 !important;
         }
 
         .dashboard-shell div[style*='color: #475569'],
@@ -595,7 +595,7 @@ export default function DashboardPage() {
         }
 
         .dashboard-shell div[style*='color: #e5e7eb'] {
-          color: #0f172a !important;
+          color: #10b981 !important;
         }
 
         .dashboard-quick-icon {

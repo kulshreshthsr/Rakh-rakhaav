@@ -4158,3 +4158,227 @@ textarea.form-input {
     font-size: 25px;
   }
 }
+
+/* Vibrant daylight override with purple primary accent */
+.app-shell-root {
+  background:
+    radial-gradient(circle at 85% 12%, rgba(139, 92, 246, 0.08), transparent 20%),
+    radial-gradient(circle at 10% 22%, rgba(16, 185, 129, 0.06), transparent 20%),
+    linear-gradient(180deg, #ffffff 0%, #f9fbff 52%, #ffffff 100%) !important;
+}
+
+.app-shell-root .card,
+.app-shell-root .toolbar-card,
+.app-shell-root .soft-panel,
+.app-shell-root .table-container,
+.app-shell-root .metric-card,
+.app-shell-root .stat-card,
+.app-shell-root .ui-card,
+.app-shell-root .ui-stat-card,
+.app-shell-root .hero-panel,
+.app-shell-root .ui-table-wrap,
+.app-shell-root .modal {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.94), rgba(240,249,255,0.88)) !important;
+  border: 1px solid #e7edf3 !important;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.app-shell-root .page-title,
+.app-shell-root .section-title,
+.app-shell-root .panel-title,
+.app-shell-root .metric-value,
+.app-shell-root .stat-value,
+.app-shell-root .ui-card-title,
+.app-shell-root .ui-stat-value,
+.app-shell-root .ui-data-row-label,
+.app-shell-root .ui-table td {
+  color: #111827 !important;
+}
+
+.app-shell-root .section-subtitle,
+.app-shell-root .page-subtitle,
+.app-shell-root .metric-note,
+.app-shell-root .ui-card-subtitle,
+.app-shell-root .ui-stat-note,
+.app-shell-root .ui-stat-label,
+.app-shell-root .ui-table th {
+  color: #6b7280 !important;
+}
+
+.app-shell-root .btn-primary,
+.app-shell-root .ui-action-primary,
+.app-shell-root .top-upgrade-chip,
+.app-shell-root .top-upgrade-chip.is-manage,
+.app-shell-root .mobile-nav-link.is-active,
+.app-shell-root .nav-link.is-active,
+.app-shell-root .segmented-option.is-active,
+.app-shell-root .filter-pill.is-active,
+.app-shell-root .dashboard-quick-card-premium {
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6) !important;
+  border-color: rgba(139, 92, 246, 0.22) !important;
+  color: #ffffff !important;
+  box-shadow: 0 18px 36px rgba(139, 92, 246, 0.22) !important;
+}
+
+.app-shell-root .ui-value-money,
+.app-shell-root .ui-tone-money .ui-stat-value,
+.app-shell-root .badge-green,
+.app-shell-root .metric-value[style*='#0f766e'],
+.app-shell-root .metric-value[style*='#16a34a'],
+.app-shell-root .metric-value[style*='#10b981'] {
+  color: #10b981 !important;
+}
+
+.app-shell-root .ui-value-warning,
+.app-shell-root .badge-yellow,
+.app-shell-root .metric-value[style*='#b45309'],
+.app-shell-root .metric-value[style*='#d97706'] {
+  color: #f59e0b !important;
+}
+
+.app-shell-root .ui-value-danger,
+.app-shell-root .badge-red,
+.app-shell-root .metric-value[style*='#ef4444'],
+.app-shell-root .metric-value[style*='#dc2626'] {
+  color: #dc2626 !important;
+}
+
+.app-shell-root .ui-value-secondary,
+.app-shell-root .ui-tone-secondary .ui-stat-value,
+.app-shell-root .badge-blue {
+  color: #8b5cf6 !important;
+}
+
+.app-shell-root .table-container thead,
+.app-shell-root .ui-table thead,
+.app-shell-root .gst-shell .ui-table thead {
+  background: #f1f5f9 !important;
+}
+
+.app-shell-root .table-container tbody tr:nth-child(odd) td,
+.app-shell-root .ui-table tbody tr:nth-child(odd) td {
+  background: #ffffff !important;
+}
+
+.app-shell-root .table-container tbody tr:nth-child(even) td,
+.app-shell-root .ui-table tbody tr:nth-child(even) td,
+.app-shell-root .gst-shell .ui-table tbody tr:nth-child(even) td {
+  background: #f9fafb !important;
+}
+
+.app-shell-root .table-container tbody tr:hover td,
+.app-shell-root .ui-table tbody tr:hover td {
+  background: #f5f7ff !important;
+}
+
+.app-shell-root .table-container,
+.app-shell-root .ui-table-wrap {
+  border: 1px solid #e7edf3 !important;
+  background: #ffffff !important;
+}
+
+.app-shell-root .metric-card,
+.app-shell-root .ui-stat-card,
+.app-shell-root .dashboard-section-card,
+.app-shell-root .product-shell .metric-card {
+  box-shadow: 0 24px 52px rgba(15, 23, 42, 0.09) !important;
+}
+
+.app-shell-root .flow-choice-pill {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+}
+
+.app-shell-root .flow-choice-pill::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 0;
+  height: 0;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.18);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.app-shell-root .flow-choice-pill.is-active {
+  border-width: 2px !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.14), 0 18px 30px rgba(139, 92, 246, 0.16) !important;
+  animation: paymentPulse 1.6s ease-in-out infinite;
+}
+
+.app-shell-root .flow-choice-pill.is-active::after {
+  animation: paymentRipple 1.4s ease-out infinite;
+}
+
+.app-shell-root .add-product-pulse {
+  animation: addProductPulse 1.5s ease-in-out infinite;
+}
+
+.app-shell-root .sidebar-panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(245,247,250,0.98)) !important;
+  border-color: #ece7ff !important;
+  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.08) !important;
+}
+
+.app-shell-root .nav-link {
+  color: #374151 !important;
+}
+
+.app-shell-root .nav-link-accent {
+  background: linear-gradient(180deg, #8b5cf6, #7c3aed) !important;
+}
+
+.app-shell-root .mobile-bottom-nav-card {
+  background: rgba(255,255,255,0.96) !important;
+  border-color: #e7edf3 !important;
+}
+
+.app-shell-root .mobile-nav-link {
+  color: #6b7280 !important;
+}
+
+.app-shell-root .mobile-nav-link.is-active {
+  color: #ffffff !important;
+}
+
+@keyframes paymentPulse {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.14), 0 18px 30px rgba(139, 92, 246, 0.12);
+  }
+  50% {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.07), 0 20px 34px rgba(139, 92, 246, 0.18);
+  }
+}
+
+@keyframes paymentRipple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.56;
+  }
+  100% {
+    width: 220%;
+    height: 220%;
+    opacity: 0;
+  }
+}
+
+@keyframes addProductPulse {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 18px 36px rgba(139, 92, 246, 0.18);
+  }
+  50% {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 22px 40px rgba(139, 92, 246, 0.24);
+  }
+}

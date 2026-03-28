@@ -135,8 +135,11 @@ function LayoutInner({ children }) {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileDropOpen, setMobileDropOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState('');
   const dropdownRef = useRef(null);
   const mobileDropRef = useRef(null);
+  const commandInputRef = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -208,6 +211,29 @@ function LayoutInner({ children }) {
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
+
+  useEffect(() => {
+    const handleHotkeys = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+
+      if (event.key === 'Escape') {
+        setCommandOpen(false);
+        setCommandQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', handleHotkeys);
+    return () => window.removeEventListener('keydown', handleHotkeys);
+  }, []);
+
+  useEffect(() => {
+    if (!commandOpen) return undefined;
+    const timeoutId = window.setTimeout(() => commandInputRef.current?.focus(), 40);
+    return () => window.clearTimeout(timeoutId);
+  }, [commandOpen]);
 
   useEffect(() => {
     if (!pathname || pathname === '/pricing' || pathname === '/welcome' || pathname === '/trial-status') {
@@ -308,6 +334,22 @@ function LayoutInner({ children }) {
         label: t(item.key),
       })),
     [t]
+  );
+  const commandItems = useMemo(
+    () => [
+      ...translatedNav.map((item) => ({
+        id: item.href,
+        label: item.label,
+        hint: item.shortLabel,
+        href: item.href,
+      })),
+      { id: 'pricing', label: t('pricing'), hint: 'Upgrade', href: '/pricing' },
+      { id: 'profile', label: t('profile'), hint: 'Business profile', href: '/profile' },
+    ],
+    [t, translatedNav]
+  );
+  const filteredCommandItems = commandItems.filter((item) =>
+    `${item.label} ${item.hint}`.toLowerCase().includes(commandQuery.trim().toLowerCase())
   );
 
   const upgradeButtonLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
@@ -441,6 +483,10 @@ function LayoutInner({ children }) {
           </div>
 
           <div className="mobile-topbar-actions">
+            <button type="button" className="top-command-chip" onClick={() => setCommandOpen(true)}>
+              <span>Search</span>
+              <kbd>Ctrl K</kbd>
+            </button>
             <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
               <Glyph name="pricing" size={14} />
               {upgradeButtonLabel}
@@ -488,6 +534,10 @@ function LayoutInner({ children }) {
                   Open plans anytime from this top tab without cluttering your main workspace.
                 </div>
               </div>
+              <button type="button" className="command-search-trigger" onClick={() => setCommandOpen(true)}>
+                <span>Search products, ledgers, invoices</span>
+                <kbd>Ctrl K</kbd>
+              </button>
               <a href="/pricing" className={`top-upgrade-chip desktop-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
                 <Glyph name="pricing" size={15} />
                 {upgradeButtonLabel}
@@ -512,6 +562,43 @@ function LayoutInner({ children }) {
           </div>
         </nav>
       </div>
+
+      {commandOpen && (
+        <div className="command-overlay" onClick={() => { setCommandOpen(false); setCommandQuery(''); }}>
+          <div className="command-shell" onClick={(event) => event.stopPropagation()}>
+            <div className="command-shell-head">
+              <span>Quick Jump</span>
+              <button type="button" onClick={() => { setCommandOpen(false); setCommandQuery(''); }}>Esc</button>
+            </div>
+            <div className="command-input-wrap">
+              <input
+                ref={commandInputRef}
+                className="command-input"
+                placeholder="Search products, invoices, GST, reports..."
+                value={commandQuery}
+                onChange={(event) => setCommandQuery(event.target.value)}
+              />
+            </div>
+            <div className="command-list">
+              {filteredCommandItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="command-item"
+                  onClick={() => {
+                    setCommandOpen(false);
+                    setCommandQuery('');
+                    router.push(item.href);
+                  }}
+                >
+                  <span>{item.label}</span>
+                  <small>{item.hint}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <ReadOnlyOverlay
         visible={Boolean(subscription?.isReadOnly)}
@@ -1003,6 +1090,142 @@ function LayoutInner({ children }) {
 
         .mobile-topbar-actions {
           gap: 8px;
+        }
+
+        .top-command-chip,
+        .command-search-trigger {
+          border: 1px solid rgba(167, 139, 250, 0.18);
+          background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.98));
+          color: #111827;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 40px;
+          padding: 0 14px;
+          font-size: 12px;
+          font-weight: 700;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .top-command-chip kbd,
+        .command-search-trigger kbd {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 42px;
+          height: 24px;
+          padding: 0 8px;
+          border-radius: 8px;
+          background: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          color: #6b7280;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .command-search-trigger {
+          border-radius: 16px;
+          min-width: 300px;
+          justify-content: space-between;
+        }
+
+        .command-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          background: rgba(255, 255, 255, 0.62);
+          backdrop-filter: blur(12px);
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 88px 16px 16px;
+        }
+
+        .command-shell {
+          width: min(720px, 100%);
+          border-radius: 28px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(240,249,255,0.98));
+          border: 1px solid rgba(196, 181, 253, 0.34);
+          box-shadow: 0 30px 80px rgba(88, 28, 135, 0.14);
+          overflow: hidden;
+        }
+
+        .command-shell-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 14px 18px;
+          border-bottom: 1px solid #eef2f7;
+          color: #6b7280;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .command-shell-head button {
+          border: 1px solid #e5e7eb;
+          background: #ffffff;
+          color: #6b7280;
+          border-radius: 10px;
+          min-width: 46px;
+          min-height: 30px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .command-input-wrap {
+          padding: 16px;
+        }
+
+        .command-input {
+          width: 100%;
+          min-height: 62px;
+          border-radius: 18px;
+          border: 1px solid rgba(167, 139, 250, 0.2);
+          background: #ffffff;
+          color: #111827;
+          font-size: 17px;
+          font-weight: 700;
+          padding: 0 20px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+
+        .command-list {
+          padding: 0 16px 16px;
+          display: grid;
+          gap: 10px;
+          max-height: 50vh;
+          overflow: auto;
+        }
+
+        .command-item {
+          border: 1px solid #eef2f7;
+          border-radius: 18px;
+          background: #ffffff;
+          min-height: 58px;
+          padding: 12px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          color: #111827;
+          font-size: 14px;
+          font-weight: 700;
+          text-align: left;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+        }
+
+        .command-item:hover {
+          border-color: rgba(139, 92, 246, 0.24);
+          transform: translateY(-1px);
+        }
+
+        .command-item small {
+          color: #8b5cf6;
+          font-size: 12px;
+          font-weight: 700;
         }
 
         .mobile-brand-title {
@@ -1558,6 +1781,14 @@ function LayoutInner({ children }) {
           }
           .content-top-actions {
             display: none;
+          }
+          .top-command-chip {
+            min-height: 36px;
+            padding: 0 10px;
+            font-size: 11px;
+          }
+          .top-command-chip kbd {
+            min-width: 36px;
           }
         }
 

@@ -37,6 +37,7 @@ export default function ProductsPage() {
   // Add/Edit modal
   const [showModal, setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
+  const [productSubmitting, setProductSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: '', description: '', price: '', cost_price: '',
     quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0,
@@ -139,6 +140,7 @@ export default function ProductsPage() {
     const url = editProduct
       ? `${API}/api/products/${editProduct._id}`
       : `${API}/api/products`;
+    setProductSubmitting(true);
     try {
       const res = await fetch(url, {
         method: editProduct ? 'PUT' : 'POST',
@@ -149,6 +151,7 @@ export default function ProductsPage() {
       if (res.ok) { setShowModal(false); fetchProducts(); }
       else setError(data.message || 'सहेजने में विफल');
     } catch { setError('Server error'); }
+    finally { setProductSubmitting(false); }
   };
 
   const handleBarcodeDetected = (detectedCode) => {
@@ -634,8 +637,8 @@ export default function ProductsPage() {
                     Continue
                   </button>
                 ) : (
-                  <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  {editProduct ? '✅ Update' : '➕ Add Product'}
+                  <button type="submit" className={`btn-primary ${!editProduct && productSubmitting ? 'add-product-pulse' : ''}`} style={{ flex: 1 }} disabled={productSubmitting}>
+                  {productSubmitting ? 'Saving...' : editProduct ? '✅ Update' : '➕ Add Product'}
                 </button>
                 )}
                 <button type="button" onClick={() => setShowModal(false)}
