@@ -472,6 +472,9 @@ function LayoutInner({ children }) {
         <main className="main-content premium-main-content">
           <div className="content-container">
             <div className="content-top-actions">
+              <div className="content-top-actions-badge">
+                <Glyph name="pricing" size={16} />
+              </div>
               <div className="content-top-actions-copy">
                 <div className="content-top-actions-kicker">Premium access</div>
                 <div className="content-top-actions-subtitle">
@@ -534,8 +537,8 @@ function LayoutInner({ children }) {
         .mobile-bottom-nav { display: none; }
 
         .premium-sidebar {
-          width: 288px;
-          padding: 18px 12px;
+          width: 332px;
+          padding: 16px 14px;
           position: fixed;
           left: 0;
           top: 0;
@@ -545,13 +548,13 @@ function LayoutInner({ children }) {
 
         .sidebar-panel {
           height: 100%;
-          border-radius: 30px;
-          padding: 16px;
+          border-radius: 34px;
+          padding: 18px;
           position: relative;
           overflow: hidden;
           display: flex;
           flex-direction: column;
-          gap: 14px;
+          gap: 16px;
           background:
             radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.24), transparent 28%),
             radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.16), transparent 28%),
@@ -691,21 +694,21 @@ function LayoutInner({ children }) {
 
         .sidebar-quick-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
+          grid-template-columns: 1fr;
+          gap: 12px;
         }
 
         .sidebar-shortcut {
           text-decoration: none;
           color: white;
-          padding: 14px;
-          border-radius: 20px;
+          padding: 16px;
+          border-radius: 24px;
           display: flex;
           gap: 12px;
-          align-items: flex-start;
+          align-items: center;
           background: linear-gradient(135deg, rgba(37,99,235,0.22), rgba(56,189,248,0.08), rgba(255,255,255,0.03));
           border: 1px solid rgba(147,197,253,0.14);
-          box-shadow: 0 18px 34px rgba(2, 8, 23, 0.2);
+          box-shadow: 0 20px 36px rgba(2, 8, 23, 0.2);
           transform: translateY(0);
         }
 
@@ -720,9 +723,9 @@ function LayoutInner({ children }) {
         }
 
         .sidebar-shortcut-icon {
-          width: 38px;
-          height: 38px;
-          border-radius: 14px;
+          width: 46px;
+          height: 46px;
+          border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -732,14 +735,15 @@ function LayoutInner({ children }) {
         }
 
         .sidebar-shortcut-title {
-          font-size: 13px;
+          font-size: 15px;
           font-weight: 800;
         }
 
         .sidebar-shortcut-copy {
-          font-size: 11px;
-          margin-top: 4px;
+          font-size: 12px;
+          margin-top: 3px;
           color: rgba(226, 232, 240, 0.6);
+          line-height: 1.45;
         }
 
         .language-toggle {
@@ -1080,13 +1084,13 @@ function LayoutInner({ children }) {
         }
 
         .premium-main-content {
-          margin-left: 288px;
-          padding: 30px 26px 108px;
+          margin-left: 332px;
+          padding: 18px 18px 108px;
           min-height: 100vh;
         }
 
         .content-container {
-          max-width: 1440px;
+          max-width: 1560px;
           margin: 0 auto;
         }
 
@@ -1095,7 +1099,34 @@ function LayoutInner({ children }) {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          margin: 0 0 18px;
+          margin: 0 0 16px;
+          padding: 16px 18px;
+          border-radius: 24px;
+          border: 1px solid rgba(191, 219, 254, 0.74);
+          background:
+            radial-gradient(circle at 88% 30%, rgba(79, 70, 229, 0.16), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(34, 197, 94, 0.08), transparent 24%),
+            linear-gradient(135deg, rgba(255,255,255,0.97), rgba(239,246,255,0.96));
+          box-shadow: 0 24px 60px rgba(37, 99, 235, 0.09);
+        }
+
+        .content-top-actions-badge {
+          width: 50px;
+          height: 50px;
+          border-radius: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          color: #1d4ed8;
+          background: linear-gradient(135deg, rgba(37,99,235,0.14), rgba(191,219,254,0.66));
+          border: 1px solid rgba(147,197,253,0.66);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.78);
+        }
+
+        .content-top-actions-copy {
+          flex: 1;
+          min-width: 0;
         }
 
         .content-top-actions-kicker {
@@ -1103,13 +1134,14 @@ function LayoutInner({ children }) {
           font-weight: 800;
           letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: #64748b;
+          color: #31507e;
         }
 
         .content-top-actions-subtitle {
-          margin-top: 4px;
+          margin-top: 6px;
           font-size: 13px;
-          color: #64748b;
+          color: #5c6f89;
+          line-height: 1.55;
         }
 
         .desktop-upgrade-chip {
@@ -1250,8 +1282,8 @@ function LayoutInner({ children }) {
         .mobile-bottom-nav-card {
           display: flex;
           gap: 6px;
-          padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
-          border-radius: 26px;
+          padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+          border-radius: 28px;
           background: linear-gradient(180deg, rgba(4,11,21,0.98), rgba(7,17,31,0.96));
           border: 1px solid rgba(255,255,255,0.08);
           box-shadow: 0 28px 70px rgba(2, 8, 23, 0.36);
@@ -1267,8 +1299,8 @@ function LayoutInner({ children }) {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 5px;
-          padding: 10px 4px;
+          gap: 6px;
+          padding: 11px 6px;
           border-radius: 18px;
           overflow: hidden;
           font-size: 10px;
@@ -1302,9 +1334,9 @@ function LayoutInner({ children }) {
 
         .app-shell-root {
           background:
-            radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 24%),
-            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.08), transparent 24%),
-            linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 24%),
+            radial-gradient(circle at 12% 88%, rgba(16, 185, 129, 0.08), transparent 22%),
+            linear-gradient(180deg, #f8fbff 0%, #eff4fb 48%, #eaf1f8 100%);
         }
 
         .app-shell-root .sidebar-panel {
@@ -1314,7 +1346,7 @@ function LayoutInner({ children }) {
             radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.12), transparent 32%),
             linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98) 44%, rgba(248,250,252,1));
           border: 1px solid #e2e8f0;
-          box-shadow: 0 36px 90px rgba(15, 23, 42, 0.12);
+          box-shadow: 0 30px 72px rgba(15, 23, 42, 0.1);
         }
 
         .app-shell-root .sidebar-panel::before {
@@ -1359,7 +1391,7 @@ function LayoutInner({ children }) {
         .app-shell-root .sidebar-user-card {
           background: #ffffff;
           border: 1px solid #e5e7eb;
-          box-shadow: none;
+          box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
         }
 
         .app-shell-root .brand-live-pill {
@@ -1502,14 +1534,17 @@ function LayoutInner({ children }) {
           box-shadow: none;
           background: #ffffff;
           border-color: #d1d5db;
-          color: #111111;
+          color: #ffffff;
+          border-color: transparent;
+          background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.16);
         }
 
         .app-shell-root .top-upgrade-chip.is-manage {
-          background: #ffffff;
-          border-color: #d1d5db;
-          box-shadow: none;
-          color: #111111;
+          background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+          border-color: transparent;
+          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.16);
+          color: #ffffff;
         }
 
         .app-shell-root .premium-trial-banner {
@@ -1546,9 +1581,9 @@ function LayoutInner({ children }) {
         .app-shell-root .membership-spotlight-side,
         .app-shell-root .membership-mini-plan,
         .app-shell-root .mobile-bottom-nav-card {
-          background: #ffffff;
+          background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(247,250,255,0.96));
           border-color: #e5e7eb;
-          box-shadow: none;
+          box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
         }
 
         .app-shell-root .mobile-nav-link {
@@ -1568,11 +1603,21 @@ function LayoutInner({ children }) {
           .mobile-bottom-nav { display: block !important; }
           .premium-main-content {
             margin-left: 0 !important;
-            padding: 86px 14px 116px !important;
+            padding: 82px 12px 118px !important;
           }
           .content-top-actions {
-            display: none;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 22px;
+            margin-bottom: 14px;
           }
+          .content-top-actions-badge { display: none; }
+          .content-top-actions-kicker { font-size: 10px; }
+          .content-top-actions-subtitle { font-size: 12px; margin-top: 4px; }
+          .desktop-upgrade-chip { padding: 10px 14px; }
         }
 
         @keyframes premiumShine {
