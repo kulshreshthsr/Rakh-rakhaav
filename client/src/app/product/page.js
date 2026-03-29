@@ -250,10 +250,10 @@ export default function ProductsPage() {
         <section className="card">
           <div className="page-toolbar">
             <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>उत्पाद / Products</div>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
               <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Your complete product catalog</div>
             </div>
-            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ उत्पाद जोड़ें / Add</button>
+            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ Add Product</button>
           </div>
         </section>
 

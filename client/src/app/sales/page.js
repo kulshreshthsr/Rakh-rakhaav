@@ -672,10 +672,10 @@ export default function SalesPage() {
         <section className="card">
           <div className="page-toolbar">
             <div>
-              <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>बिक्री / Sales</div>
+              <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing sales data...</div>}
             </div>
-            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ बिक्री दर्ज करें / Record Sale</button>
+            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ Record Sale</button>
           </div>
         </section>
 

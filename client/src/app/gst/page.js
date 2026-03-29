@@ -240,7 +240,7 @@ export default function GSTPage() {
         <section className="card">
           <div style={{ display: 'grid', gap: 14 }}>
             <div style={{ minWidth: 0 }}>
-              <div className="page-title">GST सारांश / GST Summary</div>
+              <div className="page-title">GST Summary</div>
               <div className="page-subtitle">
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
