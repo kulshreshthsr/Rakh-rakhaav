@@ -3775,3 +3775,362 @@ textarea.form-input {
     font-size: 25px;
   }
 }
+
+/* Trusted commerce refresh */
+:root {
+  --trust-bg: #f5f7fb;
+  --trust-bg-soft: #eef4f8;
+  --trust-card: #ffffff;
+  --trust-line: #d9e2ec;
+  --trust-line-strong: #c7d2df;
+  --trust-text: #111827;
+  --trust-muted: #5b6675;
+  --trust-navy: #183153;
+  --trust-emerald: #1f8f68;
+  --trust-blue: #2f6fed;
+  --trust-amber: #b7791f;
+  --trust-danger: #c24141;
+  --trust-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  --trust-shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.07);
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at top right, rgba(47, 111, 237, 0.06), transparent 22%),
+    radial-gradient(circle at bottom left, rgba(31, 143, 104, 0.05), transparent 24%),
+    linear-gradient(180deg, var(--trust-bg) 0%, #fbfcfe 100%);
+  color: var(--trust-text);
+}
+
+body {
+  font-feature-settings: "ss01" on, "cv02" on, "cv03" on;
+}
+
+.app-shell-root {
+  background:
+    radial-gradient(circle at top right, rgba(47, 111, 237, 0.05), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(31, 143, 104, 0.04), transparent 24%),
+    linear-gradient(180deg, var(--trust-bg) 0%, #fbfcfe 100%) !important;
+}
+
+.card,
+.toolbar-card,
+.soft-panel,
+.table-container,
+.metric-card,
+.stat-card,
+.mini-stat,
+.stack-row,
+.empty-state,
+.flow-modal,
+.flow-step-panel,
+.flow-section-card,
+.flow-intro-card,
+.modal,
+.ui-card,
+.ui-stat-card,
+.ui-table-wrap,
+.ui-list-card {
+  background: var(--trust-card) !important;
+  border: 1px solid var(--trust-line) !important;
+  box-shadow: var(--trust-shadow) !important;
+}
+
+.card::before,
+.card::after,
+.toolbar-card::before,
+.toolbar-card::after,
+.metric-card::before,
+.metric-card::after,
+.stat-card::before,
+.stat-card::after,
+.hero-panel::before,
+.hero-panel::after,
+.table-container::before,
+.table-container::after {
+  display: none !important;
+}
+
+.hero-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.96)) !important;
+  border: 1px solid var(--trust-line) !important;
+  box-shadow: var(--trust-shadow-lg) !important;
+  color: var(--trust-text) !important;
+}
+
+.page-title,
+.section-title,
+.panel-title,
+.metric-value,
+.stat-value,
+.ui-card-title,
+.ui-stat-value,
+.ui-data-row-label,
+.stack-row-title,
+.stack-row-value,
+.brand-title,
+.mobile-brand-title {
+  color: var(--trust-text) !important;
+  text-shadow: none !important;
+}
+
+.page-subtitle,
+.section-subtitle,
+.metric-note,
+.metric-label,
+.mini-stat-label,
+.mini-stat-note,
+.stack-row-subtitle,
+.stack-row-note,
+.ui-card-subtitle,
+.ui-stat-note,
+.ui-stat-label,
+.brand-subtitle,
+.mobile-brand-subtitle,
+.content-top-actions-kicker,
+.content-top-actions-subtitle,
+.nav-short,
+.sidebar-user-email,
+.sidebar-section-label,
+.language-title,
+.language-subtitle,
+.brand-status-label,
+.brand-status-copy {
+  color: var(--trust-muted) !important;
+}
+
+.kicker,
+.badge-navy,
+.flow-muted-chip,
+.panel-action,
+.sidebar-shortcut-copy,
+.brand-live-pill {
+  background: #f7fafc !important;
+  color: var(--trust-navy) !important;
+  border: 1px solid var(--trust-line) !important;
+  box-shadow: none !important;
+}
+
+.form-input,
+input,
+select,
+textarea,
+.app-shell-root .form-input,
+.app-shell-root input,
+.app-shell-root select,
+.app-shell-root textarea {
+  background: #ffffff !important;
+  color: var(--trust-text) !important;
+  border: 1px solid var(--trust-line-strong) !important;
+  box-shadow: none !important;
+}
+
+.form-input:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(24, 49, 83, 0.36) !important;
+  box-shadow: 0 0 0 4px rgba(24, 49, 83, 0.08) !important;
+}
+
+.btn-primary,
+.btn-success,
+.btn-warning,
+.btn-danger,
+.ui-action-primary,
+.ui-action-secondary,
+.ui-action-dark,
+.action-soft,
+.top-upgrade-chip,
+.sidebar-logout,
+.mobile-user-chip,
+.language-compact {
+  background: var(--trust-navy) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--trust-navy) !important;
+  box-shadow: none !important;
+}
+
+.btn-ghost,
+.soft-outline-button,
+.filter-pill,
+.flow-choice-pill,
+.sidebar-shortcut,
+.language-switch-card,
+.brand-status-card,
+.sidebar-user-card,
+.mobile-bottom-nav-card,
+.premium-trial-banner,
+.membership-spotlight-banner,
+.membership-spotlight-side,
+.membership-mini-plan,
+.top-command-chip,
+.command-search-trigger {
+  background: #ffffff !important;
+  color: var(--trust-text) !important;
+  border: 1px solid var(--trust-line) !important;
+  box-shadow: var(--trust-shadow) !important;
+}
+
+.filter-pill.is-active,
+.flow-choice-pill.is-active,
+.nav-link.is-active,
+.mobile-nav-link.is-active,
+.language-toggle .segmented-option.is-active {
+  background: var(--trust-navy) !important;
+  color: #ffffff !important;
+  border-color: var(--trust-navy) !important;
+  box-shadow: none !important;
+}
+
+.nav-link,
+.mobile-nav-link,
+.sidebar-user-menu button,
+.sidebar-user-menu a,
+.sidebar-user-name,
+.nav-label {
+  color: var(--trust-text) !important;
+}
+
+.sidebar-panel,
+.premium-topbar,
+.sidebar-user-menu {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid var(--trust-line) !important;
+  box-shadow: var(--trust-shadow-lg) !important;
+  backdrop-filter: blur(16px);
+}
+
+.nav-icon-wrap,
+.sidebar-shortcut-icon,
+.sidebar-avatar,
+.mobile-avatar,
+.dashboard-quick-icon {
+  background: #eef3f8 !important;
+  color: var(--trust-navy) !important;
+  border: 1px solid var(--trust-line) !important;
+  box-shadow: none !important;
+}
+
+.table-container,
+.ui-table-wrap {
+  overflow: hidden;
+}
+
+thead,
+.ui-table thead {
+  background: #f7fafc !important;
+}
+
+th,
+.ui-table th {
+  color: var(--trust-muted) !important;
+  border-bottom: 1px solid var(--trust-line) !important;
+}
+
+td,
+.ui-table td {
+  color: var(--trust-text) !important;
+  border-bottom: 1px solid #edf2f7 !important;
+}
+
+tbody tr:nth-child(even) td,
+.ui-table tbody tr:nth-child(even) td {
+  background: #fbfdff !important;
+}
+
+tbody tr:hover td,
+.ui-table tbody tr:hover td {
+  background: #f7fbff !important;
+}
+
+.dashboard-progress-track {
+  background: #edf2f7 !important;
+  border: 1px solid var(--trust-line) !important;
+}
+
+.dashboard-progress-fill {
+  background: linear-gradient(90deg, var(--trust-blue), var(--trust-emerald)) !important;
+}
+
+.ui-value-money,
+.badge-green,
+.status-dot.is-green {
+  color: var(--trust-emerald) !important;
+}
+
+.ui-value-warning,
+.badge-yellow,
+.status-dot.is-yellow {
+  color: var(--trust-amber) !important;
+}
+
+.ui-value-danger,
+.badge-red,
+.status-dot.is-red {
+  color: var(--trust-danger) !important;
+}
+
+.ui-value-secondary {
+  color: var(--trust-blue) !important;
+}
+
+.badge-green,
+.badge-yellow,
+.badge-red {
+  background: #ffffff !important;
+  border: 1px solid var(--trust-line) !important;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #eef2f7 20%, #f8fafc 50%, #eef2f7 80%) !important;
+}
+
+.product-shell [style*="color: '#fff'"],
+.product-shell [style*="color: '#ffffff'"],
+.sales-shell [style*="color: '#fff'"],
+.sales-shell [style*="color: '#ffffff'"],
+.purchases-shell [style*="color: '#fff'"],
+.purchases-shell [style*="color: '#ffffff'"],
+.gst-shell [style*="color: '#fff'"],
+.gst-shell [style*="color: '#ffffff'"],
+.reports-shell [style*="color: '#fff'"],
+.reports-shell [style*="color: '#ffffff'"],
+.ledger-shell [style*="color: '#fff'"],
+.ledger-shell [style*="color: '#ffffff'"],
+.profile-shell [style*="color: '#fff'"],
+.profile-shell [style*="color: '#ffffff'"] {
+  color: var(--trust-text) !important;
+}
+
+[style*="background: 'rgba(255,255,255,0.06)'"],
+[style*="background: 'rgba(255,255,255,0.04)'"],
+[style*="background: 'rgba(255,255,255,0.1)'"],
+[style*="background: 'rgba(255,255,255,0.08)'"] {
+  background: #ffffff !important;
+}
+
+[style*="border: '1px solid rgba(148,163,184,0.14)'"],
+[style*="border: '1.5px dashed rgba(148,163,184,0.22)'"] {
+  border-color: var(--trust-line) !important;
+}
+
+[style*="color: '#e5e7eb'"],
+[style*="color: '#cbd5e1'"] {
+  color: var(--trust-text) !important;
+}
+
+@media (max-width: 640px) {
+  .card,
+  .toolbar-card,
+  .table-container,
+  .metric-card,
+  .hero-panel,
+  .ui-card,
+  .ui-stat-card {
+    border-radius: 18px !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05) !important;
+  }
+}
