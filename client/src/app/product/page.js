@@ -261,8 +261,8 @@ export default function ProductsPage() {
         <section className="hero-panel product-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>उत्पाद / Products</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing inventory...</div>}
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>उत्पाद / Products</div>
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing inventory...</div>}
             </div>
             <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ उत्पाद जोड़ें / Add</button>
           </div>
@@ -355,7 +355,7 @@ export default function ProductsPage() {
                 {filtered.map(p => (
                   <tr key={p._id} style={{ background: p.quantity === 0 ? 'rgba(239,68,68,0.08)' : p.is_low_stock ? 'rgba(245,158,11,0.08)' : 'transparent' }}>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#ffffff' }}>{p.name}</div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
                       <div style={{ color: '#9ca3af', fontSize: 11 }}>
                         {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
                         {p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}
@@ -363,11 +363,11 @@ export default function ProductsPage() {
                       </div>
                     </td>
                     <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
-                    <td style={{ fontWeight: 600, color: '#e5e7eb' }}>₹{p.price}</td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</td>
                     <td><MarginBadge margin={p.margin} /></td>
                     <td><GSTBadge rate={p.gst_rate} /></td>
-                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>
-                      {p.quantity} <span style={{ color: '#cbd5e1', fontWeight: 800 }}>{p.unit || ''}</span>
+                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>
+                      {p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span>
                     </td>
                     <td><StockBadge p={p} /></td>
                     <td>
@@ -407,7 +407,7 @@ export default function ProductsPage() {
                 style={{ borderLeft: `3px solid ${p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#10b981'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#ffffff' }}>{p.name}</div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{p.name}</div>
                     <div style={{ color: '#9ca3af', fontSize: 11 }}>
                       {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
                       {p.description || (p.unit ? `Unit: ${p.unit}` : '')}
@@ -417,10 +417,10 @@ export default function ProductsPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#e5e7eb' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#e5e7eb' }}>₹{p.price}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#f8fafc' }}>{p.quantity} <span style={{ color: '#cbd5e1', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>{p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
                 </div>
 
@@ -459,7 +459,7 @@ export default function ProductsPage() {
           <div className="modal flow-modal">
             <div className="flow-modal-header">
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
               {editProduct ? '✏️ उत्पाद संपादित / Edit Product' : '📦 उत्पाद जोड़ें / Add Product'}
                 </h3>
               </div>
@@ -639,7 +639,7 @@ export default function ProductsPage() {
                 </button>
                 )}
                 <button type="button" onClick={() => setShowModal(false)}
-                  style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel
                 </button>
               </div>
@@ -652,11 +652,11 @@ export default function ProductsPage() {
       {showStockModal && stockProduct && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
               📦 Stock Adjust — {stockProduct.name}
             </h3>
             <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 14 }}>
-              Current Stock: <strong style={{ color: '#ffffff' }}>{stockProduct.quantity} {stockProduct.unit || 'pcs'}</strong>
+              Current Stock: <strong style={{ color: '#0f172a' }}>{stockProduct.quantity} {stockProduct.unit || 'pcs'}</strong>
             </div>
             {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
             <form onSubmit={handleStockAdjust}>
@@ -712,7 +712,7 @@ export default function ProductsPage() {
                   {stockSubmitting ? '⏳ Saving...' : '✅ Update Stock'}
                 </button>
                 <button type="button" onClick={() => { setShowStockModal(false); setError(''); }}
-                  style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel
                 </button>
               </div>
@@ -727,7 +727,7 @@ export default function ProductsPage() {
           <div className="modal" style={{ maxHeight: '85vh', overflowY: 'auto', maxWidth: 520 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#ffffff', marginBottom: 2 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
                   📋 Stock History — {historyProduct.name}
                 </h3>
                 <div style={{ fontSize: 12, color: '#9ca3af' }}>
@@ -735,7 +735,7 @@ export default function ProductsPage() {
                 </div>
               </div>
               <button onClick={() => setShowHistory(false)}
-                style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
+                style={{ padding: '6px 12px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
                 ✕
               </button>
             </div>
@@ -749,11 +749,11 @@ export default function ProductsPage() {
                 {historyData.map((h, i) => (
                   <div key={i} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 8,
+                    padding: '10px 12px', background: '#f8fafc', borderRadius: 8,
                     borderLeft: `3px solid ${h.quantity_change > 0 ? '#10b981' : '#ef4444'}`,
                   }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
                         {historyTypeLabel(h.type)}
                       </div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>
@@ -785,7 +785,7 @@ export default function ProductsPage() {
       />
 
       <style>{`
-        .product-shell .product-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .product-shell .product-hero { border: 1px solid rgba(186, 230, 253, 0.8); }
         .product-shell .card[style*='borderLeft'] { background: #ffffff !important; }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

@@ -237,9 +237,9 @@ export default function ReportsPage() {
         <section className="hero-panel reports-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>Reports</div>
+              <div className="page-title" style={{ marginBottom: 4, color: '#0f172a' }}>Reports</div>
               <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', maxWidth: 420 }}>
+              <div style={{ fontSize: 13, color: '#5b6b82', maxWidth: 420 }}>
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function ReportsPage() {
 
               {(summary.totalRevenue || 0) > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#64748b', marginBottom: 8 }}>
                     <span>Profit Margin</span>
                     <strong style={{ color: marginColor }}>{fmt(summary.margin)}%</strong>
                   </div>
@@ -405,21 +405,15 @@ export default function ReportsPage() {
       </div>
 
       <style>{`
-        .reports-shell .reports-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .reports-shell .reports-hero { border: 1px solid rgba(186, 230, 253, 0.8); }
 
         .reports-shell .reports-filter-pills {
           align-items: center;
         }
 
-        .reports-shell .reports-stats-grid .ui-stat-card,
-        .reports-shell .reports-profit-card,
         .reports-shell .stack-row {
-          box-shadow: none;
-        }
-
-        .reports-shell .stack-row {
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
+          background: linear-gradient(180deg, #ffffff, #f8fbff);
+          border: 1px solid rgba(203, 213, 225, 0.78);
         }
 
         .reports-shell .reports-split-grid {

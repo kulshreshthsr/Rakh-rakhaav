@@ -154,7 +154,7 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="page-shell">
+      <div className="page-shell profile-shell">
         <section className="hero-panel">
           <div className="profile-hero-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
@@ -163,13 +163,13 @@ export default function ProfilePage() {
                   width: 58,
                   height: 58,
                   borderRadius: 18,
-                  background: 'linear-gradient(135deg, #082032, #1d4ed8 58%, #0f766e)',
+                  background: 'linear-gradient(135deg, #2563eb, #0ea5e9 58%, #10b981)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 24,
                   fontWeight: 800,
-                  boxShadow: '0 14px 32px rgba(8,32,50,0.26)',
+                  boxShadow: '0 16px 36px rgba(37,99,235,0.2)',
                   flexShrink: 0,
                 }}
               >
@@ -177,8 +177,8 @@ export default function ProfilePage() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <div className="kicker" style={{ marginBottom: 10 }}>Profile control</div>
-                <div className="page-title" style={{ color: '#fff', marginBottom: 4 }}>प्रोफ़ाइल / Profile & Settings</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.66)' }}>
+                <div className="page-title" style={{ color: '#0f172a', marginBottom: 4 }}>प्रोफ़ाइल / Profile & Settings</div>
+                <div style={{ fontSize: 13, color: '#5b6b82' }}>
                   Manage shop identity, invoice details and account security in one place.
                 </div>
               </div>
@@ -193,14 +193,15 @@ export default function ProfilePage() {
                   maxWidth: 160,
                   padding: '10px 12px',
                   borderRadius: 14,
-                  background: 'rgba(255,255,255,0.09)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.84)',
+                  border: '1px solid rgba(191,219,254,0.82)',
+                  boxShadow: '0 10px 24px rgba(37,99,235,0.08)',
                 }}
               >
-                  <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.46)', fontWeight: 700 }}>
+                  <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
                     {tile.label}
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tile.value}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tile.value}</div>
                 </div>
               ))}
             </div>
