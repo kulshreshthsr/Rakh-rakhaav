@@ -115,7 +115,7 @@ function pickLocalizedSegment(text, locale) {
 }
 
 function LayoutInner({ children }) {
-  const { locale, setLocale, t } = useAppLocale();
+  const { locale, t } = useAppLocale();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -313,8 +313,8 @@ function LayoutInner({ children }) {
               <div className="brand-row">
                 <Logo size="md" />
                 <div>
-                  <div className="brand-title">Rakh-Rakhaav</div>
-                  <div className="brand-subtitle">{t('brand')}</div>
+                  <div className="brand-title brand-title-hindi">रखरखाव</div>
+                  <div className="brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
                 </div>
               </div>
               <div className="brand-status-card">
@@ -345,29 +345,6 @@ function LayoutInner({ children }) {
                   <div className="sidebar-shortcut-copy">{t('reportsShortcut')}</div>
                 </div>
               </a>
-            </div>
-
-            <div className="language-switch-card">
-              <div className="language-copy">
-                <div className="language-title">{t('language')}</div>
-                <div className="language-subtitle">{locale === 'hi' ? t('hindi') : t('english')}</div>
-              </div>
-              <div className="segmented-group language-toggle">
-                <button
-                  type="button"
-                  onClick={() => setLocale('hi')}
-                  className={`segmented-option ${locale === 'hi' ? 'is-active' : ''}`}
-                >
-                  हिं
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocale('en')}
-                  className={`segmented-option ${locale === 'en' ? 'is-active' : ''}`}
-                >
-                  EN
-                </button>
-              </div>
             </div>
 
             <div ref={dropdownRef} style={{ position: 'relative' }}>
@@ -425,21 +402,12 @@ function LayoutInner({ children }) {
           <div className="mobile-topbar-brand">
             <Logo size="sm" />
             <div>
-              <div className="mobile-brand-title">Rakh-Rakhaav</div>
-              <div className="mobile-brand-subtitle">{t('brand')}</div>
+              <div className="mobile-brand-title brand-title-hindi">रखरखाव</div>
+              <div className="mobile-brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
             </div>
           </div>
 
           <div className="mobile-topbar-actions">
-            <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
-              <Glyph name="pricing" size={14} />
-              {upgradeButtonLabel}
-            </a>
-            <button type="button" className="language-compact" onClick={() => setLocale(locale === 'hi' ? 'en' : 'hi')}>
-              <Glyph name="language" size={14} />
-              {locale === 'hi' ? 'हिं' : 'EN'}
-            </button>
-
             <div ref={mobileDropRef} style={{ position: 'relative' }}>
               <button type="button" className="mobile-user-chip" onClick={() => setMobileDropOpen((value) => !value)}>
                 <div className="mobile-avatar">{initial}</div>
@@ -466,6 +434,10 @@ function LayoutInner({ children }) {
                 </div>
               )}
             </div>
+            <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
+              <Glyph name="pricing" size={14} />
+              {upgradeButtonLabel}
+            </a>
           </div>
         </div>
 
