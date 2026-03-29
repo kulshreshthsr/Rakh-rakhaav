@@ -6123,3 +6123,171 @@ select.form-input {
   color: #0f172a !important;
   background: #f8fafc !important;
 }
+
+/* modern page header boxes */
+.dashboard-shell > .card:first-child,
+.sales-shell > .card:first-child,
+.purchases-shell > .card:first-child,
+.gst-shell > .card:first-child,
+.ledger-shell > .card:first-child,
+.reports-shell > .hero-panel:first-child {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px !important;
+  border: 1px solid rgba(79, 70, 229, 0.14) !important;
+  background:
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.14), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.08), transparent 24%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+  box-shadow:
+    0 20px 40px rgba(79, 70, 229, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+
+.dashboard-shell > .card:first-child::before,
+.sales-shell > .card:first-child::before,
+.purchases-shell > .card:first-child::before,
+.gst-shell > .card:first-child::before,
+.ledger-shell > .card:first-child::before,
+.reports-shell > .hero-panel:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.58), transparent 42%),
+    linear-gradient(90deg, rgba(79, 70, 229, 0.05), transparent 45%);
+}
+
+.dashboard-shell > .card:first-child::after,
+.sales-shell > .card:first-child::after,
+.purchases-shell > .card:first-child::after,
+.gst-shell > .card:first-child::after,
+.ledger-shell > .card:first-child::after,
+.reports-shell > .hero-panel:first-child::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 45%, #06b6d4 100%);
+}
+
+.dashboard-shell > .card:first-child .page-toolbar,
+.sales-shell > .card:first-child .page-toolbar,
+.purchases-shell > .card:first-child .page-toolbar,
+.ledger-shell > .card:first-child .page-toolbar,
+.reports-shell > .hero-panel:first-child > div,
+.gst-shell > .card:first-child > div {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-shell > .card:first-child .page-toolbar,
+.sales-shell > .card:first-child .page-toolbar,
+.purchases-shell > .card:first-child .page-toolbar,
+.ledger-shell > .card:first-child .page-toolbar {
+  align-items: center;
+  gap: 18px;
+}
+
+.dashboard-shell > .card:first-child .page-title,
+.sales-shell > .card:first-child .page-title,
+.purchases-shell > .card:first-child .page-title,
+.gst-shell > .card:first-child .page-title,
+.ledger-shell > .card:first-child .page-title,
+.reports-shell > .hero-panel:first-child .page-title {
+  margin-bottom: 4px !important;
+  color: #0f172a !important;
+  font-size: clamp(26px, 4vw, 30px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-shell > .card:first-child .page-subtitle,
+.sales-shell > .card:first-child .page-toolbar > div > div:not(.page-title),
+.purchases-shell > .card:first-child .page-toolbar > div > div:not(.page-title),
+.gst-shell > .card:first-child .page-subtitle,
+.ledger-shell > .card:first-child .page-toolbar > div > div:not(.page-title),
+.reports-shell > .hero-panel:first-child .kicker,
+.reports-shell > .hero-panel:first-child div[style*='font-size: 13px'] {
+  color: #64748b !important;
+}
+
+.dashboard-shell > .card:first-child .page-subtitle,
+.reports-shell > .hero-panel:first-child .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.08) !important;
+  border: 1px solid rgba(79, 70, 229, 0.12) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+}
+
+.dashboard-shell > .card:first-child .page-subtitle::before,
+.reports-shell > .hero-panel:first-child .kicker::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+}
+
+.dashboard-shell > .card:first-child select.form-input,
+.gst-shell > .card:first-child select.form-input {
+  border-radius: 14px !important;
+  border: 1px solid rgba(79, 70, 229, 0.14) !important;
+  background: rgba(248, 250, 252, 0.96) !important;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.06) !important;
+}
+
+.sales-shell > .card:first-child .btn-primary,
+.purchases-shell > .card:first-child .btn-primary,
+.dashboard-shell > .card:first-child .btn-primary,
+.ledger-shell > .card:first-child .btn-primary {
+  width: auto !important;
+  min-height: 46px !important;
+  padding: 0 18px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.16) !important;
+}
+
+.reports-shell > .hero-panel:first-child .filter-pills {
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(79, 70, 229, 0.06);
+  border: 1px solid rgba(79, 70, 229, 0.12);
+}
+
+.reports-shell > .hero-panel:first-child .filter-pill {
+  min-height: 38px;
+  border-radius: 12px !important;
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell > .card:first-child,
+  .sales-shell > .card:first-child,
+  .purchases-shell > .card:first-child,
+  .gst-shell > .card:first-child,
+  .ledger-shell > .card:first-child,
+  .reports-shell > .hero-panel:first-child {
+    border-radius: 18px !important;
+  }
+
+  .dashboard-shell > .card:first-child .page-title,
+  .sales-shell > .card:first-child .page-title,
+  .purchases-shell > .card:first-child .page-title,
+  .gst-shell > .card:first-child .page-title,
+  .ledger-shell > .card:first-child .page-title,
+  .reports-shell > .hero-panel:first-child .page-title {
+    font-size: 24px !important;
+  }
+}

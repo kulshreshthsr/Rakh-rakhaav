@@ -269,7 +269,7 @@ export default function DashboardPage() {
           <div className="page-toolbar dashboard-toolbar">
             <div style={{ minWidth: 0 }}>
               <div className="page-subtitle">Business overview</div>
-              <div className="page-title">{businessName}</div>
+              <div className="page-title">Dashboard</div>
               {refreshing ? (
                 <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
               ) : null}
