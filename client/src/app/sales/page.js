@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -142,21 +142,21 @@ const buildWhatsAppMessage = (sale, shopName) => {
   const payLabel =
     sale.payment_type === 'cash'   ? ' Cash (Paid)'   :
     sale.payment_type === 'upi'    ? ' UPI (Paid)'    :
-    sale.payment_type === 'bank'   ? ' Bank Transfer' : '=� Udhaar (Credit)';
+    sale.payment_type === 'bank'   ? ' Bank Transfer' : '=₹ Udhaar (Credit)';
 
   const itemLines = (sale.items && sale.items.length > 0)
     ? sale.items.map((item, i) =>
-        `  ${i + 1}. ${item.product_name} � ${item.quantity} @ �${fmt(item.price_per_unit)} = �${fmt(item.total_amount)}`
+        `  ${i + 1}. ${item.product_name} ₹ ${item.quantity} @ ₹${fmt(item.price_per_unit)} = ₹${fmt(item.total_amount)}`
       ).join('\n')
-    : `  1. ${sale.product_name} � ${sale.quantity} @ �${fmt(sale.price_per_unit)} = �${fmt(sale.total_amount)}`;
+    : `  1. ${sale.product_name} ₹ ${sale.quantity} @ ₹${fmt(sale.price_per_unit)} = ₹${fmt(sale.total_amount)}`;
 
   const isIGST = sale.gst_type === 'IGST' ||
     (sale.items && sale.items.some(i => i.gst_type === 'IGST'));
 
   const gstLine = (sale.total_gst && sale.total_gst > 0)
     ? isIGST
-      ? `=9 IGST: �${fmt(sale.igst_amount)}`
-      : `=9 CGST: �${fmt(sale.cgst_amount)}  |  SGST: �${fmt(sale.sgst_amount)}`
+      ? `=9 IGST: ₹${fmt(sale.igst_amount)}`
+      : `=9 CGST: ₹${fmt(sale.cgst_amount)}  |  SGST: ₹${fmt(sale.sgst_amount)}`
     : `=9 GST: NIL`;
 
   const greeting = sale.buyer_name && sale.buyer_name !== 'Walk-in Customer'
@@ -170,20 +170,20 @@ const buildWhatsAppMessage = (sale, shopName) => {
     : 0;
 
   return [
-    `${greeting}>� *Invoice / Bill Details*`,
+    `${greeting}>₹ *Invoice / Bill Details*`,
     ``,
-    `<� Shop: *${shopName || 'Rakh-Rakhaav'}*`,
-    `=� Invoice No: *${sale.invoice_number}*`,
-    `=� Date: ${saleDate}`,
+    `<₹ Shop: *${shopName || 'Rakh-Rakhaav'}*`,
+    `=₹ Invoice No: *${sale.invoice_number}*`,
+    `=₹ Date: ${saleDate}`,
     ``,
-    `=� *Items:*`,
+    `=₹ *Items:*`,
     itemLines,
     ``,
-    `=� Taxable Amount: �${fmt(sale.taxable_amount)}`,
+    `=₹ Taxable Amount: ₹${fmt(sale.taxable_amount)}`,
     gstLine,
-    `=� *Total Amount: �${fmt(sale.total_amount)}*`,
+    `=₹ *Total Amount: ₹${fmt(sale.total_amount)}*`,
     ``,
-    `=� Payment: ${payLabel}`,
+    `=₹ Payment: ${payLabel}`,
     ``,
     `=O Aapka business hamare liye bahut important hai!`,
     `Thank you for choosing *${shopName || 'Rakh-Rakhaav'}* =
@@ -618,7 +618,7 @@ export default function SalesPage() {
   const shareWhatsApp = (sale) => {
     const msg   = buildWhatsAppShareMessage(sale, shopName);
     const phone = sale.buyer_phone ? sale.buyer_phone.replace(/\D/g, '') : '';
-    // If phone number exists � open direct chat, else � open WhatsApp contact picker
+    // If phone number exists ₹ open direct chat, else ₹ open WhatsApp contact picker
     const waUrl = phone
       ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
@@ -656,12 +656,12 @@ export default function SalesPage() {
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Revenue</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>�{fmt(summary.totalRevenue)}</div>
+            <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmt(summary.totalRevenue)}</div>
             <div className="metric-note">Total billed amount</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>�{fmt(summary.totalGST)}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{fmt(summary.totalGST)}</div>
             <div className="metric-note">Collected in sales</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
@@ -711,10 +711,10 @@ export default function SalesPage() {
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
                       )}
                     </td>
-                    <td>�{fmt(s.taxable_amount)}</td>
+                    <td>₹{fmt(s.taxable_amount)}</td>
                     <td>
                       {(s.total_gst || 0) > 0
-                        ? <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>�{fmt(s.total_gst)}</span>
+                        ? <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{fmt(s.total_gst)}</span>
                         : <span style={{ color: '#9ca3af' }}></span>}
                     </td>
                     <td style={{ fontWeight: 700, color: '#10b981' }}>Rs {fmt(s.total_amount)}</td>
@@ -773,13 +773,13 @@ export default function SalesPage() {
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: 16 }}>�{fmt(s.total_amount)}</div>
+                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: 16 }}>₹{fmt(s.total_amount)}</div>
                     <PayBadge type={s.payment_type} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600 }}>�{fmt(s.taxable_amount)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>�{fmt(s.total_gst)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600 }}>₹{fmt(s.taxable_amount)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>₹{fmt(s.total_gst)}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
                 </div>
                 <div className="flow-choice-grid">
@@ -794,7 +794,7 @@ export default function SalesPage() {
                     title="Share on WhatsApp"
                     className="action-soft whatsapp"
                     style={{ flex: 1, padding: '9px' }}>
-                    =� WhatsApp
+                    =₹ WhatsApp
                   </button>
                   <button onClick={() => handleDelete(s._id)} className="action-soft delete" style={{ flex: 1, padding: '9px' }}>
                     Delete
@@ -858,7 +858,7 @@ export default function SalesPage() {
                         </button>
                         {items.length > 1 && (
                           <button type="button" onClick={() => removeItem(index)}
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>�</button>
+                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>₹</button>
                         )}
                       </div>
 
@@ -900,7 +900,7 @@ export default function SalesPage() {
                           {prod && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Available: {prod.quantity}</div>}
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Price/Unit � *</label>
+                          <label className="form-label">Price/Unit ₹ *</label>
                           <input className="form-input" type="number" step="0.01"
                             value={item.price_per_unit}
                             onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
@@ -908,15 +908,15 @@ export default function SalesPage() {
                       </div>
                       {g && (
                         <div className="fast-item-summary" style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ede9fe' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                          <span>Taxable: <strong>�{fmt(g.taxable)}</strong></span>
+                          <span>Taxable: <strong>₹{fmt(g.taxable)}</strong></span>
                           {g.gst_rate > 0 && (
                             <span>
                               {g.isIGST
-                                ? `IGST ${g.gst_rate}%: �${fmt(g.gst)}`
-                                : `CGST ${(g.gst_rate / 2).toFixed(1)}% + SGST ${(g.gst_rate / 2).toFixed(1)}%: �${fmt(g.gst)}`}
+                                ? `IGST ${g.gst_rate}%: ₹${fmt(g.gst)}`
+                                : `CGST ${(g.gst_rate / 2).toFixed(1)}% + SGST ${(g.gst_rate / 2).toFixed(1)}%: ₹${fmt(g.gst)}`}
                             </span>
                           )}
-                          <span>Total: <strong>�{fmt(g.total)}</strong></span>
+                          <span>Total: <strong>₹{fmt(g.total)}</strong></span>
                         </div>
                       )}
                     </div>
@@ -935,7 +935,7 @@ export default function SalesPage() {
                   <div className="fast-summary-kicker">{currentStep?.title || 'Step'}</div>
                   <div className="fast-summary-value">Rs {fmt(billTotals.total)}</div>
                   <div className="fast-summary-copy">
-                    {selectedItemsCount} item(s) � Rounded Rs {fmt(roundedBill.roundedTotal)}
+                    {selectedItemsCount} item(s) ₹ Rounded Rs {fmt(roundedBill.roundedTotal)}
                   </div>
                 </div>
                 <div className="fast-summary-side">
@@ -947,10 +947,10 @@ export default function SalesPage() {
               {/* Bill Summary */}
               {billTotals.total > 0 && saleStep === 1 && (
                 <div style={{ background: '#ecfeff', border: '1px solid #99f6e4', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: '#0f766e', marginBottom: 6 }}>=� Bill Summary</div>
+                  <div style={{ fontWeight: 700, color: '#0f766e', marginBottom: 6 }}>=₹ Bill Summary</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, color: '#134e4a' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Taxable:</span><strong>�{fmt(billTotals.taxable)}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>GST:</span><strong>�{fmt(billTotals.gst)}</strong></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Taxable:</span><strong>₹{fmt(billTotals.taxable)}</strong></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>GST:</span><strong>₹{fmt(billTotals.gst)}</strong></div>
                     {form.buyer_state && (
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span>Tax split:</span>
@@ -958,17 +958,17 @@ export default function SalesPage() {
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 4, marginTop: 2 }}>
-                      <span>Total:</span><span>�{fmt(billTotals.total)}</span>
+                      <span>Total:</span><span>₹{fmt(billTotals.total)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}�{fmt(roundedBill.roundOff)}</strong>
+                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
-                      <span>Rounded Total:</span><span>�{fmt(roundedBill.roundedTotal)}</span>
+                      <span>Rounded Total:</span><span>₹{fmt(roundedBill.roundedTotal)}</span>
                     </div>
                     {form.payment_type === 'credit' && amountPaidNum > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
-                        <span>Balance Due:</span><span>�{fmt(balanceDue)}</span>
+                        <span>Balance Due:</span><span>₹{fmt(balanceDue)}</span>
                       </div>
                     )}
                   </div>
@@ -982,10 +982,10 @@ export default function SalesPage() {
                 <label className="form-label">Payment Type *</label>
                 <div className="flow-choice-grid">
                   {[
-                    { val: 'cash',   label: '=� Cash',   color: '#10b981' },
-                    { val: 'credit', label: '=� Credit', color: '#ef4444' },
-                    { val: 'upi',    label: '=� UPI',    color: '#8b5cf6' },
-                    { val: 'bank',   label: '<� Bank',   color: '#3b82f6' },
+                    { val: 'cash',   label: '=₹ Cash',   color: '#10b981' },
+                    { val: 'credit', label: '=₹ Credit', color: '#ef4444' },
+                    { val: 'upi',    label: '=₹ UPI',    color: '#8b5cf6' },
+                    { val: 'bank',   label: '<₹ Bank',   color: '#3b82f6' },
                   ].map(opt => (
                     <button key={opt.val} type="button"
                       onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
@@ -1005,7 +1005,7 @@ export default function SalesPage() {
                   <div style={{ marginTop: 10 }}>
                     <label className="form-label">Advance Payment (optional)</label>
                     <input ref={amountPaidInputRef} className="form-input" type="number" step="0.01" min="0"
-                      placeholder={`Max �${fmt(billTotals.total)}`}
+                      placeholder={`Max ₹${fmt(billTotals.total)}`}
                       value={form.amount_paid}
                       onChange={e => updateForm({ amount_paid: e.target.value })} />
                     <div className="fast-qty-pills" style={{ marginTop: 8 }}>
@@ -1324,9 +1324,9 @@ const buildTaxSummaryRows = (saleItems, isIGST) => {
     .sort((a, b) => a.rate - b.rate)
     .map((group) => (
       isIGST
-        ? '<div class="amount-row"><span>IGST @' + group.rate + '%</span><span>�' + fmt(group.igst) + '</span></div>'
-        : '<div class="amount-row"><span>CGST @' + (group.rate / 2).toFixed(1) + '%</span><span>�' + fmt(group.cgst) + '</span></div>'
-          + '<div class="amount-row"><span>SGST @' + (group.rate / 2).toFixed(1) + '%</span><span>�' + fmt(group.sgst) + '</span></div>'
+        ? '<div class="amount-row"><span>IGST @' + group.rate + '%</span><span>₹' + fmt(group.igst) + '</span></div>'
+        : '<div class="amount-row"><span>CGST @' + (group.rate / 2).toFixed(1) + '%</span><span>₹' + fmt(group.cgst) + '</span></div>'
+          + '<div class="amount-row"><span>SGST @' + (group.rate / 2).toFixed(1) + '%</span><span>₹' + fmt(group.sgst) + '</span></div>'
     ))
     .join('');
 };
@@ -1357,31 +1357,31 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     : 'Not specified';
 
   const gstCols = isIGST
-    ? '<th>IGST%</th><th>IGST �</th>'
-    : '<th>CGST%</th><th>CGST �</th><th>SGST%</th><th>SGST �</th>';
+    ? '<th>IGST%</th><th>IGST ₹</th>'
+    : '<th>CGST%</th><th>CGST ₹</th><th>SGST%</th><th>SGST ₹</th>';
 
   const itemRows = saleItems.map((item, idx) => {
     const gstCells = isIGST
-      ? '<td>' + (item.gst_rate || 0) + '%</td><td>�' + fmt(item.igst_amount) + '</td>'
-      : '<td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>�' + fmt(item.cgst_amount) + '</td><td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>�' + fmt(item.sgst_amount) + '</td>';
-    return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '') + '</td><td>' + item.quantity + '</td><td>�' + fmt(item.price_per_unit) + '</td><td>�' + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>�' + fmt(item.total_amount) + '</strong></td></tr>';
+      ? '<td>' + (item.gst_rate || 0) + '%</td><td>₹' + fmt(item.igst_amount) + '</td>'
+      : '<td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.cgst_amount) + '</td><td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.sgst_amount) + '</td>';
+    return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '') + '</td><td>' + item.quantity + '</td><td>₹' + fmt(item.price_per_unit) + '</td><td>₹' + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>₹' + fmt(item.total_amount) + '</strong></td></tr>';
   }).join('');
 
   const emptyCell  = '<td style="height:20px"></td>';
   const fillerRows = Array(Math.max(0, 5 - saleItems.length)).fill('<tr>' + emptyCell.repeat(colSpan) + '</tr>').join('');
 
   const footerGST = isIGST
-    ? '<td></td><td>�' + fmt(sale.igst_amount) + '</td>'
-    : '<td></td><td>�' + fmt(sale.cgst_amount) + '</td><td></td><td>�' + fmt(sale.sgst_amount) + '</td>';
+    ? '<td></td><td>₹' + fmt(sale.igst_amount) + '</td>'
+    : '<td></td><td>₹' + fmt(sale.cgst_amount) + '</td><td></td><td>₹' + fmt(sale.sgst_amount) + '</td>';
 
   const amountGSTRows = buildTaxSummaryRows(saleItems, isIGST);
 
   const payBg    = sale.payment_type === 'cash' ? '#dcfce7' : sale.payment_type === 'upi' ? '#ede9fe' : '#fee2e2';
   const payColor = sale.payment_type === 'cash' ? '#166534' : sale.payment_type === 'upi' ? '#5b21b6' : '#991b1b';
-  const payLabel = sale.payment_type === 'cash' ? '=� CASH' : sale.payment_type === 'upi' ? '=� UPI' : sale.payment_type === 'bank' ? '<� BANK' : '=� CREDIT';
+  const payLabel = sale.payment_type === 'cash' ? '=₹ CASH' : sale.payment_type === 'upi' ? '=₹ UPI' : sale.payment_type === 'bank' ? '<₹ BANK' : '=₹ CREDIT';
 
   const bankHTML = shop.bank_name
-    ? '<div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:6px"><� Bank Details</div>'
+    ? '<div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:6px"><₹ Bank Details</div>'
       + '<div style="font-size:11px;margin-bottom:3px">Bank: <strong>' + shop.bank_name + '</strong></div>'
       + (shop.bank_branch  ? '<div style="font-size:11px;margin-bottom:3px">Branch: <strong>' + shop.bank_branch  + '</strong></div>' : '')
       + (shop.bank_account ? '<div style="font-size:11px;margin-bottom:3px">A/C: <strong>'    + shop.bank_account + '</strong></div>' : '')
@@ -1472,12 +1472,12 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '<div class="words-box"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Amount in Words</div>'
     + '<div style="font-size:11px;font-weight:600;color:#0B1D35;font-style:italic">' + numberToWords(parseFloat(sale.total_amount)) + '</div>' + creditNote + '</div>'
     + '<div class="amounts-box">'
-    + '<div class="amount-row"><span>Taxable Amount</span><span>�' + fmt(sale.taxable_amount) + '</span></div>'
+    + '<div class="amount-row"><span>Taxable Amount</span><span>₹' + fmt(sale.taxable_amount) + '</span></div>'
     + amountGSTRows
-    + '<div class="amount-row"><span>Total GST</span><span>�' + fmt(sale.total_gst) + '</span></div>'
-    + '<div class="amount-row"><span>Round Off</span><span>' + (roundedBill.roundOff >= 0 ? '+' : '') + '�' + fmt(roundedBill.roundOff) + '</span></div>'
-    + '<div class="amount-total"><span>GRAND TOTAL</span><span>�' + fmt(sale.total_amount) + '</span></div>'
-    + '<div class="amount-total" style="font-size:13px;color:#059669;border-top:1px dashed #94a3b8"><span>ROUNDED TOTAL</span><span>�' + fmt(roundedBill.roundedTotal) + '</span></div>'
+    + '<div class="amount-row"><span>Total GST</span><span>₹' + fmt(sale.total_gst) + '</span></div>'
+    + '<div class="amount-row"><span>Round Off</span><span>' + (roundedBill.roundOff >= 0 ? '+' : '') + '₹' + fmt(roundedBill.roundOff) + '</span></div>'
+    + '<div class="amount-total"><span>GRAND TOTAL</span><span>₹' + fmt(sale.total_amount) + '</span></div>'
+    + '<div class="amount-total" style="font-size:13px;color:#059669;border-top:1px dashed #94a3b8"><span>ROUNDED TOTAL</span><span>₹' + fmt(roundedBill.roundedTotal) + '</span></div>'
     + '</div></div>'
     + '<div class="footer-section"><div class="bank-box">' + bankHTML + '</div>'
     + '<div class="sign-box"><div style="font-size:12px;font-weight:700;margin-bottom:40px">For <strong>' + (shop.name || '00>5') + '</strong></div>'
@@ -1494,3 +1494,4 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
   win.document.write(html);
   win.document.close();
 }
+
