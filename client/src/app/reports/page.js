@@ -239,7 +239,7 @@ export default function ReportsPage() {
             <div>
               <div className="page-title" style={{ marginBottom: 4, color: '#fff' }}>Reports</div>
               <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
-              <div style={{ fontSize: 13, color: '#64748b', maxWidth: 420 }}>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', maxWidth: 420 }}>
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
               </div>
             </div>
@@ -406,23 +406,8 @@ export default function ReportsPage() {
 
       <style>{`
         .reports-shell .reports-hero {
-          border: 1px solid rgba(37, 99, 235, 0.14);
-          background:
-            radial-gradient(circle at 85% 16%, rgba(124, 58, 237, 0.14), transparent 20%),
-            radial-gradient(circle at 12% 18%, rgba(59, 130, 246, 0.16), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f8f9ff 54%, #eef4ff 100%);
-          box-shadow: 0 22px 48px rgba(59, 130, 246, 0.1);
-        }
-        .reports-shell .reports-stats-grid .ui-stat-card,
-        .reports-shell .reports-profit-card {
-          background:
-            radial-gradient(circle at top right, rgba(99,102,241,0.1), transparent 24%),
-            linear-gradient(180deg, #ffffff, #f8f9ff) !important;
-        }
-
-        .reports-shell .page-title,
-        .reports-shell div[style*="color: '#fff'"] {
-          color: #0f172a !important;
+          border: 1px solid rgba(59, 130, 246, 0.14);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
         }
 
         .reports-shell .reports-filter-pills {
@@ -432,16 +417,16 @@ export default function ReportsPage() {
         .reports-shell .reports-stats-grid .ui-stat-card,
         .reports-shell .reports-profit-card,
         .reports-shell .stack-row {
-          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
         }
 
         .reports-shell .stack-row {
-          background: linear-gradient(180deg, #ffffff, #f8f9ff);
-          border: 1px solid rgba(99, 102, 241, 0.12);
+          background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 24, 39, 0.96));
+          border: 1px solid rgba(148, 163, 184, 0.12);
         }
 
         .reports-shell .stack-row-title {
-          color: #0f172a;
+          color: #ffffff;
         }
 
         .reports-shell .reports-split-grid {

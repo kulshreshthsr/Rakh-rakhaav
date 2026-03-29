@@ -184,7 +184,8 @@ export default function DashboardPage() {
       label: 'बिक्री / Sales',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} invoices this month`,
-      color: '#0f172a',
+      color: '#0f766e',
+      accent: 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.04))',
       href: '/sales',
       icon: 'Sales',
     },
@@ -192,7 +193,10 @@ export default function DashboardPage() {
       label: 'मुनाफ़ा / Profit',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
-      color: profit >= 0 ? '#16a34a' : '#dc2626',
+      color: profit >= 0 ? '#1d4ed8' : '#dc2626',
+      accent: profit >= 0
+        ? 'linear-gradient(135deg, rgba(29,78,216,0.16), rgba(56,189,248,0.06))'
+        : 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))',
       href: '/reports',
       icon: 'Profit',
     },
@@ -200,7 +204,10 @@ export default function DashboardPage() {
       label: 'उधार / Credit',
       value: `₹${fmt(totalCustomerUdhaar)}`,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
-      color: totalCustomerUdhaar > 0 ? '#dc2626' : '#0f172a',
+      color: totalCustomerUdhaar > 0 ? '#dc2626' : '#10b981',
+      accent: totalCustomerUdhaar > 0
+        ? 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))'
+        : 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.06))',
       href: '/udhaar',
       icon: 'Credit',
     },
@@ -208,19 +215,22 @@ export default function DashboardPage() {
       label: 'GST देय / Payable',
       value: `₹${fmt(Math.abs(netGST))}`,
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
-      color: netGST >= 0 ? '#d97706' : '#2563eb',
+      color: netGST >= 0 ? '#b45309' : '#0f766e',
+      accent: netGST >= 0
+        ? 'linear-gradient(135deg, rgba(180,83,9,0.16), rgba(245,158,11,0.06))'
+        : 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.06))',
       href: '/gst',
       icon: 'GST',
     },
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'linear-gradient(135deg, rgba(34,197,94,0.16), rgba(22,163,74,0.08))', color: '#15803d', semantic: 'sales' },
-    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'linear-gradient(135deg, rgba(245,158,11,0.16), rgba(217,119,6,0.08))', color: '#b45309', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'linear-gradient(135deg, rgba(239,68,68,0.14), rgba(220,38,38,0.08))', color: '#b91c1c', semantic: 'credit' },
-    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'linear-gradient(135deg, rgba(124,58,237,0.16), rgba(168,85,247,0.08))', color: '#7c3aed', semantic: 'stock' },
-    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'linear-gradient(135deg, rgba(6,182,212,0.14), rgba(37,99,235,0.08))', color: '#0f766e', semantic: 'gst' },
-    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'linear-gradient(135deg, rgba(124,58,237,0.16), rgba(15,23,42,0.1))', color: '#6d28d9', semantic: 'premium' },
+    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(22,163,74,0.14)', color: '#15803d', semantic: 'sales' },
+    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.14)', color: '#b45309', semantic: 'purchase' },
+    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.12)', color: '#dc2626', semantic: 'credit' },
+    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(37,99,235,0.12)', color: '#2563eb', semantic: 'stock' },
+    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,145,178,0.12)', color: '#0f766e', semantic: 'gst' },
+    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
   ];
 
   return (
@@ -271,7 +281,7 @@ export default function DashboardPage() {
             <StatCard
               key={card.label}
               className="dashboard-stat-card"
-              tone="secondary"
+              tone={card.color === '#0f766e' ? 'money' : card.color === '#b45309' ? 'warning' : card.color === '#dc2626' ? 'danger' : 'secondary'}
               label={card.label}
               value={card.value}
               note={card.note}
@@ -293,11 +303,11 @@ export default function DashboardPage() {
 
             <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
               {[
-                { label: 'Revenue', value: stats?.totalRevenue, color: '#0f172a', prefix: '' },
-                { label: 'Profit', value: profit, color: profit >= 0 ? '#16a34a' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Collected', value: stats?.gstCollected, color: '#1d4ed8', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#0f766e', prefix: '-' },
-                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#d97706' : '#2563eb', prefix: '' },
+                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
+                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
+                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
+                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
+                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -320,7 +330,7 @@ export default function DashboardPage() {
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#475569', marginBottom: 6 }}>
                 <span>Profit Margin</span>
-                <strong style={{ color: '#0f172a' }}>{margin}%</strong>
+                <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
               </div>
               <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
                 <div
@@ -329,7 +339,7 @@ export default function DashboardPage() {
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
                     height: '100%',
                     borderRadius: 999,
-                    background: 'linear-gradient(90deg, #7c3aed, #c4b5fd)',
+                    background: profit >= 0 ? 'linear-gradient(90deg, #22c55e, #06b6d4)' : 'linear-gradient(90deg, #ef4444, #fb7185)',
                   }}
                 />
               </div>
@@ -345,8 +355,8 @@ export default function DashboardPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <div>
-                <div className="section-title">कम स्टॉक / Low Stock</div>
-                <div className="section-subtitle">
+                <div className="section-title" style={{ color: '#b45309' }}>कम स्टॉक / Low Stock</div>
+                <div className="section-subtitle" style={{ color: '#d97706' }}>
                   {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
@@ -431,11 +441,11 @@ export default function DashboardPage() {
                       height: 38,
                       borderRadius: 14,
                       background: [
-                        'linear-gradient(135deg, #7c3aed, #8b5cf6)',
-                        'linear-gradient(135deg, #a855f7, #c084fc)',
-                        'linear-gradient(135deg, #10b981, #059669)',
-                        'linear-gradient(135deg, #f59e0b, #d97706)',
-                        'linear-gradient(135deg, #1a2b47, #334155)',
+                        'linear-gradient(135deg, #10b981, #34d399)',
+                        'linear-gradient(135deg, #4f46e5, #818cf8)',
+                        'linear-gradient(135deg, #f59e0b, #fbbf24)',
+                        'linear-gradient(135deg, #ef4444, #fb7185)',
+                        'linear-gradient(135deg, #2563eb, #38bdf8)',
                       ][index],
                       color: '#fff',
                       display: 'flex',
@@ -451,7 +461,7 @@ export default function DashboardPage() {
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
                     <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
                 </div>
               ))}
             </div>
@@ -467,10 +477,10 @@ export default function DashboardPage() {
         .dashboard-hero {
           border: 1px solid #e2e8f0;
           background:
-            radial-gradient(circle at 85% 16%, rgba(168, 85, 247, 0.16), transparent 20%),
-            radial-gradient(circle at 18% 12%, rgba(240, 249, 255, 0.9), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f8f6ff 44%, #f0f9ff 100%);
-          box-shadow: 0 24px 52px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 85% 16%, rgba(22, 163, 74, 0.16), transparent 20%),
+            radial-gradient(circle at 18% 12%, rgba(6, 182, 212, 0.14), transparent 22%),
+            linear-gradient(135deg, #ffffff 0%, #f8fafc 48%, #f1f5f9 100%);
+          box-shadow: 0 28px 60px rgba(15, 23, 42, 0.08);
         }
 
         .dashboard-shell .page-title {
@@ -488,31 +498,31 @@ export default function DashboardPage() {
         .dashboard-shell .metric-label,
         .dashboard-shell .metric-note,
         .dashboard-shell .page-subtitle {
-          color: #64748b !important;
+          color: #475569 !important;
         }
 
         .dashboard-period-shell .form-input {
           background: #ffffff !important;
           color: #0f172a !important;
           border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 10px 22px rgba(15,23,42,0.05);
+          box-shadow: 0 14px 28px rgba(15,23,42,0.06);
         }
 
         .dashboard-stat-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
           border: 1px solid #e2e8f0;
-          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
         }
 
         .dashboard-stat-card::before {
           background:
-            radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 24%),
-            radial-gradient(circle at bottom left, rgba(224, 231, 255, 0.42), transparent 22%);
+            radial-gradient(circle at top right, rgba(22, 163, 74, 0.14), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.12), transparent 22%);
         }
 
         .dashboard-stat-card .metric-label,
         .dashboard-stat-card .metric-note {
-          color: #64748b !important;
+          color: #475569 !important;
         }
 
         .dashboard-stat-card .metric-value {
@@ -521,63 +531,61 @@ export default function DashboardPage() {
         }
 
         .dashboard-stat-icon {
-          background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08)) !important;
-          color: #7c3aed !important;
+          background: rgba(241,245,249,0.96) !important;
+          color: #0f172a !important;
           border: 1px solid #e2e8f0;
-          box-shadow: 0 10px 22px rgba(15,23,42,0.05) !important;
+          box-shadow: none !important;
         }
 
         .dashboard-section-card {
-          background:
-            radial-gradient(circle at top right, rgba(168,85,247,0.08), transparent 24%),
-            linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
           border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
+          box-shadow: 0 20px 46px rgba(15, 23, 42, 0.08) !important;
         }
 
         .dashboard-breakdown-card,
         .dashboard-top-card,
         .dashboard-quick-card {
-          background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98)) !important;
           border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 14px 28px rgba(15,23,42,0.06);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 16px 34px rgba(15,23,42,0.06);
         }
 
         .dashboard-quick-card:hover,
         .dashboard-top-card:hover {
           transform: translateY(-3px);
-          border-color: rgba(148, 163, 184, 0.24) !important;
-          box-shadow: 0 18px 36px rgba(15,23,42,0.08);
+          border-color: rgba(37, 99, 235, 0.18) !important;
+          box-shadow: 0 20px 40px rgba(15,23,42,0.1);
         }
 
         .dashboard-quick-card-sales {
-          background: linear-gradient(180deg, #ffffff, #f8fffb) !important;
-          border-color: rgba(34,197,94,0.16) !important;
+          background: linear-gradient(180deg, rgba(240,253,244,0.98), rgba(236,253,245,0.98)) !important;
+          border-color: rgba(22, 163, 74, 0.18) !important;
         }
 
         .dashboard-quick-card-purchase {
-          background: linear-gradient(180deg, #ffffff, #fffaf2) !important;
-          border-color: rgba(245,158,11,0.16) !important;
+          background: linear-gradient(180deg, rgba(255,251,235,0.98), rgba(255,247,237,0.98)) !important;
+          border-color: rgba(245, 158, 11, 0.18) !important;
         }
 
         .dashboard-quick-card-credit {
-          background: linear-gradient(180deg, #ffffff, #fff7f7) !important;
-          border-color: rgba(239,68,68,0.14) !important;
+          background: linear-gradient(180deg, rgba(254,242,242,0.98), rgba(255,241,242,0.98)) !important;
+          border-color: rgba(220, 38, 38, 0.18) !important;
         }
 
         .dashboard-quick-card-stock {
-          background: linear-gradient(180deg, #ffffff, #faf5ff) !important;
-          border-color: rgba(124,58,237,0.18) !important;
+          background: linear-gradient(180deg, rgba(239,246,255,0.98), rgba(224,242,254,0.98)) !important;
+          border-color: rgba(37, 99, 235, 0.18) !important;
         }
 
         .dashboard-quick-card-gst {
-          background: linear-gradient(180deg, #ffffff, #f3fbff) !important;
-          border-color: rgba(6,182,212,0.14) !important;
+          background: linear-gradient(180deg, rgba(240,249,255,0.98), rgba(236,254,255,0.98)) !important;
+          border-color: rgba(8, 145, 178, 0.18) !important;
         }
 
         .dashboard-quick-card-premium {
-          background: linear-gradient(180deg, #ffffff, #faf5ff) !important;
-          border-color: rgba(124,58,237,0.16) !important;
+          background: linear-gradient(180deg, rgba(245,243,255,0.98), rgba(238,242,255,0.98)) !important;
+          border-color: rgba(79, 70, 229, 0.18) !important;
         }
 
         .dashboard-quick-card,
@@ -585,57 +593,50 @@ export default function DashboardPage() {
           color: #0f172a !important;
         }
 
-        .dashboard-top-card > div:last-child {
-          color: #10b981 !important;
-        }
-
-        .dashboard-shell div[style*='color: #475569'],
-        .dashboard-shell div[style*='color: #64748b'] {
-          color: #64748b !important;
-        }
-
-        .dashboard-shell div[style*='color: #e5e7eb'] {
-          color: #10b981 !important;
+        .dashboard-quick-card div[style*='color: #64748b'],
+        .dashboard-top-card div[style*='color: #64748b'],
+        .dashboard-breakdown-card div[style*='color: #64748b'] {
+          color: #475569 !important;
         }
 
         .dashboard-quick-icon {
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 12px 24px rgba(15,23,42,0.08);
+          box-shadow: 0 12px 24px rgba(2,6,23,0.2);
         }
 
         .dashboard-progress-track {
-          background: #e2e8f0;
-          border: 1px solid #dbe2ea;
+          background: rgba(226, 232, 240, 0.8);
+          border: 1px solid #e2e8f0;
         }
 
         .dashboard-warning-card {
-          background: linear-gradient(180deg, #ffffff, #fff9f1) !important;
-          border-color: rgba(245,158,11,0.18) !important;
+          background: linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 247, 237, 0.98)) !important;
+          border-color: rgba(245, 158, 11, 0.22) !important;
         }
 
         .dashboard-warning-card .section-title {
-          color: #0f172a !important;
+          color: #b45309 !important;
         }
 
         .dashboard-warning-card .section-subtitle {
-          color: #64748b !important;
+          color: #d97706 !important;
         }
 
         .dashboard-chip-warning {
-          background: #f8fafc !important;
-          color: #475569 !important;
-          border: 1px solid #e2e8f0 !important;
+          background: rgba(245, 158, 11, 0.12) !important;
+          color: #b45309 !important;
+          border: 1px solid rgba(245, 158, 11, 0.18) !important;
         }
 
         .dashboard-shell .badge-navy {
-          background: #f8fafc;
+          background: rgba(255,255,255,0.92);
           color: #475569;
           border-color: #e2e8f0;
         }
 
         .dashboard-shell .btn-warning {
-          background: linear-gradient(135deg, #d97706, #b45309);
-          color: #ffffff;
-          box-shadow: 0 16px 32px rgba(217, 119, 6, 0.22);
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: #111827;
+          box-shadow: 0 16px 32px rgba(245, 158, 11, 0.24);
         }
 
         .top-products-row,

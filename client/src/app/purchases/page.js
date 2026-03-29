@@ -382,7 +382,7 @@ export default function PurchasesPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>खरीद / Purchases</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing purchase data...</div>}
             </div>
             <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
               + खरीद दर्ज / Record Purchase
@@ -815,40 +815,11 @@ export default function PurchasesPage() {
       <style>{`
         .purchases-shell .purchases-hero {
           border: 1px solid rgba(245, 158, 11, 0.16);
-          background:
-            radial-gradient(circle at 85% 16%, rgba(245, 158, 11, 0.18), transparent 20%),
-            radial-gradient(circle at 12% 18%, rgba(251, 191, 36, 0.16), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #fffaf2 52%, #fff6ea 100%);
-          box-shadow: 0 22px 48px rgba(217, 119, 6, 0.1);
-        }
-        .purchases-shell .metric-card {
-          background:
-            radial-gradient(circle at top right, rgba(245,158,11,0.12), transparent 24%),
-            linear-gradient(180deg, #ffffff, #fffaf4) !important;
-          border-color: rgba(245,158,11,0.16) !important;
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
         }
 
-        .purchases-shell .page-title,
-        .purchases-shell .modal h3,
-        .purchases-shell div[style*="color: '#ffffff'"],
-        .purchases-shell div[style*="color: '#fff'"],
-        .purchases-shell div[style*="color: '#e5e7eb'"] {
-          color: #0f172a !important;
-        }
-
-        .purchases-shell .card[style*='borderLeft'],
-        .purchases-shell .modal,
-        .purchases-shell div[style*='background: rgba(255,255,255,0.04)'] {
-          background: linear-gradient(180deg, #ffffff, #fffaf5) !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
-        }
-
-        .purchases-shell button[style*='background: rgba(255,255,255,0.06)'],
-        .purchases-shell button[style*='background: rgba(255,255,255,0.04)'] {
-          background: #ffffff !important;
-          color: #334155 !important;
-          border-color: #cbd5e1 !important;
+        .purchases-shell .card[style*='borderLeft'] {
+          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
         }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

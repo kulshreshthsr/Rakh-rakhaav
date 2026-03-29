@@ -37,7 +37,6 @@ export default function ProductsPage() {
   // Add/Edit modal
   const [showModal, setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [productSubmitting, setProductSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: '', description: '', price: '', cost_price: '',
     quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0,
@@ -140,7 +139,6 @@ export default function ProductsPage() {
     const url = editProduct
       ? `${API}/api/products/${editProduct._id}`
       : `${API}/api/products`;
-    setProductSubmitting(true);
     try {
       const res = await fetch(url, {
         method: editProduct ? 'PUT' : 'POST',
@@ -151,7 +149,6 @@ export default function ProductsPage() {
       if (res.ok) { setShowModal(false); fetchProducts(); }
       else setError(data.message || 'सहेजने में विफल');
     } catch { setError('Server error'); }
-    finally { setProductSubmitting(false); }
   };
 
   const handleBarcodeDetected = (detectedCode) => {
@@ -637,8 +634,8 @@ export default function ProductsPage() {
                     Continue
                   </button>
                 ) : (
-                  <button type="submit" className={`btn-primary ${!editProduct && productSubmitting ? 'add-product-pulse' : ''}`} style={{ flex: 1 }} disabled={productSubmitting}>
-                  {productSubmitting ? 'Saving...' : editProduct ? '✅ Update' : '➕ Add Product'}
+                  <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                  {editProduct ? '✅ Update' : '➕ Add Product'}
                 </button>
                 )}
                 <button type="button" onClick={() => setShowModal(false)}
@@ -789,42 +786,12 @@ export default function ProductsPage() {
 
       <style>{`
         .product-shell .product-hero {
-          border: 1px solid rgba(37, 99, 235, 0.14);
-          background:
-            radial-gradient(circle at 85% 16%, rgba(34, 197, 94, 0.16), transparent 20%),
-            radial-gradient(circle at 14% 16%, rgba(59, 130, 246, 0.16), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f5fbff 54%, #eefcf6 100%);
-          box-shadow: 0 22px 48px rgba(37, 99, 235, 0.1);
-        }
-        .product-shell .metric-card {
-          background:
-            radial-gradient(circle at top right, rgba(59,130,246,0.1), transparent 24%),
-            linear-gradient(180deg, #ffffff, #f5fbff) !important;
-          border-color: rgba(37,99,235,0.16) !important;
+          border: 1px solid rgba(34, 197, 94, 0.14);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
         }
 
-        .product-shell .page-title,
-        .product-shell .modal h3,
-        .product-shell strong[style*="color: '#ffffff'"],
-        .product-shell div[style*="color: '#ffffff'"],
-        .product-shell div[style*="color: '#fff'"],
-        .product-shell div[style*="color: '#e5e7eb'"],
-        .product-shell td[style*="color: '#e5e7eb'"] {
-          color: #0f172a !important;
-        }
-
-        .product-shell .card[style*='borderLeft'],
-        .product-shell .modal,
-        .product-shell div[style*='background: rgba(255,255,255,0.04)'] {
-          background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
-        }
-
-        .product-shell button[style*='background: rgba(255,255,255,0.06)'] {
-          background: #ffffff !important;
-          color: #334155 !important;
-          border-color: #cbd5e1 !important;
+        .product-shell .card[style*='borderLeft'] {
+          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
         }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

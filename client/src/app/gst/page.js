@@ -242,7 +242,7 @@ export default function GSTPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="kicker" style={{ marginBottom: 10 }}>Tax centre</div>
               <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST Summary</div>
-              <div style={{ marginTop: 10, color: '#64748b', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
+              <div style={{ marginTop: 10, color: 'rgba(226,232,240,0.72)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
             </div>
@@ -457,30 +457,17 @@ export default function GSTPage() {
 
       <style>{`
         .gst-shell .gst-hero {
-          border: 1px solid rgba(6, 182, 212, 0.14);
-          background:
-            radial-gradient(circle at 85% 16%, rgba(6, 182, 212, 0.16), transparent 20%),
-            radial-gradient(circle at 14% 16%, rgba(59, 130, 246, 0.14), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f4fdff 54%, #eef8ff 100%);
-          box-shadow: 0 22px 48px rgba(14, 165, 233, 0.1);
-        }
-        .gst-shell .ui-stat-card,
-        .gst-shell .ui-card {
-          background:
-            radial-gradient(circle at top right, rgba(6,182,212,0.08), transparent 24%),
-            linear-gradient(180deg, #ffffff, #f4fdff) !important;
-        }
-
-        .gst-shell .page-title,
-        .gst-shell .ui-list-card strong,
-        .gst-shell div[style*="color: '#fff'"],
-        .gst-shell div[style*="color: '#ffffff'"] {
-          color: #0f172a !important;
+          border: 1px solid rgba(34, 197, 94, 0.14);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
         }
 
         .gst-shell .ui-empty,
         .gst-shell .ui-list-card {
-          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.24);
+        }
+
+        .gst-shell .ui-list-card strong {
+          color: #ffffff;
         }
 
         @media (max-width: 640px) {

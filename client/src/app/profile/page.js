@@ -362,24 +362,6 @@ export default function ProfilePage() {
         </section>
 
         <style>{`
-          .page-shell .hero-panel {
-            background:
-              radial-gradient(circle at 85% 16%, rgba(37, 99, 235, 0.16), transparent 20%),
-              radial-gradient(circle at 10% 16%, rgba(14, 165, 233, 0.14), transparent 22%),
-              linear-gradient(135deg, #ffffff 0%, #f8fbff 54%, #edf5ff 100%);
-            box-shadow: 0 22px 48px rgba(37, 99, 235, 0.1);
-          }
-
-          .page-shell .page-title,
-          .page-shell div[style*="color: '#fff'"] {
-            color: #0f172a !important;
-          }
-
-          .page-shell div[style*='background: rgba(255,255,255,0.09)'] {
-            background: linear-gradient(180deg, #ffffff, #f4f9ff) !important;
-            border: 1px solid rgba(37, 99, 235, 0.12) !important;
-          }
-
           @media (max-width: 900px) {
             .profile-two-col {
               grid-template-columns: 1fr;

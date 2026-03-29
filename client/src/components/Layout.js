@@ -135,11 +135,8 @@ function LayoutInner({ children }) {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileDropOpen, setMobileDropOpen] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false);
-  const [commandQuery, setCommandQuery] = useState('');
   const dropdownRef = useRef(null);
   const mobileDropRef = useRef(null);
-  const commandInputRef = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -211,29 +208,6 @@ function LayoutInner({ children }) {
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
-
-  useEffect(() => {
-    const handleHotkeys = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        setCommandOpen(true);
-      }
-
-      if (event.key === 'Escape') {
-        setCommandOpen(false);
-        setCommandQuery('');
-      }
-    };
-
-    window.addEventListener('keydown', handleHotkeys);
-    return () => window.removeEventListener('keydown', handleHotkeys);
-  }, []);
-
-  useEffect(() => {
-    if (!commandOpen) return undefined;
-    const timeoutId = window.setTimeout(() => commandInputRef.current?.focus(), 40);
-    return () => window.clearTimeout(timeoutId);
-  }, [commandOpen]);
 
   useEffect(() => {
     if (!pathname || pathname === '/pricing' || pathname === '/welcome' || pathname === '/trial-status') {
@@ -334,22 +308,6 @@ function LayoutInner({ children }) {
         label: t(item.key),
       })),
     [t]
-  );
-  const commandItems = useMemo(
-    () => [
-      ...translatedNav.map((item) => ({
-        id: item.href,
-        label: item.label,
-        hint: item.shortLabel,
-        href: item.href,
-      })),
-      { id: 'pricing', label: t('pricing'), hint: 'Upgrade', href: '/pricing' },
-      { id: 'profile', label: t('profile'), hint: 'Business profile', href: '/profile' },
-    ],
-    [t, translatedNav]
-  );
-  const filteredCommandItems = commandItems.filter((item) =>
-    `${item.label} ${item.hint}`.toLowerCase().includes(commandQuery.trim().toLowerCase())
   );
 
   const upgradeButtonLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
@@ -483,10 +441,6 @@ function LayoutInner({ children }) {
           </div>
 
           <div className="mobile-topbar-actions">
-            <button type="button" className="top-command-chip" onClick={() => setCommandOpen(true)}>
-              <span>Search</span>
-              <kbd>Ctrl K</kbd>
-            </button>
             <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
               <Glyph name="pricing" size={14} />
               {upgradeButtonLabel}
@@ -534,10 +488,6 @@ function LayoutInner({ children }) {
                   Open plans anytime from this top tab without cluttering your main workspace.
                 </div>
               </div>
-              <button type="button" className="command-search-trigger" onClick={() => setCommandOpen(true)}>
-                <span>Search products, ledgers, invoices</span>
-                <kbd>Ctrl K</kbd>
-              </button>
               <a href="/pricing" className={`top-upgrade-chip desktop-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
                 <Glyph name="pricing" size={15} />
                 {upgradeButtonLabel}
@@ -562,43 +512,6 @@ function LayoutInner({ children }) {
           </div>
         </nav>
       </div>
-
-      {commandOpen && (
-        <div className="command-overlay" onClick={() => { setCommandOpen(false); setCommandQuery(''); }}>
-          <div className="command-shell" onClick={(event) => event.stopPropagation()}>
-            <div className="command-shell-head">
-              <span>Quick Jump</span>
-              <button type="button" onClick={() => { setCommandOpen(false); setCommandQuery(''); }}>Esc</button>
-            </div>
-            <div className="command-input-wrap">
-              <input
-                ref={commandInputRef}
-                className="command-input"
-                placeholder="Search products, invoices, GST, reports..."
-                value={commandQuery}
-                onChange={(event) => setCommandQuery(event.target.value)}
-              />
-            </div>
-            <div className="command-list">
-              {filteredCommandItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="command-item"
-                  onClick={() => {
-                    setCommandOpen(false);
-                    setCommandQuery('');
-                    router.push(item.href);
-                  }}
-                >
-                  <span>{item.label}</span>
-                  <small>{item.hint}</small>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <ReadOnlyOverlay
         visible={Boolean(subscription?.isReadOnly)}
@@ -1092,142 +1005,6 @@ function LayoutInner({ children }) {
           gap: 8px;
         }
 
-        .top-command-chip,
-        .command-search-trigger {
-          border: 1px solid rgba(167, 139, 250, 0.18);
-          background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.98));
-          color: #111827;
-          border-radius: 999px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          min-height: 40px;
-          padding: 0 14px;
-          font-size: 12px;
-          font-weight: 700;
-          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
-        }
-
-        .top-command-chip kbd,
-        .command-search-trigger kbd {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 42px;
-          height: 24px;
-          padding: 0 8px;
-          border-radius: 8px;
-          background: #f3f4f6;
-          border: 1px solid #e5e7eb;
-          color: #6b7280;
-          font-size: 10px;
-          font-weight: 800;
-        }
-
-        .command-search-trigger {
-          border-radius: 16px;
-          min-width: 300px;
-          justify-content: space-between;
-        }
-
-        .command-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 80;
-          background: rgba(255, 255, 255, 0.62);
-          backdrop-filter: blur(12px);
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 88px 16px 16px;
-        }
-
-        .command-shell {
-          width: min(720px, 100%);
-          border-radius: 28px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(240,249,255,0.98));
-          border: 1px solid rgba(196, 181, 253, 0.34);
-          box-shadow: 0 30px 80px rgba(88, 28, 135, 0.14);
-          overflow: hidden;
-        }
-
-        .command-shell-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 14px 18px;
-          border-bottom: 1px solid #eef2f7;
-          color: #6b7280;
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .command-shell-head button {
-          border: 1px solid #e5e7eb;
-          background: #ffffff;
-          color: #6b7280;
-          border-radius: 10px;
-          min-width: 46px;
-          min-height: 30px;
-          font-size: 11px;
-          font-weight: 700;
-        }
-
-        .command-input-wrap {
-          padding: 16px;
-        }
-
-        .command-input {
-          width: 100%;
-          min-height: 62px;
-          border-radius: 18px;
-          border: 1px solid rgba(167, 139, 250, 0.2);
-          background: #ffffff;
-          color: #111827;
-          font-size: 17px;
-          font-weight: 700;
-          padding: 0 20px;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
-        }
-
-        .command-list {
-          padding: 0 16px 16px;
-          display: grid;
-          gap: 10px;
-          max-height: 50vh;
-          overflow: auto;
-        }
-
-        .command-item {
-          border: 1px solid #eef2f7;
-          border-radius: 18px;
-          background: #ffffff;
-          min-height: 58px;
-          padding: 12px 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          color: #111827;
-          font-size: 14px;
-          font-weight: 700;
-          text-align: left;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-        }
-
-        .command-item:hover {
-          border-color: rgba(139, 92, 246, 0.24);
-          transform: translateY(-1px);
-        }
-
-        .command-item small {
-          color: #8b5cf6;
-          font-size: 12px;
-          font-weight: 700;
-        }
-
         .mobile-brand-title {
           font-size: 17px;
           font-weight: 900;
@@ -1535,31 +1312,31 @@ function LayoutInner({ children }) {
 
         .app-shell-root {
           background:
-            radial-gradient(circle at top right, rgba(191, 219, 254, 0.38), transparent 22%),
-            radial-gradient(circle at 8% 8%, rgba(255, 255, 255, 0.96), transparent 20%),
-            radial-gradient(circle at bottom left, rgba(219, 234, 254, 0.32), transparent 26%),
-            linear-gradient(180deg, #f6f8fb 0%, #eef3f9 52%, #f8fafc 100%);
+            radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.08), transparent 24%),
+            linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
         }
 
         .app-shell-root .sidebar-panel {
           background:
-            radial-gradient(circle at 100% 0%, rgba(219, 234, 254, 0.72), transparent 30%),
-            radial-gradient(circle at 0% 100%, rgba(241, 245, 249, 0.94), transparent 28%),
-            linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
-          border: 1px solid rgba(226, 232, 240, 0.94);
-          box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
+            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.18), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(6, 182, 212, 0.12), transparent 28%),
+            radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.12), transparent 32%),
+            linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98) 44%, rgba(248,250,252,1));
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 36px 90px rgba(15, 23, 42, 0.12);
         }
 
         .app-shell-root .sidebar-panel::before {
           background:
-            linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 22%),
-            linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.02));
+            linear-gradient(135deg, rgba(255, 255, 255, 0.72), transparent 22%),
+            linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.18));
         }
 
         .app-shell-root .brand-title,
         .app-shell-root .mobile-brand-title {
           color: #0f172a;
-          text-shadow: none;
+          text-shadow: 0 10px 26px rgba(37, 99, 235, 0.08);
         }
 
         .app-shell-root .brand-subtitle,
@@ -1572,7 +1349,7 @@ function LayoutInner({ children }) {
         .app-shell-root .nav-short,
         .app-shell-root .content-top-actions-kicker,
         .app-shell-root .content-top-actions-subtitle {
-          color: #64748b;
+          color: #475569;
         }
 
         .app-shell-root .brand-status-copy,
@@ -1590,9 +1367,9 @@ function LayoutInner({ children }) {
         .app-shell-root .brand-status-card,
         .app-shell-root .language-switch-card,
         .app-shell-root .sidebar-user-card {
-          background: linear-gradient(180deg, #ffffff, #f8fbff);
+          background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(241,245,249,0.96));
           border: 1px solid #e2e8f0;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 16px 34px rgba(15, 23, 42, 0.08);
         }
 
         .app-shell-root .brand-live-pill {
@@ -1603,14 +1380,14 @@ function LayoutInner({ children }) {
 
         .app-shell-root .sidebar-shortcut {
           color: #0f172a;
-          background: linear-gradient(135deg, #ffffff, #f8fbff);
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(239,246,255,0.98), rgba(241,245,249,0.94));
+          border: 1px solid #dbeafe;
+          box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
         }
 
         .app-shell-root .sidebar-shortcut.is-secondary {
-          background: linear-gradient(135deg, #ffffff, #f8fafc);
-          border-color: #e2e8f0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(236,253,245,0.98));
+          border-color: rgba(22, 163, 74, 0.16);
         }
 
         .app-shell-root .sidebar-shortcut-icon,
@@ -1618,7 +1395,7 @@ function LayoutInner({ children }) {
         .app-shell-root .language-toggle .segmented-option,
         .app-shell-root .mobile-user-chip,
         .app-shell-root .language-compact {
-          background: linear-gradient(180deg, #ffffff, #f1f5f9);
+          background: rgba(241,245,249,0.96);
           border-color: #e2e8f0;
           color: #0f172a;
         }
@@ -1626,117 +1403,150 @@ function LayoutInner({ children }) {
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .nav-link.is-active {
           color: #ffffff;
-          background: linear-gradient(135deg, #2563eb, #0f172a);
-          border-color: rgba(37, 99, 235, 0.24);
-          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.22);
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          border-color: rgba(37,99,235,0.22);
+          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.18);
+        }
+
+        .app-shell-root .nav-tone-home.is-active,
+        .app-shell-root .mobile-nav-tone-home.is-active {
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
+        }
+
+        .app-shell-root .nav-tone-stock.is-active,
+        .app-shell-root .mobile-nav-tone-stock.is-active {
+          background: linear-gradient(135deg, #2563eb, #0ea5e9);
+        }
+
+        .app-shell-root .nav-tone-sales.is-active,
+        .app-shell-root .mobile-nav-tone-sales.is-active {
+          background: linear-gradient(135deg, #16a34a, #06b6d4);
+        }
+
+        .app-shell-root .nav-tone-purchase.is-active,
+        .app-shell-root .mobile-nav-tone-purchase.is-active {
+          background: linear-gradient(135deg, #d97706, #f59e0b);
+        }
+
+        .app-shell-root .nav-tone-credit.is-active,
+        .app-shell-root .mobile-nav-tone-credit.is-active {
+          background: linear-gradient(135deg, #dc2626, #f43f5e);
+        }
+
+        .app-shell-root .nav-tone-gst.is-active,
+        .app-shell-root .mobile-nav-tone-gst.is-active {
+          background: linear-gradient(135deg, #0f766e, #2563eb);
+        }
+
+        .app-shell-root .nav-tone-reports.is-active,
+        .app-shell-root .mobile-nav-tone-reports.is-active {
+          background: linear-gradient(135deg, #4f46e5, #2563eb);
         }
 
         .app-shell-root .nav-tone-home .nav-link-accent {
-          background: linear-gradient(180deg, #60a5fa, #1d4ed8);
+          background: linear-gradient(180deg, #2563eb, #06b6d4);
         }
 
         .app-shell-root .nav-tone-stock .nav-link-accent {
-          background: linear-gradient(180deg, #94a3b8, #334155);
+          background: linear-gradient(180deg, #2563eb, #0ea5e9);
         }
 
         .app-shell-root .nav-tone-sales .nav-link-accent {
-          background: linear-gradient(180deg, #22c55e, #15803d);
+          background: linear-gradient(180deg, #16a34a, #06b6d4);
         }
 
         .app-shell-root .nav-tone-purchase .nav-link-accent {
-          background: linear-gradient(180deg, #f59e0b, #d97706);
+          background: linear-gradient(180deg, #d97706, #f59e0b);
         }
 
         .app-shell-root .nav-tone-credit .nav-link-accent {
-          background: linear-gradient(180deg, #ef4444, #b91c1c);
+          background: linear-gradient(180deg, #dc2626, #f43f5e);
         }
 
         .app-shell-root .nav-tone-gst .nav-link-accent {
-          background: linear-gradient(180deg, #06b6d4, #2563eb);
+          background: linear-gradient(180deg, #0f766e, #2563eb);
         }
 
         .app-shell-root .nav-tone-reports .nav-link-accent {
-          background: linear-gradient(180deg, #6366f1, #2563eb);
+          background: linear-gradient(180deg, #4f46e5, #2563eb);
         }
 
         .app-shell-root .nav-link:hover {
           color: #0f172a;
-          background: linear-gradient(180deg, #ffffff, #f1f5f9);
-          border-color: rgba(37, 99, 235, 0.12);
+          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(241,245,249,0.92));
         }
 
         .app-shell-root .sidebar-user-menu {
-          background: linear-gradient(180deg, #ffffff, #f8fafc);
+          background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.99));
           border: 1px solid #e2e8f0;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
         }
 
         .app-shell-root .sidebar-user-menu button + button,
         .app-shell-root .sidebar-user-menu button + a,
         .app-shell-root .sidebar-user-menu a + button,
         .app-shell-root .sidebar-user-menu a + a {
-          border-top: 1px solid rgba(255,255,255,0.06);
+          border-top: 1px solid #e2e8f0;
         }
 
         .app-shell-root .sidebar-user-menu .danger,
         .app-shell-root .sidebar-logout {
-          color: #b91c1c;
+          color: #dc2626;
         }
 
         .app-shell-root .sidebar-logout {
-          border-color: rgba(248, 113, 113, 0.2);
-          background: linear-gradient(180deg, rgba(254, 242, 242, 0.98), rgba(254, 226, 226, 0.92));
+          border-color: rgba(220, 38, 38, 0.14);
+          background: linear-gradient(180deg, rgba(254,242,242,0.96), rgba(255,241,242,0.96));
         }
 
         .app-shell-root .premium-topbar {
-          background: rgba(255,255,255,0.92);
+          background: rgba(248, 250, 252, 0.9);
           border-bottom: 1px solid #e2e8f0;
-          backdrop-filter: blur(12px);
         }
 
         .app-shell-root .premium-topbar.is-scrolled {
-          background: rgba(255,255,255,0.98);
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+          background: rgba(248, 250, 252, 0.98);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
         }
 
         .app-shell-root .top-upgrade-chip {
-          box-shadow: 0 20px 42px rgba(37, 99, 235, 0.22);
-          background: linear-gradient(135deg, #2563eb, #0f172a);
-          border-color: rgba(37, 99, 235, 0.16);
+          box-shadow: 0 20px 42px rgba(37, 99, 235, 0.2);
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          border-color: rgba(37, 99, 235, 0.22);
           color: #ffffff;
         }
 
         .app-shell-root .top-upgrade-chip.is-manage {
-          background: linear-gradient(135deg, #1d4ed8, #0f172a);
-          border-color: rgba(37, 99, 235, 0.16);
-          box-shadow: 0 12px 28px rgba(37, 99, 235, 0.2);
+          background: linear-gradient(135deg, #0f766e, #16a34a);
+          border-color: rgba(22, 163, 74, 0.2);
+          box-shadow: 0 12px 28px rgba(22, 163, 74, 0.16);
           color: #ffffff;
         }
 
         .app-shell-root .premium-trial-banner {
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
+          border: 1px solid rgba(37, 99, 235, 0.12);
+          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(239,246,255,0.98));
         }
 
         .app-shell-root .membership-spotlight-banner {
           border: 1px solid #e2e8f0;
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 30px 70px rgba(15, 23, 42, 0.08);
           background:
-            radial-gradient(circle at top right, rgba(226, 232, 240, 0.9), transparent 28%),
-            radial-gradient(circle at 0% 100%, rgba(241, 245, 249, 0.9), transparent 30%),
-            linear-gradient(135deg, #ffffff, #f8fafc, #f1f5f9);
+            radial-gradient(circle at top right, rgba(245,158,11,0.14), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(45,212,191,0.1), transparent 30%),
+            linear-gradient(135deg, rgba(255,255,255,0.99), rgba(248,250,252,0.98), rgba(239,246,255,0.96));
         }
 
         .app-shell-root .membership-spotlight-banner.accent-expired {
           background:
-            radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent 28%),
-            linear-gradient(135deg, rgba(127,29,29,0.28), rgba(15,23,42,0.96));
+            radial-gradient(circle at top right, rgba(248,113,113,0.16), transparent 28%),
+            linear-gradient(135deg, rgba(255,255,255,0.99), rgba(255,241,242,0.96));
         }
 
         .app-shell-root .membership-spotlight-banner.accent-active {
           background:
-            radial-gradient(circle at top right, rgba(255,255,255,0.05), transparent 28%),
-            linear-gradient(135deg, rgba(6,78,59,0.24), rgba(15,23,42,0.96));
+            radial-gradient(circle at top right, rgba(52,211,153,0.14), transparent 28%),
+            linear-gradient(135deg, rgba(255,255,255,0.99), rgba(236,253,245,0.96));
         }
 
         .app-shell-root .membership-spotlight-copy h2,
@@ -1747,28 +1557,27 @@ function LayoutInner({ children }) {
 
         .app-shell-root .membership-spotlight-copy p,
         .app-shell-root .membership-mini-plan span {
-          color: #64748b;
+          color: #475569;
         }
 
         .app-shell-root .membership-spotlight-pills span,
         .app-shell-root .membership-spotlight-side,
         .app-shell-root .membership-mini-plan,
         .app-shell-root .mobile-bottom-nav-card {
-          background: rgba(255,255,255,0.96);
+          background: rgba(255,255,255,0.9);
           border-color: #e2e8f0;
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-          backdrop-filter: blur(12px);
+          box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
         }
 
         .app-shell-root .mobile-nav-link {
-          color: #64748b;
+          color: #475569;
         }
 
         .app-shell-root .mobile-nav-link.is-active {
           color: #ffffff;
           border-color: rgba(37,99,235,0.18);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 28px rgba(37, 99, 235, 0.2);
-          background: linear-gradient(135deg, #2563eb, #0f172a);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 12px 28px rgba(37, 99, 235, 0.14);
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
         }
 
         @media (max-width: 900px) {
@@ -1781,14 +1590,6 @@ function LayoutInner({ children }) {
           }
           .content-top-actions {
             display: none;
-          }
-          .top-command-chip {
-            min-height: 36px;
-            padding: 0 10px;
-            font-size: 11px;
-          }
-          .top-command-chip kbd {
-            min-width: 36px;
           }
         }
 

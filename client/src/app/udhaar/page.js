@@ -425,25 +425,8 @@ export default function UdhaarPage() {
       </div>
       <style>{`
         .ledger-shell .ledger-hero {
-          border: 1px solid rgba(239, 68, 68, 0.12);
-          background:
-            radial-gradient(circle at 85% 16%, rgba(239, 68, 68, 0.16), transparent 20%),
-            radial-gradient(circle at 14% 16%, rgba(251, 113, 133, 0.14), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #fff9f9 54%, #fff1f2 100%);
-          box-shadow: 0 22px 48px rgba(239, 68, 68, 0.1);
-        }
-        .ledger-shell .ui-stat-card,
-        .ledger-shell .ui-list-card.is-active,
-        .ledger-shell .ledger-detail-card {
-          background:
-            radial-gradient(circle at top right, rgba(239,68,68,0.08), transparent 24%),
-            linear-gradient(180deg, #ffffff, #fff7f7) !important;
-        }
-
-        .ledger-shell .page-title,
-        .ledger-shell .modal h3,
-        .ledger-shell div[style*="color: '#fff'"] {
-          color: #0f172a !important;
+          border: 1px solid rgba(239, 68, 68, 0.14);
+          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
         }
 
         .ledger-shell .ledger-detail-card {
@@ -451,7 +434,7 @@ export default function UdhaarPage() {
         }
 
         .ledger-shell .ui-list-card {
-          box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 18px 38px rgba(2, 6, 23, 0.28);
         }
 
         .ledger-shell .ui-list-card:hover {
