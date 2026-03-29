@@ -311,7 +311,6 @@ function LayoutInner({ children }) {
 
             <div className="brand-lockup">
               <div className="brand-row">
-                <Logo size="md" />
                 <div>
                   <div className="brand-title brand-title-hindi">रखरखाव</div>
                   <div className="brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
@@ -400,7 +399,6 @@ function LayoutInner({ children }) {
 
         <div className={`mobile-topbar premium-topbar ${scrolled ? 'is-scrolled' : ''}`}>
           <div className="mobile-topbar-brand">
-            <Logo size="sm" />
             <div>
               <div className="mobile-brand-title brand-title-hindi">रखरखाव</div>
               <div className="mobile-brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
