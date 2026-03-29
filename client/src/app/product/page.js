@@ -236,7 +236,7 @@ export default function ProductsPage() {
   };
 
   const GSTBadge = ({ rate }) => {
-    if (margin === null || margin === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
+    if (rate === null || rate === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
     return <span style={{ background: '#e0f2fe', color: '#0c4a6e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>GST {rate}%</span>;
   };
 
