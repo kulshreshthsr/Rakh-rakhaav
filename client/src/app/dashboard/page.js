@@ -471,7 +471,11 @@ export default function DashboardPage() {
 
       <style>{`
         .dashboard-shell { color: #111111; }
-        .dashboard-hero { border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; }
+        .dashboard-hero {
+          border: 1px solid rgba(59, 130, 246, 0.1);
+          background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,249,255,0.92));
+          box-shadow: 0 24px 44px rgba(15, 23, 42, 0.08);
+        }
         .dashboard-period-shell .form-input { background: #ffffff !important; color: #111111 !important; border: 1px solid #d1d5db !important; box-shadow: none; }
         .dashboard-stat-card,
         .dashboard-section-card,
@@ -479,23 +483,31 @@ export default function DashboardPage() {
         .dashboard-top-card,
         .dashboard-quick-card,
         .dashboard-warning-card {
-          background: #ffffff !important;
           border: 1px solid #e5e7eb !important;
-          box-shadow: none !important;
           color: #111111 !important;
         }
+        .dashboard-stat-card {
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
+        }
+        .dashboard-top-card {
+          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07) !important;
+        }
+        .dashboard-breakdown-card {
+          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06) !important;
+        }
         .dashboard-quick-card:hover,
-        .dashboard-top-card:hover { transform: translateY(-2px); border-color: #d1d5db !important; box-shadow: none; }
+        .dashboard-top-card:hover { transform: translateY(-3px); border-color: #cbd5e1 !important; }
         .dashboard-quick-card div[style*='color: #64748b'],
         .dashboard-top-card div[style*='color: #64748b'],
         .dashboard-breakdown-card div[style*='color: #64748b'],
         .dashboard-warning-card .section-subtitle { color: #6b7280 !important; }
         .dashboard-quick-icon,
-        .dashboard-stat-icon { box-shadow: none !important; }
+        .dashboard-stat-icon { box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08) !important; }
         .dashboard-progress-track { background: #f3f4f6; border: 1px solid #e5e7eb; }
         .dashboard-chip-warning,
         .dashboard-shell .badge-navy { background: #ffffff !important; color: #111111 !important; border-color: #d1d5db !important; }
-        .dashboard-shell .btn-warning { background: #ffffff; color: #111111; box-shadow: none; }
+        .dashboard-shell .btn-warning { background: linear-gradient(135deg, #ffffff, #f8fafc); color: #111111; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06); }
 
         .top-products-row,
         .quick-actions-row {

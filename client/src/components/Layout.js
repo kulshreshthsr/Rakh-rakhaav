@@ -1403,77 +1403,76 @@ function LayoutInner({ children }) {
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .nav-link.is-active {
           color: #111111;
-          background: #ffffff;
           border-color: #d1d5db;
           box-shadow: none;
         }
 
         .app-shell-root .nav-tone-home.is-active,
         .app-shell-root .mobile-nav-tone-home.is-active {
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(14, 165, 233, 0.08));
         }
 
         .app-shell-root .nav-tone-stock.is-active,
         .app-shell-root .mobile-nav-tone-stock.is-active {
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(99, 102, 241, 0.08));
         }
 
         .app-shell-root .nav-tone-sales.is-active,
         .app-shell-root .mobile-nav-tone-sales.is-active {
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(52, 211, 153, 0.08));
         }
 
         .app-shell-root .nav-tone-purchase.is-active,
         .app-shell-root .mobile-nav-tone-purchase.is-active {
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(251, 191, 36, 0.08));
         }
 
         .app-shell-root .nav-tone-credit.is-active,
         .app-shell-root .mobile-nav-tone-credit.is-active {
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.14), rgba(251, 113, 133, 0.08));
         }
 
         .app-shell-root .nav-tone-gst.is-active,
         .app-shell-root .mobile-nav-tone-gst.is-active {
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(20, 184, 166, 0.16), rgba(45, 212, 191, 0.08));
         }
 
         .app-shell-root .nav-tone-reports.is-active,
         .app-shell-root .mobile-nav-tone-reports.is-active {
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(167, 139, 250, 0.08));
         }
 
         .app-shell-root .nav-tone-home .nav-link-accent {
-          background: #111111;
+          background: linear-gradient(180deg, #3b82f6, #0ea5e9);
         }
 
         .app-shell-root .nav-tone-stock .nav-link-accent {
-          background: #111111;
+          background: linear-gradient(180deg, #2563eb, #6366f1);
         }
 
         .app-shell-root .nav-tone-sales .nav-link-accent {
-          background: #111111;
+          background: linear-gradient(180deg, #10b981, #34d399);
         }
 
         .app-shell-root .nav-tone-purchase .nav-link-accent {
-          background: #111111;
+          background: linear-gradient(180deg, #f59e0b, #fbbf24);
         }
 
         .app-shell-root .nav-tone-credit .nav-link-accent {
-          background: #111111;
+          background: linear-gradient(180deg, #ef4444, #fb7185);
         }
 
         .app-shell-root .nav-tone-gst .nav-link-accent {
-          background: #111111;
+          background: linear-gradient(180deg, #14b8a6, #2dd4bf);
         }
 
         .app-shell-root .nav-tone-reports .nav-link-accent {
-          background: #111111;
+          background: linear-gradient(180deg, #7c3aed, #a78bfa);
         }
 
         .app-shell-root .nav-link:hover {
           color: #0f172a;
-          background: #f9fafb;
+          background: #f8fbff;
         }
 
         .app-shell-root .sidebar-user-menu {
