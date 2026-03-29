@@ -1,4 +1,6 @@
- :root {
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
+
+:root {
   --page-bg: #F8FAFC;
   --card-bg: #FFFFFF;
   --text-primary: #0F172A;
@@ -20,8 +22,6 @@ h1, h2, h3, h4 {
   color: #0F172A !important;
   opacity: 1 !important;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -5892,7 +5892,6 @@ thead {
     font-size: 12px !important;
     box-shadow: 0 14px 28px rgba(37, 99, 235, 0.18) !important;
   }
-}
 }
 
 .compact-ledger-table {
