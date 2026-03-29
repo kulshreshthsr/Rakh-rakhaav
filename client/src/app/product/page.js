@@ -765,7 +765,7 @@ export default function ProductsPage() {
                         {h.quantity_change > 0 ? '+' : ''}{h.quantity_change}
                       </div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        -> {h.quantity_after} {historyProduct.unit || 'pcs'}
+                        {'->'} {h.quantity_after} {historyProduct.unit || 'pcs'}
                       </div>
                     </div>
                   </div>
