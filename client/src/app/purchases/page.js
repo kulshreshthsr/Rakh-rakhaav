@@ -430,11 +430,11 @@ export default function PurchasesPage() {
         <section className="card">
           <div className="page-toolbar">
             <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Purchases</div>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>खरीदी / Purchases</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
             </div>
             <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
-              + Record Purchase
+              + खरीद दर्ज करें / Record Purchase
             </button>
           </div>
         </section>

@@ -250,7 +250,7 @@ export default function ReportsPage() {
         <section className="hero-panel reports-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div className="page-title" style={{ marginBottom: 4, color: '#0f172a' }}>Reports</div>
+              <div className="page-title" style={{ marginBottom: 4, color: '#0f172a' }}>रिपोर्ट / Reports</div>
               <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
               <div style={{ fontSize: 13, color: '#5b6b82', maxWidth: 420 }}>
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.

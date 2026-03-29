@@ -301,6 +301,7 @@ function LayoutInner({ children }) {
   );
 
   const upgradeButtonLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
+  const mobilePricingLabel = 'PRICING';
   return (
     <div className="app-shell-root">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
@@ -399,9 +400,10 @@ function LayoutInner({ children }) {
 
         <div className={`mobile-topbar premium-topbar ${scrolled ? 'is-scrolled' : ''}`}>
           <div className="mobile-topbar-brand">
+            <Logo size="sm" />
             <div>
               <div className="mobile-brand-title brand-title-hindi">रखरखाव</div>
-              <div className="mobile-brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
+              <div className="mobile-brand-subtitle">Business Manager</div>
             </div>
           </div>
 
@@ -433,8 +435,7 @@ function LayoutInner({ children }) {
               )}
             </div>
             <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
-              <Glyph name="pricing" size={14} />
-              {upgradeButtonLabel}
+              {mobilePricingLabel}
             </a>
           </div>
         </div>
@@ -1533,18 +1534,9 @@ function LayoutInner({ children }) {
           background: #ffffff;
         }
 
-        .app-shell-root .premium-topbar {
-          background: #ffffff !important;
-          border-bottom: 1px solid #e2e8f0 !important;
-          box-shadow: none !important;
-        }
-
-        .app-shell-root .premium-topbar.is-scrolled {
-          background: #ffffff !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
-        }
-
         .app-shell-root .mobile-topbar-brand {
+          display: flex;
+          gap: 10px;
           flex: 1;
           min-width: 0;
           align-items: center;
@@ -1565,48 +1557,44 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .mobile-brand-title.brand-title-hindi {
-          font-size: 22px !important;
-          line-height: 1 !important;
+          font-size: 18px !important;
+          line-height: 1.05 !important;
           white-space: nowrap;
         }
 
         .app-shell-root .brand-subtitle,
         .app-shell-root .mobile-brand-subtitle {
-          color: #64748b !important;
-        }
-
-        .app-shell-root .mobile-brand-subtitle {
-          display: none !important;
+          color: rgba(226, 232, 240, 0.72) !important;
         }
 
         .app-shell-root .mobile-user-chip,
         .app-shell-root .top-upgrade-chip {
-          color: #0f172a !important;
+          color: #ffffff !important;
         }
 
         .app-shell-root {
-          background: #f8fafc !important;
+          background: linear-gradient(180deg, #eef2ff 0%, #edf2fb 100%) !important;
         }
 
         .app-shell-root .premium-topbar,
         .app-shell-root .premium-topbar.is-scrolled {
-          background: #ffffff !important;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
-          box-shadow: none !important;
+          background: linear-gradient(180deg, #1d2944 0%, #111a2d 100%) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.3) !important;
         }
 
         .app-shell-root .mobile-brand-title,
         .app-shell-root .brand-title,
         .app-shell-root .brand-title.brand-title-hindi,
         .app-shell-root .mobile-brand-title.brand-title-hindi {
-          color: #4f46e5 !important;
+          color: #ffffff !important;
           text-shadow: none !important;
         }
 
         .app-shell-root .mobile-user-chip,
         .app-shell-root .sidebar-user-name,
         .app-shell-root .nav-label {
-          color: #0f172a !important;
+          color: #ffffff !important;
           text-shadow: none !important;
         }
 
@@ -1614,14 +1602,14 @@ function LayoutInner({ children }) {
         .app-shell-root .mobile-brand-subtitle,
         .app-shell-root .sidebar-user-email,
         .app-shell-root .nav-short {
-          color: #64748b !important;
+          color: rgba(226, 232, 240, 0.72) !important;
         }
 
         .app-shell-root .mobile-avatar,
         .app-shell-root .sidebar-avatar {
-          background: #4f46e5 !important;
+          background: linear-gradient(135deg, #3b82f6, #6366f1) !important;
           color: #ffffff !important;
-          border-radius: 999px !important;
+          border-radius: 12px !important;
         }
 
         .app-shell-root .mobile-avatar {
@@ -1637,11 +1625,16 @@ function LayoutInner({ children }) {
 
         .app-shell-root .top-upgrade-chip,
         .app-shell-root .top-upgrade-chip.is-manage {
-          background: transparent !important;
-          border: 1.5px solid #4f46e5 !important;
-          color: #4f46e5 !important;
-          border-radius: 20px !important;
-          box-shadow: none !important;
+          min-height: 40px !important;
+          padding: 0 14px !important;
+          background: rgba(99, 102, 241, 0.18) !important;
+          border: 1px solid rgba(129, 140, 248, 0.22) !important;
+          color: #ffffff !important;
+          border-radius: 999px !important;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          font-size: 11px !important;
+          font-weight: 800 !important;
+          letter-spacing: 0.08em !important;
         }
 
         .app-shell-root .top-upgrade-chip.is-shining::after {
@@ -1649,54 +1642,79 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .mobile-user-chip {
-          background: #ffffff !important;
-          border: 1px solid #e2e8f0 !important;
-          color: #0f172a !important;
+          min-height: 40px !important;
+          padding: 4px 10px 4px 4px !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          color: #ffffff !important;
+          border-radius: 999px !important;
+          backdrop-filter: blur(12px) !important;
         }
 
         .app-shell-root .mobile-bottom-nav-card {
-          background: #ffffff !important;
-          border: none !important;
-          border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-          padding: 6px 4px calc(8px + env(safe-area-inset-bottom)) !important;
+          background: linear-gradient(180deg, rgba(25, 34, 55, 0.98), rgba(14, 20, 34, 0.98)) !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-radius: 22px !important;
+          box-shadow: 0 18px 44px rgba(15, 23, 42, 0.3) !important;
+          padding: 8px 6px calc(8px + env(safe-area-inset-bottom)) !important;
         }
 
         .app-shell-root .premium-bottom-nav {
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
+          left: 10px !important;
+          right: 10px !important;
+          bottom: 10px !important;
         }
 
         .app-shell-root .mobile-nav-link {
-          color: #94a3b8 !important;
-          border-radius: 0 !important;
-          border: none !important;
+          color: rgba(226, 232, 240, 0.5) !important;
+          border-radius: 16px !important;
+          border: 1px solid transparent !important;
           padding: 10px 4px 12px !important;
           gap: 4px !important;
         }
 
         .app-shell-root .mobile-nav-glow {
-          display: none !important;
+          display: block !important;
         }
 
         .app-shell-root .mobile-nav-link.is-active {
-          color: #4f46e5 !important;
-          background: transparent !important;
-          box-shadow: none !important;
-          transform: none !important;
+          color: #ffffff !important;
+          background: linear-gradient(180deg, rgba(79, 70, 229, 0.22), rgba(59, 130, 246, 0.08)) !important;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          transform: translateY(-1px) !important;
+        }
+
+        .app-shell-root .mobile-nav-tone-dashboard.is-active,
+        .app-shell-root .mobile-nav-tone-home.is-active {
+          background: linear-gradient(180deg, rgba(251, 146, 60, 0.28), rgba(249, 115, 22, 0.12)) !important;
+        }
+
+        .app-shell-root .mobile-nav-tone-stock.is-active {
+          background: linear-gradient(180deg, rgba(167, 139, 250, 0.28), rgba(99, 102, 241, 0.12)) !important;
+        }
+
+        .app-shell-root .mobile-nav-tone-sales.is-active {
+          background: linear-gradient(180deg, rgba(52, 211, 153, 0.28), rgba(16, 185, 129, 0.12)) !important;
+        }
+
+        .app-shell-root .mobile-nav-tone-purchase.is-active {
+          background: linear-gradient(180deg, rgba(251, 191, 36, 0.28), rgba(245, 158, 11, 0.12)) !important;
+        }
+
+        .app-shell-root .mobile-nav-tone-credit.is-active {
+          background: linear-gradient(180deg, rgba(250, 204, 21, 0.28), rgba(234, 179, 8, 0.12)) !important;
+        }
+
+        .app-shell-root .mobile-nav-tone-gst.is-active {
+          background: linear-gradient(180deg, rgba(125, 211, 252, 0.28), rgba(14, 165, 233, 0.12)) !important;
+        }
+
+        .app-shell-root .mobile-nav-tone-reports.is-active {
+          background: linear-gradient(180deg, rgba(147, 197, 253, 0.28), rgba(96, 165, 250, 0.12)) !important;
         }
 
         .app-shell-root .mobile-nav-link.is-active::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 18%;
-          right: 18%;
-          height: 2px;
-          background: #4f46e5;
-          border-radius: 0 0 999px 999px;
+          display: none !important;
         }
 
         @media (max-width: 900px) {

@@ -181,7 +181,7 @@ export default function ProfilePage() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <div className="kicker" style={{ marginBottom: 10 }}>Profile control</div>
-                <div className="page-title" style={{ color: '#0f172a', marginBottom: 4 }}>Profile & Settings</div>
+                <div className="page-title" style={{ color: '#0f172a', marginBottom: 4 }}>प्रोफाइल / Profile & Settings</div>
                 <div style={{ fontSize: 13, color: '#5b6b82' }}>
                   Manage shop identity, invoice details and account security in one place.
                 </div>
@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
         <section className="card" id="shop-details-section">
           <div style={{ marginBottom: 18 }}>
-            <div className="section-title">Shop Details</div>
+            <div className="section-title">दुकान की जानकारी / Shop Details</div>
             <div className="section-subtitle">GST compliance, billing identity and printed invoice information</div>
           </div>
 
@@ -280,7 +280,7 @@ export default function ProfilePage() {
             <div className="divider" />
 
             <div className="soft-panel" style={{ padding: 16, marginBottom: 16 }}>
-              <div className="section-title" style={{ fontSize: 16 }}>Bank Details</div>
+              <div className="section-title" style={{ fontSize: 16 }}>बैंक विवरण / Bank Details</div>
               <div className="section-subtitle">Will appear on invoices when available</div>
               <div className="grid-2" style={{ marginTop: 14 }}>
                 <div className="form-group">
@@ -306,7 +306,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="soft-panel" style={{ padding: 16, marginBottom: 18 }}>
-              <div className="section-title" style={{ fontSize: 16 }}>Terms & Conditions</div>
+              <div className="section-title" style={{ fontSize: 16 }}>नियम एवं शर्तें / Terms & Conditions</div>
               <div className="section-subtitle">Printed on invoices for cleaner business communication</div>
               <div className="form-group" style={{ marginTop: 14, marginBottom: 0 }}>
                 <label className="form-label">Terms</label>
@@ -322,7 +322,7 @@ export default function ProfilePage() {
             </div>
 
             <button type="submit" className="btn-primary" style={{ width: '100%' }}>
-              Save Shop Details
+              दुकान की जानकारी सहेजें / Save Shop Details
             </button>
           </form>
         </section>
@@ -330,7 +330,7 @@ export default function ProfilePage() {
         <section className="profile-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
           <div className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="section-title">Update Name</div>
+              <div className="section-title">नाम बदलें / Update Name</div>
               <div className="section-subtitle">This updates your account identity across the app</div>
             </div>
 
@@ -351,7 +351,7 @@ export default function ProfilePage() {
 
           <div className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="section-title">Change Password</div>
+              <div className="section-title">पासवर्ड बदलें / Change Password</div>
               <div className="section-subtitle">Keep access secure without changing any business data</div>
             </div>
 

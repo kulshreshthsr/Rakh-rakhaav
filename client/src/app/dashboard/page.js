@@ -10,14 +10,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v2';
 
 const getToken = () => localStorage.getItem('token');
-const getBusinessName = () => {
-  try {
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return storedUser?.shopName || storedUser?.shop_name || storedUser?.businessName || storedUser?.name || 'Your Business';
-  } catch {
-    return 'Your Business';
-  }
-};
 const getUserCacheNamespace = () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -216,11 +208,9 @@ export default function DashboardPage() {
   const revenue = stats?.totalRevenue || 0;
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
   const lowStockCount = lowStockProducts.length;
-  const businessName = getBusinessName();
-
   const statCards = [
     {
-      label: 'Sales',
+      label: 'बिक्री / Sales',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} invoices this month`,
       tone: 'money',
@@ -228,7 +218,7 @@ export default function DashboardPage() {
       icon: 'Sales',
     },
     {
-      label: 'Profit',
+      label: 'मुनाफा / Profit',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
       tone: profit >= 0 ? 'secondary' : 'danger',
@@ -236,7 +226,7 @@ export default function DashboardPage() {
       icon: 'Profit',
     },
     {
-      label: 'Credit',
+      label: 'उधार / Credit',
       value: `₹${fmt(totalCustomerUdhaar)}`,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
       tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
@@ -244,7 +234,7 @@ export default function DashboardPage() {
       icon: 'Credit',
     },
     {
-      label: 'GST Payable',
+      label: 'GST देय / Payable',
       value: `₹${fmt(Math.abs(netGST))}`,
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
       tone: 'warning',
@@ -254,24 +244,27 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#10b981', semantic: 'sales' },
-    { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#f59e0b', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#f43f5e', semantic: 'credit' },
-    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'stock' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'gst' },
-    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
+    { href: '/sales', icon: 'sales', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#10b981', semantic: 'sales' },
+    { href: '/purchases', icon: 'purchase', hi: 'खरीदी', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#f59e0b', semantic: 'purchase' },
+    { href: '/udhaar', icon: 'credit', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#f43f5e', semantic: 'credit' },
+    { href: '/product', icon: 'stock', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(99,102,241,0.12)', color: '#6366f1', semantic: 'stock' },
+    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(56,189,248,0.12)', color: '#0ea5e9', semantic: 'gst' },
+    { href: '/pricing', icon: 'premium', hi: 'प्लान', en: 'Pricing', sub: 'Upgrade plan', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
   ];
 
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
-        <section className="card">
+        <section className="card dashboard-hero-card">
           <div className="page-toolbar dashboard-toolbar">
             <div style={{ minWidth: 0 }}>
-              <div className="page-subtitle">Business overview</div>
-              <div className="page-title">Dashboard</div>
+              <div className="page-subtitle dashboard-hero-kicker">Business overview</div>
+              <div className="page-title">डैशबोर्ड / Dashboard</div>
+              <div className="dashboard-hero-copy">
+                Revenue, profit, credit and GST at one glance for the active month.
+              </div>
               {refreshing ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
+                <div className="dashboard-refresh-note">Refreshing latest data...</div>
               ) : null}
             </div>
 
@@ -315,6 +308,105 @@ export default function DashboardPage() {
           ))}
         </section>
 
+        <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
+          <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div>
+              <div className="section-title">त्वरित कार्य / Quick Actions</div>
+              <div className="section-subtitle">Fast access to your most-used screens</div>
+            </div>
+            <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
+          </div>
+          <div className="quick-actions-carousel">
+            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+              {quickActions.map((action) => (
+                <a
+                  key={action.href}
+                  href={action.href}
+                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
+                  style={{
+                    textDecoration: 'none',
+                    borderRadius: 18,
+                    padding: '14px 12px',
+                    minHeight: 94,
+                  }}
+                >
+                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
+                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi} / {action.en}</div>
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            <div className="quick-actions-fade" aria-hidden="true" />
+            <div className="quick-actions-chevron" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+        </section>
+
+        <section className="card dashboard-section-card">
+          <div style={{ marginBottom: 16 }}>
+            <div className="section-title">टॉप उत्पाद / Top Products</div>
+            <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
+          </div>
+          {topProducts.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">PK</div>
+              <div>No top products yet for this period.</div>
+            </div>
+          ) : (
+            <div className="top-products-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+              {topProducts.map((product, index) => (
+                <div
+                  key={product.name}
+                  className="dashboard-top-card"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: 14,
+                    borderRadius: 18,
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 14,
+                      background: [
+                        'linear-gradient(135deg, #10b981, #34d399)',
+                        'linear-gradient(135deg, #4f46e5, #818cf8)',
+                        'linear-gradient(135deg, #f59e0b, #fbbf24)',
+                        'linear-gradient(135deg, #ef4444, #fb7185)',
+                        'linear-gradient(135deg, #2563eb, #38bdf8)',
+                      ][index],
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {index + 1}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
+                    <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {revenue > 0 && (
           <section className="card dashboard-section-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
@@ -341,9 +433,9 @@ export default function DashboardPage() {
                     borderRadius: 18,
                   }}
                 >
-                    <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {item.label}
-                    </div>
+                  <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {item.label}
+                  </div>
                   <div style={{ fontSize: 24, color: item.color, fontWeight: 800, letterSpacing: '-0.05em', marginTop: 8 }}>
                     {item.prefix}₹{fmt(item.value)}
                   </div>
@@ -400,110 +492,63 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
-
-        <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
-          <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div>
-              <div className="section-title">Quick Actions</div>
-              <div className="section-subtitle">Fast access to your most-used screens</div>
-            </div>
-            <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
-          </div>
-          <div className="quick-actions-carousel">
-            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-              {quickActions.map((action) => (
-                <a
-                  key={action.href}
-                  href={action.href}
-                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: 18,
-                    padding: '14px 12px',
-                    minHeight: 94,
-                  }}
-                >
-                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
-                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-            <div className="quick-actions-fade" aria-hidden="true" />
-            <div className="quick-actions-chevron" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-        </section>
-
-        <section className="card dashboard-section-card">
-          <div style={{ marginBottom: 16 }}>
-            <div className="section-title">Top Products</div>
-            <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
-          </div>
-          {topProducts.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">PK</div>
-              <div>No top products yet for this period.</div>
-            </div>
-          ) : (
-            <div className="top-products-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
-              {topProducts.map((product, index) => (
-                <div
-                  key={product.name}
-                  className="dashboard-top-card"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: 14,
-                    borderRadius: 18,
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 14,
-                      background: [
-                        'linear-gradient(135deg, #10b981, #34d399)',
-                        'linear-gradient(135deg, #4f46e5, #818cf8)',
-                        'linear-gradient(135deg, #f59e0b, #fbbf24)',
-                        'linear-gradient(135deg, #ef4444, #fb7185)',
-                        'linear-gradient(135deg, #2563eb, #38bdf8)',
-                      ][index],
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {index + 1}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                    <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
 
       <style>{`
         .dashboard-shell { color: #111111; }
-        .dashboard-period-shell .form-input { background: #ffffff !important; color: #111111 !important; border: 1px solid #d1d5db !important; box-shadow: none; }
+        .dashboard-hero-card {
+          background:
+            radial-gradient(circle at 86% 12%, rgba(99, 102, 241, 0.28), transparent 22%),
+            radial-gradient(circle at 70% 0%, rgba(34, 211, 238, 0.14), transparent 22%),
+            linear-gradient(135deg, #222f4f 0%, #1a2441 55%, #121a2f 100%) !important;
+          border: 1px solid rgba(99, 102, 241, 0.18) !important;
+          box-shadow: 0 18px 42px rgba(15, 23, 42, 0.22) !important;
+        }
+        .dashboard-hero-card .page-title,
+        .dashboard-hero-card .page-subtitle,
+        .dashboard-hero-copy,
+        .dashboard-refresh-note {
+          color: #ffffff !important;
+        }
+        .dashboard-hero-kicker {
+          display: inline-flex;
+          width: fit-content;
+          min-height: 32px;
+          align-items: center;
+          padding: 0 12px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          font-size: 11px !important;
+          font-weight: 800 !important;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .dashboard-hero-card .page-title {
+          margin-top: 12px;
+          font-size: clamp(28px, 5vw, 34px) !important;
+          letter-spacing: -0.05em !important;
+        }
+        .dashboard-hero-copy {
+          margin-top: 10px;
+          max-width: 360px;
+          font-size: 14px;
+          line-height: 1.6;
+          color: rgba(226, 232, 240, 0.82) !important;
+        }
+        .dashboard-refresh-note {
+          margin-top: 8px;
+          font-size: 12px;
+          color: rgba(191, 219, 254, 0.86) !important;
+        }
+        .dashboard-period-shell .form-input {
+          background: rgba(255, 255, 255, 0.98) !important;
+          color: #111111 !important;
+          border: 1px solid rgba(255, 255, 255, 0.3) !important;
+          box-shadow: none;
+          border-radius: 16px !important;
+          font-weight: 700 !important;
+        }
         .dashboard-stat-card,
         .dashboard-section-card,
         .dashboard-breakdown-card,
@@ -520,6 +565,46 @@ export default function DashboardPage() {
           background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
           box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07) !important;
         }
+        .dashboard-stat-card {
+          min-height: 132px;
+          border-radius: 22px !important;
+        }
+        .dashboard-stat-card:nth-child(1) {
+          background: linear-gradient(135deg, #f0fffb 0%, #ecfdf5 58%, #dcfce7 100%) !important;
+          border-color: rgba(52, 211, 153, 0.2) !important;
+        }
+        .dashboard-stat-card:nth-child(2) {
+          background: linear-gradient(135deg, #f8fbff 0%, #eef2ff 58%, #e0e7ff 100%) !important;
+          border-color: rgba(99, 102, 241, 0.18) !important;
+        }
+        .dashboard-stat-card:nth-child(3) {
+          background: linear-gradient(135deg, #f2fffd 0%, #ecfeff 58%, #dff7f3 100%) !important;
+          border-color: rgba(45, 212, 191, 0.2) !important;
+        }
+        .dashboard-stat-card:nth-child(4) {
+          background: linear-gradient(135deg, #fffaf2 0%, #fffbeb 58%, #fef3c7 100%) !important;
+          border-color: rgba(245, 158, 11, 0.2) !important;
+        }
+        .dashboard-stat-card .ui-stat-icon {
+          min-width: 64px;
+          height: 34px;
+          padding: 0 12px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(226, 232, 240, 0.92);
+          box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05) !important;
+          color: #475569;
+          font-size: 11px;
+        }
+        .dashboard-stat-card .ui-stat-label {
+          color: rgba(71, 85, 105, 0.84) !important;
+        }
+        .dashboard-stat-card .ui-stat-note {
+          font-size: 12px !important;
+        }
+        .dashboard-section-card {
+          border-radius: 22px !important;
+        }
         .dashboard-breakdown-card {
           box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06) !important;
         }
@@ -535,6 +620,17 @@ export default function DashboardPage() {
         .dashboard-chip-warning,
         .dashboard-shell .badge-navy { background: #ffffff !important; color: #111111 !important; border-color: #d1d5db !important; }
         .dashboard-shell .btn-warning { background: linear-gradient(135deg, #ffffff, #f8fafc); color: #111111; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06); }
+        .dashboard-section-card .empty-state {
+          min-height: 210px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          border: 1px solid #eef2f7 !important;
+          border-radius: 22px !important;
+          background: linear-gradient(180deg, #ffffff, #fbfcff) !important;
+        }
         .quick-actions-carousel {
           position: relative;
         }
@@ -554,15 +650,12 @@ export default function DashboardPage() {
         }
 
         @media (max-width: 640px) {
-          .hero-panel {
+          .dashboard-hero-card {
             padding: 16px !important;
           }
 
-          .dashboard-hero-header {
-            display: flex !important;
-            flex-direction: column !important;
+          .dashboard-toolbar {
             align-items: stretch !important;
-            gap: 12px !important;
           }
 
           .dashboard-period-controls {
@@ -578,6 +671,13 @@ export default function DashboardPage() {
             width: 100%;
             font-size: 12.5px;
             padding: 10px 12px;
+          }
+          .dashboard-hero-copy {
+            font-size: 13px;
+          }
+          .dashboard-stat-card .ui-stat-icon {
+            min-width: 56px;
+            padding: 0 10px;
           }
 
           .quick-actions-row {
