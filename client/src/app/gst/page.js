@@ -456,19 +456,10 @@ export default function GSTPage() {
       </div>
 
       <style>{`
-        .gst-shell .gst-hero {
-          border: 1px solid rgba(34, 197, 94, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
-        }
-
+        .gst-shell .gst-hero { border: 1px solid #e5e7eb; box-shadow: none; }
         .gst-shell .ui-empty,
-        .gst-shell .ui-list-card {
-          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.24);
-        }
-
-        .gst-shell .ui-list-card strong {
-          color: #ffffff;
-        }
+        .gst-shell .ui-list-card { box-shadow: none; }
+        .gst-shell .ui-list-card strong { color: #111111; }
 
         @media (max-width: 640px) {
           .hidden-xs { display: none !important; }

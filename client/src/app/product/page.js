@@ -785,14 +785,8 @@ export default function ProductsPage() {
       />
 
       <style>{`
-        .product-shell .product-hero {
-          border: 1px solid rgba(34, 197, 94, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
-        }
-
-        .product-shell .card[style*='borderLeft'] {
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
-        }
+        .product-shell .product-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .product-shell .card[style*='borderLeft'] { background: #ffffff !important; }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }

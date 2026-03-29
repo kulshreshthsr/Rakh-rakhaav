@@ -405,10 +405,7 @@ export default function ReportsPage() {
       </div>
 
       <style>{`
-        .reports-shell .reports-hero {
-          border: 1px solid rgba(59, 130, 246, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
-        }
+        .reports-shell .reports-hero { border: 1px solid #e5e7eb; box-shadow: none; }
 
         .reports-shell .reports-filter-pills {
           align-items: center;
@@ -417,16 +414,12 @@ export default function ReportsPage() {
         .reports-shell .reports-stats-grid .ui-stat-card,
         .reports-shell .reports-profit-card,
         .reports-shell .stack-row {
-          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
+          box-shadow: none;
         }
 
         .reports-shell .stack-row {
-          background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 24, 39, 0.96));
-          border: 1px solid rgba(148, 163, 184, 0.12);
-        }
-
-        .reports-shell .stack-row-title {
-          color: #ffffff;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
         }
 
         .reports-shell .reports-split-grid {

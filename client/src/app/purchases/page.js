@@ -813,14 +813,8 @@ export default function PurchasesPage() {
       )}
 
       <style>{`
-        .purchases-shell .purchases-hero {
-          border: 1px solid rgba(245, 158, 11, 0.16);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
-        }
-
-        .purchases-shell .card[style*='borderLeft'] {
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
-        }
+        .purchases-shell .purchases-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .purchases-shell .card[style*='borderLeft'] { background: #ffffff !important; }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }

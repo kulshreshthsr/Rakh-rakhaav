@@ -646,7 +646,7 @@ export default function SalesPage() {
         <section className="hero-panel sales-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>Sales</div>
+              <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing sales data...</div>}
             </div>
             <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ Record Sale</button>
@@ -1120,13 +1120,8 @@ export default function SalesPage() {
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
-        .sales-shell .sales-hero {
-          border: 1px solid rgba(59, 130, 246, 0.14);
-          box-shadow: 0 28px 60px rgba(2, 6, 23, 0.42);
-        }
-        .sales-shell .card[style*='borderLeft'] {
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(31, 41, 55, 0.98)) !important;
-        }
+        .sales-shell .sales-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .sales-shell .card[style*='borderLeft'] { background: #ffffff !important; }
         .fast-billing-toolbar {
           display: flex;
           justify-content: space-between;
@@ -1136,18 +1131,18 @@ export default function SalesPage() {
           margin-bottom: 12px;
           padding: 12px 14px;
           border-radius: 14px;
-          background: linear-gradient(180deg, rgba(15,23,42,0.92), rgba(17,24,39,0.92));
-          border: 1px solid rgba(148,163,184,0.14);
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
         }
         .fast-billing-title {
           font-size: 14px;
           font-weight: 800;
-          color: #ffffff;
+          color: #111111;
         }
         .fast-billing-subtitle {
           margin-top: 4px;
           font-size: 12px;
-          color: #9ca3af;
+          color: #6b7280;
         }
         .fast-billing-toolbar-actions,
         .fast-qty-pills {
@@ -1157,9 +1152,9 @@ export default function SalesPage() {
         }
         .fast-billing-chip,
         .fast-qty-pill {
-          border: 1px solid rgba(148,163,184,0.18);
-          background: rgba(255,255,255,0.06);
-          color: #cbd5e1;
+          border: 1px solid #d1d5db;
+          background: #ffffff;
+          color: #111111;
           border-radius: 999px;
           padding: 6px 10px;
           font-size: 11px;
@@ -1170,15 +1165,15 @@ export default function SalesPage() {
           font-size: 12.5px;
           font-weight: 900;
           letter-spacing: 0.01em;
-          border: 1px solid rgba(13, 148, 136, 0.34) !important;
-          background: linear-gradient(135deg, rgba(8, 32, 50, 0.98), rgba(15, 118, 110, 0.96)) !important;
-          color: #fff !important;
-          box-shadow: 0 16px 30px rgba(15, 118, 110, 0.22);
+          border: 1px solid #d1d5db !important;
+          background: #ffffff !important;
+          color: #111111 !important;
+          box-shadow: none;
         }
         .fast-qty-pill.is-active {
-          background: #0f766e;
-          border-color: #0f766e;
-          color: #fff;
+          background: #ffffff;
+          border-color: #111111;
+          color: #111111;
         }
         .fast-qty-control {
           display: grid;
@@ -1188,18 +1183,18 @@ export default function SalesPage() {
         }
         .fast-qty-button {
           min-height: 46px;
-          border: 1px solid rgba(148,163,184,0.18);
+          border: 1px solid #d1d5db;
           border-radius: 14px;
-          background: rgba(255,255,255,0.06);
+          background: #ffffff;
           font-size: 18px;
           font-weight: 800;
-          color: #ffffff;
+          color: #111111;
         }
         .fast-qty-input {
           text-align: center;
         }
         .fast-item-card {
-          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+          box-shadow: none;
         }
         .fast-item-summary {
           align-items: center;
@@ -1211,10 +1206,10 @@ export default function SalesPage() {
         .fast-add-row-button {
           width: 100%;
           padding: 11px 12px;
-          background: rgba(255,255,255,0.04);
-          border: 1.5px dashed rgba(148,163,184,0.22);
+          background: #ffffff;
+          border: 1.5px dashed #d1d5db;
           border-radius: 12px;
-          color: #cbd5e1;
+          color: #111111;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
@@ -1234,8 +1229,8 @@ export default function SalesPage() {
           margin-bottom: 14px;
           padding: 12px 14px;
           border-radius: 16px;
-          background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,118,110,0.94));
-          color: #fff;
+          background: #ffffff;
+          color: #111111;
           position: sticky;
           bottom: 0;
           z-index: 2;
@@ -1260,7 +1255,7 @@ export default function SalesPage() {
           gap: 10px;
           flex-wrap: wrap;
           padding-top: 8px;
-          background: linear-gradient(180deg, rgba(11,18,32,0), rgba(11,18,32,0.98) 28%);
+          background: #ffffff;
         }
         .sale-entry-modal {
           display: flex;

@@ -470,174 +470,32 @@ export default function DashboardPage() {
       </div>
 
       <style>{`
-        .dashboard-shell {
-          color: #0f172a;
-        }
-
-        .dashboard-hero {
-          border: 1px solid #e2e8f0;
-          background:
-            radial-gradient(circle at 85% 16%, rgba(22, 163, 74, 0.16), transparent 20%),
-            radial-gradient(circle at 18% 12%, rgba(6, 182, 212, 0.14), transparent 22%),
-            linear-gradient(135deg, #ffffff 0%, #f8fafc 48%, #f1f5f9 100%);
-          box-shadow: 0 28px 60px rgba(15, 23, 42, 0.08);
-        }
-
-        .dashboard-shell .page-title {
-          color: #0f172a !important;
-          text-shadow: none;
-          font-weight: 900;
-          letter-spacing: -0.06em;
-        }
-
-        .dashboard-shell .section-title {
-          color: #0f172a;
-        }
-
-        .dashboard-shell .section-subtitle,
-        .dashboard-shell .metric-label,
-        .dashboard-shell .metric-note,
-        .dashboard-shell .page-subtitle {
-          color: #475569 !important;
-        }
-
-        .dashboard-period-shell .form-input {
-          background: #ffffff !important;
-          color: #0f172a !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 14px 28px rgba(15,23,42,0.06);
-        }
-
-        .dashboard-stat-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        }
-
-        .dashboard-stat-card::before {
-          background:
-            radial-gradient(circle at top right, rgba(22, 163, 74, 0.14), transparent 24%),
-            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.12), transparent 22%);
-        }
-
-        .dashboard-stat-card .metric-label,
-        .dashboard-stat-card .metric-note {
-          color: #475569 !important;
-        }
-
-        .dashboard-stat-card .metric-value {
-          color: #0f172a !important;
-          font-weight: 900;
-        }
-
-        .dashboard-stat-icon {
-          background: rgba(241,245,249,0.96) !important;
-          color: #0f172a !important;
-          border: 1px solid #e2e8f0;
-          box-shadow: none !important;
-        }
-
-        .dashboard-section-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: 0 20px 46px rgba(15, 23, 42, 0.08) !important;
-        }
-
+        .dashboard-shell { color: #111111; }
+        .dashboard-hero { border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; }
+        .dashboard-period-shell .form-input { background: #ffffff !important; color: #111111 !important; border: 1px solid #d1d5db !important; box-shadow: none; }
+        .dashboard-stat-card,
+        .dashboard-section-card,
         .dashboard-breakdown-card,
         .dashboard-top-card,
-        .dashboard-quick-card {
-          background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98)) !important;
-          border: 1px solid #e2e8f0 !important;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 16px 34px rgba(15,23,42,0.06);
-        }
-
-        .dashboard-quick-card:hover,
-        .dashboard-top-card:hover {
-          transform: translateY(-3px);
-          border-color: rgba(37, 99, 235, 0.18) !important;
-          box-shadow: 0 20px 40px rgba(15,23,42,0.1);
-        }
-
-        .dashboard-quick-card-sales {
-          background: linear-gradient(180deg, rgba(240,253,244,0.98), rgba(236,253,245,0.98)) !important;
-          border-color: rgba(22, 163, 74, 0.18) !important;
-        }
-
-        .dashboard-quick-card-purchase {
-          background: linear-gradient(180deg, rgba(255,251,235,0.98), rgba(255,247,237,0.98)) !important;
-          border-color: rgba(245, 158, 11, 0.18) !important;
-        }
-
-        .dashboard-quick-card-credit {
-          background: linear-gradient(180deg, rgba(254,242,242,0.98), rgba(255,241,242,0.98)) !important;
-          border-color: rgba(220, 38, 38, 0.18) !important;
-        }
-
-        .dashboard-quick-card-stock {
-          background: linear-gradient(180deg, rgba(239,246,255,0.98), rgba(224,242,254,0.98)) !important;
-          border-color: rgba(37, 99, 235, 0.18) !important;
-        }
-
-        .dashboard-quick-card-gst {
-          background: linear-gradient(180deg, rgba(240,249,255,0.98), rgba(236,254,255,0.98)) !important;
-          border-color: rgba(8, 145, 178, 0.18) !important;
-        }
-
-        .dashboard-quick-card-premium {
-          background: linear-gradient(180deg, rgba(245,243,255,0.98), rgba(238,242,255,0.98)) !important;
-          border-color: rgba(79, 70, 229, 0.18) !important;
-        }
-
         .dashboard-quick-card,
-        .dashboard-top-card {
-          color: #0f172a !important;
+        .dashboard-warning-card {
+          background: #ffffff !important;
+          border: 1px solid #e5e7eb !important;
+          box-shadow: none !important;
+          color: #111111 !important;
         }
-
+        .dashboard-quick-card:hover,
+        .dashboard-top-card:hover { transform: translateY(-2px); border-color: #d1d5db !important; box-shadow: none; }
         .dashboard-quick-card div[style*='color: #64748b'],
         .dashboard-top-card div[style*='color: #64748b'],
-        .dashboard-breakdown-card div[style*='color: #64748b'] {
-          color: #475569 !important;
-        }
-
-        .dashboard-quick-icon {
-          box-shadow: 0 12px 24px rgba(2,6,23,0.2);
-        }
-
-        .dashboard-progress-track {
-          background: rgba(226, 232, 240, 0.8);
-          border: 1px solid #e2e8f0;
-        }
-
-        .dashboard-warning-card {
-          background: linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 247, 237, 0.98)) !important;
-          border-color: rgba(245, 158, 11, 0.22) !important;
-        }
-
-        .dashboard-warning-card .section-title {
-          color: #b45309 !important;
-        }
-
-        .dashboard-warning-card .section-subtitle {
-          color: #d97706 !important;
-        }
-
-        .dashboard-chip-warning {
-          background: rgba(245, 158, 11, 0.12) !important;
-          color: #b45309 !important;
-          border: 1px solid rgba(245, 158, 11, 0.18) !important;
-        }
-
-        .dashboard-shell .badge-navy {
-          background: rgba(255,255,255,0.92);
-          color: #475569;
-          border-color: #e2e8f0;
-        }
-
-        .dashboard-shell .btn-warning {
-          background: linear-gradient(135deg, #f59e0b, #d97706);
-          color: #111827;
-          box-shadow: 0 16px 32px rgba(245, 158, 11, 0.24);
-        }
+        .dashboard-breakdown-card div[style*='color: #64748b'],
+        .dashboard-warning-card .section-subtitle { color: #6b7280 !important; }
+        .dashboard-quick-icon,
+        .dashboard-stat-icon { box-shadow: none !important; }
+        .dashboard-progress-track { background: #f3f4f6; border: 1px solid #e5e7eb; }
+        .dashboard-chip-warning,
+        .dashboard-shell .badge-navy { background: #ffffff !important; color: #111111 !important; border-color: #d1d5db !important; }
+        .dashboard-shell .btn-warning { background: #ffffff; color: #111111; box-shadow: none; }
 
         .top-products-row,
         .quick-actions-row {

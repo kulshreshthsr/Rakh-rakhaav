@@ -1367,27 +1367,27 @@ function LayoutInner({ children }) {
         .app-shell-root .brand-status-card,
         .app-shell-root .language-switch-card,
         .app-shell-root .sidebar-user-card {
-          background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(241,245,249,0.96));
-          border: 1px solid #e2e8f0;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 16px 34px rgba(15, 23, 42, 0.08);
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          box-shadow: none;
         }
 
         .app-shell-root .brand-live-pill {
-          background: rgba(37, 99, 235, 0.12) !important;
-          color: #1d4ed8 !important;
-          border-color: rgba(37, 99, 235, 0.18) !important;
+          background: #ffffff !important;
+          color: #111111 !important;
+          border-color: #d1d5db !important;
         }
 
         .app-shell-root .sidebar-shortcut {
           color: #0f172a;
-          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(239,246,255,0.98), rgba(241,245,249,0.94));
-          border: 1px solid #dbeafe;
-          box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          box-shadow: none;
         }
 
         .app-shell-root .sidebar-shortcut.is-secondary {
-          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(236,253,245,0.98));
-          border-color: rgba(22, 163, 74, 0.16);
+          background: #ffffff;
+          border-color: #e5e7eb;
         }
 
         .app-shell-root .sidebar-shortcut-icon,
@@ -1402,84 +1402,84 @@ function LayoutInner({ children }) {
 
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .nav-link.is-active {
-          color: #ffffff;
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
-          border-color: rgba(37,99,235,0.22);
-          box-shadow: 0 18px 34px rgba(37, 99, 235, 0.18);
+          color: #111111;
+          background: #ffffff;
+          border-color: #d1d5db;
+          box-shadow: none;
         }
 
         .app-shell-root .nav-tone-home.is-active,
         .app-shell-root .mobile-nav-tone-home.is-active {
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          background: #ffffff;
         }
 
         .app-shell-root .nav-tone-stock.is-active,
         .app-shell-root .mobile-nav-tone-stock.is-active {
-          background: linear-gradient(135deg, #2563eb, #0ea5e9);
+          background: #ffffff;
         }
 
         .app-shell-root .nav-tone-sales.is-active,
         .app-shell-root .mobile-nav-tone-sales.is-active {
-          background: linear-gradient(135deg, #16a34a, #06b6d4);
+          background: #ffffff;
         }
 
         .app-shell-root .nav-tone-purchase.is-active,
         .app-shell-root .mobile-nav-tone-purchase.is-active {
-          background: linear-gradient(135deg, #d97706, #f59e0b);
+          background: #ffffff;
         }
 
         .app-shell-root .nav-tone-credit.is-active,
         .app-shell-root .mobile-nav-tone-credit.is-active {
-          background: linear-gradient(135deg, #dc2626, #f43f5e);
+          background: #ffffff;
         }
 
         .app-shell-root .nav-tone-gst.is-active,
         .app-shell-root .mobile-nav-tone-gst.is-active {
-          background: linear-gradient(135deg, #0f766e, #2563eb);
+          background: #ffffff;
         }
 
         .app-shell-root .nav-tone-reports.is-active,
         .app-shell-root .mobile-nav-tone-reports.is-active {
-          background: linear-gradient(135deg, #4f46e5, #2563eb);
+          background: #ffffff;
         }
 
         .app-shell-root .nav-tone-home .nav-link-accent {
-          background: linear-gradient(180deg, #2563eb, #06b6d4);
+          background: #111111;
         }
 
         .app-shell-root .nav-tone-stock .nav-link-accent {
-          background: linear-gradient(180deg, #2563eb, #0ea5e9);
+          background: #111111;
         }
 
         .app-shell-root .nav-tone-sales .nav-link-accent {
-          background: linear-gradient(180deg, #16a34a, #06b6d4);
+          background: #111111;
         }
 
         .app-shell-root .nav-tone-purchase .nav-link-accent {
-          background: linear-gradient(180deg, #d97706, #f59e0b);
+          background: #111111;
         }
 
         .app-shell-root .nav-tone-credit .nav-link-accent {
-          background: linear-gradient(180deg, #dc2626, #f43f5e);
+          background: #111111;
         }
 
         .app-shell-root .nav-tone-gst .nav-link-accent {
-          background: linear-gradient(180deg, #0f766e, #2563eb);
+          background: #111111;
         }
 
         .app-shell-root .nav-tone-reports .nav-link-accent {
-          background: linear-gradient(180deg, #4f46e5, #2563eb);
+          background: #111111;
         }
 
         .app-shell-root .nav-link:hover {
           color: #0f172a;
-          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(241,245,249,0.92));
+          background: #f9fafb;
         }
 
         .app-shell-root .sidebar-user-menu {
-          background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.99));
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          box-shadow: none;
         }
 
         .app-shell-root .sidebar-user-menu button + button,
@@ -1495,58 +1495,51 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .sidebar-logout {
-          border-color: rgba(220, 38, 38, 0.14);
-          background: linear-gradient(180deg, rgba(254,242,242,0.96), rgba(255,241,242,0.96));
+          border-color: #d1d5db;
+          background: #ffffff;
         }
 
         .app-shell-root .premium-topbar {
-          background: rgba(248, 250, 252, 0.9);
-          border-bottom: 1px solid #e2e8f0;
+          background: #ffffff;
+          border-bottom: 1px solid #e5e7eb;
         }
 
         .app-shell-root .premium-topbar.is-scrolled {
-          background: rgba(248, 250, 252, 0.98);
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+          background: #ffffff;
+          box-shadow: none;
         }
 
         .app-shell-root .top-upgrade-chip {
-          box-shadow: 0 20px 42px rgba(37, 99, 235, 0.2);
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
-          border-color: rgba(37, 99, 235, 0.22);
-          color: #ffffff;
+          box-shadow: none;
+          background: #ffffff;
+          border-color: #d1d5db;
+          color: #111111;
         }
 
         .app-shell-root .top-upgrade-chip.is-manage {
-          background: linear-gradient(135deg, #0f766e, #16a34a);
-          border-color: rgba(22, 163, 74, 0.2);
-          box-shadow: 0 12px 28px rgba(22, 163, 74, 0.16);
-          color: #ffffff;
+          background: #ffffff;
+          border-color: #d1d5db;
+          box-shadow: none;
+          color: #111111;
         }
 
         .app-shell-root .premium-trial-banner {
-          border: 1px solid rgba(37, 99, 235, 0.12);
-          background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(239,246,255,0.98));
+          border: 1px solid #e5e7eb;
+          background: #ffffff;
         }
 
         .app-shell-root .membership-spotlight-banner {
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 30px 70px rgba(15, 23, 42, 0.08);
-          background:
-            radial-gradient(circle at top right, rgba(245,158,11,0.14), transparent 28%),
-            radial-gradient(circle at 0% 100%, rgba(45,212,191,0.1), transparent 30%),
-            linear-gradient(135deg, rgba(255,255,255,0.99), rgba(248,250,252,0.98), rgba(239,246,255,0.96));
+          border: 1px solid #e5e7eb;
+          box-shadow: none;
+          background: #ffffff;
         }
 
         .app-shell-root .membership-spotlight-banner.accent-expired {
-          background:
-            radial-gradient(circle at top right, rgba(248,113,113,0.16), transparent 28%),
-            linear-gradient(135deg, rgba(255,255,255,0.99), rgba(255,241,242,0.96));
+          background: #ffffff;
         }
 
         .app-shell-root .membership-spotlight-banner.accent-active {
-          background:
-            radial-gradient(circle at top right, rgba(52,211,153,0.14), transparent 28%),
-            linear-gradient(135deg, rgba(255,255,255,0.99), rgba(236,253,245,0.96));
+          background: #ffffff;
         }
 
         .app-shell-root .membership-spotlight-copy h2,
@@ -1564,9 +1557,9 @@ function LayoutInner({ children }) {
         .app-shell-root .membership-spotlight-side,
         .app-shell-root .membership-mini-plan,
         .app-shell-root .mobile-bottom-nav-card {
-          background: rgba(255,255,255,0.9);
-          border-color: #e2e8f0;
-          box-shadow: 0 20px 44px rgba(15, 23, 42, 0.08);
+          background: #ffffff;
+          border-color: #e5e7eb;
+          box-shadow: none;
         }
 
         .app-shell-root .mobile-nav-link {
@@ -1574,10 +1567,10 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .mobile-nav-link.is-active {
-          color: #ffffff;
-          border-color: rgba(37,99,235,0.18);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 12px 28px rgba(37, 99, 235, 0.14);
-          background: linear-gradient(135deg, #2563eb, #06b6d4);
+          color: #111111;
+          border-color: #d1d5db;
+          box-shadow: none;
+          background: #ffffff;
         }
 
         @media (max-width: 900px) {

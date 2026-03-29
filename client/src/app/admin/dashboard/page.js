@@ -325,9 +325,7 @@ export default function AdminDashboardPage() {
       <style>{`
         .admin-page {
           min-height: 100vh;
-          background:
-            radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 22%),
-            linear-gradient(180deg, #f8fbff, #eef2f7);
+          background: #f3f4f6;
           padding: 24px;
         }
 
@@ -343,9 +341,9 @@ export default function AdminDashboardPage() {
         .admin-toolbar,
         .admin-stat-card {
           border-radius: 24px;
-          border: 1px solid rgba(148, 163, 184, 0.16);
-          background: rgba(255, 255, 255, 0.95);
-          box-shadow: 0 16px 48px rgba(15, 23, 42, 0.06);
+          border: 1px solid #e5e7eb;
+          background: #ffffff;
+          box-shadow: none;
         }
 
         .admin-header {
@@ -359,7 +357,7 @@ export default function AdminDashboardPage() {
         .admin-kicker {
           font-size: 12px;
           font-weight: 800;
-          color: #2563eb;
+          color: #111111;
           letter-spacing: 0.1em;
           text-transform: uppercase;
         }
@@ -383,9 +381,9 @@ export default function AdminDashboardPage() {
           min-height: 50px;
           padding: 0 18px;
           border-radius: 16px;
-          border: 1px solid rgba(248, 113, 113, 0.22);
-          background: #fff5f5;
-          color: #b91c1c;
+          border: 1px solid #d1d5db;
+          background: #ffffff;
+          color: #111111;
           font-weight: 800;
           cursor: pointer;
           white-space: nowrap;
@@ -401,10 +399,10 @@ export default function AdminDashboardPage() {
           padding: 22px;
         }
 
-        .admin-stat-card.blue { background: linear-gradient(180deg, #eff6ff, #ffffff); }
-        .admin-stat-card.green { background: linear-gradient(180deg, #ecfdf5, #ffffff); }
-        .admin-stat-card.yellow { background: linear-gradient(180deg, #fffbeb, #ffffff); }
-        .admin-stat-card.red { background: linear-gradient(180deg, #fef2f2, #ffffff); }
+        .admin-stat-card.blue,
+        .admin-stat-card.green,
+        .admin-stat-card.yellow,
+        .admin-stat-card.red { background: #ffffff; }
 
         .admin-stat-label {
           font-size: 13px;
