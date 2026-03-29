@@ -1,6 +1,6 @@
 ﻿'use client';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
@@ -237,7 +237,6 @@ const buildWhatsAppShareMessage = (sale, shopName) => {
 
 export default function SalesPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { locale } = useAppLocale();
   const [sales, setSales]           = useState([]);
   const [summary, setSummary]       = useState({});
@@ -330,7 +329,9 @@ export default function SalesPage() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (searchParams.get('open') !== '1' || searchParams.get('payment') !== 'credit') return;
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('open') !== '1' || params.get('payment') !== 'credit') return;
     setEditingSaleId('');
     setItems([emptyItem()]);
     setForm({
@@ -348,7 +349,7 @@ export default function SalesPage() {
     setError('');
     setShowModal(true);
     router.replace('/sales');
-  }, [router, searchParams]);
+  }, [router]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const updateItem = (index, field, value) => {
