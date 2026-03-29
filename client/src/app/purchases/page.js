@@ -381,8 +381,8 @@ export default function PurchasesPage() {
         <section className="hero-panel purchases-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>खरीद / Purchases</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing purchase data...</div>}
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>खरीद / Purchases</div>
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
             </div>
             <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
               + खरीद दर्ज / Record Purchase
@@ -450,7 +450,7 @@ export default function PurchasesPage() {
                   <tr key={p._id}>
                     <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>{p.invoice_number}</td>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>
+                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
                         {/* Show all item names if multi-item */}
                         {p.items && p.items.length > 1
                           ? p.items.map(i => i.product_name).join(', ')
@@ -505,7 +505,7 @@ export default function PurchasesPage() {
                 style={{ borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#f59e0b'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#ffffff' }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
                       {p.items && p.items.length > 1
                         ? `${p.items.length} products`
                         : p.product_name}
@@ -552,7 +552,7 @@ export default function PurchasesPage() {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal flow-modal" style={{ maxWidth: 560 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#ffffff' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>
               खरीद दर्ज करें / Record Purchase
             </h3>
             {editingPurchaseId ? (
@@ -569,7 +569,7 @@ export default function PurchasesPage() {
 
               {/* ── ITEMS ── */}
               <div className="flow-step-panel" style={{ display: purchaseStep === 0 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   🛒 Products
                 </div>
 
@@ -577,7 +577,7 @@ export default function PurchasesPage() {
                   const rowGST = calcRowGST(item);
                   const prod = products.find(p => p._id === item.product_id);
                   return (
-                    <div key={index} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid rgba(148,163,184,0.14)' }}>
+                    <div key={index} style={{ background: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e2e8f0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
                         {items.length > 1 && (
@@ -633,7 +633,7 @@ export default function PurchasesPage() {
                 })}
 
                 <button type="button" onClick={addItem}
-                  style={{ width: '100%', padding: '9px', background: 'rgba(255,255,255,0.04)', border: '1.5px dashed rgba(148,163,184,0.22)', borderRadius: 8, color: '#cbd5e1', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ width: '100%', padding: '9px', background: '#f8fafc', border: '1.5px dashed #cbd5e1', borderRadius: 8, color: '#334155', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   + Add Another Product
                 </button>
               </div>
@@ -803,7 +803,7 @@ export default function PurchasesPage() {
                 </button>
                 )}
                 <button type="button" onClick={resetModal}
-                  style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   रद्द / Cancel
                 </button>
               </div>

@@ -241,8 +241,8 @@ export default function GSTPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="kicker" style={{ marginBottom: 10 }}>Tax centre</div>
-              <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>GST Summary</div>
-              <div style={{ marginTop: 10, color: 'rgba(226,232,240,0.72)', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>GST Summary</div>
+              <div style={{ marginTop: 10, color: '#475569', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function GSTPage() {
                           <strong style={{ color: '#67e8f9' }}>{invoice.invoice_number}</strong>
                           <span className="ui-value-money">₹{fmt(invoice.total)}</span>
                         </div>
-                        <div style={{ color: '#fff', fontWeight: 700 }}>{invoice.buyer_name}</div>
+                        <div style={{ color: '#0f172a', fontWeight: 700 }}>{invoice.buyer_name}</div>
                         <div style={{ color: '#9ca3af', fontSize: 11 }}>GSTIN: {invoice.buyer_gstin} • GST {invoice.gst_rate}%</div>
                       </div>
                     </div>

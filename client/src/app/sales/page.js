@@ -647,7 +647,7 @@ export default function SalesPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
               <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(226,232,240,0.72)' }}>Refreshing sales data...</div>}
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing sales data...</div>}
             </div>
             <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ Record Sale</button>
           </div>
@@ -704,7 +704,7 @@ export default function SalesPage() {
                   <tr key={s._id}>
                     <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 13 }}>
+                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
                         {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
                       </div>
                       {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
@@ -764,7 +764,7 @@ export default function SalesPage() {
               <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#ffffff' }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
                       {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
                     </div>
                     <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
@@ -811,7 +811,7 @@ export default function SalesPage() {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal flow-modal sale-entry-modal" style={{ maxWidth: 500 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#ffffff' }}>Record Sale</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>Record Sale</h3>
             {editingSaleId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
             ) : null}
@@ -823,7 +823,7 @@ export default function SalesPage() {
 
               {/* Items */}
               <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Items</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Items</div>
                 <div className="fast-billing-toolbar">
                   <div>
                     <div className="fast-billing-title">Fast Billing</div>
@@ -846,7 +846,7 @@ export default function SalesPage() {
                   const g    = rowGST(item);
                   const prod = products.find(p => p._id === item.product_id);
                   return (
-                    <div key={index} className="fast-item-card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid rgba(148,163,184,0.14)' }}>
+                    <div key={index} className="fast-item-card" style={{ background: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e2e8f0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
                         <button
@@ -1099,7 +1099,7 @@ export default function SalesPage() {
                 </button>
                 )}
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
-                  style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(148,163,184,0.14)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   0&M& / Cancel
                 </button>
               </div>

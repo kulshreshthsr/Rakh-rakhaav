@@ -177,7 +177,7 @@ export default function UdhaarPage() {
     <Layout>
       <div className="page-shell ledger-shell">
         <section className="hero-panel ledger-hero">
-          <div className="page-title" style={{ color: '#fff', marginBottom: 0 }}>Credit Ledger</div>
+          <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
         </section>
 
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
@@ -233,7 +233,7 @@ export default function UdhaarPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                         <div className="ui-avatar">{initials(item.name)}</div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 15, color: '#fff' }}>{item.name}</div>
+                          <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>{item.name}</div>
                           {item.phone ? <div style={{ fontSize: 12, color: '#9ca3af' }}>Phone: {item.phone}</div> : null}
                           {item.gstin ? <div style={{ fontSize: 11, color: '#67e8f9' }}>GSTIN: {item.gstin}</div> : null}
                         </div>
@@ -349,7 +349,7 @@ export default function UdhaarPage() {
         {showSettle && selected ? (
           <div className="modal-overlay">
             <div className="modal">
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#fff' }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>
                 {isCustomer ? 'Receive Payment' : 'Make Payment'}
               </h3>
               <p style={{ fontSize: 13, color: '#9ca3af', marginBottom: 10 }}>
