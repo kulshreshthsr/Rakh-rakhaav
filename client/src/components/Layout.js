@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -30,16 +30,6 @@ function readStoredUser() {
 }
 
 function Glyph({ name, size = 20, stroke = 1.8 }) {
-  const emojiStyle = {
-    width: size,
-    height: size,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: size - 1,
-    lineHeight: 1,
-  };
-
   const common = {
     width: size,
     height: size,
@@ -54,29 +44,29 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
 
   switch (name) {
     case 'dashboard':
-      return <span style={emojiStyle} aria-hidden="true">🏠</span>;
+      return <svg {...common}><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10.5V20h13V10.5" /><path d="M9.5 20v-5h5v5" /></svg>;
     case 'products':
-      return <span style={emojiStyle} aria-hidden="true">📦</span>;
+      return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></svg>;
     case 'sales':
-      return <span style={emojiStyle} aria-hidden="true">💰</span>;
+      return <svg {...common}><path d="M12 2v20" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></svg>;
     case 'purchases':
-      return <span style={emojiStyle} aria-hidden="true">🛒</span>;
+      return <svg {...common}><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7" /></svg>;
     case 'udhaar':
-      return <span style={emojiStyle} aria-hidden="true">📒</span>;
+      return <svg {...common}><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3" /><path d="M6 3.5v20" /><path d="M9 7.5h6" /><path d="M9 11.5h6" /><path d="M9 15.5h4" /></svg>;
     case 'gst':
-      return <span style={emojiStyle} aria-hidden="true">🧾</span>;
+      return <svg {...common}><path d="M7 4.5h10" /><path d="M7 9.5h10" /><path d="M7 14.5h5" /><path d="M16.5 13v7" /><path d="M13.5 16h6" /><rect x="4" y="3" width="16" height="18" rx="2.5" /></svg>;
     case 'reports':
-      return <span style={emojiStyle} aria-hidden="true">📊</span>;
+      return <svg {...common}><path d="M5 19.5V10.5" /><path d="M12 19.5V5.5" /><path d="M19 19.5V13.5" /><path d="M3.5 19.5h17" /></svg>;
     case 'profile':
-      return <span style={emojiStyle} aria-hidden="true">👤</span>;
+      return <svg {...common}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>;
     case 'logout':
-      return <span style={emojiStyle} aria-hidden="true">🚪</span>;
+      return <svg {...common}><path d="M10 7V5.5A2.5 2.5 0 0 1 12.5 3H18a2.5 2.5 0 0 1 2.5 2.5v13A2.5 2.5 0 0 1 18 21h-5.5A2.5 2.5 0 0 1 10 18.5V17" /><path d="M14 12H3.5" /><path d="m7.5 8-4 4 4 4" /></svg>;
     case 'pricing':
-      return <span style={emojiStyle} aria-hidden="true">⭐</span>;
+      return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" /></svg>;
     case 'language':
-      return <span style={emojiStyle} aria-hidden="true">🌐</span>;
+      return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a15 15 0 0 1 0 18" /><path d="M12 3a15 15 0 0 0 0 18" /></svg>;
     default:
-      return <span style={emojiStyle} aria-hidden="true">•</span>;
+      return <svg {...common}><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /></svg>;
   }
 }
 
@@ -103,7 +93,7 @@ function Logo({ size = 'md' }) {
 
   return (
     <div className="brand-logo-fallback" style={{ width: dim, height: dim, borderRadius: radius }}>
-      <span style={{ fontSize: size === 'sm' ? 14 : 20, fontWeight: 900 }}>र</span>
+      <span style={{ fontSize: size === 'sm' ? 14 : 20, fontWeight: 900 }}>R</span>
     </div>
   );
 }
@@ -323,7 +313,7 @@ function LayoutInner({ children }) {
               <div className="brand-row">
                 <Logo size="md" />
                 <div>
-                  <div className="brand-title">रखरखाव</div>
+                  <div className="brand-title">Rakh-Rakhaav</div>
                   <div className="brand-subtitle">{t('brand')}</div>
                 </div>
               </div>
@@ -435,7 +425,7 @@ function LayoutInner({ children }) {
           <div className="mobile-topbar-brand">
             <Logo size="sm" />
             <div>
-              <div className="mobile-brand-title">रखरखाव</div>
+              <div className="mobile-brand-title">Rakh-Rakhaav</div>
               <div className="mobile-brand-subtitle">{t('brand')}</div>
             </div>
           </div>
@@ -1600,4 +1590,5 @@ function LayoutInner({ children }) {
 export default function Layout({ children }) {
   return <LayoutInner>{children}</LayoutInner>;
 }
+
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -259,10 +259,10 @@ export default function ReportsPage() {
 
         {!loading ? (
           <section className="metric-grid reports-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-            <StatCard label="Revenue" value={`₹${fmtN(summary.totalRevenue)}`} note={`${summary.salesCount || 0} invoices`} tone="money" />
-            <StatCard label="Profit" value={`₹${fmtN(summary.grossProfit)}`} note={`Margin ${fmt(summary.margin)}%`} tone={summary.grossProfit >= 0 ? 'secondary' : 'danger'} />
-            <StatCard label="GST Payable" value={`₹${fmtN(summary.netGST)}`} note={`ITC ₹${fmtN(summary.totalITC)}`} tone="warning" />
-            <StatCard label="Udhaar" value={`₹${fmtN(summary.totalUdhaar)}`} note="Pending collection" tone="danger" />
+            <StatCard label="Revenue" value={`Rs ${fmtN(summary.totalRevenue)}`} note={`${summary.salesCount || 0} invoices`} tone="money" />
+            <StatCard label="Profit" value={`Rs ${fmtN(summary.grossProfit)}`} note={`Margin ${fmt(summary.margin)}%`} tone={summary.grossProfit >= 0 ? 'secondary' : 'danger'} />
+            <StatCard label="GST Payable" value={`Rs ${fmtN(summary.netGST)}`} note={`ITC Rs ${fmtN(summary.totalITC)}`} tone="warning" />
+            <StatCard label="Udhaar" value={`Rs ${fmtN(summary.totalUdhaar)}`} note="Pending collection" tone="danger" />
           </section>
         ) : null}
 
@@ -279,10 +279,10 @@ export default function ReportsPage() {
               subtitle="Revenue, GST and profit in one clear stack"
               actions={<ActionButton variant="secondary" onClick={() => exportCSV('profit')}>CSV Download</ActionButton>}
             >
-              <DataRow label="Total Revenue" value={`₹${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
-              <DataRow label="GST Collected" note="Tax collected on behalf of the government" prefix="-" value={`₹${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
-              <DataRow label="Taxable Revenue (Revenue - GST)" prefix="=" value={`₹${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
-              <DataRow label="Profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
+              <DataRow label="Total Revenue" value={`Rs ${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
+              <DataRow label="GST Collected" note="Tax collected on behalf of the government" prefix="-" value={`Rs ${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
+              <DataRow label="Taxable Revenue (Revenue - GST)" prefix="=" value={`Rs ${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
+              <DataRow label="Profit" prefix="=" value={`Rs ${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
 
               {(summary.totalRevenue || 0) > 0 && (
                 <div style={{ marginTop: 16 }}>
@@ -327,8 +327,8 @@ export default function ReportsPage() {
                           <tr key={index}>
                             <td>{day.date}</td>
                             <td>{day.count}</td>
-                            <td className="ui-value-money">₹{fmtN(day.revenue)}</td>
-                            <td className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'}>₹{fmtN(day.profit)}</td>
+                            <td className="ui-value-money">Rs {fmtN(day.revenue)}</td>
+                            <td className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'}>Rs {fmtN(day.profit)}</td>
                             <td>
                               <StatusBadge tone={currentMargin >= 20 ? 'success' : currentMargin >= 10 ? 'warning' : 'danger'}>
                                 {currentMargin.toFixed(1)}%
@@ -359,8 +359,8 @@ export default function ReportsPage() {
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>{product.qty} units • {product.count} orders</div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div className="ui-value-money" style={{ fontSize: 13 }}>₹{fmtN(product.revenue)}</div>
-                          <div className="ui-value-secondary" style={{ fontSize: 11 }}>₹{fmtN(product.profit)} profit</div>
+                          <div className="ui-value-money" style={{ fontSize: 13 }}>Rs {fmtN(product.revenue)}</div>
+                          <div className="ui-value-secondary" style={{ fontSize: 11 }}>Rs {fmtN(product.profit)} profit</div>
                         </div>
                       </div>
                     ))}
@@ -383,8 +383,8 @@ export default function ReportsPage() {
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>{customer.count} orders{customer.phone ? ` • ${customer.phone}` : ''}</div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div className="ui-value-money" style={{ fontSize: 13 }}>₹{fmtN(customer.revenue)}</div>
-                          {customer.udhaar > 0 ? <div className="ui-value-danger" style={{ fontSize: 11 }}>₹{fmtN(customer.udhaar)} due</div> : null}
+                          <div className="ui-value-money" style={{ fontSize: 13 }}>Rs {fmtN(customer.revenue)}</div>
+                          {customer.udhaar > 0 ? <div className="ui-value-danger" style={{ fontSize: 11 }}>Rs {fmtN(customer.udhaar)} due</div> : null}
                         </div>
                       </div>
                     ))}
@@ -397,7 +397,7 @@ export default function ReportsPage() {
               <div className="ui-empty">
                 <div style={{ fontSize: 40, marginBottom: 12 }}>Chart</div>
                 <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>No data</div>
-                <div style={{ fontSize: 13 }}>{label} mein koi sales ya purchases nahi hain</div>
+                <div style={{ fontSize: 13 }}>No sales or purchases found for this period.</div>
               </div>
             )}
           </>
@@ -429,3 +429,4 @@ export default function ReportsPage() {
     </Layout>
   );
 }
+

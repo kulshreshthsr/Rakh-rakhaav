@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -181,7 +181,7 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      label: 'बिक्री / Sales',
+      label: 'Sales',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} invoices this month`,
       color: '#0f766e',
@@ -190,7 +190,7 @@ export default function DashboardPage() {
       icon: 'Sales',
     },
     {
-      label: 'मुनाफ़ा / Profit',
+      label: 'Profit',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
       color: profit >= 0 ? '#1d4ed8' : '#dc2626',
@@ -201,7 +201,7 @@ export default function DashboardPage() {
       icon: 'Profit',
     },
     {
-      label: 'उधार / Credit',
+      label: 'Credit',
       value: `₹${fmt(totalCustomerUdhaar)}`,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
       color: totalCustomerUdhaar > 0 ? '#dc2626' : '#10b981',
@@ -212,7 +212,7 @@ export default function DashboardPage() {
       icon: 'Credit',
     },
     {
-      label: 'GST देय / Payable',
+      label: 'GST Payable',
       value: `₹${fmt(Math.abs(netGST))}`,
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
       color: netGST >= 0 ? '#b45309' : '#0f766e',
@@ -225,12 +225,12 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'SL', hi: 'बिक्री', en: 'Sale', sub: 'Record sale', tone: 'rgba(22,163,74,0.14)', color: '#15803d', semantic: 'sales' },
-    { href: '/purchases', icon: 'PU', hi: 'खरीद', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.14)', color: '#b45309', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'CR', hi: 'उधार', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.12)', color: '#dc2626', semantic: 'credit' },
-    { href: '/product', icon: 'PR', hi: 'उत्पाद', en: 'Product', sub: 'Update stock', tone: 'rgba(37,99,235,0.12)', color: '#2563eb', semantic: 'stock' },
+    { href: '/sales', icon: 'SL', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(22,163,74,0.14)', color: '#15803d', semantic: 'sales' },
+    { href: '/purchases', icon: 'PU', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.14)', color: '#b45309', semantic: 'purchase' },
+    { href: '/udhaar', icon: 'CR', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.12)', color: '#dc2626', semantic: 'credit' },
+    { href: '/product', icon: 'PR', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(37,99,235,0.12)', color: '#2563eb', semantic: 'stock' },
     { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,145,178,0.12)', color: '#0f766e', semantic: 'gst' },
-    { href: '/pricing', icon: 'UP', hi: 'प्रीमियम', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
+    { href: '/pricing', icon: 'UP', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
   ];
 
   return (
@@ -240,7 +240,7 @@ export default function DashboardPage() {
           <div className="dashboard-hero-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ maxWidth: 680, flex: 1, minWidth: 0 }}>
               <div className="kicker" style={{ marginBottom: 12 }}>Business overview</div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>डैशबोर्ड / Dashboard</div>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Dashboard</div>
               <div style={{ marginTop: 10, color: '#475569', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
                 Revenue, profit, credit and GST at one glance for the active month.
               </div>
@@ -295,7 +295,7 @@ export default function DashboardPage() {
           <section className="card dashboard-section-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
               <div>
-                <div className="section-title">मुनाफ़ा विवरण / Profit Breakdown</div>
+                <div className="section-title">Profit Breakdown</div>
                 <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
               </div>
               <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
@@ -355,7 +355,7 @@ export default function DashboardPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <div>
-                <div className="section-title" style={{ color: '#b45309' }}>कम स्टॉक / Low Stock</div>
+                <div className="section-title" style={{ color: '#b45309' }}>Low Stock</div>
                 <div className="section-subtitle" style={{ color: '#d97706' }}>
                   {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
                 </div>
@@ -380,7 +380,7 @@ export default function DashboardPage() {
         <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
           <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
             <div>
-              <div className="section-title">त्वरित कार्य / Quick Actions</div>
+              <div className="section-title">Quick Actions</div>
               <div className="section-subtitle">Fast access to your most-used screens</div>
             </div>
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
@@ -400,7 +400,7 @@ export default function DashboardPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi} / {action.en}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
                     <div style={{ fontSize: 11, color: '#475569', marginTop: 4, lineHeight: 1.45 }}>{action.sub}</div>
                   </div>
                   <div className="dashboard-quick-icon" style={{ minWidth: 34, height: 34, borderRadius: 12, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0 }}>{action.icon}</div>
@@ -412,12 +412,12 @@ export default function DashboardPage() {
 
         <section className="card dashboard-section-card">
           <div style={{ marginBottom: 16 }}>
-            <div className="section-title">टॉप उत्पाद / Top Products</div>
+            <div className="section-title">Top Products</div>
             <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
           </div>
           {topProducts.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">📦</div>
+              <div className="empty-state-icon">PK</div>
               <div>No top products yet for this period.</div>
             </div>
           ) : (
@@ -563,3 +563,4 @@ export default function DashboardPage() {
     </Layout>
   );
 }
+

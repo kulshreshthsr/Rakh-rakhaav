@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -93,7 +93,7 @@ export default function PurchasesPage() {
   const [shopState, setShopState] = useState('');
   const router = useRouter();
 
-  // ── Form state ──────────────────────────────────────────────────────────────
+  // â”€â”€ Form state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [items, setItems] = useState([emptyItem()]);
   const [form, setForm] = useState({
     payment_type: 'cash',
@@ -121,7 +121,7 @@ export default function PurchasesPage() {
       setPurchases(nextPurchases);
       setSummary(nextSummary);
       writePageCache(PURCHASES_CACHE_KEY, { purchases: nextPurchases, summary: nextSummary });
-    } catch { setError('खरीद लोड नहीं हो सकी'); }
+    } catch { setError('Purchases could not be loaded'); }
   }
 
   async function fetchProducts() {
@@ -178,7 +178,7 @@ export default function PurchasesPage() {
   }, [shopState]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // ── Item row handlers ────────────────────────────────────────────────────────
+  // â”€â”€ Item row handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const updateItem = (index, field, value) => {
     const updated = [...items];
     updated[index][field] = value;
@@ -198,7 +198,7 @@ export default function PurchasesPage() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  // ── GST calculation per row ──────────────────────────────────────────────────
+  // â”€â”€ GST calculation per row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const calcRowGST = (item) => {
     const prod = products.find(p => p._id === item.product_id);
     if (!prod || !item.quantity || !item.price_per_unit) return null;
@@ -218,7 +218,7 @@ export default function PurchasesPage() {
     };
   };
 
-  // ── Bill totals ──────────────────────────────────────────────────────────────
+  // â”€â”€ Bill totals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const billTotals = items.reduce((acc, item) => {
     const g = calcRowGST(item);
     if (!g) return acc;
@@ -245,19 +245,19 @@ export default function PurchasesPage() {
     setGstinTouched(Boolean(normalized));
   };
   const wizardSteps = [
-    { title: locale === 'hi' ? 'आइटम्स' : 'Items', copy: locale === 'hi' ? 'खरीद सूची' : 'Purchase items' },
-    { title: locale === 'hi' ? 'भुगतान' : 'Payment', copy: locale === 'hi' ? 'क्रेडिट या कैश' : 'Credit or cash' },
-    { title: locale === 'hi' ? 'सप्लायर' : 'Supplier', copy: locale === 'hi' ? 'सप्लायर और GST' : 'Supplier and GST' },
+    { title: 'Items', copy: 'Purchase items' },
+    { title: 'Payment', copy: 'Credit or cash' },
+    { title: 'Supplier', copy: 'Supplier and GST' },
   ];
 
-  // ── Submit ───────────────────────────────────────────────────────────────────
+  // â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSubmit = async (e) => {
     e?.preventDefault();
     setError('');
     setGstinTouched(true);
 
     if (form.payment_type === 'credit' && !form.supplier_name) {
-      setError('उधार खरीद के लिए supplier का नाम जरूरी है!');
+      setError('Supplier name is required for credit purchases');
       return;
     }
     if (!gstinValid) {
@@ -266,7 +266,7 @@ export default function PurchasesPage() {
     }
     const validItems = items.filter(i => i.product_id && i.quantity && i.price_per_unit);
     if (validItems.length === 0) {
-      setError('कम से कम एक product चुनें');
+      setError('Select at least one product');
       return;
     }
 
@@ -299,23 +299,23 @@ export default function PurchasesPage() {
         setGstinTouched(false);
         fetchPurchases();
       } else {
-        setError(data.message || 'विफल');
+        setError(data.message || 'Request failed');
       }
     } catch {
-      setError('सर्वर त्रुटि');
+      setError('Server error');
     }
     setSubmitting(false);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('इस खरीद को हटाएं? Stock वापस आएगा।')) return;
+    if (!confirm('Delete this purchase? Stock will be restored.')) return;
     try {
       await fetch(`${API}/api/purchases/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       fetchPurchases();
-    } catch { setError('हटाने में विफल'); }
+    } catch { setError('Could not delete purchase'); }
   };
 
   const resetModal = () => {
@@ -359,13 +359,13 @@ export default function PurchasesPage() {
     setShowModal(true);
   };
 
-  // ── Payment type badge helper ────────────────────────────────────────────────
+  // â”€â”€ Payment type badge helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const PayBadge = ({ type }) => {
     const map = {
-      cash:   { bg: '#dcfce7', color: '#166534', label: '💵 नकद' },
-      credit: { bg: '#fee2e2', color: '#991b1b', label: '📒 उधार' },
-      upi:    { bg: '#ede9fe', color: '#5b21b6', label: '📱 UPI' },
-      bank:   { bg: '#dbeafe', color: '#1e40af', label: '🏦 Bank' },
+      cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
+      credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
+      upi:    { bg: '#ede9fe', color: '#5b21b6', label: 'UPI' },
+      bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
     };
     const s = map[type] || map.cash;
     return (
@@ -381,11 +381,11 @@ export default function PurchasesPage() {
         <section className="hero-panel purchases-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
             <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>खरीद / Purchases</div>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Purchases</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
             </div>
             <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
-              + खरीद दर्ज / Record Purchase
+              + Record Purchase
             </button>
           </div>
         </section>
@@ -393,17 +393,17 @@ export default function PurchasesPage() {
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Total Spend</div>
-            <div className="metric-value" style={{ color: '#b45309' }}>₹{(summary.totalPurchaseValue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#b45309' }}>Rs {(summary.totalPurchaseValue || 0).toFixed(2)}</div>
             <div className="metric-note">Purchase outflow</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Input GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{(summary.totalITC || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>Rs {(summary.totalITC || 0).toFixed(2)}</div>
             <div className="metric-note">ITC available</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Balance Due</div>
-            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#dc2626' : '#0f766e' }}>₹{(summary.totalDue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#dc2626' : '#0f766e' }}>Rs {(summary.totalDue || 0).toFixed(2)}</div>
             <div className="metric-note">Supplier credit outstanding</div>
           </div>
         </section>
@@ -422,8 +422,8 @@ export default function PurchasesPage() {
           </div>
         ) : purchases.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">🛒</div>
-            <div>अभी कोई खरीद नहीं / No purchases yet.</div>
+            <div className="empty-state-icon">PO</div>
+            <div>No purchases yet.</div>
           </div>
         ) : (
           <>
@@ -433,15 +433,15 @@ export default function PurchasesPage() {
               <thead>
                 <tr>
                   <th>Bill No.</th>
-                  <th>उत्पाद / Product</th>
+                  <th>Product</th>
                   <th>Items</th>
                   <th>Taxable</th>
                   <th>GST (ITC)</th>
-                  <th>कुल / Total</th>
+                  <th>Total</th>
                   <th>Paid</th>
                   <th>Balance Due</th>
-                  <th>भुगतान</th>
-                  <th>तारीख</th>
+                  <th>Payment</th>
+                  <th>Date</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -457,24 +457,24 @@ export default function PurchasesPage() {
                           : p.product_name}
                       </div>
                       {p.supplier_name && (
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>से: {p.supplier_name}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>
                       )}
                     </td>
                     <td style={{ fontSize: 12, color: '#6b7280' }}>
                       {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
                     </td>
-                    <td>₹{(p.taxable_amount || 0).toFixed(2)}</td>
+                    <td>Rs {(p.taxable_amount || 0).toFixed(2)}</td>
                     <td>
                       {p.total_gst > 0
-                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
-                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>}
+                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>Rs {p.total_gst.toFixed(2)}</span>
+                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>â€”</span>}
                     </td>
-                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
-                    <td style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
+                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>Rs {(p.total_amount || 0).toFixed(2)}</td>
+                    <td style={{ color: '#10b981', fontWeight: 600 }}>Rs {(p.amount_paid || 0).toFixed(2)}</td>
                     <td>
                       {(p.balance_due || 0) > 0
-                        ? <span style={{ color: '#ef4444', fontWeight: 700 }}>₹{p.balance_due.toFixed(2)}</span>
-                        : <span style={{ color: '#10b981' }}>✓ Paid</span>}
+                        ? <span style={{ color: '#ef4444', fontWeight: 700 }}>Rs {p.balance_due.toFixed(2)}</span>
+                        : <span style={{ color: '#10b981' }}>Paid</span>}
                     </td>
                     <td><PayBadge type={p.payment_type} /></td>
                     <td style={{ color: '#9ca3af', fontSize: 12 }}>
@@ -511,22 +511,22 @@ export default function PurchasesPage() {
                         : p.product_name}
                     </div>
                     <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>{p.invoice_number}</div>
-                    {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>से: {p.supplier_name}</div>}
+                    {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>}
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 16 }}>
-                      ₹{(p.total_amount || 0).toFixed(2)}
+                      Rs {(p.total_amount || 0).toFixed(2)}
                     </div>
                     <PayBadge type={p.payment_type} />
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{(p.taxable_amount || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6366f1' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>₹{(p.amount_paid || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>Rs {(p.taxable_amount || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6366f1' }}>Rs {(p.total_gst || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>Rs {(p.amount_paid || 0).toFixed(2)}</div></div>
                   {(p.balance_due || 0) > 0 && (
-                    <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>₹{p.balance_due.toFixed(2)}</div></div>
+                    <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>Rs {p.balance_due.toFixed(2)}</div></div>
                   )}
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{formatFullDateTime(p.createdAt)}</div></div>
                 </div>
@@ -548,12 +548,12 @@ export default function PurchasesPage() {
         )}
       </div>
 
-      {/* ── Modal ── */}
+      {/* â”€â”€ Modal â”€â”€ */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal flow-modal" style={{ maxWidth: 560 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>
-              खरीद दर्ज करें / Record Purchase
+              Record Purchase
             </h3>
             {editingPurchaseId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing purchase</div>
@@ -564,13 +564,14 @@ export default function PurchasesPage() {
               </div>
             )}
             <div className="flow-compact-note">
+              Add products first, then choose payment and supplier details.
             </div>
             <form onSubmit={(e) => e.preventDefault()}>
 
-              {/* ── ITEMS ── */}
+              {/* Items */}
               <div className="flow-step-panel" style={{ display: purchaseStep === 0 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-                  🛒 Products
+                  Products
                 </div>
 
                 {items.map((item, index) => {
@@ -588,14 +589,13 @@ export default function PurchasesPage() {
                         )}
                       </div>
 
-                      {/* Product select */}
                       <div className="form-group">
                         <label className="form-label">Product *</label>
                         <SearchableProductSelect
                           products={products}
                           value={item.product_id}
                           onChange={(id) => updateItem(index, 'product_id', id)}
-                          placeholder="उत्पाद खोजें / Search product..."
+                          placeholder='Search product...'
                         />
                       </div>
 
@@ -607,25 +607,32 @@ export default function PurchasesPage() {
                             onChange={e => updateItem(index, 'quantity', e.target.value)} required />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Purchase Price ₹ *</label>
+                          <label className="form-label">Purchase Price *</label>
                           <input className="form-input" type="number" step="0.01"
                             value={item.price_per_unit}
                             onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
                         </div>
                       </div>
 
-                      {/* Row GST preview */}
+                      {prod ? (
+                        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
+                          GST: {prod.gst_rate || 0}% {prod.hsn_code ? `• HSN ${prod.hsn_code}` : ''} {prod.unit ? `• ${prod.unit}` : ''}
+                        </div>
+                      ) : null}
+
                       {rowGST && (
                         <div style={{ fontSize: 12, color: '#6b7280', background: rowGST.gst_rate > 0 ? '#fffbeb' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                          <span>Taxable: <strong>₹{rowGST.taxable.toFixed(2)}</strong></span>
-                          {rowGST.gst_rate > 0 && (
+                          <span>Taxable: <strong>Rs {rowGST.taxable.toFixed(2)}</strong></span>
+                          {rowGST.gst_rate > 0 ? (
                             <span>
                               {rowGST.isIGST
-                                ? `IGST ${rowGST.gst_rate}%: ₹${rowGST.gst.toFixed(2)}`
-                                : `CGST ${(rowGST.gst_rate / 2).toFixed(1)}% + SGST ${(rowGST.gst_rate / 2).toFixed(1)}%: ₹${rowGST.gst.toFixed(2)}`}
+                                ? `IGST ${rowGST.gst_rate}%: Rs ${rowGST.gst.toFixed(2)}`
+                                : `CGST ${(rowGST.gst_rate / 2).toFixed(1)}% + SGST ${(rowGST.gst_rate / 2).toFixed(1)}%: Rs ${rowGST.gst.toFixed(2)}`}
                             </span>
+                          ) : (
+                            <span>No GST</span>
                           )}
-                          <span>Total: <strong>₹{rowGST.total.toFixed(2)}</strong></span>
+                          <span>Total: <strong>Rs {rowGST.total.toFixed(2)}</strong></span>
                         </div>
                       )}
                     </div>
@@ -633,98 +640,120 @@ export default function PurchasesPage() {
                 })}
 
                 <button type="button" onClick={addItem}
-                  style={{ width: '100%', padding: '9px', background: '#f8fafc', border: '1.5px dashed #cbd5e1', borderRadius: 8, color: '#334155', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  className="btn-ghost"
+                  style={{ width: '100%', marginTop: 4 }}
+                >
                   + Add Another Product
                 </button>
-              </div>
 
-              {/* ── BILL SUMMARY ── */}
-              {billTotals.total > 0 && purchaseStep === 1 && (
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>📋 Bill Summary</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Subtotal (Taxable):</span><strong>₹{billTotals.taxable.toFixed(2)}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>₹{billTotals.gst.toFixed(2)}</strong>
-                    </div>
-                    {form.supplier_state && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                        <span>Tax split:</span>
-                        <strong>{normalizeState(shopState) !== normalizeState(form.supplier_state) ? 'IGST' : 'CGST + SGST'}</strong>
+                {billTotals.total > 0 && (
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 14px', marginTop: 14, fontSize: 13 }}>
+                    <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Subtotal (Taxable):</span><strong>Rs {billTotals.taxable.toFixed(2)}</strong>
                       </div>
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 4, marginTop: 2 }}>
-                      <span>Grand Total:</span><span>₹{billTotals.total.toFixed(2)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}₹{roundedBill.roundOff.toFixed(2)}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
-                      <span>Rounded Total:</span><span>₹{roundedBill.roundedTotal.toFixed(2)}</span>
-                    </div>
-                    {form.payment_type === 'credit' && amountPaidNum > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
-                        <span>Balance Due:</span><span>₹{balanceDue.toFixed(2)}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>Rs {billTotals.gst.toFixed(2)}</strong>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* ── PAYMENT TYPE ── */}
-              <div className="flow-step-panel" style={{ display: purchaseStep === 1 ? 'block' : 'none' }}>
-                <div className="flow-section-kicker"><span>Payment</span><span>Method + advance</span></div>
-                <div className="form-group">
-                <label className="form-label">भुगतान प्रकार / Payment Type *</label>
-                <div className="flow-choice-grid">
-                  {[
-                    { val: 'cash',   label: '💵 Cash',  color: '#10b981' },
-                    { val: 'credit', label: '📒 Credit', color: '#ef4444' },
-                    { val: 'upi',    label: '📱 UPI',    color: '#8b5cf6' },
-                    { val: 'bank',   label: '🏦 Bank',   color: '#3b82f6' },
-                  ].map(opt => (
-                    <button key={opt.val} type="button"
-                      onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
-                      style={{
-                        padding: '11px 10px', borderRadius: 14, border: '2px solid',
-                        borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
-                        background: form.payment_type === opt.val ? opt.color : '#f9fafb',
-                        color: form.payment_type === opt.val ? '#fff' : '#374151',
-                      }}
-                      className={`flow-choice-pill ${form.payment_type === opt.val ? `is-active ${opt.val === 'cash' ? 'is-success' : opt.val === 'credit' ? 'is-danger' : opt.val === 'upi' ? 'is-purple' : 'is-blue'}` : ''}`}>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Partial payment for credit */}
-                {form.payment_type === 'credit' && (
-                  <div style={{ marginTop: 10 }}>
-                    <label className="form-label">Advance Payment (optional)</label>
-                    <input className="form-input" type="number" step="0.01" min="0"
-                      placeholder={`Max ₹${billTotals.total.toFixed(2)}`}
-                      value={form.amount_paid}
-                      onChange={e => updateForm({ amount_paid: e.target.value })} />
-                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
-                      ⚠️ बाकी ₹{balanceDue.toFixed(2)} supplier ledger में automatically जाएगा
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Grand Total:</span><span>Rs {billTotals.total.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* ── SUPPLIER DETAILS ── */}
+              {/* Payment */}
+              <div className="flow-step-panel" style={{ display: purchaseStep === 1 ? 'block' : 'none' }}>
+                {billTotals.total > 0 && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
+                  <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Subtotal (Taxable):</span><strong>Rs {billTotals.taxable.toFixed(2)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>Rs {billTotals.gst.toFixed(2)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Grand Total:</span><span>Rs {billTotals.total.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}Rs {roundedBill.roundOff.toFixed(2)}</strong>
+                    </div>
+                    {form.supplier_state && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                        <span>Tax Type:</span>
+                        <strong>{normalizeState(shopState) !== normalizeState(form.supplier_state) ? 'IGST' : 'CGST + SGST'}</strong>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
+                      <span>Rounded Total:</span><span>Rs {roundedBill.roundedTotal.toFixed(2)}</span>
+                    </div>
+                    {form.payment_type === 'credit' && amountPaidNum > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
+                        <span>Balance Due:</span><span>Rs {balanceDue.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                )}
+                <div className="flow-section-kicker"><span>Payment</span><span>Method + advance</span></div>
+                <div className="form-group">
+                  <label className="form-label">Payment Type *</label>
+                  <div className="flow-choice-grid">
+                    {[
+                      { val: 'cash', label: 'Cash', color: '#10b981' },
+                      { val: 'credit', label: 'Credit', color: '#ef4444' },
+                      { val: 'upi', label: 'UPI', color: '#8b5cf6' },
+                      { val: 'bank', label: 'Bank', color: '#3b82f6' },
+                    ].map(opt => (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
+                        style={{
+                          padding: '11px 10px',
+                          borderRadius: 14,
+                          border: '2px solid',
+                          borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
+                          background: form.payment_type === opt.val ? opt.color : '#f9fafb',
+                          color: form.payment_type === opt.val ? '#fff' : '#374151',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {form.payment_type === 'credit' && (
+                  <div style={{ marginTop: 10 }}>
+                    <label className="form-label">Advance Payment (optional)</label>
+                    <input className="form-input" type="number" step="0.01" min="0"
+                      placeholder={`Max Rs ${billTotals.total.toFixed(2)}`}
+                      value={form.amount_paid}
+                      onChange={e => updateForm({ amount_paid: e.target.value })} />
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
+                      Balance Rs {balanceDue.toFixed(2)} will be added to the supplier ledger automatically.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Supplier details */}
               </div>
 
               <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: purchaseStep === 2 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-                  🏭 Supplier Details {form.payment_type === 'credit' ? '(जरूरी *)' : '(वैकल्पिक)'}
+                  Supplier Details {form.payment_type === 'credit' ? '(required *)' : '(optional)'}
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">
-                    Supplier नाम {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}
+                    Supplier Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}
                   </label>
                     <input className="form-input" placeholder="Supplier ka naam"
                       value={form.supplier_name}
@@ -749,7 +778,7 @@ export default function PurchasesPage() {
                       {showGstinError && (
                         <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
                       )}
-                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>GSTIN se B2B classify होगा</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>GSTIN decides B2B classification</div>
                   </div>
                 </div>
 
@@ -759,10 +788,10 @@ export default function PurchasesPage() {
                     <select className="form-input" value={form.supplier_state}
                       onChange={e => updateForm({ supplier_state: e.target.value })}>
                       <option value="">Select State/UT</option>
-                      <optgroup label="── States ──">
+                      <optgroup label="States">
                         {STATES.map(s => <option key={s} value={s}>{s}</option>)}
                       </optgroup>
-                      <optgroup label="── Union Territories ──">
+                      <optgroup label="Union Territories">
                         {UTS.map(s => <option key={s} value={s}>{s}</option>)}
                       </optgroup>
                     </select>
@@ -779,14 +808,14 @@ export default function PurchasesPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">नोट / Notes</label>
+                  <label className="form-label">Notes</label>
                   <input className="form-input" placeholder="Any notes..."
                     value={form.notes}
                     onChange={e => updateForm({ notes: e.target.value })} />
                 </div>
               </div>
 
-              {/* ── SUBMIT ── */}
+              {/* â”€â”€ SUBMIT â”€â”€ */}
               <div className="flow-actions">
                 {purchaseStep > 0 && (
                   <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current - 1)}>
@@ -799,12 +828,12 @@ export default function PurchasesPage() {
                   </button>
                 ) : (
                 <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? 'दर्ज हो रहा है...' : editingPurchaseId ? '💾 Update Purchase' : form.payment_type === 'credit' ? '📒 Credit Purchase' : '💵 Purchase दर्ज करें'}
+                  {submitting ? 'Saving...' : editingPurchaseId ? 'Update Purchase' : form.payment_type === 'credit' ? 'Credit Purchase' : 'Record Purchase'}
                 </button>
                 )}
                 <button type="button" onClick={resetModal}
                   style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  रद्द / Cancel
+                  Cancel
                 </button>
               </div>
             </form>
@@ -822,3 +851,4 @@ export default function PurchasesPage() {
     </Layout>
   );
 }
+

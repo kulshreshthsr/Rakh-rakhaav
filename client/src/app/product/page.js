@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -105,11 +105,11 @@ export default function ProductsPage() {
       const nextProducts = Array.isArray(data) ? data : data.products || [];
       setProducts(nextProducts);
       writePageCache(PRODUCTS_CACHE_KEY, { products: nextProducts });
-    } catch { setError('उत्पाद लोड नहीं हो सके'); }
+    } catch { setError('Products could not be loaded'); }
     finally { setLoading(false); }
   };
 
-  // ── Add / Edit ───────────────────────────────────────────────────────────────
+  // â”€â”€ Add / Edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openAdd = () => {
     setEditProduct(null);
     setForm({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
@@ -147,7 +147,7 @@ export default function ProductsPage() {
       });
       const data = await res.json();
       if (res.ok) { setShowModal(false); fetchProducts(); }
-      else setError(data.message || 'सहेजने में विफल');
+      else setError(data.message || 'Could not save product');
     } catch { setError('Server error'); }
   };
 
@@ -159,7 +159,7 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('इस उत्पाद को हटाएं?\nDelete this product?')) return;
+    if (!confirm('Delete this product?')) return;
     try {
       const res = await fetch(`${API}/api/products/${id}`, {
         method: 'DELETE',
@@ -168,12 +168,12 @@ export default function ProductsPage() {
       if (res.ok) fetchProducts();
       else {
         const d = await res.json();
-        setError(d.message || 'हटाने में विफल');
+        setError(d.message || 'Could not delete product');
       }
     } catch { setError('Server error'); }
   };
 
-  // ── Stock Adjust ─────────────────────────────────────────────────────────────
+  // â”€â”€ Stock Adjust â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openStockAdjust = (p) => {
     setStockProduct(p);
     setStockForm({ type: 'manual_add', quantity: '', note: '' });
@@ -199,7 +199,7 @@ export default function ProductsPage() {
     setStockSubmitting(false);
   };
 
-  // ── Stock History ────────────────────────────────────────────────────────────
+  // â”€â”€ Stock History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openHistory = async (p) => {
     setHistoryProduct(p);
     setShowHistory(true);
@@ -214,7 +214,7 @@ export default function ProductsPage() {
     setHistoryLoading(false);
   };
 
-  // ── Computed stats ───────────────────────────────────────────────────────────
+  // â”€â”€ Computed stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const lowStockCount = products.filter(p => p.is_low_stock && p.quantity > 0).length;
   const outOfStockCount = products.filter(p => p.quantity === 0).length;
   const totalValue = products.reduce((s, p) => s + (p.cost_price || 0) * p.quantity, 0);
@@ -223,36 +223,36 @@ export default function ProductsPage() {
     return HSN_GST_HINTS[prefix];
   })();
   const wizardSteps = [
-    { title: locale === 'hi' ? 'बेसिक' : 'Basics', copy: locale === 'hi' ? 'नाम और विवरण' : 'Name and description' },
-    { title: locale === 'hi' ? 'प्राइसिंग' : 'Pricing', copy: locale === 'hi' ? 'कॉस्ट और margin' : 'Cost and margin' },
-    { title: locale === 'hi' ? 'टैक्स/स्टॉक' : 'Tax/Stock', copy: locale === 'hi' ? 'HSN, GST और stock' : 'HSN, GST and stock' },
+    { title: 'Basics', copy: 'Name and description' },
+    { title: 'Pricing', copy: 'Cost and margin' },
+    { title: 'Tax / Stock', copy: 'HSN, GST and stock' },
   ];
 
-  // ── Badge helpers ────────────────────────────────────────────────────────────
+  // â”€â”€ Badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const StockBadge = ({ p }) => {
-    if (p.quantity === 0) return <span className="badge badge-red">खत्म / Out</span>;
-    if (p.is_low_stock)   return <span className="badge badge-yellow">कम / Low ({p.quantity})</span>;
-    return <span className="badge badge-green">उपलब्ध / In Stock</span>;
+    if (p.quantity === 0) return <span className="badge badge-red">Out</span>;
+    if (p.is_low_stock)   return <span className="badge badge-yellow">Low ({p.quantity})</span>;
+    return <span className="badge badge-green">In Stock</span>;
   };
 
   const GSTBadge = ({ rate }) => {
-    if (!rate) return <span style={{ color: '#9ca3af', fontSize: 12 }}>No GST</span>;
+    if (margin === null || margin === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
     return <span style={{ background: '#e0f2fe', color: '#0c4a6e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>GST {rate}%</span>;
   };
 
   const MarginBadge = ({ margin }) => {
-    if (margin === null || margin === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>—</span>;
+    if (margin === null || margin === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
     const color = margin >= 30 ? '#059669' : margin >= 15 ? '#d97706' : '#ef4444';
     const bg    = margin >= 30 ? '#dcfce7' : margin >= 15 ? '#fef3c7' : '#fee2e2';
     return <span style={{ background: bg, color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{margin}%</span>;
   };
 
   const historyTypeLabel = (type) => ({
-    purchase: '🛒 Purchase',
-    sale: '💰 Sale',
-    manual_add: '➕ Added',
-    manual_remove: '➖ Removed',
-    adjustment: '🔧 Adjusted',
+    purchase: 'Purchase',
+    sale: 'Sale',
+    manual_add: 'Added',
+    manual_remove: 'Removed',
+    adjustment: 'Adjusted',
   }[type] || type);
 
   return (
@@ -261,10 +261,10 @@ export default function ProductsPage() {
         <section className="hero-panel product-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>उत्पाद / Products</div>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing inventory...</div>}
             </div>
-            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ उत्पाद जोड़ें / Add</button>
+            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ Add Product</button>
           </div>
         </section>
 
@@ -286,7 +286,7 @@ export default function ProductsPage() {
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Inventory Value</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>₹{totalValue.toFixed(0)}</div>
+            <div className="metric-value" style={{ color: '#0f766e' }}>Rs {totalValue.toFixed(0)}</div>
             <div className="metric-note">Based on cost price</div>
           </div>
         </section>
@@ -294,24 +294,24 @@ export default function ProductsPage() {
         <div className="toolbar-card">
           <div className="toolbar">
             <input className="form-input" style={{ flex: 1, minWidth: 180 }}
-              placeholder="🔍 उत्पाद खोजें / Search..."
+              placeholder="Search products..."
               value={search} onChange={e => setSearch(e.target.value)} />
             <select className="form-input" style={{ minWidth: 140 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
-              <option value="all">सभी / All</option>
-              <option value="instock">✅ In Stock</option>
-              <option value="low">⚠️ Low Stock</option>
-              <option value="out">🔴 Out of Stock</option>
+              <option value="all">All</option>
+              <option value="instock">In Stock</option>
+              <option value="low">Low Stock</option>
+              <option value="out">Out of Stock</option>
             </select>
             <select className="form-input" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-              <option value="name">नाम से / Name</option>
-              <option value="price_asc">Price ↑</option>
-              <option value="price_desc">Price ↓</option>
-              <option value="quantity">Qty ↑</option>
-              <option value="margin">Margin ↓</option>
+              <option value="name">Name</option>
+              <option value="price_asc">Price Low to High</option>
+              <option value="price_desc">Price High to Low</option>
+              <option value="quantity">Qty Low to High</option>
+              <option value="margin">Margin High to Low</option>
             </select>
             {(search || filterStock !== 'all') && (
               <button onClick={() => { setSearch(''); setFilterStock('all'); }} className="btn-ghost" style={{ width: 'auto' }}>
-                Clear ✕
+                Clear
               </button>
             )}
           </div>
@@ -331,8 +331,8 @@ export default function ProductsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📦</div>
-            <div>{search || filterStock !== 'all' ? 'कोई उत्पाद नहीं मिला / No products found' : 'अभी कोई उत्पाद नहीं। Add से जोड़ें।'}</div>
+            <div className="empty-state-icon">PK</div>
+            <div>{search || filterStock !== 'all' ? 'No products found' : 'No products yet. Add your first product.'}</div>
           </div>
         ) : (
           <>
@@ -341,12 +341,12 @@ export default function ProductsPage() {
             <table>
               <thead>
                 <tr>
-                  <th>नाम / Name</th>
-                  <th>लागत / Cost</th>
-                  <th>बिक्री / Price</th>
+                  <th>Name</th>
+                  <th>Cost</th>
+                  <th>Price</th>
                   <th>Margin</th>
                   <th>GST</th>
-                  <th>मात्रा / Qty</th>
+                  <th>Qty</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -359,11 +359,11 @@ export default function ProductsPage() {
                       <div style={{ color: '#9ca3af', fontSize: 11 }}>
                         {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
                         {p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}
-                        {p.low_stock_threshold !== 5 && ` • Alert ≤${p.low_stock_threshold}`}
+                        {p.low_stock_threshold !== 5 && ` • Alert <= ${p.low_stock_threshold}`}
                       </div>
                     </td>
-                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</td>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</td>
+                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `Rs ${p.cost_price}` : '-'}</td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>Rs {p.price}</td>
                     <td><MarginBadge margin={p.margin} /></td>
                     <td><GSTBadge rate={p.gst_rate} /></td>
                     <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>
@@ -417,8 +417,8 @@ export default function ProductsPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `₹${p.cost_price}` : '—'}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `Rs ${p.cost_price}` : '-'}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>Rs {p.price}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>{p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
@@ -428,22 +428,22 @@ export default function ProductsPage() {
                   <button onClick={() => openStockAdjust(p)}
                     className="action-soft stock"
                     style={{ flex: 1, padding: '8px' }}>
-                    📦 Stock
+                    Stock
                   </button>
                   <button onClick={() => openHistory(p)}
                     className="action-soft history"
                     style={{ flex: 1, padding: '8px' }}>
-                    📋 History
+                    History
                   </button>
                   <button onClick={() => openEdit(p)}
                     className="action-soft edit"
                     style={{ flex: 1, padding: '8px' }}>
-                    ✏️ Edit
+                    Edit
                   </button>
                   <button onClick={() => handleDelete(p._id)}
                     className="action-soft delete"
                     style={{ flex: 1, padding: '8px' }}>
-                    🗑️ Del
+                    Delete
                   </button>
                 </div>
               </div>
@@ -453,14 +453,14 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* ── Add/Edit Modal ── */}
+      {/* â”€â”€ Add/Edit Modal â”€â”€ */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal flow-modal">
             <div className="flow-modal-header">
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
-              {editProduct ? '✏️ उत्पाद संपादित / Edit Product' : '📦 उत्पाद जोड़ें / Add Product'}
+              {editProduct ? 'Edit Product' : 'Add Product'}
                 </h3>
               </div>
               <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
@@ -470,11 +470,11 @@ export default function ProductsPage() {
               <div className="flow-step-panel" style={{ display: productStep === 0 ? 'block' : 'none' }}>
               <div className="flow-section-kicker"><span>Basics</span><span>Identity + barcode</span></div>
               <div className="form-group">
-                <label className="form-label">नाम / Name *</label>
+                <label className="form-label">Name *</label>
                 <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label className="form-label">विवरण / Description</label>
+                <label className="form-label">Description</label>
                 <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
               <div className="form-group">
@@ -501,7 +501,7 @@ export default function ProductsPage() {
                   </button>
                 </div>
                 <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-                  Mobile camera scan yahan sirf barcode field fill karega.
+                  Mobile camera scan fills the barcode field automatically.
                 </div>
                 {lastScannedBarcode && (
                   <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: 12, fontWeight: 600 }}>
@@ -516,11 +516,11 @@ export default function ProductsPage() {
               <div className="flow-section-kicker"><span>Pricing</span><span>Cost and margin</span></div>
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">लागत मूल्य / Cost Price ₹</label>
-                  <input className="form-input" type="number" step="0.01" placeholder="खरीद मूल्य" value={form.cost_price} onChange={e => setForm({ ...form, cost_price: e.target.value })} />
+                  <label className="form-label">Cost Price</label>
+                  <input className="form-input" type="number" step="0.01" placeholder="Cost price" value={form.cost_price} onChange={e => setForm({ ...form, cost_price: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">बिक्री मूल्य / Selling Price ₹ *</label>
+                  <label className="form-label">Selling Price *</label>
                   <input className="form-input" type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
                 </div>
               </div>
@@ -533,7 +533,7 @@ export default function ProductsPage() {
                     {(((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%
                   </strong>
                   <span style={{ color: '#6b7280', marginLeft: 8 }}>
-                    (₹{(Number(form.price) - Number(form.cost_price)).toFixed(2)} profit per unit)
+                    (Rs {(Number(form.price) - Number(form.cost_price)).toFixed(2)} profit per unit)
                   </span>
                 </div>
               )}
@@ -545,16 +545,16 @@ export default function ProductsPage() {
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">
-                    {editProduct ? 'मात्रा / Quantity' : 'Opening Stock *'}
+                    {editProduct ? 'Quantity' : 'Opening Stock *'}
                   </label>
                   <input className="form-input" type="number" min="0"
                     value={form.quantity}
                     onChange={e => setForm({ ...form, quantity: e.target.value })}
                     required={!editProduct} />
-                    {editProduct && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Stock adjust ke liye Stock button use karo</div>}
+                    {editProduct && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Use the Stock action to adjust inventory.</div>}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">इकाई / Unit</label>
+                  <label className="form-label">Unit</label>
                   <input className="form-input" placeholder="kg, pcs, box, litre..." value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
                 </div>
               </div>
@@ -584,9 +584,9 @@ export default function ProductsPage() {
                   )}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">GST दर / Rate</label>
+                  <label className="form-label">GST Rate</label>
                   <select className="form-input" value={form.gst_rate} onChange={e => setForm({ ...form, gst_rate: parseInt(e.target.value) })}>
-                    <option value={0}>0% — No GST</option>
+                    <option value={0}>0% - No GST</option>
                     <option value={5}>5% GST</option>
                     <option value={12}>12% GST</option>
                     <option value={18}>18% GST</option>
@@ -602,13 +602,13 @@ export default function ProductsPage() {
 
               {/* Low stock threshold */}
               <div className="form-group">
-                <label className="form-label">⚠️ Low Stock Alert — कब alert दें?</label>
+                <label className="form-label">Low Stock Alert Threshold</label>
                 <input className="form-input" type="number" min="0"
-                  placeholder="e.g. 5 (alert when stock ≤ this)"
+                  placeholder="e.g. 5 (alert when stock <= this)"
                   value={form.low_stock_threshold}
                   onChange={e => setForm({ ...form, low_stock_threshold: e.target.value })} />
                 <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-                  Default: 5 — जब stock इससे कम हो तो alert dikhega
+                  Default: 5 - you will see an alert when stock falls below this.
                 </div>
               </div>
 
@@ -616,7 +616,7 @@ export default function ProductsPage() {
                 <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
                   <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: 2 }}>GST Preview</div>
                   <div style={{ color: '#7c3aed' }}>
-                    ₹{parseFloat(form.price || 0).toFixed(2)} + {form.gst_rate}% GST = <strong>₹{(parseFloat(form.price || 0) * (1 + form.gst_rate / 100)).toFixed(2)}</strong>
+                    Rs {parseFloat(form.price || 0).toFixed(2)} + {form.gst_rate}% GST = <strong>Rs {(parseFloat(form.price || 0) * (1 + form.gst_rate / 100)).toFixed(2)}</strong>
                   </div>
                 </div>
               )}
@@ -635,12 +635,12 @@ export default function ProductsPage() {
                   </button>
                 ) : (
                   <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  {editProduct ? '✅ Update' : '➕ Add Product'}
-                </button>
+                    {editProduct ? 'Update Product' : 'Add Product'}
+                  </button>
                 )}
                 <button type="button" onClick={() => setShowModal(false)}
                   style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  रद्द / Cancel
+                  Cancel
                 </button>
               </div>
             </form>
@@ -648,12 +648,12 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* ── Stock Adjust Modal ── */}
+      {/* Stock Adjust Modal */}
       {showStockModal && stockProduct && (
         <div className="modal-overlay">
           <div className="modal">
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
-              📦 Stock Adjust — {stockProduct.name}
+              Stock Adjust - {stockProduct.name}
             </h3>
             <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 14 }}>
               Current Stock: <strong style={{ color: '#0f172a' }}>{stockProduct.quantity} {stockProduct.unit || 'pcs'}</strong>
@@ -664,9 +664,9 @@ export default function ProductsPage() {
                 <label className="form-label">Type *</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {[
-                    { val: 'manual_add',    label: '➕ Add Stock',    color: '#10b981' },
-                    { val: 'manual_remove', label: '➖ Remove Stock',  color: '#ef4444' },
-                    { val: 'adjustment',    label: '🔧 Correction',   color: '#6366f1' },
+                    { val: 'manual_add', label: 'Add Stock', color: '#10b981' },
+                    { val: 'manual_remove', label: 'Remove Stock', color: '#ef4444' },
+                    { val: 'adjustment', label: 'Correction', color: '#6366f1' },
                   ].map(opt => (
                     <button key={opt.val} type="button"
                       onClick={() => setStockForm({ ...stockForm, type: opt.val })}
@@ -701,7 +701,7 @@ export default function ProductsPage() {
                 )}
               </div>
               <div className="form-group">
-                <label className="form-label">नोट / Note</label>
+                <label className="form-label">Note</label>
                 <input className="form-input" placeholder="Reason for adjustment..."
                   value={stockForm.note}
                   onChange={e => setStockForm({ ...stockForm, note: e.target.value })} />
@@ -709,11 +709,11 @@ export default function ProductsPage() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="submit" disabled={stockSubmitting}
                   style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#04150b', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  {stockSubmitting ? '⏳ Saving...' : '✅ Update Stock'}
+                  {stockSubmitting ? 'Saving...' : 'Update Stock'}
                 </button>
                 <button type="button" onClick={() => { setShowStockModal(false); setError(''); }}
                   style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  रद्द / Cancel
+                  Cancel
                 </button>
               </div>
             </form>
@@ -721,14 +721,14 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* ── Stock History Modal ── */}
+      {/* Stock History Modal */}
       {showHistory && historyProduct && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxHeight: '85vh', overflowY: 'auto', maxWidth: 520 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div>
                 <h3 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
-                  📋 Stock History — {historyProduct.name}
+                  Stock History - {historyProduct.name}
                 </h3>
                 <div style={{ fontSize: 12, color: '#9ca3af' }}>
                   Current: <strong>{historyProduct.quantity} {historyProduct.unit || 'pcs'}</strong>
@@ -736,14 +736,14 @@ export default function ProductsPage() {
               </div>
               <button onClick={() => setShowHistory(false)}
                 style={{ padding: '6px 12px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
-                ✕
+                Close
               </button>
             </div>
 
             {historyLoading ? (
-              <div style={{ textAlign: 'center', color: '#9ca3af', padding: 30 }}>⏳ लोड हो रहा है...</div>
+              <div style={{ textAlign: 'center', color: '#9ca3af', padding: 30 }}>Loading stock history...</div>
             ) : historyData.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#9ca3af', padding: 30 }}>कोई history नहीं</div>
+              <div style={{ textAlign: 'center', color: '#9ca3af', padding: 30 }}>No stock history found</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {historyData.map((h, i) => (
@@ -757,7 +757,7 @@ export default function ProductsPage() {
                         {historyTypeLabel(h.type)}
                       </div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        {new Date(h.date).toLocaleDateString('en-IN')} • {h.note || '—'}
+                        {new Date(h.date).toLocaleDateString('en-IN')} • {h.note || '-'}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -765,7 +765,7 @@ export default function ProductsPage() {
                         {h.quantity_change > 0 ? '+' : ''}{h.quantity_change}
                       </div>
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        → {h.quantity_after} {historyProduct.unit || 'pcs'}
+                        -> {h.quantity_after} {historyProduct.unit || 'pcs'}
                       </div>
                     </div>
                   </div>
@@ -794,3 +794,4 @@ export default function ProductsPage() {
     </Layout>
   );
 }
+

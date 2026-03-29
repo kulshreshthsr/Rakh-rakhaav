@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -85,12 +85,12 @@ export default function ProfilePage() {
         const updated = { ...user, name: nameForm.name };
         localStorage.setItem('user', JSON.stringify(updated));
         setUser(updated);
-        setNameMsg('नाम अपडेट हो गया! / Name updated!');
+        setNameMsg('Name updated successfully.');
       } else {
-        setNameError(data.message || 'विफल / Failed');
+        setNameError(data.message || 'Failed to update name.');
       }
     } catch {
-      setNameError('सर्वर त्रुटि / Server error');
+      setNameError('Server error');
     }
   };
 
@@ -99,11 +99,11 @@ export default function ProfilePage() {
     setPassMsg('');
     setPassError('');
     if (passForm.newPassword !== passForm.confirmPassword) {
-      setPassError('पासवर्ड मेल नहीं खाते / Passwords do not match');
+      setPassError('Passwords do not match');
       return;
     }
     if (passForm.newPassword.length < 6) {
-      setPassError('कम से कम 6 अक्षर / Min 6 characters');
+      setPassError('Minimum 6 characters required');
       return;
     }
     try {
@@ -114,13 +114,13 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setPassMsg('पासवर्ड बदल गया! / Password updated!');
+        setPassMsg('Password updated successfully.');
         setPassForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
-        setPassError(data.message || 'विफल / Failed');
+        setPassError(data.message || 'Failed to update password.');
       }
     } catch {
-      setPassError('सर्वर त्रुटि / Server error');
+      setPassError('Server error');
     }
   };
 
@@ -137,12 +137,12 @@ export default function ProfilePage() {
       const data = await res.json();
       if (res.ok) {
         setShop(data);
-        setShopMsg('दुकान की जानकारी अपडेट हो गई! / Shop details updated!');
+        setShopMsg('Shop details updated successfully.');
       } else {
-        setShopError(data.message || 'विफल / Failed');
+        setShopError(data.message || 'Failed to update shop details.');
       }
     } catch {
-      setShopError('सर्वर त्रुटि / Server error');
+      setShopError('Server error');
     }
   };
 
@@ -177,7 +177,7 @@ export default function ProfilePage() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <div className="kicker" style={{ marginBottom: 10 }}>Profile control</div>
-                <div className="page-title" style={{ color: '#0f172a', marginBottom: 4 }}>प्रोफ़ाइल / Profile & Settings</div>
+                <div className="page-title" style={{ color: '#0f172a', marginBottom: 4 }}>Profile & Settings</div>
                 <div style={{ fontSize: 13, color: '#5b6b82' }}>
                   Manage shop identity, invoice details and account security in one place.
                 </div>
@@ -210,7 +210,7 @@ export default function ProfilePage() {
 
         <section className="card">
           <div style={{ marginBottom: 18 }}>
-            <div className="section-title">🏪 दुकान की जानकारी / Shop Details</div>
+            <div className="section-title">Shop Details</div>
             <div className="section-subtitle">GST compliance, billing identity and printed invoice information</div>
           </div>
 
@@ -220,7 +220,7 @@ export default function ProfilePage() {
           <form onSubmit={updateShop}>
             <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">दुकान का नाम / Shop Name *</label>
+                <label className="form-label">Shop Name *</label>
                 <input className="form-input" value={shopForm.name} onChange={(e) => setShopForm({ ...shopForm, name: e.target.value })} required />
               </div>
               <div className="form-group">
@@ -231,34 +231,34 @@ export default function ProfilePage() {
 
             <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">फ़ोन / Phone</label>
+                <label className="form-label">Phone</label>
                 <input className="form-input" placeholder="9876543210" value={shopForm.phone} onChange={(e) => setShopForm({ ...shopForm, phone: e.target.value })} />
               </div>
               <div className="form-group">
-                <label className="form-label">ईमेल / Email</label>
+                <label className="form-label">Email</label>
                 <input className="form-input" placeholder="shop@email.com" value={shopForm.email} onChange={(e) => setShopForm({ ...shopForm, email: e.target.value })} />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">पता / Address</label>
-              <input className="form-input" placeholder="गली का पता / Street address" value={shopForm.address} onChange={(e) => setShopForm({ ...shopForm, address: e.target.value })} />
+              <label className="form-label">Address</label>
+              <input className="form-input" placeholder="Street address" value={shopForm.address} onChange={(e) => setShopForm({ ...shopForm, address: e.target.value })} />
             </div>
 
             <div className="grid-3">
               <div className="form-group">
-                <label className="form-label">शहर / City</label>
+                <label className="form-label">City</label>
                 <input className="form-input" placeholder="City" value={shopForm.city} onChange={(e) => setShopForm({ ...shopForm, city: e.target.value })} />
               </div>
               <div className="form-group">
-                <label className="form-label">राज्य / State</label>
+                <label className="form-label">State</label>
                 <select className="form-input" value={shopForm.state} onChange={(e) => setShopForm({ ...shopForm, state: e.target.value })}>
-                  <option value="">राज्य चुनें / Select State</option>
+                  <option value="">Select State</option>
                   {STATES.map((state) => <option key={state} value={state}>{state}</option>)}
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">पिनकोड / Pincode</label>
+                <label className="form-label">Pincode</label>
                 <input className="form-input" placeholder="110001" value={shopForm.pincode} onChange={(e) => setShopForm({ ...shopForm, pincode: e.target.value })} />
               </div>
             </div>
@@ -266,22 +266,22 @@ export default function ProfilePage() {
             <div className="divider" />
 
             <div className="soft-panel" style={{ padding: 16, marginBottom: 16 }}>
-              <div className="section-title" style={{ fontSize: 16 }}>🏦 बैंक विवरण / Bank Details</div>
+              <div className="section-title" style={{ fontSize: 16 }}>Bank Details</div>
               <div className="section-subtitle">Will appear on invoices when available</div>
               <div className="grid-2" style={{ marginTop: 14 }}>
                 <div className="form-group">
-                  <label className="form-label">बैंक का नाम / Bank Name</label>
+                  <label className="form-label">Bank Name</label>
                   <input className="form-input" placeholder="State Bank of India" value={shopForm.bank_name} onChange={(e) => setShopForm({ ...shopForm, bank_name: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">शाखा / Branch</label>
+                  <label className="form-label">Branch</label>
                   <input className="form-input" placeholder="Main Branch" value={shopForm.bank_branch} onChange={(e) => setShopForm({ ...shopForm, bank_branch: e.target.value })} />
                 </div>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">खाता नंबर / Account No.</label>
+                  <label className="form-label">Account No.</label>
                   <input className="form-input" placeholder="0000000000" value={shopForm.bank_account} onChange={(e) => setShopForm({ ...shopForm, bank_account: e.target.value })} />
                 </div>
                 <div className="form-group">
@@ -292,7 +292,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="soft-panel" style={{ padding: 16, marginBottom: 18 }}>
-              <div className="section-title" style={{ fontSize: 16 }}>📋 नियम एवं शर्तें / Terms & Conditions</div>
+              <div className="section-title" style={{ fontSize: 16 }}>Terms & Conditions</div>
               <div className="section-subtitle">Printed on invoices for cleaner business communication</div>
               <div className="form-group" style={{ marginTop: 14, marginBottom: 0 }}>
                 <label className="form-label">Terms</label>
@@ -308,7 +308,7 @@ export default function ProfilePage() {
             </div>
 
             <button type="submit" className="btn-primary" style={{ width: '100%' }}>
-              दुकान की जानकारी सहेजें / Save Shop Details
+              Save Shop Details
             </button>
           </form>
         </section>
@@ -316,7 +316,7 @@ export default function ProfilePage() {
         <section className="profile-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
           <div className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="section-title">✏️ नाम बदलें / Update Name</div>
+              <div className="section-title">Update Name</div>
               <div className="section-subtitle">This updates your account identity across the app</div>
             </div>
 
@@ -331,13 +331,13 @@ export default function ProfilePage() {
                 onChange={(e) => setNameForm({ name: e.target.value })}
                 required
               />
-              <button type="submit" className="btn-primary" style={{ width: 'auto' }}>अपडेट / Update</button>
+              <button type="submit" className="btn-primary" style={{ width: 'auto' }}>Update</button>
             </form>
           </div>
 
           <div className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="section-title">🔒 पासवर्ड बदलें / Change Password</div>
+              <div className="section-title">Change Password</div>
               <div className="section-subtitle">Keep access secure without changing any business data</div>
             </div>
 
@@ -346,18 +346,18 @@ export default function ProfilePage() {
 
             <form onSubmit={updatePassword}>
               <div className="form-group">
-                <label className="form-label">वर्तमान पासवर्ड / Current Password</label>
+                <label className="form-label">Current Password</label>
                 <input className="form-input" type="password" value={passForm.currentPassword} onChange={(e) => setPassForm({ ...passForm, currentPassword: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label className="form-label">नया पासवर्ड / New Password</label>
+                <label className="form-label">New Password</label>
                 <input className="form-input" type="password" value={passForm.newPassword} onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label className="form-label">पासवर्ड पुष्टि / Confirm Password</label>
+                <label className="form-label">Confirm Password</label>
                 <input className="form-input" type="password" value={passForm.confirmPassword} onChange={(e) => setPassForm({ ...passForm, confirmPassword: e.target.value })} required />
               </div>
-              <button type="submit" className="btn-primary">पासवर्ड बदलें / Change Password</button>
+              <button type="submit" className="btn-primary">Change Password</button>
             </form>
           </div>
         </section>
@@ -386,3 +386,4 @@ export default function ProfilePage() {
     </Layout>
   );
 }
+

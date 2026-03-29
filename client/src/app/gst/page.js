@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -223,9 +223,9 @@ export default function GSTPage() {
                 <td>{item.invoice_number}</td>
                 <td>{item.product_name || (item.items?.length > 1 ? `${item.items.length} items` : item.items?.[0]?.product_name)}</td>
                 <td>{item.buyer_name || item.supplier_name || '-'}</td>
-                <td>₹{fmt(item.taxable_amount)}</td>
-                <td className={type === 'sales' ? 'ui-value-money' : 'ui-value-secondary'}>₹{fmt(item.total_gst)}</td>
-                <td>₹{fmt(item.total_amount)}</td>
+                <td>Rs {fmt(item.taxable_amount)}</td>
+                <td className={type === 'sales' ? 'ui-value-money' : 'ui-value-secondary'}>Rs {fmt(item.total_gst)}</td>
+                <td>Rs {fmt(item.total_amount)}</td>
               </tr>
             ))}
           </tbody>
@@ -268,22 +268,22 @@ export default function GSTPage() {
           <>
             <Card
               tone={isPayable ? 'danger' : 'success'}
-              title={`${monthHi} ${year}: ${isPayable ? `₹${fmt(payableTotal)} GST payable` : 'No GST payable'}`}
+              title={`${monthHi} ${year}: ${isPayable ? `Rs ${fmt(payableTotal)} GST payable` : 'No GST payable'}`}
               subtitle={`${monthEn} ${year} GST position after ITC set-off`}
               actions={returnStatus ? <StatusBadge tone={returnStatus.ok ? 'success' : 'warning'}>{returnStatus.msg}</StatusBadge> : null}
             >
               <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                <StatCard label="Output GST" value={`₹${fmt(gstCollected)}`} note="Collected from sales" tone="money" />
-                <StatCard label="Input GST / ITC" value={`₹${fmt(gstITC)}`} note="Claimed from purchases" tone="secondary" />
-                <StatCard label="Net Position" value={`₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`} note={isPayable ? 'Payable after ITC' : excessCreditTotal > 0 ? 'Unused ITC left' : 'Balanced'} tone={isPayable ? 'danger' : excessCreditTotal > 0 ? 'money' : 'warning'} />
+                <StatCard label="Output GST" value={`Rs ${fmt(gstCollected)}`} note="Collected from sales" tone="money" />
+                <StatCard label="Input GST / ITC" value={`Rs ${fmt(gstITC)}`} note="Claimed from purchases" tone="secondary" />
+                <StatCard label="Net Position" value={`Rs ${fmt(isPayable ? payableTotal : excessCreditTotal)}`} note={isPayable ? 'Payable after ITC' : excessCreditTotal > 0 ? 'Unused ITC left' : 'Balanced'} tone={isPayable ? 'danger' : excessCreditTotal > 0 ? 'money' : 'warning'} />
               </div>
             </Card>
 
             <Card title="GST Calculation" subtitle="Drill into output GST and purchase ITC">
               <DataRow
                 label="GST Collected (Output)"
-                note={`Collected from customers through sales. CGST ₹${fmt(summary.sales.cgst)} + SGST ₹${fmt(summary.sales.sgst)} + IGST ₹${fmt(summary.sales.igst)}`}
-                value={`₹${fmt(gstCollected)}`}
+                note={`Collected from customers through sales. CGST Rs ${fmt(summary.sales.cgst)} + SGST Rs ${fmt(summary.sales.sgst)} + IGST Rs ${fmt(summary.sales.igst)}`}
+                value={`Rs ${fmt(gstCollected)}`}
                 valueTone="ui-value-money"
               />
               <div style={{ marginTop: 10, marginBottom: 12 }}>
@@ -297,8 +297,8 @@ export default function GSTPage() {
 
               <DataRow
                 label="GST Input Credit (ITC)"
-                note={`Paid to suppliers on purchases. CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}
-                value={`₹${fmt(gstITC)}`}
+                note={`Paid to suppliers on purchases. CGST Rs ${fmt(summary.purchases.cgst)} + SGST Rs ${fmt(summary.purchases.sgst)} + IGST Rs ${fmt(summary.purchases.igst)}`}
+                value={`Rs ${fmt(gstITC)}`}
                 valueTone="ui-value-secondary"
               />
               <div style={{ marginTop: 10, marginBottom: 12 }}>
@@ -318,7 +318,7 @@ export default function GSTPage() {
                 <DataRow
                   label={isPayable ? 'Net GST Payable' : 'Excess ITC Available'}
                   note="Remaining position after ITC set-off"
-                  value={`₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`}
+                  value={`Rs ${fmt(isPayable ? payableTotal : excessCreditTotal)}`}
                   valueTone={isPayable ? 'ui-value-danger' : 'ui-value-money'}
                   tone={isPayable ? 'danger' : 'success'}
                 />
@@ -340,24 +340,24 @@ export default function GSTPage() {
                   <tbody>
                     <tr>
                       <td>Output (Sales)</td>
-                      <td>₹{fmt(summary.sales.cgst)}</td>
-                      <td>₹{fmt(summary.sales.sgst)}</td>
-                      <td>₹{fmt(summary.sales.igst)}</td>
-                      <td className="ui-value-money">₹{fmt(summary.sales.total_gst)}</td>
+                      <td>Rs {fmt(summary.sales.cgst)}</td>
+                      <td>Rs {fmt(summary.sales.sgst)}</td>
+                      <td>Rs {fmt(summary.sales.igst)}</td>
+                      <td className="ui-value-money">Rs {fmt(summary.sales.total_gst)}</td>
                     </tr>
                     <tr>
                       <td>Input / ITC (Purchase)</td>
-                      <td>₹{fmt(summary.purchases.cgst)}</td>
-                      <td>₹{fmt(summary.purchases.sgst)}</td>
-                      <td>₹{fmt(summary.purchases.igst)}</td>
-                      <td className="ui-value-secondary">₹{fmt(summary.purchases.total_gst)}</td>
+                      <td>Rs {fmt(summary.purchases.cgst)}</td>
+                      <td>Rs {fmt(summary.purchases.sgst)}</td>
+                      <td>Rs {fmt(summary.purchases.igst)}</td>
+                      <td className="ui-value-secondary">Rs {fmt(summary.purchases.total_gst)}</td>
                     </tr>
                     <tr>
                       <td>{isPayable ? 'Payable After ITC Set-Off' : 'Unused ITC / Nil Liability'}</td>
-                      <td>₹{fmt(isPayable ? payableByHead.cgst : excessCredit.cgst)}</td>
-                      <td>₹{fmt(isPayable ? payableByHead.sgst : excessCredit.sgst)}</td>
-                      <td>₹{fmt(isPayable ? payableByHead.igst : excessCredit.igst)}</td>
-                      <td className={isPayable ? 'ui-value-danger' : 'ui-value-money'}>₹{fmt(isPayable ? payableTotal : excessCreditTotal)}</td>
+                      <td>Rs {fmt(isPayable ? payableByHead.cgst : excessCredit.cgst)}</td>
+                      <td>Rs {fmt(isPayable ? payableByHead.sgst : excessCredit.sgst)}</td>
+                      <td>Rs {fmt(isPayable ? payableByHead.igst : excessCredit.igst)}</td>
+                      <td className={isPayable ? 'ui-value-danger' : 'ui-value-money'}>Rs {fmt(isPayable ? payableTotal : excessCreditTotal)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -365,8 +365,8 @@ export default function GSTPage() {
             </Card>
 
             <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
-              <StatCard label="B2B Invoices" value={String(summary.sales.b2b_count)} note={`Taxable ₹${fmt(summary.sales.b2b_taxable)}`} tone="secondary" />
-              <StatCard label="B2C Invoices" value={String(summary.sales.b2c_count)} note={`Taxable ₹${fmt(summary.sales.b2c_taxable)}`} tone="money" />
+              <StatCard label="B2B Invoices" value={String(summary.sales.b2b_count)} note={`Taxable Rs ${fmt(summary.sales.b2b_taxable)}`} tone="secondary" />
+              <StatCard label="B2C Invoices" value={String(summary.sales.b2c_count)} note={`Taxable Rs ${fmt(summary.sales.b2c_taxable)}`} tone="money" />
             </div>
 
             {summary.gstr1.b2b_invoices.length === 0 ? (
@@ -396,9 +396,9 @@ export default function GSTPage() {
                           <td>{invoice.invoice_number}</td>
                           <td>{invoice.buyer_name || '-'}</td>
                           <td>{invoice.buyer_gstin}</td>
-                          <td>₹{fmt(invoice.taxable_amount)}</td>
+                          <td>Rs {fmt(invoice.taxable_amount)}</td>
                           <td>{invoice.gst_rate}%</td>
-                          <td className="ui-value-money">₹{fmt(invoice.total)}</td>
+                          <td className="ui-value-money">Rs {fmt(invoice.total)}</td>
                           <td><StatusBadge tone="secondary">{invoice.gst_type}</StatusBadge></td>
                         </tr>
                       ))}
@@ -412,7 +412,7 @@ export default function GSTPage() {
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                           <strong style={{ color: '#67e8f9' }}>{invoice.invoice_number}</strong>
-                          <span className="ui-value-money">₹{fmt(invoice.total)}</span>
+                          <span className="ui-value-money">Rs {fmt(invoice.total)}</span>
                         </div>
                         <div style={{ color: '#0f172a', fontWeight: 700 }}>{invoice.buyer_name}</div>
                         <div style={{ color: '#9ca3af', fontSize: 11 }}>GSTIN: {invoice.buyer_gstin} • GST {invoice.gst_rate}%</div>
@@ -426,9 +426,9 @@ export default function GSTPage() {
             <Card title="B2C Summary" subtitle="Regular customers without GSTIN">
               <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
                 <StatCard label="Invoices" value={String(summary.gstr1.b2c_summary.count)} note="B2C count" />
-                <StatCard label="Taxable" value={`₹${fmt(summary.gstr1.b2c_summary.taxable_amount)}`} />
-                <StatCard label="GST" value={`₹${fmt(summary.gstr1.b2c_summary.total_gst)}`} tone="secondary" />
-                <StatCard label="Total" value={`₹${fmt(summary.gstr1.b2c_summary.total_amount)}`} tone="money" />
+                <StatCard label="Taxable" value={`Rs ${fmt(summary.gstr1.b2c_summary.taxable_amount)}`} />
+                <StatCard label="GST" value={`Rs ${fmt(summary.gstr1.b2c_summary.total_gst)}`} tone="secondary" />
+                <StatCard label="Total" value={`Rs ${fmt(summary.gstr1.b2c_summary.total_amount)}`} tone="money" />
               </div>
             </Card>
 
@@ -472,3 +472,4 @@ export default function GSTPage() {
     </Layout>
   );
 }
+

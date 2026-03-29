@@ -4850,3 +4850,264 @@ tbody tr:hover td,
 .admin-table tbody tr:hover td {
   background: rgba(239,246,255,0.84) !important;
 }
+
+/* Executive polish layer */
+.app-shell-root {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.1), transparent 24%),
+    linear-gradient(180deg, #f8fbff 0%, #f3f8ff 46%, #f8fafc 100%) !important;
+}
+
+.content-container {
+  gap: 22px !important;
+}
+
+.hero-panel,
+.toolbar-card,
+.table-container,
+.metric-card,
+.soft-panel,
+.ui-card,
+.card,
+.flow-modal,
+.ui-list-card,
+.ledger-detail-card {
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(191, 219, 254, 0.72) !important;
+  box-shadow:
+    0 22px 54px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.82) inset !important;
+}
+
+.hero-panel {
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.16), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(52, 211, 153, 0.1), transparent 22%),
+    linear-gradient(135deg, rgba(255,255,255,0.98), rgba(244,249,255,0.96), rgba(255,255,255,0.98)) !important;
+  border-radius: 30px !important;
+  padding: 28px !important;
+}
+
+.hero-panel .kicker,
+.content-top-actions-kicker,
+.subscription-pill {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(96, 165, 250, 0.4) !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.08) !important;
+}
+
+.page-title,
+.section-title,
+.ui-card-title,
+.sidebar-shortcut-title,
+.membership-summary-plan,
+.trial-gate-side-title {
+  letter-spacing: -0.045em !important;
+}
+
+.page-title {
+  font-size: clamp(2.25rem, 3vw, 3.6rem) !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+}
+
+.page-subtitle,
+.section-subtitle,
+.ui-card-subtitle,
+.content-top-actions-subtitle {
+  color: #5f6f86 !important;
+}
+
+.nav-link,
+.mobile-nav-link,
+.sidebar-shortcut,
+.top-upgrade-chip,
+.sidebar-user-card,
+.mobile-user-chip {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.nav-link:hover,
+.sidebar-shortcut:hover,
+.top-upgrade-chip:hover,
+.sidebar-user-card:hover,
+.mobile-user-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
+}
+
+.nav-link.is-active,
+.mobile-nav-link.is-active {
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(99, 102, 241, 0.08)),
+    rgba(255,255,255,0.98) !important;
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.14) !important;
+}
+
+.nav-icon-wrap,
+.sidebar-shortcut-icon,
+.ui-stat-icon,
+.dashboard-quick-icon {
+  background: linear-gradient(135deg, #ffffff, #eef4ff) !important;
+  border: 1px solid rgba(191, 219, 254, 0.85) !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 14px 24px rgba(37, 99, 235, 0.08) !important;
+}
+
+.metric-card,
+.ui-stat-card,
+.dashboard-top-card,
+.dashboard-breakdown-card,
+.reports-profit-card,
+.stack-row {
+  border-radius: 24px !important;
+}
+
+.metric-card:hover,
+.ui-stat-card.is-clickable:hover,
+.dashboard-quick-card:hover,
+.dashboard-top-card:hover,
+.stack-row:hover,
+.ui-list-card:hover {
+  transform: translateY(-4px);
+}
+
+.metric-grid .metric-card:nth-child(1),
+.ui-tone-money {
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,253,244,0.96)) !important;
+}
+
+.metric-grid .metric-card:nth-child(2),
+.ui-tone-secondary {
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(239,246,255,0.96)) !important;
+}
+
+.metric-grid .metric-card:nth-child(3),
+.ui-tone-warning {
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,251,235,0.96)) !important;
+}
+
+.metric-grid .metric-card:nth-child(4),
+.ui-tone-danger {
+  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(254,242,242,0.96)) !important;
+}
+
+.btn-primary,
+.top-upgrade-chip,
+.membership-upgrade-button,
+.membership-mobile-button {
+  background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 18px 34px rgba(59, 130, 246, 0.22) !important;
+}
+
+.btn-primary:hover,
+.top-upgrade-chip:hover,
+.membership-upgrade-button:hover,
+.membership-mobile-button:hover {
+  box-shadow: 0 24px 42px rgba(59, 130, 246, 0.28) !important;
+}
+
+.btn-ghost,
+.action-soft,
+.fast-billing-chip,
+.flow-choice-pill,
+.segmented-option,
+.filter-pill,
+.ui-segment {
+  background: rgba(255,255,255,0.88) !important;
+  border: 1px solid rgba(203, 213, 225, 0.82) !important;
+  color: #1e293b !important;
+}
+
+.flow-choice-pill.is-active,
+.segmented-option.is-active,
+.filter-pill.is-active,
+.ui-segment.is-active {
+  box-shadow: 0 14px 30px rgba(59, 130, 246, 0.16) !important;
+}
+
+.table-container table,
+.ui-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-container thead th,
+.ui-table thead th {
+  background: linear-gradient(180deg, #f8fbff, #eef4ff) !important;
+  color: #5b6b82 !important;
+  border-bottom: 1px solid rgba(191, 219, 254, 0.9) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.table-container tbody td,
+.ui-table tbody td {
+  color: #1f2937 !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+.table-container tbody tr:nth-child(even) td,
+.ui-table tbody tr:nth-child(even) td {
+  background: rgba(248, 250, 252, 0.72) !important;
+}
+
+.table-container tbody tr:hover td,
+.ui-table tbody tr:hover td {
+  background: rgba(239, 246, 255, 0.82) !important;
+}
+
+.form-input,
+select.form-input,
+textarea.form-input {
+  background: rgba(255,255,255,0.92) !important;
+  border: 1px solid rgba(191, 219, 254, 0.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.form-input:focus,
+select.form-input:focus,
+textarea.form-input:focus {
+  border-color: rgba(59, 130, 246, 0.64) !important;
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.85) !important;
+}
+
+.empty-state {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96));
+  border: 1px dashed rgba(148, 163, 184, 0.34);
+}
+
+.empty-state-icon {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff !important;
+  border-radius: 16px;
+  min-width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 18px 36px rgba(59, 130, 246, 0.2);
+}
+
+@media (max-width: 640px) {
+  .hero-panel {
+    border-radius: 24px !important;
+    padding: 20px !important;
+  }
+
+  .card,
+  .ui-card,
+  .metric-card,
+  .table-container,
+  .toolbar-card,
+  .soft-panel {
+    border-radius: 20px !important;
+  }
+}
