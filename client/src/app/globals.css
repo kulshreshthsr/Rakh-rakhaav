@@ -3710,7 +3710,7 @@ textarea.form-input {
 }
 
 .app-shell-root .page-shell {
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .app-shell-root .page-title,
@@ -3718,7 +3718,7 @@ textarea.form-input {
 .app-shell-root .panel-title,
 .app-shell-root .metric-value,
 .app-shell-root .stat-value {
-  color: #ffffff !important;
+  color: #0f172a !important;
   text-shadow: none;
 }
 
