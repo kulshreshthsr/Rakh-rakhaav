@@ -1532,6 +1532,57 @@ function LayoutInner({ children }) {
           background: #ffffff;
         }
 
+        .app-shell-root .premium-topbar {
+          background: #0f172a !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 18px 40px rgba(2, 8, 23, 0.22) !important;
+        }
+
+        .app-shell-root .premium-topbar.is-scrolled {
+          background: #0f172a !important;
+          box-shadow: 0 18px 40px rgba(2, 8, 23, 0.28) !important;
+        }
+
+        .app-shell-root .mobile-topbar-brand {
+          flex: 1;
+          min-width: 0;
+          align-items: center;
+        }
+
+        .app-shell-root .mobile-topbar-brand > div {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .app-shell-root .brand-title.brand-title-hindi,
+        .app-shell-root .mobile-brand-title.brand-title-hindi,
+        .app-shell-root .mobile-brand-title,
+        .app-shell-root .brand-title {
+          color: #ffffff !important;
+          text-shadow: 0 8px 24px rgba(2, 8, 23, 0.28) !important;
+        }
+
+        .app-shell-root .mobile-brand-title.brand-title-hindi {
+          font-size: 22px !important;
+          line-height: 1 !important;
+          white-space: nowrap;
+        }
+
+        .app-shell-root .brand-subtitle,
+        .app-shell-root .mobile-brand-subtitle {
+          color: rgba(226, 232, 240, 0.72) !important;
+        }
+
+        .app-shell-root .mobile-brand-subtitle {
+          display: none !important;
+        }
+
+        .app-shell-root .mobile-user-chip,
+        .app-shell-root .top-upgrade-chip {
+          color: #ffffff !important;
+        }
+
         @media (max-width: 900px) {
           .desktop-sidebar { display: none !important; }
           .mobile-topbar { display: flex !important; }
