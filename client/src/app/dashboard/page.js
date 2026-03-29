@@ -64,6 +64,35 @@ const cancelIdle = (id) => {
   clearTimeout(id);
 };
 
+function QuickActionGlyph({ name }) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  switch (name) {
+    case 'sales':
+      return <svg {...common}><path d="M12 2v20" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></svg>;
+    case 'purchase':
+      return <svg {...common}><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7" /></svg>;
+    case 'credit':
+      return <svg {...common}><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3" /><path d="M6 3.5v20" /><path d="M9 7.5h6" /><path d="M9 11.5h6" /><path d="M9 15.5h4" /></svg>;
+    case 'stock':
+      return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></svg>;
+    case 'gst':
+      return <svg {...common}><path d="M7 4.5h10" /><path d="M7 9.5h10" /><path d="M7 14.5h5" /><path d="M16.5 13v7" /><path d="M13.5 16h6" /><rect x="4" y="3" width="16" height="18" rx="2.5" /></svg>;
+    default:
+      return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" /></svg>;
+  }
+}
+
 const DashboardSkeleton = () => (
   <div className="page-shell">
     <section className="card">
@@ -225,12 +254,12 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'SL', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(22,163,74,0.14)', color: '#15803d', semantic: 'sales' },
-    { href: '/purchases', icon: 'PU', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.14)', color: '#b45309', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'CR', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(220,38,38,0.12)', color: '#dc2626', semantic: 'credit' },
-    { href: '/product', icon: 'PR', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(37,99,235,0.12)', color: '#2563eb', semantic: 'stock' },
-    { href: '/gst', icon: 'TX', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,145,178,0.12)', color: '#0f766e', semantic: 'gst' },
-    { href: '/pricing', icon: 'UP', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
+    { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#10b981', semantic: 'sales' },
+    { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#f59e0b', semantic: 'purchase' },
+    { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#f43f5e', semantic: 'credit' },
+    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'stock' },
+    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'gst' },
+    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
   ];
 
   return (
@@ -380,28 +409,36 @@ export default function DashboardPage() {
             </div>
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
-          <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-            {quickActions.map((action) => (
-              <a
-                key={action.href}
-                href={action.href}
-                className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
-                style={{
-                  textDecoration: 'none',
-                  borderRadius: 18,
-                  padding: '14px 12px',
-                  minHeight: 94,
-                }}
-              >
-                <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
-                  <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 12, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0 }}>{action.icon}</div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                    <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
+          <div className="quick-actions-carousel">
+            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+              {quickActions.map((action) => (
+                <a
+                  key={action.href}
+                  href={action.href}
+                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
+                  style={{
+                    textDecoration: 'none',
+                    borderRadius: 18,
+                    padding: '14px 12px',
+                    minHeight: 94,
+                  }}
+                >
+                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
+                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
+                    </div>
                   </div>
-                </div>
-              </a>
-            ))}
+                </a>
+              ))}
+            </div>
+            <div className="quick-actions-fade" aria-hidden="true" />
+            <div className="quick-actions-chevron" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
         </section>
 
@@ -498,6 +535,13 @@ export default function DashboardPage() {
         .dashboard-chip-warning,
         .dashboard-shell .badge-navy { background: #ffffff !important; color: #111111 !important; border-color: #d1d5db !important; }
         .dashboard-shell .btn-warning { background: linear-gradient(135deg, #ffffff, #f8fafc); color: #111111; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06); }
+        .quick-actions-carousel {
+          position: relative;
+        }
+        .quick-actions-fade,
+        .quick-actions-chevron {
+          display: none;
+        }
 
         @media (max-width: 900px) {
           .quick-actions-row {
@@ -538,6 +582,37 @@ export default function DashboardPage() {
 
           .quick-actions-row {
             grid-template-columns: repeat(3, minmax(160px, 1fr)) !important;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            padding-right: 56px;
+            scrollbar-width: none;
+          }
+
+          .quick-actions-row::-webkit-scrollbar {
+            display: none;
+          }
+
+          .quick-actions-fade,
+          .quick-actions-chevron {
+            display: flex;
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+          }
+
+          .quick-actions-fade {
+            width: 48px;
+            background: linear-gradient(90deg, rgba(248, 250, 252, 0), #f8fafc 88%);
+          }
+
+          .quick-actions-chevron {
+            width: 28px;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
           }
 
           .top-products-row {

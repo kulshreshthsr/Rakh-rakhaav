@@ -214,14 +214,36 @@ export default function UdhaarPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {list.length === 0 ? (
-              <div className="ui-empty">
+              <div className="ui-empty ledger-empty-state">
+                <div className="ledger-empty-illustration" aria-hidden="true">
+                  {isCustomer ? (
+                    <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                      <rect x="14" y="10" width="28" height="40" rx="8" fill="#EEF2FF" stroke="#3730A3" strokeWidth="2.4" />
+                      <path d="M22 22h12M22 30h12M22 38h8" stroke="#3730A3" strokeWidth="2.4" strokeLinecap="round" />
+                      <circle cx="48" cy="44" r="10" fill="#DCFCE7" stroke="#16A34A" strokeWidth="2.4" />
+                      <path d="M44 44h8M48 40v8" stroke="#16A34A" strokeWidth="2.4" strokeLinecap="round" />
+                    </svg>
+                  ) : (
+                    <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                      <rect x="12" y="12" width="30" height="38" rx="8" fill="#FFF7ED" stroke="#D97706" strokeWidth="2.4" />
+                      <path d="M20 24h14M20 32h14M20 40h10" stroke="#D97706" strokeWidth="2.4" strokeLinecap="round" />
+                      <circle cx="48" cy="44" r="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="2.4" />
+                      <path d="M44 44h8" stroke="#D97706" strokeWidth="2.4" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </div>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>{isCustomer ? 'Customers' : 'Suppliers'}</div>
                 <div style={{ fontWeight: 700 }}>
                   {isCustomer ? 'No customers found' : 'No suppliers found'}
                 </div>
-                <div style={{ fontSize: 12, marginTop: 4 }}>
-                  {isCustomer ? 'Credit sales create entries automatically' : 'Credit purchases create entries automatically'}
+                <div style={{ fontSize: 12, marginTop: 4, maxWidth: 280 }}>
+                  {isCustomer ? 'Credit sales create entries automatically once you record an udhaar bill.' : 'Credit purchases create entries automatically after supplier bills are added.'}
                 </div>
+                {isCustomer ? (
+                  <ActionButton variant="primary" onClick={() => router.push('/sales?open=1&payment=credit')}>
+                    + Record Credit Sale
+                  </ActionButton>
+                ) : null}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -434,6 +456,28 @@ export default function UdhaarPage() {
 
         .ledger-shell .ui-list-card:hover {
           border-color: rgba(59, 130, 246, 0.28);
+        }
+
+        .ledger-shell .ledger-empty-state {
+          min-height: 52vh;
+          display: grid;
+          place-items: center;
+          align-content: center;
+          gap: 10px;
+          text-align: center;
+          padding: 28px 20px;
+        }
+
+        .ledger-shell .ledger-empty-illustration {
+          width: 88px;
+          height: 88px;
+          border-radius: 28px;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(180deg, #ffffff, #f8fafc);
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+          margin-bottom: 2px;
         }
       `}</style>
     </Layout>

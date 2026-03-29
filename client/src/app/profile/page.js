@@ -146,10 +146,14 @@ export default function ProfilePage() {
     }
   };
 
+  const jumpToShopDetails = () => {
+    document.getElementById('shop-details-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const profileTiles = [
-    { label: 'GSTIN', value: shop?.gstin || 'Not added yet' },
-    { label: 'Phone', value: shop?.phone || 'Add shop contact' },
-    { label: 'State', value: shop?.state || 'Select state' },
+    { label: 'GSTIN', value: shop?.gstin || 'GSTIN: Not added' },
+    { label: 'Phone', value: shop?.phone || 'Phone: Tap to add' },
+    { label: 'State', value: shop?.state || 'State: Not set' },
   ];
 
   return (
@@ -186,29 +190,39 @@ export default function ProfilePage() {
 
             <div className="profile-hero-tiles" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {profileTiles.map((tile) => (
-                <div
+                <button
                   key={tile.label}
+                  type="button"
+                  onClick={jumpToShopDetails}
                   style={{
                     minWidth: 112,
-                  maxWidth: 160,
-                  padding: '10px 12px',
-                  borderRadius: 14,
-                  background: 'rgba(255,255,255,0.84)',
-                  border: '1px solid rgba(191,219,254,0.82)',
-                  boxShadow: '0 10px 24px rgba(37,99,235,0.08)',
-                }}
-              >
+                    maxWidth: 168,
+                    padding: '10px 12px',
+                    borderRadius: 14,
+                    background: 'rgba(255,255,255,0.84)',
+                    border: '1px solid rgba(191,219,254,0.82)',
+                    boxShadow: '0 10px 24px rgba(37,99,235,0.08)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
                   <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
                     {tile.label}
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tile.value}</div>
-                </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a', lineHeight: 1.35 }}>{tile.value}</div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: '#64748b' }} aria-hidden="true">
+                      <path d="M12 20h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      <path d="m16.5 3.5 4 4L8 20l-4 1 1-4 11.5-13.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </button>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" id="shop-details-section">
           <div style={{ marginBottom: 18 }}>
             <div className="section-title">Shop Details</div>
             <div className="section-subtitle">GST compliance, billing identity and printed invoice information</div>

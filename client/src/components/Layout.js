@@ -1583,6 +1583,111 @@ function LayoutInner({ children }) {
           color: #ffffff !important;
         }
 
+        .app-shell-root {
+          background: #f8fafc !important;
+        }
+
+        .app-shell-root .premium-topbar,
+        .app-shell-root .premium-topbar.is-scrolled {
+          background: #ffffff !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+          box-shadow: none !important;
+        }
+
+        .app-shell-root .mobile-brand-title,
+        .app-shell-root .brand-title,
+        .app-shell-root .brand-title.brand-title-hindi,
+        .app-shell-root .mobile-brand-title.brand-title-hindi,
+        .app-shell-root .mobile-user-chip,
+        .app-shell-root .sidebar-user-name,
+        .app-shell-root .nav-label {
+          color: #0f172a !important;
+          text-shadow: none !important;
+        }
+
+        .app-shell-root .brand-subtitle,
+        .app-shell-root .mobile-brand-subtitle,
+        .app-shell-root .sidebar-user-email,
+        .app-shell-root .nav-short {
+          color: #64748b !important;
+        }
+
+        .app-shell-root .mobile-avatar,
+        .app-shell-root .sidebar-avatar {
+          background: #4f46e5 !important;
+          color: #ffffff !important;
+          border-radius: 999px !important;
+        }
+
+        .app-shell-root .mobile-avatar {
+          width: 32px !important;
+          height: 32px !important;
+        }
+
+        .app-shell-root .top-upgrade-chip,
+        .app-shell-root .top-upgrade-chip.is-manage {
+          background: transparent !important;
+          border: 1.5px solid #4f46e5 !important;
+          color: #4f46e5 !important;
+          border-radius: 20px !important;
+          box-shadow: none !important;
+        }
+
+        .app-shell-root .top-upgrade-chip.is-shining::after {
+          display: none !important;
+        }
+
+        .app-shell-root .mobile-user-chip {
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+          color: #0f172a !important;
+        }
+
+        .app-shell-root .mobile-bottom-nav-card {
+          background: #ffffff !important;
+          border: none !important;
+          border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          padding: 6px 4px calc(8px + env(safe-area-inset-bottom)) !important;
+        }
+
+        .app-shell-root .premium-bottom-nav {
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+        }
+
+        .app-shell-root .mobile-nav-link {
+          color: #94a3b8 !important;
+          border-radius: 0 !important;
+          border: none !important;
+          padding: 10px 4px 12px !important;
+          gap: 4px !important;
+        }
+
+        .app-shell-root .mobile-nav-glow {
+          display: none !important;
+        }
+
+        .app-shell-root .mobile-nav-link.is-active {
+          color: #4f46e5 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          transform: none !important;
+        }
+
+        .app-shell-root .mobile-nav-link.is-active::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 18%;
+          right: 18%;
+          height: 2px;
+          background: #4f46e5;
+          border-radius: 0 0 999px 999px;
+        }
+
         @media (max-width: 900px) {
           .desktop-sidebar { display: none !important; }
           .mobile-topbar { display: flex !important; }

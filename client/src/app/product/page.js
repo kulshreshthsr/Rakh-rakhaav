@@ -217,12 +217,6 @@ export default function ProductsPage() {
     const prefix = parseInt(String(form.hsn_code || '').slice(0, 2), 10);
     return HSN_GST_HINTS[prefix];
   })();
-  const wizardSteps = [
-    { title: 'Basics', copy: 'Name and description' },
-    { title: 'Pricing', copy: 'Cost and margin' },
-    { title: 'Tax / Stock', copy: 'HSN, GST and stock' },
-  ];
-
   // â”€â”€ Badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const StockBadge = ({ p }) => {
     if (p.quantity === 0) return <span className="badge badge-red">Out</span>;
@@ -257,7 +251,7 @@ export default function ProductsPage() {
           <div className="page-toolbar">
             <div>
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing inventory...</div>}
+              <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Your complete product catalog</div>
             </div>
             <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ Add Product</button>
           </div>
@@ -454,15 +448,18 @@ export default function ProductsPage() {
           <div className="modal flow-modal" style={{ maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', alignSelf: 'flex-end', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}>
             <div className="flow-modal-header">
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
               {editProduct ? 'Edit Product' : 'Add Product'}
                 </h3>
               </div>
-              <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
+                <button type="button" className="modal-close-btn" onClick={() => setShowModal(false)} aria-label="Close add product modal">×</button>
+              </div>
             </div>
             {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
             <form onSubmit={handleSubmit}>
-              <div className="flow-section-kicker"><span>Basics</span><span>Identity + barcode</span></div>
+              <div className="flow-section-kicker"><span>Basics</span></div>
               <div className="form-group">
                 <label className="form-label">Name *</label>
                 <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
@@ -504,7 +501,7 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              <div className="flow-section-kicker"><span>Pricing</span><span>Cost and margin</span></div>
+              <div className="flow-section-kicker"><span>Pricing</span></div>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Cost Price</label>
@@ -525,7 +522,7 @@ export default function ProductsPage() {
                   <span style={{ color: '#15803d' }}>• ₹{(Number(form.price) - Number(form.cost_price)).toFixed(2)} per unit</span>
                 </div>
               )}
-              <div className="flow-section-kicker"><span>Tax & Stock</span><span>GST, unit and alerts</span></div>
+              <div className="flow-section-kicker"><span>Tax & Stock</span></div>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -5689,4 +5689,310 @@ thead {
   .trust-auth-pill-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* 2026 premium design system */
+:root {
+  --ds-primary: #4f46e5;
+  --ds-primary-hover: #4338ca;
+  --ds-success: #10b981;
+  --ds-warning: #f59e0b;
+  --ds-danger: #f43f5e;
+  --ds-page: #f8fafc;
+  --ds-card: #ffffff;
+  --ds-input: #f1f5f9;
+  --ds-border: #e2e8f0;
+  --ds-text: #0f172a;
+  --ds-text-muted: #64748b;
+  --ds-text-soft: #94a3b8;
+  --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --ds-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ds-page: #0f172a;
+    --ds-card: #111827;
+    --ds-input: #1e293b;
+    --ds-border: rgba(148, 163, 184, 0.18);
+    --ds-text: #f8fafc;
+    --ds-text-muted: #cbd5e1;
+    --ds-text-soft: #94a3b8;
+    --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --ds-shadow-md: 0 8px 20px rgba(0, 0, 0, 0.32);
+  }
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Inter', 'Noto Sans Devanagari', sans-serif !important;
+}
+
+body {
+  background: var(--ds-page) !important;
+  color: var(--ds-text) !important;
+}
+
+.page-title,
+.app-shell-root .page-title,
+.compact-page-toolbar .page-title {
+  font-family: 'Inter', 'Noto Sans Devanagari', sans-serif !important;
+  font-size: clamp(1.625rem, 4vw, 1.75rem) !important;
+  line-height: 1.15 !important;
+  font-weight: 700 !important;
+  color: var(--ds-text) !important;
+  letter-spacing: -0.03em !important;
+}
+
+.page-subtitle,
+.section-subtitle,
+.ui-card-subtitle,
+.metric-note,
+.ui-stat-note,
+.ui-data-row-note,
+.content-top-actions-subtitle {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: var(--ds-text-muted) !important;
+}
+
+.metric-label,
+.ui-stat-label,
+.form-label,
+.ui-table th {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--ds-text-muted) !important;
+}
+
+.metric-value,
+.ui-stat-value {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.card,
+.ui-card,
+.metric-card,
+.ui-stat-card,
+.ui-list-card,
+.table-container,
+.ui-table-wrap,
+.toolbar-card,
+.soft-panel,
+.modal,
+.flow-modal,
+.scanner-modal,
+.subscription-modal,
+.ledger-detail-card {
+  background: var(--ds-card) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.card:hover,
+.metric-card:hover,
+.ui-stat-card.is-clickable:hover,
+.ui-list-card:hover,
+.dashboard-quick-card:hover,
+.dashboard-top-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: var(--ds-shadow-md) !important;
+}
+
+.metric-card,
+.ui-stat-card {
+  background: var(--ds-card) !important;
+}
+
+.metric-card::after,
+.ui-stat-card::after {
+  width: 3px !important;
+  border-radius: 0 !important;
+}
+
+.btn-primary,
+.ui-action-primary {
+  min-height: 48px !important;
+  padding: 12px 20px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  background: var(--ds-primary) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--ds-primary) !important;
+  box-shadow: none !important;
+}
+
+.btn-primary:hover,
+.ui-action-primary:hover {
+  background: var(--ds-primary-hover) !important;
+  transform: scale(1.01) !important;
+}
+
+.btn-ghost,
+.ui-action-secondary,
+.ui-action-dark,
+.action-soft,
+.action-soft.edit,
+.action-soft.history,
+.action-soft.stock,
+.action-soft.print {
+  min-height: 42px !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  border: 1px solid var(--ds-border) !important;
+  color: #374151 !important;
+  box-shadow: none !important;
+}
+
+.btn-ghost:hover,
+.ui-action-secondary:hover,
+.ui-action-dark:hover,
+.action-soft:hover {
+  background: var(--ds-page) !important;
+}
+
+.action-soft.delete,
+.ui-action-danger {
+  color: var(--ds-danger) !important;
+  border: 1px solid #fca5a5 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.ui-action-whatsapp,
+.action-soft.whatsapp {
+  border-radius: 10px !important;
+  background: #25d366 !important;
+  color: #ffffff !important;
+  border-color: #25d366 !important;
+  box-shadow: none !important;
+}
+
+.form-label {
+  letter-spacing: 0.06em !important;
+}
+
+.form-input,
+select.form-input,
+textarea.form-input,
+.app-shell-root .form-input,
+.app-shell-root input,
+.app-shell-root select,
+.app-shell-root textarea {
+  min-height: 48px;
+  background: #f8fafc !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: 12px !important;
+  color: var(--ds-text) !important;
+  box-shadow: none !important;
+}
+
+.form-input::placeholder,
+textarea.form-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: var(--ds-text-soft) !important;
+}
+
+.form-input:focus,
+select.form-input:focus,
+textarea.form-input:focus,
+.app-shell-root .form-input:focus,
+.app-shell-root input:focus,
+.app-shell-root select:focus,
+.app-shell-root textarea:focus {
+  border-color: var(--ds-primary) !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+}
+
+.modal-overlay {
+  background: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+.modal::before,
+.flow-modal::before,
+.scanner-modal::before,
+.subscription-modal::before {
+  height: 4px !important;
+  background: var(--ds-primary) !important;
+}
+
+.flow-actions .btn-primary,
+.fast-billing-actions .btn-primary,
+.modal .btn-primary,
+.flow-modal .btn-primary {
+  width: 100% !important;
+  min-height: 52px !important;
+}
+
+.modal-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--ds-border);
+  background: #ffffff;
+  color: var(--ds-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.modal-close-btn:hover {
+  background: var(--ds-page);
+  color: var(--ds-text);
+}
+
+.ui-table-wrap {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+}
+
+.ui-table thead th {
+  background: #f8fafc !important;
+  color: var(--ds-text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+}
+
+.ui-table tbody td {
+  min-height: 48px;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.gstr3b-total-row td {
+  background: #fef2f2 !important;
+  color: var(--ds-danger) !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-quick-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.dashboard-quick-icon {
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  box-shadow: none !important;
 }

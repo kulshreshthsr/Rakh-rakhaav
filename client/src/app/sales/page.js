@@ -1,6 +1,6 @@
 ﻿'use client';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
@@ -237,6 +237,7 @@ const buildWhatsAppShareMessage = (sale, shopName) => {
 
 export default function SalesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { locale } = useAppLocale();
   const [sales, setSales]           = useState([]);
   const [summary, setSummary]       = useState({});
@@ -326,6 +327,29 @@ export default function SalesPage() {
       })
       .catch(() => {});
   }, [showModal, sales.length, shopName, shopState]);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (searchParams.get('open') !== '1' || searchParams.get('payment') !== 'credit') return;
+    setEditingSaleId('');
+    setItems([emptyItem()]);
+    setForm({
+      payment_type: 'credit',
+      amount_paid: '',
+      buyer_name: '',
+      buyer_phone: '',
+      buyer_gstin: '',
+      buyer_address: '',
+      buyer_state: '',
+      notes: '',
+    });
+    setSaleStep(0);
+    setGstinTouched(false);
+    setError('');
+    setShowModal(true);
+    router.replace('/sales');
+  }, [router, searchParams]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const updateItem = (index, field, value) => {
     const updated = [...items];
@@ -446,7 +470,6 @@ export default function SalesPage() {
 
   const selectedItemsCount = items.filter((item) => item.product_id).length;
   const currentStep = wizardSteps[saleStep];
-  const canMoveToBuyer = billTotals.total > 0;
 
   function resetForm() {
     setEditingSaleId('');
@@ -455,6 +478,16 @@ export default function SalesPage() {
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
+  }
+
+  function handleContinueToBuyer() {
+    setError('');
+    const validItems = items.filter((item) => item.product_id && item.quantity && item.price_per_unit);
+    if (validItems.length === 0 || billTotals.total <= 0) {
+      setError('Select at least one product to continue.');
+      return;
+    }
+    setSaleStep(1);
   }
 
   async function handleSubmit(e) {
@@ -803,7 +836,17 @@ export default function SalesPage() {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal flow-modal sale-entry-modal" style={{ maxWidth: 500 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>Record Sale</h3>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 0, color: '#0f172a' }}>Record Sale</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => { setShowModal(false); resetForm(); }}
+                aria-label="Close record sale modal"
+              >
+                ×
+              </button>
+            </div>
             <div style={{ fontSize: 12, color: '#64748b', fontWeight: 700, marginBottom: 12 }}>
               Step {saleStep + 1} of 2
               <span style={{ margin: '0 8px', color: '#cbd5e1' }}>•</span>
@@ -1086,8 +1129,7 @@ export default function SalesPage() {
                     type="button"
                     className="btn-primary"
                     style={{ flex: 1 }}
-                    disabled={!canMoveToBuyer}
-                    onClick={() => setSaleStep((current) => current + 1)}
+                    onClick={handleContinueToBuyer}
                   >
                     Continue
                   </button>

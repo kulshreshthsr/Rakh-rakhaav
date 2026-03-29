@@ -238,14 +238,14 @@ export default function GSTPage() {
     <Layout>
       <div className="page-shell gst-shell">
         <section className="card">
-          <div className="page-toolbar" style={{ alignItems: 'flex-start' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ minWidth: 0 }}>
               <div className="page-title">GST Summary</div>
               <div className="page-subtitle">
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 220, width: 'min(320px, 100%)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, width: 'min(320px, 100%)' }}>
               <select className="form-input" value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
                 {MONTHS.map((item, index) => (
                   <option key={item} value={index + 1}>{MONTHS_HI[index]} / {item}</option>
@@ -351,7 +351,7 @@ export default function GSTPage() {
                       <td>₹{fmt(summary.purchases.igst)}</td>
                       <td className="ui-value-secondary">₹{fmt(summary.purchases.total_gst)}</td>
                     </tr>
-                    <tr>
+                    <tr className="gstr3b-total-row">
                       <td>{isPayable ? 'Payable After ITC Set-Off' : 'Unused ITC / Nil Liability'}</td>
                       <td>₹{fmt(isPayable ? payableByHead.cgst : excessCredit.cgst)}</td>
                       <td>₹{fmt(isPayable ? payableByHead.sgst : excessCredit.sgst)}</td>

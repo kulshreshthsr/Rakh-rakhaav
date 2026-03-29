@@ -14,6 +14,7 @@ const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const PURCHASES_CACHE_KEY = 'purchases-page';
 const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const normalizeState = (value = '') => value.trim().toLowerCase();
+const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
 const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   day: '2-digit',
   month: 'short',
@@ -77,6 +78,34 @@ const getStateFromGstin = (gstin) => {
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
 
+const buildPurchaseWhatsAppMessage = (purchase) => {
+  const purchaseDate = new Date(purchase.createdAt || purchase.purchased_at).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  const itemLines = purchase.items && purchase.items.length > 0
+    ? purchase.items.map((item, index) => `  ${index + 1}. ${item.product_name} x ${item.quantity} @ ₹${Number(item.price_per_unit || 0).toFixed(2)} = ₹${Number(item.total_amount || 0).toFixed(2)}`).join('\n')
+    : `  1. ${purchase.product_name} x ${purchase.quantity || 1} @ ₹${Number(purchase.price_per_unit || 0).toFixed(2)} = ₹${Number(purchase.total_amount || 0).toFixed(2)}`;
+
+  return [
+    purchase.supplier_name ? `Namaste ${purchase.supplier_name} ji,` : 'Namaste,',
+    '',
+    'Purchase confirmation',
+    `Bill No: ${purchase.invoice_number || '-'}`,
+    `Date: ${purchaseDate}`,
+    'Items:',
+    itemLines,
+    `Taxable Amount: ₹${Number(purchase.taxable_amount || 0).toFixed(2)}`,
+    `GST / ITC: ₹${Number(purchase.total_gst || 0).toFixed(2)}`,
+    `Total Amount: ₹${Number(purchase.total_amount || 0).toFixed(2)}`,
+    `Paid: ₹${Number(purchase.amount_paid || 0).toFixed(2)}`,
+    ...(Number(purchase.balance_due || 0) > 0 ? [`Balance Due: ₹${Number(purchase.balance_due || 0).toFixed(2)}`] : []),
+    '',
+    'Please review and confirm the purchase details.',
+  ].join('\n');
+};
+
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
@@ -89,6 +118,7 @@ export default function PurchasesPage() {
   const [error, setError] = useState('');
   const [gstinTouched, setGstinTouched] = useState(false);
   const [shopState, setShopState] = useState('');
+  const [highlightedPurchaseId, setHighlightedPurchaseId] = useState('');
   const router = useRouter();
 
   // â”€â”€ Form state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -316,6 +346,27 @@ export default function PurchasesPage() {
     } catch { setError('Could not delete purchase'); }
   };
 
+  const sendPurchaseWhatsApp = (purchase) => {
+    const phone = cleanPhone(purchase.supplier_phone || '');
+    if (!phone) {
+      setError('Supplier phone number is missing');
+      return;
+    }
+    setError('');
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(buildPurchaseWhatsAppMessage(purchase))}`, '_blank');
+  };
+
+  const focusPendingPurchase = () => {
+    const pendingPurchase = purchases.find((purchase) => Number(purchase.balance_due || 0) > 0);
+    if (!pendingPurchase) return;
+
+    setHighlightedPurchaseId(pendingPurchase._id);
+    const anchors = Array.from(document.querySelectorAll(`[data-purchase-anchor="${pendingPurchase._id}"]`));
+    const visibleAnchor = anchors.find((node) => node.offsetParent !== null) || anchors[0];
+    visibleAnchor?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => setHighlightedPurchaseId(''), 2200);
+  };
+
   const resetModal = () => {
     setEditingPurchaseId('');
     setShowModal(false);
@@ -403,6 +454,15 @@ export default function PurchasesPage() {
             <div className="metric-label">Balance Due</div>
             <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#dc2626' : '#0f766e' }}>₹{(summary.totalDue || 0).toFixed(2)}</div>
             <div className="metric-note">Supplier credit outstanding</div>
+            {(summary.totalDue || 0) > 0 ? (
+              <button
+                type="button"
+                onClick={focusPendingPurchase}
+                style={{ marginTop: 10, padding: 0, border: 'none', background: 'none', color: '#3730a3', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+              >
+                Pay Now
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -445,7 +505,11 @@ export default function PurchasesPage() {
               </thead>
               <tbody>
                 {purchases.map(p => (
-                  <tr key={p._id}>
+                  <tr
+                    key={p._id}
+                    data-purchase-anchor={p._id}
+                    className={highlightedPurchaseId === p._id ? 'purchase-row-highlight' : ''}
+                  >
                     <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>{p.invoice_number}</td>
                     <td>
                       <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
@@ -479,6 +543,15 @@ export default function PurchasesPage() {
                       {formatFullDateTime(p.createdAt)}
                     </td>
                     <td>
+                      {p.supplier_phone ? (
+                        <button
+                          onClick={() => sendPurchaseWhatsApp(p)}
+                          className="action-soft whatsapp"
+                          style={{ borderRadius: 999, padding: '6px 10px', marginRight: 6, background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}
+                        >
+                          WhatsApp
+                        </button>
+                      ) : null}
                       <button onClick={() => startEditPurchase(p)}
                         className="action-soft edit"
                         style={{ borderRadius: 999, padding: '6px 10px' }}>
@@ -500,7 +573,12 @@ export default function PurchasesPage() {
           <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {purchases.map(p => (
               <div key={p._id} className="card"
-                style={{ borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#f59e0b'}` }}>
+                data-purchase-anchor={p._id}
+                style={{
+                  borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#f59e0b'}`,
+                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(55, 48, 163, 0.22), 0 18px 32px rgba(55, 48, 163, 0.12)' : undefined,
+                  transition: 'box-shadow 0.2s ease',
+                }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
@@ -529,6 +607,13 @@ export default function PurchasesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{formatFullDateTime(p.createdAt)}</div></div>
                 </div>
 
+                {p.supplier_phone ? (
+                  <button onClick={() => sendPurchaseWhatsApp(p)}
+                    className="action-soft whatsapp"
+                    style={{ width: '100%', padding: '9px', marginBottom: 8, background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}>
+                    WhatsApp
+                  </button>
+                ) : null}
                 <button onClick={() => startEditPurchase(p)}
                   className="action-soft edit"
                   style={{ width: '100%', padding: '9px', marginBottom: 8 }}>
@@ -550,9 +635,12 @@ export default function PurchasesPage() {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal flow-modal" style={{ maxWidth: 560 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>
-              Record Purchase
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 0, color: '#0f172a' }}>
+                Record Purchase
+              </h3>
+              <button type="button" className="modal-close-btn" onClick={resetModal} aria-label="Close record purchase modal">×</button>
+            </div>
             {editingPurchaseId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing purchase</div>
             ) : null}
@@ -841,6 +929,11 @@ export default function PurchasesPage() {
       <style>{`
         .purchases-shell .purchases-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
         .purchases-shell .card[style*='borderLeft'] { background: #ffffff !important; }
+        .purchases-shell .purchase-row-highlight {
+          background: rgba(55, 48, 163, 0.08) !important;
+          outline: 2px solid rgba(55, 48, 163, 0.18);
+          outline-offset: -2px;
+        }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }

@@ -8,6 +8,10 @@ const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const fmtN = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
+const formatShortReportDate = (value) => new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric',
+  month: 'short',
+}).format(new Date(value));
 
 const getRange = (filter) => {
   const now = new Date();
@@ -146,13 +150,22 @@ export default function ReportsPage() {
   const dailySales = (() => {
     const map = {};
     sales.forEach((sale) => {
-      const date = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN');
-      if (!map[date]) map[date] = { date, revenue: 0, profit: 0, count: 0 };
-      map[date].revenue += sale.total_amount || 0;
-      map[date].profit += sale.gross_profit || 0;
-      map[date].count += 1;
+      const sourceDate = sale.createdAt || sale.sold_at;
+      const dateKey = new Date(sourceDate).toISOString().slice(0, 10);
+      if (!map[dateKey]) {
+        map[dateKey] = {
+          date: formatShortReportDate(sourceDate),
+          sortValue: new Date(sourceDate).getTime(),
+          revenue: 0,
+          profit: 0,
+          count: 0,
+        };
+      }
+      map[dateKey].revenue += sale.total_amount || 0;
+      map[dateKey].profit += sale.gross_profit || 0;
+      map[dateKey].count += 1;
     });
-    return Object.values(map).sort((a, b) => new Date(b.date) - new Date(a.date));
+    return Object.values(map).sort((a, b) => b.sortValue - a.sortValue);
   })();
 
   const exportCSV = (type) => {
@@ -183,14 +196,14 @@ export default function ReportsPage() {
       rows = [
         [`Profit Report - ${label}`],
         ['Metric', 'Amount'],
-        ['Total Revenue', `Rs ${fmt(summary.totalRevenue)}`],
-        ['Total GST Collected', `Rs ${fmt(summary.totalGST)}`],
-        ['Net Revenue (Taxable)', `Rs ${fmt((summary.totalRevenue || 0) - (summary.totalGST || 0))}`],
-        ['Profit', `Rs ${fmt(summary.grossProfit)}`],
+        ['Total Revenue', `₹${fmt(summary.totalRevenue)}`],
+        ['Total GST Collected', `₹${fmt(summary.totalGST)}`],
+        ['Net Revenue (Taxable)', `₹${fmt((summary.totalRevenue || 0) - (summary.totalGST || 0))}`],
+        ['Profit', `₹${fmt(summary.grossProfit)}`],
         ['Profit Margin', `${fmt(summary.margin)}%`],
-        ['Total Purchases', `Rs ${fmt(summary.totalPurchase)}`],
-        ['GST Input Credit (ITC)', `Rs ${fmt(summary.totalITC)}`],
-        ['Net GST Payable', `Rs ${fmt(summary.netGST)}`],
+        ['Total Purchases', `₹${fmt(summary.totalPurchase)}`],
+        ['GST Input Credit (ITC)', `₹${fmt(summary.totalITC)}`],
+        ['Net GST Payable', `₹${fmt(summary.netGST)}`],
       ];
       filename = `Profit_Report_${label.replace(' ', '_')}.csv`;
     }
@@ -259,10 +272,10 @@ export default function ReportsPage() {
 
         {!loading ? (
           <section className="metric-grid reports-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-            <StatCard label="Revenue" value={`Rs ${fmtN(summary.totalRevenue)}`} note={`${summary.salesCount || 0} invoices`} tone="money" />
-            <StatCard label="Profit" value={`Rs ${fmtN(summary.grossProfit)}`} note={`Margin ${fmt(summary.margin)}%`} tone={summary.grossProfit >= 0 ? 'secondary' : 'danger'} />
-            <StatCard label="GST Payable" value={`Rs ${fmtN(summary.netGST)}`} note={`ITC Rs ${fmtN(summary.totalITC)}`} tone="warning" />
-            <StatCard label="Udhaar" value={`Rs ${fmtN(summary.totalUdhaar)}`} note="Pending collection" tone="danger" />
+            <StatCard label="Revenue" value={`₹${fmtN(summary.totalRevenue)}`} note={`${summary.salesCount || 0} invoices`} tone="money" />
+            <StatCard label="Profit" value={`₹${fmtN(summary.grossProfit)}`} note={`Margin ${fmt(summary.margin)}%`} tone={summary.grossProfit >= 0 ? 'secondary' : 'danger'} />
+            <StatCard label="GST Payable" value={`₹${fmtN(summary.netGST)}`} note={`ITC ₹${fmtN(summary.totalITC)}`} tone="warning" />
+            <StatCard label="Udhaar" value={`₹${fmtN(summary.totalUdhaar)}`} note="Pending collection" tone="danger" />
           </section>
         ) : null}
 
@@ -279,10 +292,10 @@ export default function ReportsPage() {
               subtitle="Revenue, GST and profit in one clear stack"
               actions={<ActionButton variant="secondary" onClick={() => exportCSV('profit')}>CSV Download</ActionButton>}
             >
-              <DataRow label="Total Revenue" value={`Rs ${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
-              <DataRow label="GST Collected" note="Tax collected on behalf of the government" prefix="-" value={`Rs ${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
-              <DataRow label="Taxable Revenue (Revenue - GST)" prefix="=" value={`Rs ${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
-              <DataRow label="Profit" prefix="=" value={`Rs ${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
+              <DataRow label="Total Revenue" value={`₹${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
+              <DataRow label="GST Collected" note="Tax collected on behalf of the government" prefix="-" value={`₹${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
+              <DataRow label="Taxable Revenue (Revenue - GST)" prefix="=" value={`₹${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
+              <DataRow label="Profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
 
               {(summary.totalRevenue || 0) > 0 && (
                 <div style={{ marginTop: 16 }}>
@@ -327,8 +340,8 @@ export default function ReportsPage() {
                           <tr key={index}>
                             <td>{day.date}</td>
                             <td>{day.count}</td>
-                            <td className="ui-value-money">Rs {fmtN(day.revenue)}</td>
-                            <td className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'}>Rs {fmtN(day.profit)}</td>
+                            <td className="ui-value-money">₹{fmtN(day.revenue)}</td>
+                            <td className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'}>₹{fmtN(day.profit)}</td>
                             <td>
                               <StatusBadge tone={currentMargin >= 20 ? 'success' : currentMargin >= 10 ? 'warning' : 'danger'}>
                                 {currentMargin.toFixed(1)}%
@@ -359,8 +372,8 @@ export default function ReportsPage() {
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>{product.qty} units • {product.count} orders</div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div className="ui-value-money" style={{ fontSize: 13 }}>Rs {fmtN(product.revenue)}</div>
-                          <div className="ui-value-secondary" style={{ fontSize: 11 }}>Rs {fmtN(product.profit)} profit</div>
+                          <div className="ui-value-money" style={{ fontSize: 13 }}>₹{fmtN(product.revenue)}</div>
+                          <div className="ui-value-secondary" style={{ fontSize: 11 }}>₹{fmtN(product.profit)} profit</div>
                         </div>
                       </div>
                     ))}
@@ -383,8 +396,8 @@ export default function ReportsPage() {
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>{customer.count} orders{customer.phone ? ` • ${customer.phone}` : ''}</div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div className="ui-value-money" style={{ fontSize: 13 }}>Rs {fmtN(customer.revenue)}</div>
-                          {customer.udhaar > 0 ? <div className="ui-value-danger" style={{ fontSize: 11 }}>Rs {fmtN(customer.udhaar)} due</div> : null}
+                          <div className="ui-value-money" style={{ fontSize: 13 }}>₹{fmtN(customer.revenue)}</div>
+                          {customer.udhaar > 0 ? <div className="ui-value-danger" style={{ fontSize: 11 }}>₹{fmtN(customer.udhaar)} due</div> : null}
                         </div>
                       </div>
                     ))}
