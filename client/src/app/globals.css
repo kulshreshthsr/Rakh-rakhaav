@@ -5996,3 +5996,108 @@ textarea.form-input:focus,
   border: none !important;
   box-shadow: none !important;
 }
+
+/* regression fixes + fully light surfaces */
+.reports-shell .hero-panel,
+.reports-shell .reports-hero,
+.product-shell .hero-panel,
+.product-shell .product-hero,
+.sales-shell .hero-panel,
+.sales-shell .sales-hero,
+.purchases-shell .hero-panel,
+.purchases-shell .purchases-hero,
+.dashboard-shell .hero-panel,
+.dashboard-shell .dashboard-hero,
+.gst-shell .hero-panel,
+.ledger-shell .hero-panel,
+.profile-shell .hero-panel {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.reports-shell .page-title,
+.reports-shell .hero-panel .page-title,
+.reports-shell .kicker,
+.reports-shell .hero-panel .kicker,
+.reports-shell .hero-panel div[style*='color: #5b6b82'] {
+  color: #0f172a !important;
+}
+
+.reports-shell .kicker,
+.product-shell .kicker,
+.sales-shell .kicker,
+.purchases-shell .kicker,
+.dashboard-shell .kicker,
+.gst-shell .kicker,
+.ledger-shell .kicker,
+.profile-shell .kicker {
+  background: #eef2ff !important;
+  border: 1px solid rgba(79, 70, 229, 0.14) !important;
+  color: #4f46e5 !important;
+}
+
+.page-shell,
+.app-shell-root,
+body {
+  background: #f8fafc !important;
+}
+
+.page-toolbar,
+.compact-page-toolbar,
+.toolbar-card,
+.table-container,
+.metric-card,
+.ui-stat-card,
+.card,
+.ui-card,
+.hero-panel,
+.product-shell .card,
+.sales-shell .card,
+.purchases-shell .card,
+.dashboard-shell .card {
+  background: #ffffff !important;
+}
+
+.product-shell .card,
+.product-shell .table-container td,
+.sales-shell .card,
+.sales-shell .table-container td,
+.purchases-shell .card,
+.purchases-shell .table-container td,
+.reports-shell .card,
+.reports-shell .table-container td,
+.gst-shell .card,
+.gst-shell .table-container td {
+  color: #0f172a !important;
+}
+
+.product-shell .card div[style*='color: #9ca3af'],
+.sales-shell .card div[style*='color: #9ca3af'],
+.purchases-shell .card div[style*='color: #9ca3af'],
+.reports-shell .card div[style*='color: #9ca3af'] {
+  color: #64748b !important;
+}
+
+.form-input,
+select.form-input,
+textarea.form-input,
+option,
+optgroup {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+select.form-input {
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+.gst-shell select.form-input,
+.sales-shell select.form-input,
+.purchases-shell select.form-input,
+.product-shell select.form-input,
+.reports-shell select.form-input {
+  color: #0f172a !important;
+  background: #f8fafc !important;
+}

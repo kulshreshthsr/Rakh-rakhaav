@@ -536,7 +536,7 @@ export default function ProductsPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit</label>
-                  <input className="form-input" placeholder="kg, pcs, box, litre..." value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+                  <input className="form-input" placeholder="kg, pcs, box, litre..." value={form.unit || 'pcs'} onChange={e => setForm({ ...form, unit: e.target.value })} />
                 </div>
               </div>
 
