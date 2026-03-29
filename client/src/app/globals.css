@@ -5487,8 +5487,8 @@ thead {
 .brand-title-hindi {
   font-family: 'Sora', 'Noto Sans Devanagari', sans-serif !important;
   font-weight: 800 !important;
-  letter-spacing: 0.02em !important;
-  font-size: clamp(22px, 2.3vw, 30px) !important;
+  letter-spacing: 0.01em !important;
+  font-size: clamp(24px, 2.4vw, 31px) !important;
   line-height: 1.05 !important;
   color: #ffffff !important;
   text-shadow: 0 8px 24px rgba(15, 23, 42, 0.28);
@@ -5506,10 +5506,64 @@ thead {
 
 .mobile-topbar-actions {
   gap: 8px !important;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 .top-upgrade-chip {
   margin-left: 2px;
+}
+
+@media (max-width: 900px) {
+  .mobile-topbar {
+    padding: 10px 14px !important;
+  }
+
+  .mobile-topbar-brand {
+    gap: 10px !important;
+    align-items: center;
+  }
+
+  .mobile-topbar-brand > div {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .mobile-brand-title.brand-title-hindi {
+    font-size: 22px !important;
+    line-height: 1 !important;
+    letter-spacing: 0.01em !important;
+    white-space: nowrap;
+    overflow: visible;
+  }
+
+  .mobile-brand-subtitle {
+    display: none !important;
+  }
+
+  .mobile-user-chip {
+    min-height: 44px !important;
+    padding: 6px 10px !important;
+    gap: 8px !important;
+  }
+
+  .mobile-user-chip span {
+    max-width: 44px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-upgrade-chip {
+    min-height: 44px !important;
+    padding: 6px 12px !important;
+    gap: 6px !important;
+    margin-left: 0;
+  }
+
+  .top-upgrade-chip svg {
+    flex-shrink: 0;
+  }
 }
 
 .trust-auth-card-wrap {
