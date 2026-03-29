@@ -523,12 +523,12 @@ function LayoutInner({ children }) {
           flex-direction: column;
           gap: 14px;
           background:
-            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.24), transparent 28%),
-            radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.16), transparent 28%),
-            radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.16), transparent 32%),
-            linear-gradient(180deg, rgba(4, 11, 21, 0.995), rgba(12, 28, 49, 0.985) 44%, rgba(5, 17, 31, 1));
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 36px 90px rgba(2, 8, 23, 0.34);
+            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.08), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.06), transparent 28%),
+            radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.08), transparent 32%),
+            #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
         }
 
         .sidebar-panel::before {
@@ -585,11 +585,11 @@ function LayoutInner({ children }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, rgba(4, 11, 21, 0.98), rgba(29, 78, 216, 0.86), rgba(13, 148, 136, 0.74), rgba(245, 158, 11, 0.72));
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          box-shadow: 0 22px 48px rgba(8, 32, 50, 0.34);
+          background: #eef2ff;
+          border: 1px solid #c7d2fe;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
           overflow: hidden;
-          color: white;
+          color: #4f46e5;
           position: relative;
         }
 
@@ -944,14 +944,14 @@ function LayoutInner({ children }) {
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          background: rgba(4, 11, 21, 0.84);
+          background: #ffffff;
           backdrop-filter: blur(18px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid #e2e8f0;
         }
 
         .premium-topbar.is-scrolled {
-          background: rgba(4, 11, 21, 0.96);
-          box-shadow: 0 18px 40px rgba(2, 8, 23, 0.26);
+          background: #ffffff;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
         }
 
         .mobile-topbar-brand,
@@ -968,28 +968,28 @@ function LayoutInner({ children }) {
         .mobile-brand-title {
           font-size: 17px;
           font-weight: 900;
-          color: white;
+          color: #4f46e5;
           line-height: 1;
         }
 
         .mobile-brand-subtitle {
           font-size: 10px;
-          color: rgba(226, 232, 240, 0.56);
+          color: #64748b;
           margin-top: 4px;
         }
 
         .mobile-user-chip,
         .language-compact,
         .top-upgrade-chip {
-          border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.06);
-          color: white;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          color: #0f172a;
           border-radius: 999px;
           display: flex;
           align-items: center;
           gap: 8px;
           cursor: pointer;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+          box-shadow: none;
         }
 
         .mobile-user-chip {
@@ -1014,13 +1014,14 @@ function LayoutInner({ children }) {
           text-transform: uppercase;
           text-decoration: none;
           flex-shrink: 0;
-          box-shadow: 0 20px 42px rgba(8, 32, 50, 0.32);
-          background: linear-gradient(135deg, rgba(4,11,21,0.98), rgba(29,78,216,0.84), rgba(13,148,136,0.76), rgba(245,158,11,0.84));
-          border-color: rgba(255,255,255,0.18);
+          box-shadow: none;
+          background: transparent;
+          border-color: #4f46e5;
+          color: #4f46e5;
         }
 
         .top-upgrade-chip.is-manage {
-          background: rgba(255,255,255,0.08);
+          background: transparent;
           box-shadow: none;
         }
 
@@ -1533,14 +1534,14 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .premium-topbar {
-          background: #0f172a !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-          box-shadow: 0 18px 40px rgba(2, 8, 23, 0.22) !important;
+          background: #ffffff !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          box-shadow: none !important;
         }
 
         .app-shell-root .premium-topbar.is-scrolled {
-          background: #0f172a !important;
-          box-shadow: 0 18px 40px rgba(2, 8, 23, 0.28) !important;
+          background: #ffffff !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
         }
 
         .app-shell-root .mobile-topbar-brand {
@@ -1597,7 +1598,11 @@ function LayoutInner({ children }) {
         .app-shell-root .mobile-brand-title,
         .app-shell-root .brand-title,
         .app-shell-root .brand-title.brand-title-hindi,
-        .app-shell-root .mobile-brand-title.brand-title-hindi,
+        .app-shell-root .mobile-brand-title.brand-title-hindi {
+          color: #4f46e5 !important;
+          text-shadow: none !important;
+        }
+
         .app-shell-root .mobile-user-chip,
         .app-shell-root .sidebar-user-name,
         .app-shell-root .nav-label {
@@ -1622,6 +1627,12 @@ function LayoutInner({ children }) {
         .app-shell-root .mobile-avatar {
           width: 32px !important;
           height: 32px !important;
+        }
+
+        .app-shell-root .brand-title.brand-title-hindi,
+        .app-shell-root .mobile-brand-title.brand-title-hindi {
+          font-size: 20px !important;
+          font-weight: 700 !important;
         }
 
         .app-shell-root .top-upgrade-chip,

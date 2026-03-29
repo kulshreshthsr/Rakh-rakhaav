@@ -669,8 +669,8 @@ textarea::placeholder {
   z-index: 80;
   border-radius: 999px;
   padding: 10px 16px;
-  background: rgba(15, 23, 42, 0.94);
-  color: white;
+  background: #ffffff;
+  color: #0f172a;
   font-size: 13px;
   font-weight: 700;
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
@@ -680,14 +680,14 @@ textarea::placeholder {
   position: relative;
   overflow: hidden;
   border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid #e2e8f0;
   background:
-    radial-gradient(circle at 84% 12%, rgba(245, 158, 11, 0.32), transparent 18%),
-    radial-gradient(circle at 68% 0%, rgba(45, 212, 191, 0.24), transparent 24%),
-    radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.18), transparent 26%),
-    linear-gradient(135deg, rgba(4, 11, 21, 0.99), rgba(12, 28, 49, 0.99) 48%, rgba(16, 63, 88, 0.98), rgba(17, 36, 60, 0.98));
-  box-shadow: 0 42px 110px rgba(7, 17, 31, 0.34);
-  color: #fff;
+    radial-gradient(circle at 84% 12%, rgba(79, 70, 229, 0.08), transparent 18%),
+    radial-gradient(circle at 68% 0%, rgba(5, 150, 105, 0.06), transparent 24%),
+    radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.06), transparent 26%),
+    #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  color: #0f172a;
   padding: 26px;
 }
 
@@ -1260,10 +1260,9 @@ tbody tr:hover td {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(4, 11, 21, 0.66), rgba(8, 21, 40, 0.78));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5356,8 +5355,8 @@ body {
 .app-shell-root .premium-topbar,
 .mobile-bottom-nav-card,
 .app-shell-root .mobile-bottom-nav-card {
-  background: #0f172a !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
 .top-upgrade-chip,
@@ -5470,8 +5469,8 @@ thead {
 
 .trust-auth-showcase {
   min-height: 45vh;
-  background: #0f172a !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
   border-radius: 0 !important;
   padding: 28px 22px !important;
   justify-content: space-between;
@@ -5481,7 +5480,7 @@ thead {
 .trust-auth-showcase .trust-auth-brand-subtitle,
 .trust-auth-showcase .trust-auth-copy h1,
 .trust-auth-showcase .trust-auth-copy p {
-  color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 .brand-title-hindi {
@@ -5698,7 +5697,7 @@ thead {
   --ds-success: #10b981;
   --ds-warning: #f59e0b;
   --ds-danger: #f43f5e;
-  --ds-page: #f8fafc;
+  --ds-page: #f0f4ff;
   --ds-card: #ffffff;
   --ds-input: #f1f5f9;
   --ds-border: #e2e8f0;
@@ -5711,15 +5710,15 @@ thead {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ds-page: #0f172a;
-    --ds-card: #111827;
-    --ds-input: #1e293b;
-    --ds-border: rgba(148, 163, 184, 0.18);
-    --ds-text: #f8fafc;
-    --ds-text-muted: #cbd5e1;
+    --ds-page: #f0f4ff;
+    --ds-card: #ffffff;
+    --ds-input: #f8fafc;
+    --ds-border: #e2e8f0;
+    --ds-text: #0f172a;
+    --ds-text-muted: #64748b;
     --ds-text-soft: #94a3b8;
-    --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --ds-shadow-md: 0 8px 20px rgba(0, 0, 0, 0.32);
+    --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --ds-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -5740,7 +5739,7 @@ body {
 .app-shell-root .page-title,
 .compact-page-toolbar .page-title {
   font-family: 'Inter', 'Noto Sans Devanagari', sans-serif !important;
-  font-size: clamp(1.625rem, 4vw, 1.75rem) !important;
+  font-size: 26px !important;
   line-height: 1.15 !important;
   font-weight: 700 !important;
   color: var(--ds-text) !important;
@@ -5767,7 +5766,7 @@ body {
   font-weight: 600 !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
-  color: var(--ds-text-muted) !important;
+  color: #94a3b8 !important;
 }
 
 .metric-value,
@@ -5814,7 +5813,7 @@ body {
 
 .metric-card::after,
 .ui-stat-card::after {
-  width: 3px !important;
+  width: 4px !important;
   border-radius: 0 !important;
 }
 

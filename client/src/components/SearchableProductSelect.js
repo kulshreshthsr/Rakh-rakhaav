@@ -332,7 +332,7 @@ export default function SearchableProductSelect({
                       >
                         {isOut ? 'Out' : `${stock} left`}
                       </div>
-                      {product.price && <div style={{ fontSize: 11, color: 'var(--text-4, #94a3b8)', marginTop: 4 }}>Rs {product.price}</div>}
+                      {product.price && <div style={{ fontSize: 11, color: 'var(--text-4, #94a3b8)', marginTop: 4 }}>₹{product.price}</div>}
                     </div>
                   </button>
                 );
