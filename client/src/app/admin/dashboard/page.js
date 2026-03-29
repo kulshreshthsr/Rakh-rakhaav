@@ -352,13 +352,13 @@ export default function AdminDashboardPage() {
           align-items: flex-start;
           justify-content: space-between;
           gap: 18px;
-          background: #0f172a;
+          background: #ffffff;
         }
 
         .admin-kicker {
           font-size: 12px;
           font-weight: 800;
-          color: rgba(255,255,255,0.72);
+          color: #64748b;
           letter-spacing: 0.1em;
           text-transform: uppercase;
         }
@@ -368,13 +368,13 @@ export default function AdminDashboardPage() {
           font-size: clamp(34px, 5vw, 48px);
           line-height: 1;
           letter-spacing: -0.06em;
-          color: #ffffff;
+          color: #0f172a;
         }
 
         .admin-header p {
           margin: 0;
           max-width: 720px;
-          color: rgba(255,255,255,0.8);
+          color: #64748b;
           line-height: 1.7;
         }
 
@@ -382,9 +382,9 @@ export default function AdminDashboardPage() {
           min-height: 50px;
           padding: 0 18px;
           border-radius: 16px;
-          border: 1px solid rgba(255,255,255,0.16);
-          background: rgba(255,255,255,0.08);
-          color: #ffffff;
+          border: 1.5px solid #4f46e5;
+          background: transparent;
+          color: #4f46e5;
           font-weight: 800;
           cursor: pointer;
           white-space: nowrap;

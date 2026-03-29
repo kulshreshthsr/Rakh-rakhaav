@@ -606,15 +606,15 @@ function LayoutInner({ children }) {
           font-size: 23px;
           line-height: 1;
           font-weight: 900;
-          color: #ffffff;
+          color: #4f46e5;
           letter-spacing: -0.06em;
-          text-shadow: 0 10px 26px rgba(245, 158, 11, 0.18);
+          text-shadow: none;
         }
 
         .brand-subtitle {
           font-size: 10px;
           margin-top: 4px;
-          color: rgba(226, 232, 240, 0.56);
+          color: #64748b;
           font-weight: 700;
           letter-spacing: 0.18em;
           text-transform: uppercase;
@@ -625,9 +625,9 @@ function LayoutInner({ children }) {
           margin-top: 14px;
           border-radius: 20px;
           padding: 14px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.035));
-          border: 1px solid rgba(255,255,255,0.1);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 34px rgba(2, 8, 23, 0.12);
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -1560,8 +1560,8 @@ function LayoutInner({ children }) {
         .app-shell-root .mobile-brand-title.brand-title-hindi,
         .app-shell-root .mobile-brand-title,
         .app-shell-root .brand-title {
-          color: #ffffff !important;
-          text-shadow: 0 8px 24px rgba(2, 8, 23, 0.28) !important;
+          color: #4f46e5 !important;
+          text-shadow: none !important;
         }
 
         .app-shell-root .mobile-brand-title.brand-title-hindi {
@@ -1572,7 +1572,7 @@ function LayoutInner({ children }) {
 
         .app-shell-root .brand-subtitle,
         .app-shell-root .mobile-brand-subtitle {
-          color: rgba(226, 232, 240, 0.72) !important;
+          color: #64748b !important;
         }
 
         .app-shell-root .mobile-brand-subtitle {
@@ -1581,7 +1581,7 @@ function LayoutInner({ children }) {
 
         .app-shell-root .mobile-user-chip,
         .app-shell-root .top-upgrade-chip {
-          color: #ffffff !important;
+          color: #0f172a !important;
         }
 
         .app-shell-root {
