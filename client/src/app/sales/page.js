@@ -1120,7 +1120,7 @@ export default function SalesPage() {
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
-        .sales-shell .sales-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .sales-shell .sales-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
         .sales-shell .card[style*='borderLeft'] { background: #ffffff !important; }
         .fast-billing-toolbar {
           display: flex;

@@ -813,7 +813,7 @@ export default function PurchasesPage() {
       )}
 
       <style>{`
-        .purchases-shell .purchases-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .purchases-shell .purchases-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
         .purchases-shell .card[style*='borderLeft'] { background: #ffffff !important; }
 
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }

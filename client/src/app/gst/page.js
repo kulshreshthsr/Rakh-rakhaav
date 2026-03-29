@@ -456,9 +456,9 @@ export default function GSTPage() {
       </div>
 
       <style>{`
-        .gst-shell .gst-hero { border: 1px solid #e5e7eb; box-shadow: none; }
+        .gst-shell .gst-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
         .gst-shell .ui-empty,
-        .gst-shell .ui-list-card { box-shadow: none; }
+        .gst-shell .ui-list-card { box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08); }
         .gst-shell .ui-list-card strong { color: #111111; }
 
         @media (max-width: 640px) {
