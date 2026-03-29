@@ -6123,3 +6123,594 @@ select.form-input {
   color: #0f172a !important;
   background: #f8fafc !important;
 }
+
+/* 2026 vibrant light theme pass */
+:root {
+  --page-bg: #f5f3ff;
+  --card-bg: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border: rgba(79, 70, 229, 0.12);
+  --accent: #4f46e5;
+  --accent-light: #eef2ff;
+  --success: #10b981;
+  --success-light: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-light: #fffbeb;
+  --danger: #f43f5e;
+  --danger-light: #fff1f2;
+  --cyan: #06b6d4;
+  --cyan-light: #ecfeff;
+  --violet: #8b5cf6;
+  --violet-light: #f5f3ff;
+}
+
+body,
+#root,
+.app-container,
+.app-shell-root,
+.page-shell {
+  background: var(--page-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+}
+
+.app-shell-root .premium-topbar,
+.app-shell-root .premium-topbar.is-scrolled {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  border-bottom: none !important;
+  box-shadow: 0 10px 28px rgba(79, 70, 229, 0.24) !important;
+}
+
+.app-shell-root .brand-title,
+.app-shell-root .brand-title.brand-title-hindi,
+.app-shell-root .mobile-brand-title,
+.app-shell-root .mobile-brand-title.brand-title-hindi,
+.app-shell-root .mobile-user-chip,
+.app-shell-root .sidebar-user-name,
+.app-shell-root .top-upgrade-chip,
+.app-shell-root .top-upgrade-chip.is-manage {
+  color: #ffffff !important;
+}
+
+.app-shell-root .brand-subtitle,
+.app-shell-root .mobile-brand-subtitle,
+.app-shell-root .sidebar-user-email,
+.app-shell-root .nav-short {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.app-shell-root .mobile-avatar,
+.app-shell-root .sidebar-avatar {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+.app-shell-root .mobile-user-chip {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.28) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.app-shell-root .top-upgrade-chip,
+.app-shell-root .top-upgrade-chip.is-manage {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.app-shell-root .mobile-bottom-nav-card {
+  background: #ffffff !important;
+  border-top: 1px solid #e0e7ff !important;
+  box-shadow: 0 -4px 20px rgba(79, 70, 229, 0.08) !important;
+}
+
+.app-shell-root .mobile-nav-link {
+  color: #94a3b8 !important;
+}
+
+.app-shell-root .mobile-nav-link.is-active {
+  color: #4f46e5 !important;
+}
+
+.app-shell-root .mobile-nav-link.is-active::before {
+  background: #4f46e5 !important;
+}
+
+.page-shell > .card:first-child,
+.reports-shell > .hero-panel:first-child {
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 20px 40px rgba(79, 70, 229, 0.18) !important;
+  overflow: hidden;
+}
+
+.dashboard-shell > .card:first-child {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+}
+
+.dashboard-shell > .card:first-child .page-subtitle,
+.dashboard-shell > .card:first-child .page-title,
+.dashboard-shell > .card:first-child div[style*='Refreshing latest data'] {
+  color: #ffffff !important;
+}
+
+.dashboard-shell > .card:first-child .page-subtitle {
+  opacity: 0.72;
+}
+
+.dashboard-shell .dashboard-period-shell .form-input {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.dashboard-shell .dashboard-period-shell select.form-input option {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+.product-shell > .card:first-child {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+}
+
+.sales-shell > .card:first-child {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+}
+
+.purchases-shell > .card:first-child {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+.gst-shell > .card:first-child {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%) !important;
+}
+
+.ledger-shell > .card:first-child {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+}
+
+.reports-shell > .hero-panel:first-child {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+}
+
+.product-shell > .card:first-child .page-title,
+.sales-shell > .card:first-child .page-title,
+.purchases-shell > .card:first-child .page-title,
+.gst-shell > .card:first-child .page-title,
+.ledger-shell > .card:first-child .page-title,
+.reports-shell > .hero-panel:first-child .page-title {
+  color: #ffffff !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+}
+
+.product-shell > .card:first-child .btn-primary,
+.sales-shell > .card:first-child .btn-primary,
+.purchases-shell > .card:first-child .btn-primary {
+  background: #ffffff !important;
+  color: inherit !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+}
+
+.product-shell > .card:first-child .btn-primary { color: #4f46e5 !important; }
+.sales-shell > .card:first-child .btn-primary { color: #10b981 !important; }
+.purchases-shell > .card:first-child .btn-primary { color: #d97706 !important; }
+
+.product-shell > .card:first-child .page-toolbar > div > div:not(.page-title),
+.sales-shell > .card:first-child .page-toolbar > div > div:not(.page-title),
+.purchases-shell > .card:first-child .page-toolbar > div > div:not(.page-title),
+.gst-shell > .card:first-child .page-subtitle,
+.reports-shell > .hero-panel:first-child .kicker,
+.reports-shell > .hero-panel:first-child div[style*='font-size: 13px'],
+.dashboard-shell > .card:first-child .page-subtitle {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.reports-shell .filter-pill {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.reports-shell .filter-pill.is-active {
+  background: #ffffff !important;
+  color: #6d28d9 !important;
+}
+
+.gst-shell > .card:first-child .form-input {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+.gst-shell > .card:first-child select.form-input option {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+.ui-stat-card,
+.metric-card {
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.08) !important;
+}
+
+.ui-stat-card {
+  background: #ffffff !important;
+}
+
+.dashboard-shell .ui-stat-card:nth-child(1) {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+  border-color: #6ee7b7 !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.dashboard-shell .ui-stat-card:nth-child(2) {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+  border-color: #a5b4fc !important;
+  border-left: 4px solid #4f46e5 !important;
+}
+
+.dashboard-shell .ui-stat-card:nth-child(3) {
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6) !important;
+  border-color: #fca5a5 !important;
+  border-left: 4px solid #f43f5e !important;
+}
+
+.dashboard-shell .ui-stat-card:nth-child(4) {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+  border-color: #fcd34d !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+.dashboard-shell .ui-stat-card:nth-child(1) .ui-stat-label,
+.dashboard-shell .ui-stat-card:nth-child(1) .ui-stat-note { color: #065f46 !important; }
+.dashboard-shell .ui-stat-card:nth-child(2) .ui-stat-label,
+.dashboard-shell .ui-stat-card:nth-child(2) .ui-stat-note { color: #3730a3 !important; }
+.dashboard-shell .ui-stat-card:nth-child(3) .ui-stat-label,
+.dashboard-shell .ui-stat-card:nth-child(3) .ui-stat-note { color: #9f1239 !important; }
+.dashboard-shell .ui-stat-card:nth-child(4) .ui-stat-label,
+.dashboard-shell .ui-stat-card:nth-child(4) .ui-stat-note { color: #92400e !important; }
+
+.dashboard-shell .ui-stat-card:nth-child(1) .ui-stat-value { color: #059669 !important; }
+.dashboard-shell .ui-stat-card:nth-child(2) .ui-stat-value { color: #4f46e5 !important; }
+.dashboard-shell .ui-stat-card:nth-child(3) .ui-stat-value { color: #f43f5e !important; }
+.dashboard-shell .ui-stat-card:nth-child(4) .ui-stat-value { color: #d97706 !important; }
+
+.sales-shell .metric-card:nth-child(1) {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.sales-shell .metric-card:nth-child(2) {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+.sales-shell .metric-card:nth-child(3) {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+  border-left: 4px solid #4f46e5 !important;
+}
+
+.purchases-shell .metric-card:nth-child(1) {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+.purchases-shell .metric-card:nth-child(2) {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.purchases-shell .metric-card:nth-child(3) {
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6) !important;
+  border-left: 4px solid #f43f5e !important;
+}
+
+.product-shell .metric-card:nth-child(1) {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+  border-left: 4px solid #4f46e5 !important;
+}
+
+.product-shell .metric-card:nth-child(2) {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+.product-shell .metric-card:nth-child(3) {
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6) !important;
+  border-left: 4px solid #f43f5e !important;
+}
+
+.product-shell .metric-card:nth-child(4) {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.ledger-shell .metric-card:nth-child(1) {
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6) !important;
+  border-left: 4px solid #f43f5e !important;
+}
+
+.ledger-shell .metric-card:nth-child(2) {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+.dashboard-section-card,
+.product-shell .toolbar-card,
+.reports-shell .ui-card,
+.gst-shell .ui-card,
+.card,
+.hero-panel {
+  border-radius: 20px !important;
+  border: 1.5px solid #e0e7ff !important;
+}
+
+.dashboard-shell .dashboard-section-card {
+  background: #ffffff !important;
+}
+
+.dashboard-shell .dashboard-section-card:nth-of-type(3) {
+  border-top: 4px solid #4f46e5 !important;
+}
+
+.dashboard-shell .dashboard-breakdown-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+}
+
+.dashboard-shell .dashboard-progress-track {
+  background: #eef2ff !important;
+  border: none !important;
+  height: 6px !important;
+}
+
+.dashboard-shell .dashboard-progress-fill {
+  background: #4f46e5 !important;
+}
+
+.dashboard-shell .dashboard-quick-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+}
+
+.dashboard-shell .quick-actions-fade {
+  background: linear-gradient(90deg, rgba(245, 243, 255, 0), #f5f3ff 88%) !important;
+}
+
+.dashboard-shell .dashboard-top-card {
+  background: #ffffff !important;
+  border: 1.5px solid #e0e7ff !important;
+}
+
+.product-shell .toolbar-card,
+.product-shell .table-container,
+.sales-shell .table-container,
+.purchases-shell .table-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+}
+
+.product-shell .toolbar-card .form-input {
+  background: #f5f3ff !important;
+  border: 1.5px solid #c7d2fe !important;
+}
+
+.product-shell .table-container tbody tr,
+.sales-shell .table-container tbody tr,
+.purchases-shell .table-container tbody tr {
+  background: #ffffff !important;
+}
+
+.product-shell .table-container tbody td,
+.sales-shell .table-container tbody td,
+.purchases-shell .table-container tbody td {
+  color: #0f172a !important;
+}
+
+.product-shell .show-xs > .card,
+.sales-shell .show-xs > .card,
+.purchases-shell .show-xs > .card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+}
+
+.product-shell .show-xs > .card {
+  border-left: 4px solid #4f46e5 !important;
+}
+
+.sales-shell .table-container tbody tr td:first-child,
+.sales-shell .show-xs > .card .flow-choice-grid + button,
+.sales-shell .show-xs > .card div[style*='Buyer:'],
+.sales-shell .table-container tbody tr td div[style*='Buyer:'] {
+  color: inherit !important;
+}
+
+.sales-shell .show-xs > .card { border-left-width: 4px !important; }
+.purchases-shell .show-xs > .card { border-left-width: 4px !important; }
+
+.sales-shell .table-container tbody td:nth-child(1),
+.sales-shell .show-xs > .card div[style*='invoice_number'],
+.sales-shell .show-xs > .card div[style*='color: #6366f1'],
+.sales-shell .table-container tbody td[style*='#6366f1'] {
+  color: #10b981 !important;
+}
+
+.purchases-shell .table-container tbody td[style*='#f59e0b'],
+.purchases-shell .show-xs > .card div[style*='#f59e0b'] {
+  color: #f59e0b !important;
+}
+
+.sales-shell .table-container tbody tr,
+.sales-shell .show-xs > .card {
+  border-left: 4px solid #10b981 !important;
+}
+
+.sales-shell .show-xs > .card[style*='#ef4444'],
+.sales-shell .table-container tbody tr[style*='#ef4444'] {
+  border-left-color: #f43f5e !important;
+}
+
+.purchases-shell .show-xs > .card[style*='#ef4444'] {
+  border-left-color: #f43f5e !important;
+}
+
+.product-shell .table-container tbody td:nth-child(2),
+.product-shell .show-xs > .card div div[style*='COST'] + div {
+  color: #475569 !important;
+}
+
+.product-shell .table-container tbody td:nth-child(3),
+.product-shell .show-xs > .card div div[style*='PRICE'] + div {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+.action-soft.stock,
+.action-soft.history,
+.action-soft.edit,
+.action-soft.print {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #374151 !important;
+  border-radius: 10px !important;
+}
+
+.action-soft.print {
+  background: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #4f46e5 !important;
+}
+
+.action-soft.whatsapp {
+  background: #25d366 !important;
+  border-color: #25d366 !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+}
+
+.action-soft.delete {
+  background: #fff1f2 !important;
+  border: 1px solid #fca5a5 !important;
+  color: #f43f5e !important;
+}
+
+.reports-shell .ui-card,
+.gst-shell .ui-card {
+  background: #ffffff !important;
+}
+
+.reports-shell .ui-table thead th,
+.gst-shell .ui-table thead th,
+.ledger-shell .ui-table thead th {
+  background: #f5f3ff !important;
+  color: #6d28d9 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+}
+
+.reports-shell .ui-table tbody tr:nth-child(even) td {
+  background: #fafafa !important;
+}
+
+.gstr3b-total-row td {
+  background: #fff1f2 !important;
+  color: #f43f5e !important;
+  font-weight: 700 !important;
+}
+
+.gst-shell .ui-stat-card:nth-child(1) {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.gst-shell .ui-stat-card:nth-child(2) {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+  border-left: 4px solid #4f46e5 !important;
+}
+
+.gst-shell .ui-stat-card:nth-child(3) {
+  background: linear-gradient(135deg, #fff1f2, #ffe4e6) !important;
+  border-left: 4px solid #f43f5e !important;
+}
+
+.modal-overlay {
+  background: rgba(79, 70, 229, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.modal,
+.flow-modal {
+  background: #ffffff !important;
+  border-top: 5px solid #4f46e5 !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+.modal h3,
+.flow-modal-header h3 {
+  color: #0f172a !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+}
+
+.flow-section-kicker,
+.flow-section-kicker span:first-child {
+  color: #4f46e5 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+}
+
+.flow-section-kicker {
+  border-top: 1px solid #e2e8f0 !important;
+  padding-top: 10px !important;
+}
+
+.flow-section-kicker span + span {
+  display: none !important;
+}
+
+.form-input,
+select.form-input,
+textarea.form-input {
+  background: #f5f3ff !important;
+  border: 1.5px solid #c7d2fe !important;
+  border-radius: 12px !important;
+  color: #0f172a !important;
+  placeholder-color: #94a3b8 !important;
+}
+
+.form-input:focus,
+select.form-input:focus,
+textarea.form-input:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+}
+
+.btn-primary,
+.ui-action-primary,
+.flow-modal .btn-primary {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+  color: #ffffff !important;
+  border-radius: 14px !important;
+  font-weight: 700 !important;
+  min-height: 52px !important;
+}
