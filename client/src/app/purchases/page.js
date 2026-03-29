@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
-import { useAppLocale } from '../../components/AppLocale';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
@@ -79,7 +78,6 @@ const getStateFromGstin = (gstin) => {
 };
 
 export default function PurchasesPage() {
-  const { locale } = useAppLocale();
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({});
@@ -378,8 +376,8 @@ export default function PurchasesPage() {
   return (
     <Layout>
       <div className="page-shell purchases-shell">
-        <section className="hero-panel purchases-hero">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+        <section className="card">
+          <div className="page-toolbar">
             <div>
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Purchases</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
@@ -393,17 +391,17 @@ export default function PurchasesPage() {
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Total Spend</div>
-            <div className="metric-value" style={{ color: '#b45309' }}>Rs {(summary.totalPurchaseValue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#b45309' }}>₹{(summary.totalPurchaseValue || 0).toFixed(2)}</div>
             <div className="metric-note">Purchase outflow</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Input GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>Rs {(summary.totalITC || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{(summary.totalITC || 0).toFixed(2)}</div>
             <div className="metric-note">ITC available</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Balance Due</div>
-            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#dc2626' : '#0f766e' }}>Rs {(summary.totalDue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#dc2626' : '#0f766e' }}>₹{(summary.totalDue || 0).toFixed(2)}</div>
             <div className="metric-note">Supplier credit outstanding</div>
           </div>
         </section>
@@ -463,17 +461,17 @@ export default function PurchasesPage() {
                     <td style={{ fontSize: 12, color: '#6b7280' }}>
                       {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
                     </td>
-                    <td>Rs {(p.taxable_amount || 0).toFixed(2)}</td>
+                    <td>₹{(p.taxable_amount || 0).toFixed(2)}</td>
                     <td>
                       {p.total_gst > 0
-                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>Rs {p.total_gst.toFixed(2)}</span>
+                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
                         : <span style={{ color: '#9ca3af', fontSize: 12 }}>â€”</span>}
                     </td>
-                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>Rs {(p.total_amount || 0).toFixed(2)}</td>
-                    <td style={{ color: '#10b981', fontWeight: 600 }}>Rs {(p.amount_paid || 0).toFixed(2)}</td>
+                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
+                    <td style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
                     <td>
                       {(p.balance_due || 0) > 0
-                        ? <span style={{ color: '#ef4444', fontWeight: 700 }}>Rs {p.balance_due.toFixed(2)}</span>
+                        ? <span style={{ color: '#ef4444', fontWeight: 700 }}>₹{p.balance_due.toFixed(2)}</span>
                         : <span style={{ color: '#10b981' }}>Paid</span>}
                     </td>
                     <td><PayBadge type={p.payment_type} /></td>
@@ -515,18 +513,18 @@ export default function PurchasesPage() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 16 }}>
-                      Rs {(p.total_amount || 0).toFixed(2)}
+                      ₹{(p.total_amount || 0).toFixed(2)}
                     </div>
                     <PayBadge type={p.payment_type} />
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>Rs {(p.taxable_amount || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6366f1' }}>Rs {(p.total_gst || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>Rs {(p.amount_paid || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{(p.taxable_amount || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6366f1' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>₹{(p.amount_paid || 0).toFixed(2)}</div></div>
                   {(p.balance_due || 0) > 0 && (
-                    <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>Rs {p.balance_due.toFixed(2)}</div></div>
+                    <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>₹{p.balance_due.toFixed(2)}</div></div>
                   )}
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{formatFullDateTime(p.createdAt)}</div></div>
                 </div>
@@ -622,17 +620,17 @@ export default function PurchasesPage() {
 
                       {rowGST && (
                         <div style={{ fontSize: 12, color: '#6b7280', background: rowGST.gst_rate > 0 ? '#fffbeb' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                          <span>Taxable: <strong>Rs {rowGST.taxable.toFixed(2)}</strong></span>
+                          <span>Taxable: <strong>₹{rowGST.taxable.toFixed(2)}</strong></span>
                           {rowGST.gst_rate > 0 ? (
                             <span>
                               {rowGST.isIGST
-                                ? `IGST ${rowGST.gst_rate}%: Rs ${rowGST.gst.toFixed(2)}`
-                                : `CGST ${(rowGST.gst_rate / 2).toFixed(1)}% + SGST ${(rowGST.gst_rate / 2).toFixed(1)}%: Rs ${rowGST.gst.toFixed(2)}`}
+                                ? `IGST ${rowGST.gst_rate}%: ₹${rowGST.gst.toFixed(2)}`
+                                : `CGST ${(rowGST.gst_rate / 2).toFixed(1)}% + SGST ${(rowGST.gst_rate / 2).toFixed(1)}%: ₹${rowGST.gst.toFixed(2)}`}
                             </span>
                           ) : (
                             <span>No GST</span>
                           )}
-                          <span>Total: <strong>Rs {rowGST.total.toFixed(2)}</strong></span>
+                          <span>Total: <strong>₹{rowGST.total.toFixed(2)}</strong></span>
                         </div>
                       )}
                     </div>
@@ -651,13 +649,13 @@ export default function PurchasesPage() {
                     <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
                     <div style={{ display: 'grid', gap: 4 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Subtotal (Taxable):</span><strong>Rs {billTotals.taxable.toFixed(2)}</strong>
+                        <span>Subtotal (Taxable):</span><strong>₹{billTotals.taxable.toFixed(2)}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>Rs {billTotals.gst.toFixed(2)}</strong>
+                        <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>₹{billTotals.gst.toFixed(2)}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Grand Total:</span><span>Rs {billTotals.total.toFixed(2)}</span>
+                        <span>Grand Total:</span><span>₹{billTotals.total.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -671,16 +669,16 @@ export default function PurchasesPage() {
                   <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Subtotal (Taxable):</span><strong>Rs {billTotals.taxable.toFixed(2)}</strong>
+                      <span>Subtotal (Taxable):</span><strong>₹{billTotals.taxable.toFixed(2)}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>Rs {billTotals.gst.toFixed(2)}</strong>
+                      <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>₹{billTotals.gst.toFixed(2)}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Grand Total:</span><span>Rs {billTotals.total.toFixed(2)}</span>
+                      <span>Grand Total:</span><span>₹{billTotals.total.toFixed(2)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}Rs {roundedBill.roundOff.toFixed(2)}</strong>
+                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}₹{roundedBill.roundOff.toFixed(2)}</strong>
                     </div>
                     {form.supplier_state && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
@@ -689,11 +687,11 @@ export default function PurchasesPage() {
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
-                      <span>Rounded Total:</span><span>Rs {roundedBill.roundedTotal.toFixed(2)}</span>
+                      <span>Rounded Total:</span><span>₹{roundedBill.roundedTotal.toFixed(2)}</span>
                     </div>
                     {form.payment_type === 'credit' && amountPaidNum > 0 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
-                        <span>Balance Due:</span><span>Rs {balanceDue.toFixed(2)}</span>
+                        <span>Balance Due:</span><span>₹{balanceDue.toFixed(2)}</span>
                       </div>
                     )}
                   </div>
@@ -733,11 +731,11 @@ export default function PurchasesPage() {
                   <div style={{ marginTop: 10 }}>
                     <label className="form-label">Advance Payment (optional)</label>
                     <input className="form-input" type="number" step="0.01" min="0"
-                      placeholder={`Max Rs ${billTotals.total.toFixed(2)}`}
+                      placeholder={`Max ₹${billTotals.total.toFixed(2)}`}
                       value={form.amount_paid}
                       onChange={e => updateForm({ amount_paid: e.target.value })} />
                     <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
-                      Balance Rs {balanceDue.toFixed(2)} will be added to the supplier ledger automatically.
+                      Balance ₹{balanceDue.toFixed(2)} will be added to the supplier ledger automatically.
                     </div>
                   </div>
                 )}

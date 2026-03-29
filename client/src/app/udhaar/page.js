@@ -81,7 +81,7 @@ export default function UdhaarPage() {
     const msg = [
       `Namaste ${customer.name || 'Customer'} ji,`,
       '',
-      `Aapke account me abhi Rs ${fmt(customer.totalUdhaar)} baki hai.`,
+      `Aapke account me abhi ₹${fmt(customer.totalUdhaar)} baki hai.`,
       'Kripya suvidha anusar payment kar dein.',
       '',
       'Dhanyavaad',
@@ -141,7 +141,7 @@ export default function UdhaarPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setSuccess(`Rs ${settleAmount} payment recorded`);
+        setSuccess(`₹${settleAmount} payment recorded`);
         setShowSettle(false);
         setSettleAmount('');
         setSettleNote('');
@@ -176,20 +176,22 @@ export default function UdhaarPage() {
   return (
     <Layout>
       <div className="page-shell ledger-shell">
-        <section className="hero-panel ledger-hero">
-          <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
+        <section className="card">
+          <div className="page-toolbar">
+            <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
+          </div>
         </section>
 
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           <StatCard
             label="Customer Due"
-            value={`Rs ${totalCustomerUdhaar.toFixed(0)}`}
+            value={`₹${totalCustomerUdhaar.toFixed(0)}`}
             note={`${customers.filter((item) => item.totalUdhaar > 0).length} pending • ${customers.length} total`}
             tone="danger"
           />
           <StatCard
             label="Supplier Due"
-            value={`Rs ${totalSupplierUdhaar.toFixed(0)}`}
+            value={`₹${totalSupplierUdhaar.toFixed(0)}`}
             note={`${suppliers.filter((item) => item.totalUdhaar > 0).length} pending • ${suppliers.length} total`}
             tone="warning"
           />
@@ -251,7 +253,7 @@ export default function UdhaarPage() {
                         ) : null}
                         <div>
                           <div className={item.totalUdhaar > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'} style={{ fontSize: 18 }}>
-                            Rs {fmt(item.totalUdhaar)}
+                            ₹{fmt(item.totalUdhaar)}
                           </div>
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>
                             {item.totalUdhaar > 0 ? (isCustomer ? 'Amount to collect' : 'Amount to pay') : 'Settled'}
@@ -273,7 +275,7 @@ export default function UdhaarPage() {
                               </ActionButton>
                             ) : null}
                             {selected.totalUdhaar > 0 ? (
-                              <ActionButton variant={isCustomer ? 'primary' : 'warning'} onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
+                              <ActionButton variant="primary" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
                                 {isCustomer ? 'Receive Payment' : 'Make Payment'}
                               </ActionButton>
                             ) : null}
@@ -286,15 +288,15 @@ export default function UdhaarPage() {
                         <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 16 }}>
                           {isCustomer ? (
                             <>
-                              <BalanceTile label="Total Sales" value={`Rs ${fmt(selected.totalSales)}`} />
-                              <BalanceTile label="Received" value={`Rs ${fmt(selected.totalPaid)}`} tone="success" />
-                              <BalanceTile label="Due" value={`Rs ${fmt(selected.totalUdhaar)}`} tone={selected.totalUdhaar > 0 ? 'danger' : 'success'} />
+                              <BalanceTile label="Total Sales" value={`₹${fmt(selected.totalSales)}`} />
+                              <BalanceTile label="Received" value={`₹${fmt(selected.totalPaid)}`} tone="success" />
+                              <BalanceTile label="Due" value={`₹${fmt(selected.totalUdhaar)}`} tone={selected.totalUdhaar > 0 ? 'danger' : 'success'} />
                             </>
                           ) : (
                             <>
-                              <BalanceTile label="Purchased" value={`Rs ${fmt(selected.totalPurchased)}`} />
-                              <BalanceTile label="Paid" value={`Rs ${fmt(selected.totalPaid)}`} tone="success" />
-                              <BalanceTile label="Due" value={`Rs ${fmt(selected.totalUdhaar)}`} tone={selected.totalUdhaar > 0 ? 'warning' : 'success'} />
+                              <BalanceTile label="Purchased" value={`₹${fmt(selected.totalPurchased)}`} />
+                              <BalanceTile label="Paid" value={`₹${fmt(selected.totalPaid)}`} tone="success" />
+                              <BalanceTile label="Due" value={`₹${fmt(selected.totalUdhaar)}`} tone={selected.totalUdhaar > 0 ? 'warning' : 'success'} />
                             </>
                           )}
                         </div>
@@ -305,11 +307,11 @@ export default function UdhaarPage() {
                           <div className="ui-empty">No entries found</div>
                         ) : (
                           <div className="ui-table-wrap">
-                            <table className="ui-table">
+                            <table className="ui-table compact-ledger-table">
                               <thead>
                                 <tr>
-                                  <th>Date</th>
-                                  <th>Note</th>
+                                  <th className="sticky-col">Date</th>
+                                  <th className="sticky-col-2">Note</th>
                                   <th style={{ textAlign: 'right' }}>Debit (+)</th>
                                   <th style={{ textAlign: 'right' }}>Credit (-)</th>
                                   <th style={{ textAlign: 'right' }}>Balance</th>
@@ -319,16 +321,16 @@ export default function UdhaarPage() {
                                 {[...ledger].reverse().map((entry, index) => {
                                   const isDebit = entry.type === 'debit' || entry.type === 'diya';
                                   return (
-                                    <tr key={index}>
-                                      <td>{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</td>
-                                      <td>
+                                    <tr key={index} className={isDebit ? 'ledger-debit-row' : 'ledger-credit-row'}>
+                                      <td className="sticky-col">{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</td>
+                                      <td className="sticky-col-2">
                                         <div>{entry.note || (isDebit ? (isCustomer ? 'Credit Sale' : 'Credit Purchase') : 'Payment')}</div>
                                         {entry.reference_id ? <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 4 }}>{entry.reference_id}</div> : null}
                                       </td>
-                                      <td style={{ textAlign: 'right' }} className="ui-value-danger">{isDebit ? `Rs ${fmt(entry.amount)}` : '-'}</td>
-                                      <td style={{ textAlign: 'right' }} className="ui-value-money">{!isDebit ? `Rs ${fmt(entry.amount)}` : '-'}</td>
+                                      <td style={{ textAlign: 'right' }} className="ui-value-danger">{isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
+                                      <td style={{ textAlign: 'right' }} className="ui-value-money">{!isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
                                       <td style={{ textAlign: 'right' }} className={(entry.running_balance ?? 0) > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'}>
-                                        Rs {fmt(entry.running_balance)}
+                                        ₹{fmt(entry.running_balance)}
                                       </td>
                                     </tr>
                                   );
@@ -359,7 +361,7 @@ export default function UdhaarPage() {
               <div className="ui-data-row" style={{ marginBottom: 14 }}>
                 <div className="ui-data-row-label">Balance Due</div>
                 <div className={isCustomer ? 'ui-data-row-value ui-value-danger' : 'ui-data-row-value ui-value-warning'}>
-                  Rs {fmt(selected.totalUdhaar)}
+                  ₹{fmt(selected.totalUdhaar)}
                 </div>
               </div>
 
@@ -374,7 +376,7 @@ export default function UdhaarPage() {
                     step="0.01"
                     min="1"
                     max={selected.totalUdhaar}
-                    placeholder={`Max Rs ${fmt(selected.totalUdhaar)}`}
+                    placeholder={`Max ₹${fmt(selected.totalUdhaar)}`}
                     value={settleAmount}
                     onChange={(e) => setSettleAmount(e.target.value)}
                     required
@@ -389,7 +391,7 @@ export default function UdhaarPage() {
                           onClick={() => setSettleAmount(String(value))}
                           className="ui-badge ui-badge-neutral"
                         >
-                          {pct}% (Rs {value})
+                          {pct}% (₹{value})
                         </button>
                       );
                     })}
@@ -407,7 +409,7 @@ export default function UdhaarPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <ActionButton type="submit" variant={isCustomer ? 'primary' : 'warning'} disabled={settleLoading}>
+                  <ActionButton type="submit" variant="primary" disabled={settleLoading}>
                     {settleLoading ? 'Processing...' : 'Confirm Payment'}
                   </ActionButton>
                   <ActionButton

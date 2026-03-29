@@ -10,6 +10,14 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v2';
 
 const getToken = () => localStorage.getItem('token');
+const getBusinessName = () => {
+  try {
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    return storedUser?.shopName || storedUser?.shop_name || storedUser?.businessName || storedUser?.name || 'Your Business';
+  } catch {
+    return 'Your Business';
+  }
+};
 const getUserCacheNamespace = () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -58,14 +66,16 @@ const cancelIdle = (id) => {
 
 const DashboardSkeleton = () => (
   <div className="page-shell">
-    <section className="hero-panel" style={{ minHeight: 220 }}>
-      <div className="skeleton" style={{ height: 18, width: 140, marginBottom: 18 }} />
-      <div className="skeleton" style={{ height: 42, width: 'min(360px, 88%)', marginBottom: 12 }} />
-      <div className="skeleton" style={{ height: 14, width: 'min(420px, 92%)', marginBottom: 6 }} />
-      <div className="skeleton" style={{ height: 14, width: 'min(320px, 82%)' }} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, maxWidth: 260, marginTop: 18 }}>
-        <div className="skeleton" style={{ height: 44 }} />
-        <div className="skeleton" style={{ height: 44 }} />
+    <section className="card">
+      <div className="page-toolbar">
+        <div>
+          <div className="skeleton" style={{ height: 16, width: 110, marginBottom: 8 }} />
+          <div className="skeleton" style={{ height: 28, width: 180 }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, maxWidth: 260, width: '100%' }}>
+          <div className="skeleton" style={{ height: 44 }} />
+          <div className="skeleton" style={{ height: 44 }} />
+        </div>
       </div>
     </section>
 
@@ -82,10 +92,9 @@ const DashboardSkeleton = () => (
     <section className="card">
       <div className="skeleton" style={{ height: 16, width: 180, marginBottom: 10 }} />
       <div className="skeleton" style={{ height: 12, width: 240, marginBottom: 18 }} />
-      <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="skeleton" style={{ height: 92, borderRadius: 18 }} />
-        ))}
+      <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+        <div className="skeleton" style={{ height: 44 }} />
+        <div className="skeleton" style={{ height: 44 }} />
       </div>
     </section>
   </div>
@@ -178,14 +187,14 @@ export default function DashboardPage() {
   const revenue = stats?.totalRevenue || 0;
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
   const lowStockCount = lowStockProducts.length;
+  const businessName = getBusinessName();
 
   const statCards = [
     {
       label: 'Sales',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} invoices this month`,
-      color: '#0f766e',
-      accent: 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.04))',
+      tone: 'money',
       href: '/sales',
       icon: 'Sales',
     },
@@ -193,10 +202,7 @@ export default function DashboardPage() {
       label: 'Profit',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
-      color: profit >= 0 ? '#1d4ed8' : '#dc2626',
-      accent: profit >= 0
-        ? 'linear-gradient(135deg, rgba(29,78,216,0.16), rgba(56,189,248,0.06))'
-        : 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))',
+      tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
       icon: 'Profit',
     },
@@ -204,10 +210,7 @@ export default function DashboardPage() {
       label: 'Credit',
       value: `₹${fmt(totalCustomerUdhaar)}`,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
-      color: totalCustomerUdhaar > 0 ? '#dc2626' : '#10b981',
-      accent: totalCustomerUdhaar > 0
-        ? 'linear-gradient(135deg, rgba(220,38,38,0.14), rgba(248,113,113,0.05))'
-        : 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(110,231,183,0.06))',
+      tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
       href: '/udhaar',
       icon: 'Credit',
     },
@@ -215,10 +218,7 @@ export default function DashboardPage() {
       label: 'GST Payable',
       value: `₹${fmt(Math.abs(netGST))}`,
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
-      color: netGST >= 0 ? '#b45309' : '#0f766e',
-      accent: netGST >= 0
-        ? 'linear-gradient(135deg, rgba(180,83,9,0.16), rgba(245,158,11,0.06))'
-        : 'linear-gradient(135deg, rgba(15,118,110,0.16), rgba(45,212,191,0.06))',
+      tone: 'warning',
       href: '/gst',
       icon: 'GST',
     },
@@ -236,19 +236,14 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
-        <section className="hero-panel dashboard-hero">
-          <div className="dashboard-hero-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ maxWidth: 680, flex: 1, minWidth: 0 }}>
-              <div className="kicker" style={{ marginBottom: 12 }}>Business overview</div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Dashboard</div>
-              <div style={{ marginTop: 10, color: '#475569', fontSize: 13.5, maxWidth: 420, lineHeight: 1.55 }}>
-                Revenue, profit, credit and GST at one glance for the active month.
-              </div>
-              {refreshing && (
-                <div style={{ marginTop: 10, fontSize: 11.5, color: '#64748b' }}>
-                  Refreshing latest data...
-                </div>
-              )}
+        <section className="card">
+          <div className="page-toolbar dashboard-toolbar">
+            <div style={{ minWidth: 0 }}>
+              <div className="page-subtitle">Business overview</div>
+              <div className="page-title">{businessName}</div>
+              {refreshing ? (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
+              ) : null}
             </div>
 
             <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
@@ -281,7 +276,7 @@ export default function DashboardPage() {
             <StatCard
               key={card.label}
               className="dashboard-stat-card"
-              tone={card.color === '#0f766e' ? 'money' : card.color === '#b45309' ? 'warning' : card.color === '#dc2626' ? 'danger' : 'secondary'}
+              tone={card.tone}
               label={card.label}
               value={card.value}
               note={card.note}
@@ -339,7 +334,7 @@ export default function DashboardPage() {
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
                     height: '100%',
                     borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #22c55e, #06b6d4)' : 'linear-gradient(90deg, #ef4444, #fb7185)',
+                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #3730a3)' : 'linear-gradient(90deg, #dc2626, #f97316)',
                   }}
                 />
               </div>
@@ -385,7 +380,7 @@ export default function DashboardPage() {
             </div>
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
-          <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
+          <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
             {quickActions.map((action) => (
               <a
                 key={action.href}
@@ -394,16 +389,16 @@ export default function DashboardPage() {
                 style={{
                   textDecoration: 'none',
                   borderRadius: 18,
-                  padding: '12px 12px',
-                  minHeight: 86,
+                  padding: '14px 12px',
+                  minHeight: 94,
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
+                  <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 12, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0 }}>{action.icon}</div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                    <div style={{ fontSize: 11, color: '#475569', marginTop: 4, lineHeight: 1.45 }}>{action.sub}</div>
+                    <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
                   </div>
-                  <div className="dashboard-quick-icon" style={{ minWidth: 34, height: 34, borderRadius: 12, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.1em', flexShrink: 0 }}>{action.icon}</div>
                 </div>
               </a>
             ))}
@@ -471,11 +466,6 @@ export default function DashboardPage() {
 
       <style>{`
         .dashboard-shell { color: #111111; }
-        .dashboard-hero {
-          border: 1px solid rgba(59, 130, 246, 0.1);
-          background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(240,249,255,0.92));
-          box-shadow: 0 24px 44px rgba(15, 23, 42, 0.08);
-        }
         .dashboard-period-shell .form-input { background: #ffffff !important; color: #111111 !important; border: 1px solid #d1d5db !important; box-shadow: none; }
         .dashboard-stat-card,
         .dashboard-section-card,
@@ -509,14 +499,9 @@ export default function DashboardPage() {
         .dashboard-shell .badge-navy { background: #ffffff !important; color: #111111 !important; border-color: #d1d5db !important; }
         .dashboard-shell .btn-warning { background: linear-gradient(135deg, #ffffff, #f8fafc); color: #111111; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06); }
 
-        .top-products-row,
-        .quick-actions-row {
-          overflow-x: auto;
-        }
-
         @media (max-width: 900px) {
           .quick-actions-row {
-            grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
 
           .top-products-row {

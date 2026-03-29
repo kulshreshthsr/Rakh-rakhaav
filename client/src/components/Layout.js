@@ -495,7 +495,7 @@ function LayoutInner({ children }) {
                 <a key={item.href} href={item.href} className={`mobile-nav-link mobile-nav-tone-${item.tone} ${active ? 'is-active' : ''}`}>
                   <span className="mobile-nav-glow" />
                   <Glyph name={item.key} size={18} />
-                  <span>{item.label}</span>
+                  <span>{item.shortLabel}</span>
                 </a>
               );
             })}

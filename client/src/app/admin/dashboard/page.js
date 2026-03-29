@@ -16,7 +16,7 @@ function metricCards(stats) {
   return [
     { key: 'totalUsers', label: 'Total Users', value: stats.totalUsers || 0, tone: 'blue' },
     { key: 'activeSubscriptions', label: 'Active Subscriptions', value: stats.activeSubscriptions || 0, tone: 'green' },
-    { key: 'trialUsers', label: 'Trial Users', value: stats.trialUsers || 0, tone: 'yellow' },
+    { key: 'trialUsers', label: 'Trial Users', value: stats.trialUsers || 0, tone: 'amber' },
     { key: 'expiredUsers', label: 'Expired Users', value: stats.expiredUsers || 0, tone: 'red' },
   ];
 }
@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
           <div>
             <div className="admin-kicker">Secure Owner Console</div>
             <h1>Admin Dashboard</h1>
-            <p>Track registered shops, subscription health, expiring trials and user growth from one secure panel.</p>
+            <p>Track registered shops, subscription health, expiring trials and user growth from one focused control room.</p>
           </div>
 
           <button type="button" className="admin-logout-btn" onClick={handleLogout} disabled={loggingOut}>
@@ -182,7 +182,7 @@ export default function AdminDashboardPage() {
           <div className="admin-table-head">
             <div>
               <h2>Registered Shops</h2>
-              <p>Dynamic list with profile details, plan status, trial dates and subscription alerts.</p>
+              <p>Profile details, plan status, trial dates, and subscription alerts in one place.</p>
             </div>
             <div className="admin-table-count">{shops.length} shops</div>
           </div>
@@ -247,7 +247,7 @@ export default function AdminDashboardPage() {
                         <td>
                           <div className="admin-alert-stack">
                             {shop.alerts.expired ? <span className="admin-alert-chip alert-red">Expired</span> : null}
-                            {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-yellow">Trial ending in 3 days</span> : null}
+                            {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-amber">Trial ending in 3 days</span> : null}
                             {shop.alerts.highValueCustomer ? <span className="admin-alert-chip alert-green">High value</span> : null}
                             {!shop.alerts.expired && !shop.alerts.trialEndingSoon && !shop.alerts.highValueCustomer ? (
                               <span className="admin-alert-chip alert-neutral">Stable</span>
@@ -299,7 +299,7 @@ export default function AdminDashboardPage() {
 
                     <div className="admin-alert-stack">
                       {shop.alerts.expired ? <span className="admin-alert-chip alert-red">Expired</span> : null}
-                      {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-yellow">Trial ending in 3 days</span> : null}
+                      {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-amber">Trial ending in 3 days</span> : null}
                       {shop.alerts.highValueCustomer ? <span className="admin-alert-chip alert-green">High value</span> : null}
                       {!shop.alerts.expired && !shop.alerts.trialEndingSoon && !shop.alerts.highValueCustomer ? (
                         <span className="admin-alert-chip alert-neutral">Stable</span>
@@ -325,7 +325,7 @@ export default function AdminDashboardPage() {
       <style>{`
         .admin-page {
           min-height: 100vh;
-          background: #f3f4f6;
+          background: #f8fafc;
           padding: 24px;
         }
 
@@ -340,10 +340,10 @@ export default function AdminDashboardPage() {
         .admin-table-card,
         .admin-toolbar,
         .admin-stat-card {
-          border-radius: 24px;
-          border: 1px solid #e5e7eb;
+          border-radius: 20px;
+          border: 1px solid #e2e8f0;
           background: #ffffff;
-          box-shadow: none;
+          box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
         }
 
         .admin-header {
@@ -352,12 +352,13 @@ export default function AdminDashboardPage() {
           align-items: flex-start;
           justify-content: space-between;
           gap: 18px;
+          background: #0f172a;
         }
 
         .admin-kicker {
           font-size: 12px;
           font-weight: 800;
-          color: #111111;
+          color: rgba(255,255,255,0.72);
           letter-spacing: 0.1em;
           text-transform: uppercase;
         }
@@ -367,13 +368,13 @@ export default function AdminDashboardPage() {
           font-size: clamp(34px, 5vw, 48px);
           line-height: 1;
           letter-spacing: -0.06em;
-          color: #0f172a;
+          color: #ffffff;
         }
 
         .admin-header p {
           margin: 0;
           max-width: 720px;
-          color: #64748b;
+          color: rgba(255,255,255,0.8);
           line-height: 1.7;
         }
 
@@ -381,9 +382,9 @@ export default function AdminDashboardPage() {
           min-height: 50px;
           padding: 0 18px;
           border-radius: 16px;
-          border: 1px solid #d1d5db;
-          background: #ffffff;
-          color: #111111;
+          border: 1px solid rgba(255,255,255,0.16);
+          background: rgba(255,255,255,0.08);
+          color: #ffffff;
           font-weight: 800;
           cursor: pointer;
           white-space: nowrap;
@@ -396,28 +397,47 @@ export default function AdminDashboardPage() {
         }
 
         .admin-stat-card {
-          padding: 22px;
+          padding: 22px 22px 22px 26px;
+          position: relative;
+          overflow: hidden;
         }
 
-        .admin-stat-card.blue,
-        .admin-stat-card.green,
-        .admin-stat-card.yellow,
-        .admin-stat-card.red { background: #ffffff; }
+        .admin-stat-card::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          border-radius: 20px 0 0 20px;
+          background: #3730a3;
+        }
+
+        .admin-stat-card.blue::before { background: #3730a3; }
+        .admin-stat-card.green::before { background: #16a34a; }
+        .admin-stat-card.amber::before { background: #d97706; }
+        .admin-stat-card.red::before { background: #dc2626; }
 
         .admin-stat-label {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           color: #64748b;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
         }
 
         .admin-stat-value {
           margin-top: 10px;
-          font-size: 36px;
+          font-size: 40px;
           line-height: 1;
           font-weight: 900;
-          color: #0f172a;
+          color: #3730a3;
           letter-spacing: -0.05em;
         }
+
+        .admin-stat-card.green .admin-stat-value { color: #16a34a; }
+        .admin-stat-card.amber .admin-stat-value { color: #d97706; }
+        .admin-stat-card.red .admin-stat-value { color: #dc2626; }
 
         .admin-toolbar {
           padding: 18px;
@@ -453,6 +473,11 @@ export default function AdminDashboardPage() {
           font-size: 15px;
         }
 
+        .admin-search-box input:focus {
+          border-color: #3730a3;
+          box-shadow: 0 0 0 4px rgba(55, 48, 163, 0.12);
+        }
+
         .admin-filter-group {
           display: flex;
           gap: 8px;
@@ -463,17 +488,17 @@ export default function AdminDashboardPage() {
           min-height: 48px;
           padding: 0 16px;
           border-radius: 14px;
-          border: 1px solid #dbe4ee;
+          border: 1px solid #cbd5e1;
           background: white;
-          color: #334155;
+          color: #475569;
           font-weight: 800;
           cursor: pointer;
         }
 
         .admin-filter-group button.is-active {
-          background: linear-gradient(135deg, #2563eb, #0f766e);
+          background: #3730a3;
           color: white;
-          border-color: transparent;
+          border-color: #3730a3;
         }
 
         .admin-error-banner {
@@ -511,8 +536,8 @@ export default function AdminDashboardPage() {
         .admin-table-count {
           padding: 10px 14px;
           border-radius: 999px;
-          background: #eff6ff;
-          color: #1d4ed8;
+          background: #eef2ff;
+          color: #3730a3;
           font-weight: 800;
           white-space: nowrap;
         }
@@ -561,15 +586,15 @@ export default function AdminDashboardPage() {
         }
 
         .admin-table tbody tr.is-expired td {
-          background: linear-gradient(180deg, #fff5f5, #ffffff);
+          background: rgba(220, 38, 38, 0.04);
         }
 
         .admin-table tbody tr.is-warning td {
-          background: linear-gradient(180deg, #fffbea, #ffffff);
+          background: rgba(217, 119, 6, 0.05);
         }
 
         .admin-table tbody tr.is-active td {
-          background: linear-gradient(180deg, #f0fdf4, #ffffff);
+          background: rgba(22, 163, 74, 0.04);
         }
 
         .shop-primary {
@@ -598,21 +623,21 @@ export default function AdminDashboardPage() {
 
         .admin-plan-pill {
           background: #eef2ff;
-          color: #4338ca;
+          color: #3730a3;
         }
 
         .admin-status-pill.status-active {
-          background: #dcfce7;
+          background: rgba(22, 163, 74, 0.12);
           color: #166534;
         }
 
         .admin-status-pill.status-trial {
-          background: #fef3c7;
-          color: #92400e;
+          background: rgba(217, 119, 6, 0.14);
+          color: #b45309;
         }
 
         .admin-status-pill.status-expired {
-          background: #fee2e2;
+          background: rgba(220, 38, 38, 0.12);
           color: #b91c1c;
         }
 
@@ -632,25 +657,25 @@ export default function AdminDashboardPage() {
           min-height: 42px;
           padding: 0 14px;
           border-radius: 12px;
-          border: 1px solid rgba(248, 113, 113, 0.22);
-          background: #fff5f5;
-          color: #b91c1c;
+          border: 1px solid rgba(55, 48, 163, 0.18);
+          background: #ffffff;
+          color: #3730a3;
           font-weight: 800;
           cursor: pointer;
         }
 
         .alert-red {
-          background: #fee2e2;
+          background: rgba(220, 38, 38, 0.12);
           color: #b91c1c;
         }
 
-        .alert-yellow {
-          background: #fef3c7;
-          color: #92400e;
+        .alert-amber {
+          background: rgba(217, 119, 6, 0.14);
+          color: #b45309;
         }
 
         .alert-green {
-          background: #dcfce7;
+          background: rgba(22, 163, 74, 0.12);
           color: #166534;
         }
 
@@ -732,15 +757,15 @@ export default function AdminDashboardPage() {
           }
 
           .admin-mobile-card.is-expired {
-            background: linear-gradient(180deg, #fff5f5, #ffffff);
+            background: rgba(220, 38, 38, 0.04);
           }
 
           .admin-mobile-card.is-warning {
-            background: linear-gradient(180deg, #fffbea, #ffffff);
+            background: rgba(217, 119, 6, 0.05);
           }
 
           .admin-mobile-card.is-active {
-            background: linear-gradient(180deg, #f0fdf4, #ffffff);
+            background: rgba(22, 163, 74, 0.04);
           }
 
           .admin-mobile-top {

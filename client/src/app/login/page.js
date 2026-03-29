@@ -73,37 +73,33 @@ export default function LoginPage() {
     <div className="trust-auth-root">
       <div className="trust-auth-shell">
         <section className="trust-auth-showcase">
-          <div className="trust-auth-kicker">Trusted retail operating system</div>
+          <div className="trust-auth-kicker">Premium retail operating system</div>
           <div className="trust-auth-brand-row">
             <div className="trust-auth-logo">R</div>
             <div>
-              <div
-                className="trust-auth-brand-name"
-                style={{
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 28%, #fde68a 52%, #ffffff 76%, #99f6e4 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent',
-                  textShadow: '0 0 22px rgba(255,255,255,0.12)',
-                }}
-              >
-                रखरखाव
-              </div>
-              <div className="trust-auth-brand-subtitle">Built for disciplined, modern shop management</div>
+              <div className="trust-auth-brand-name">Rakhrakhaav</div>
+              <div className="trust-auth-brand-subtitle">Built for confident Indian shop owners</div>
             </div>
           </div>
 
           <div className="trust-auth-copy">
-            <h1>Run your business with clarity and confidence.</h1>
-            <p>
-              Inventory, GST billing, purchases, and udhaar in one reliable workspace.
-            </p>
+            <h1>Run your business with clarity.</h1>
+            <p>GST billing, inventory, purchases, and udhaar in one focused workspace.</p>
           </div>
 
-          <div className="trust-mini-strip trust-mini-strip-dark" style={{ marginTop: 22 }}>
-            <span>GST ready</span>
-            <span>Secure access</span>
-            <span>Mobile friendly</span>
+          <div className="trust-auth-pill-row">
+            <div className="trust-auth-feature-pill">
+              <span className="trust-auth-feature-icon">₹</span>
+              <span>Fast GST billing</span>
+            </div>
+            <div className="trust-auth-feature-pill">
+              <span className="trust-auth-feature-icon">□</span>
+              <span>Live inventory</span>
+            </div>
+            <div className="trust-auth-feature-pill">
+              <span className="trust-auth-feature-icon">◎</span>
+              <span>Udhaar control</span>
+            </div>
           </div>
         </section>
 
@@ -112,12 +108,6 @@ export default function LoginPage() {
             <div className="trust-form-topline">Secure sign in</div>
             <div className="auth-title">Welcome back</div>
             <div className="auth-subtitle">Sign in to continue running your business with confidence.</div>
-
-            <div className="trust-mini-strip">
-              <span>Encrypted session</span>
-              <span>Fast login</span>
-              <span>Mobile ready</span>
-            </div>
 
             {error && <div className="alert-error">{error}</div>}
 

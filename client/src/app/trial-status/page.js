@@ -43,32 +43,34 @@ export default function TrialStatusPage() {
   const subtitle = subscription?.isReadOnly
     ? 'Upgrade and continue using billing, GST reports, customer credit and daily workflows without interruption.'
     : 'Upgrade and continue using our services without interruption once the countdown ends.';
+  const daysLeft = subscription?.trialDaysLeft || 0;
 
   return (
     <div className="trial-gate-root">
-      <div className="trial-gate-shell">
-        <section className="trial-gate-hero">
-          <div className="subscription-pill">{subscription?.isReadOnly ? 'Trial ended' : 'Trial countdown'}</div>
-          <h1>{title}</h1>
-          <p>{subtitle}</p>
-
-          <div className="trial-gate-chip-row">
-            <span>Billing + invoicing</span>
-            <span>GST reports and exports</span>
-            <span>Udhaar and customer records</span>
+      <div className="trial-gate-shell" style={{ gridTemplateColumns: '1fr', maxWidth: 560 }}>
+        <section className="ui-card trial-status-card">
+          <div className="trial-countdown-badge">
+            {subscription?.isReadOnly ? 'Trial ended' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
           </div>
-        </section>
-
-        <aside className="trial-gate-sidecard">
-          <div className="trial-gate-side-kicker">Keep going</div>
-          <div className="trial-gate-side-title">
-            {subscription?.isReadOnly ? 'Reactivate premium access' : 'Upgrade and stay uninterrupted'}
+          <div>
+            <h1 className="trial-gate-side-title">{title}</h1>
+            <p>{subtitle}</p>
           </div>
-          <p>
-            {subscription?.isReadOnly
-              ? 'Your data is safe. Upgrade whenever you are ready, or continue to view your workspace.'
-              : 'You can keep using Rakhrakhaav now and upgrade later from the top upgrade tab.'}
-          </p>
+
+          <div className="trial-benefit-list">
+            <div className="trial-benefit-row">
+              <span className="trial-benefit-check">✓</span>
+              <span>Continue billing and invoicing without interruption</span>
+            </div>
+            <div className="trial-benefit-row">
+              <span className="trial-benefit-check">✓</span>
+              <span>Keep GST exports and purchase records ready for filing</span>
+            </div>
+            <div className="trial-benefit-row">
+              <span className="trial-benefit-check">✓</span>
+              <span>Stay on top of udhaar, customers, and daily cash flow</span>
+            </div>
+          </div>
 
           <div className="trial-gate-action-stack">
             <button type="button" className="btn-primary" onClick={() => router.push('/pricing')}>
@@ -78,7 +80,7 @@ export default function TrialStatusPage() {
               Continue to Rakhrakhaav
             </button>
           </div>
-        </aside>
+        </section>
       </div>
     </div>
   );

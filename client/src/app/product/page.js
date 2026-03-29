@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import { useAppLocale } from '../../components/AppLocale';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
@@ -22,7 +21,6 @@ const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim(
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { locale } = useAppLocale();
   const [products, setProducts]   = useState([]);
   const [filtered, setFiltered]   = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -42,7 +40,6 @@ export default function ProductsPage() {
     quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0,
     low_stock_threshold: 5,
   });
-  const [productStep, setProductStep] = useState(0);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [lastScannedBarcode, setLastScannedBarcode] = useState('');
 
@@ -115,7 +112,6 @@ export default function ProductsPage() {
     setForm({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
     setLastScannedBarcode('');
     setError('');
-    setProductStep(0);
     setShowModal(true);
   };
 
@@ -130,7 +126,6 @@ export default function ProductsPage() {
     });
     setLastScannedBarcode('');
     setError('');
-    setProductStep(0);
     setShowModal(true);
   };
 
@@ -258,8 +253,8 @@ export default function ProductsPage() {
   return (
     <Layout>
       <div className="page-shell product-shell">
-        <section className="hero-panel product-hero">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <section className="card">
+          <div className="page-toolbar">
             <div>
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing inventory...</div>}
@@ -284,9 +279,9 @@ export default function ProductsPage() {
             <div className="metric-value" style={{ color: '#ef4444' }}>{outOfStockCount}</div>
             <div className="metric-note">Unavailable for sale</div>
           </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Inventory Value</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>Rs {totalValue.toFixed(0)}</div>
+            <div className="metric-card" style={{ cursor: 'default' }}>
+              <div className="metric-label">Inventory Value</div>
+            <div className="metric-value" style={{ color: '#0f766e' }}>₹{totalValue.toFixed(0)}</div>
             <div className="metric-note">Based on cost price</div>
           </div>
         </section>
@@ -362,8 +357,8 @@ export default function ProductsPage() {
                         {p.low_stock_threshold !== 5 && ` • Alert <= ${p.low_stock_threshold}`}
                       </div>
                     </td>
-                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `Rs ${p.cost_price}` : '-'}</td>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>Rs {p.price}</td>
+                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</td>
+                    <td style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</td>
                     <td><MarginBadge margin={p.margin} /></td>
                     <td><GSTBadge rate={p.gst_rate} /></td>
                     <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>
@@ -417,8 +412,8 @@ export default function ProductsPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `Rs ${p.cost_price}` : '-'}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>Rs {p.price}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>{p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
@@ -456,7 +451,7 @@ export default function ProductsPage() {
       {/* â”€â”€ Add/Edit Modal â”€â”€ */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal flow-modal">
+          <div className="modal flow-modal" style={{ maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', alignSelf: 'flex-end', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}>
             <div className="flow-modal-header">
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
@@ -467,7 +462,6 @@ export default function ProductsPage() {
             </div>
             {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
             <form onSubmit={handleSubmit}>
-              <div className="flow-step-panel" style={{ display: productStep === 0 ? 'block' : 'none' }}>
               <div className="flow-section-kicker"><span>Basics</span><span>Identity + barcode</span></div>
               <div className="form-group">
                 <label className="form-label">Name *</label>
@@ -510,9 +504,6 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              </div>
-
-              <div className="flow-step-panel" style={{ display: productStep === 1 ? 'block' : 'none' }}>
               <div className="flow-section-kicker"><span>Pricing</span><span>Cost and margin</span></div>
               <div className="grid-2">
                 <div className="form-group">
@@ -527,20 +518,13 @@ export default function ProductsPage() {
 
               {/* Live margin preview */}
               {form.cost_price && form.price && Number(form.cost_price) > 0 && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-                  <span style={{ color: '#6b7280' }}>Margin: </span>
-                  <strong style={{ color: '#059669' }}>
-                    {(((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%
-                  </strong>
-                  <span style={{ color: '#6b7280', marginLeft: 8 }}>
-                    (Rs {(Number(form.price) - Number(form.cost_price)).toFixed(2)} profit per unit)
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#dcfce7', border: '1px solid #86efac', borderRadius: 999, padding: '8px 12px', marginBottom: 12, fontSize: 13, color: '#166534', fontWeight: 700 }}>
+                  <span>
+                    Margin: {(((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%
                   </span>
+                  <span style={{ color: '#15803d' }}>• ₹{(Number(form.price) - Number(form.cost_price)).toFixed(2)} per unit</span>
                 </div>
               )}
-
-              </div>
-
-              <div className="flow-step-panel" style={{ display: productStep === 2 ? 'block' : 'none' }}>
               <div className="flow-section-kicker"><span>Tax & Stock</span><span>GST, unit and alerts</span></div>
               <div className="grid-2">
                 <div className="form-group">
@@ -616,28 +600,15 @@ export default function ProductsPage() {
                 <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
                   <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: 2 }}>GST Preview</div>
                   <div style={{ color: '#7c3aed' }}>
-                    Rs {parseFloat(form.price || 0).toFixed(2)} + {form.gst_rate}% GST = <strong>Rs {(parseFloat(form.price || 0) * (1 + form.gst_rate / 100)).toFixed(2)}</strong>
+                    ₹{parseFloat(form.price || 0).toFixed(2)} + {form.gst_rate}% GST = <strong>₹{(parseFloat(form.price || 0) * (1 + form.gst_rate / 100)).toFixed(2)}</strong>
                   </div>
                 </div>
               )}
 
-              </div>
-
               <div className="flow-actions">
-                {productStep > 0 && (
-                  <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setProductStep((current) => current - 1)}>
-                    Back
-                  </button>
-                )}
-                {productStep < 2 ? (
-                  <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => setProductStep((current) => current + 1)}>
-                    Continue
-                  </button>
-                ) : (
-                  <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                    {editProduct ? 'Update Product' : 'Add Product'}
-                  </button>
-                )}
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                  {editProduct ? 'Update Product' : 'Add Product'}
+                </button>
                 <button type="button" onClick={() => setShowModal(false)}
                   style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   Cancel

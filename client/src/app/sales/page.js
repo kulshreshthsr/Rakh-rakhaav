@@ -440,14 +440,12 @@ export default function SalesPage() {
     setGstinTouched(Boolean(normalized));
   };
   const wizardSteps = [
-    { title: locale === 'hi' ? 'Items' : 'Items', copy: locale === 'hi' ? 'Products and quantity' : 'Products and quantity' },
-    { title: locale === 'hi' ? 'Payment' : 'Payment', copy: locale === 'hi' ? 'Totals and method' : 'Totals and method' },
-    { title: locale === 'hi' ? 'Buyer' : 'Buyer', copy: locale === 'hi' ? 'Buyer and GST' : 'Buyer and GST' },
+    { title: locale === 'hi' ? 'Items & Payment' : 'Items & Payment', copy: locale === 'hi' ? 'Products, quantity and payment method' : 'Products, quantity and payment method' },
+    { title: locale === 'hi' ? 'Buyer & Bill' : 'Buyer & Bill', copy: locale === 'hi' ? 'Buyer details and bill summary' : 'Buyer details and bill summary' },
   ];
 
   const selectedItemsCount = items.filter((item) => item.product_id).length;
   const currentStep = wizardSteps[saleStep];
-  const canMoveToPayment = items.some((item) => item.product_id && item.quantity && item.price_per_unit);
   const canMoveToBuyer = billTotals.total > 0;
 
   function resetForm() {
@@ -522,11 +520,6 @@ export default function SalesPage() {
     if (!showModal) return undefined;
 
     if (saleStep === 1) {
-      const timeoutId = window.setTimeout(() => amountPaidInputRef.current?.focus(), 80);
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    if (saleStep === 2) {
       const timeoutId = window.setTimeout(() => buyerNameInputRef.current?.focus(), 80);
       return () => window.clearTimeout(timeoutId);
     }
@@ -538,7 +531,7 @@ export default function SalesPage() {
     if (!showModal) return undefined;
 
     const onKeyDown = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter' && saleStep === 2) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter' && saleStep === 1) {
         event.preventDefault();
         handleShortcutSubmit();
       }
@@ -642,8 +635,8 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="page-shell sales-shell">
-        <section className="hero-panel sales-hero">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+        <section className="card">
+          <div className="page-toolbar">
             <div>
               <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing sales data...</div>}
@@ -811,6 +804,15 @@ export default function SalesPage() {
         <div className="modal-overlay">
           <div className="modal flow-modal sale-entry-modal" style={{ maxWidth: 500 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: '#0f172a' }}>Record Sale</h3>
+            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 700, marginBottom: 12 }}>
+              Step {saleStep + 1} of 2
+              <span style={{ margin: '0 8px', color: '#cbd5e1' }}>•</span>
+              {wizardSteps.map((step, index) => (
+                <span key={step.title} style={{ color: saleStep === index ? '#3730a3' : '#94a3b8', marginRight: index === wizardSteps.length - 1 ? 0 : 8 }}>
+                  {step.title}
+                </span>
+              ))}
+            </div>
             {editingSaleId ? (
               <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
             ) : null}
@@ -822,7 +824,7 @@ export default function SalesPage() {
 
               {/* Items */}
               <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Items</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Items + Payment</div>
                 <div className="fast-billing-toolbar">
                   <div>
                     <div className="fast-billing-title">Fast Billing</div>
@@ -943,6 +945,51 @@ export default function SalesPage() {
                 </div>
               </div>
 
+              <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none', marginTop: 14 }}>
+                  <div className="flow-section-kicker"><span>Payment</span><span>Method + partial payment</span></div>
+                  <div className="form-group">
+                    <label className="form-label">Payment Type *</label>
+                    <div className="flow-choice-grid">
+                      {[
+                        { val: 'cash', label: 'Cash' },
+                        { val: 'credit', label: 'Credit' },
+                        { val: 'upi', label: 'UPI' },
+                        { val: 'bank', label: 'Bank' },
+                      ].map((opt) => (
+                        <button key={opt.val} type="button"
+                          onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
+                          style={{
+                            padding: '11px 10px', borderRadius: 14, border: '1px solid',
+                            borderColor: form.payment_type === opt.val ? '#3730a3' : '#d1d5db',
+                            background: form.payment_type === opt.val ? '#3730a3' : '#ffffff',
+                            color: form.payment_type === opt.val ? '#fff' : '#334155',
+                            cursor: 'pointer', fontWeight: 700, fontSize: 12,
+                          }}
+                          className={`flow-choice-pill ${form.payment_type === opt.val ? 'is-active' : ''}`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {form.payment_type === 'credit' && (
+                      <div style={{ marginTop: 10 }}>
+                        <label className="form-label">Advance Payment (optional)</label>
+                        <input ref={amountPaidInputRef} className="form-input" type="number" step="0.01" min="0"
+                          placeholder={`Max ₹${fmt(billTotals.total)}`}
+                          value={form.amount_paid}
+                          onChange={e => updateForm({ amount_paid: e.target.value })} />
+                        <div className="fast-qty-pills" style={{ marginTop: 8 }}>
+                          <button type="button" className={`fast-qty-pill ${amountPaidNum === 0 ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: '0' })}>0</button>
+                          <button type="button" className="fast-qty-pill" onClick={() => updateForm({ amount_paid: String((billTotals.total / 2).toFixed(2)) })}>50%</button>
+                          <button type="button" className={`fast-qty-pill ${amountPaidNum === billTotals.total ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: String(billTotals.total.toFixed(2)) })}>Full</button>
+                        </div>
+                        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#b45309' }}>
+                          Balance ₹{fmt(balanceDue)} will be added to the customer ledger automatically.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+              </div>
+
               {/* Bill Summary */}
               {billTotals.total > 0 && saleStep === 1 && (
                 <div style={{ background: '#ecfeff', border: '1px solid #99f6e4', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
@@ -974,55 +1021,7 @@ export default function SalesPage() {
                 </div>
               )}
 
-              {/* Payment Type */}
-              <div className="flow-step-panel" style={{ display: saleStep === 1 ? 'block' : 'none' }}>
-                <div className="flow-section-kicker"><span>Payment</span><span>Method + partial payment</span></div>
-                <div className="form-group">
-                <label className="form-label">Payment Type *</label>
-                <div className="flow-choice-grid">
-                  {[
-                    { val: 'cash',   label: 'Cash',   color: '#10b981' },
-                    { val: 'credit', label: 'Credit', color: '#ef4444' },
-                    { val: 'upi',    label: 'UPI',    color: '#8b5cf6' },
-                    { val: 'bank',   label: 'Bank',   color: '#3b82f6' },
-                  ].map(opt => (
-                    <button key={opt.val} type="button"
-                      onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
-                      style={{
-                        padding: '11px 10px', borderRadius: 14, border: '2px solid',
-                        borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
-                        background: form.payment_type === opt.val ? opt.color : '#f9fafb',
-                        color: form.payment_type === opt.val ? '#fff' : '#374151',
-                        cursor: 'pointer', fontWeight: 700, fontSize: 12,
-                      }}
-                      className={`flow-choice-pill ${form.payment_type === opt.val ? `is-active ${opt.val === 'cash' ? 'is-success' : opt.val === 'credit' ? 'is-danger' : opt.val === 'upi' ? 'is-purple' : 'is-blue'}` : ''}`}>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                {form.payment_type === 'credit' && (
-                  <div style={{ marginTop: 10 }}>
-                    <label className="form-label">Advance Payment (optional)</label>
-                    <input ref={amountPaidInputRef} className="form-input" type="number" step="0.01" min="0"
-                      placeholder={`Max ₹${fmt(billTotals.total)}`}
-                      value={form.amount_paid}
-                      onChange={e => updateForm({ amount_paid: e.target.value })} />
-                    <div className="fast-qty-pills" style={{ marginTop: 8 }}>
-                      <button type="button" className={`fast-qty-pill ${amountPaidNum === 0 ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: '0' })}>0</button>
-                      <button type="button" className="fast-qty-pill" onClick={() => updateForm({ amount_paid: String((billTotals.total / 2).toFixed(2)) })}>50%</button>
-                      <button type="button" className={`fast-qty-pill ${amountPaidNum === billTotals.total ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: String(billTotals.total.toFixed(2)) })}>Full</button>
-                    </div>
-                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
-                      Balance ₹{fmt(balanceDue)} will be added to the customer ledger automatically.
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Buyer Details */}
-              </div>
-
-              <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: saleStep === 2 ? 'block' : 'none' }}>
+              <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: saleStep === 1 ? 'block' : 'none' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
                   {form.payment_type === 'credit' ? 'Customer Details' : 'Buyer Details'}
                 </div>
@@ -1082,24 +1081,24 @@ export default function SalesPage() {
                     Back
                   </button>
                 )}
-                {saleStep < 2 ? (
+                {saleStep < 1 ? (
                   <button
                     type="button"
-                    className="btn-success"
+                    className="btn-primary"
                     style={{ flex: 1 }}
-                    disabled={(saleStep === 0 && !canMoveToPayment) || (saleStep === 1 && !canMoveToBuyer)}
+                    disabled={!canMoveToBuyer}
                     onClick={() => setSaleStep((current) => current + 1)}
                   >
                     Continue
                   </button>
                 ) : (
-                <button type="button" onClick={handleSubmit} className="btn-success" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? 'Saving sale...' : editingSaleId ? 'Update Sale' : form.payment_type === 'credit' ? 'Credit Sale' : 'Record Sale'}
+                <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
+                  {submitting ? 'Saving sale...' : editingSaleId ? 'Update Sale' : 'Record Sale'}
                 </button>
                 )}
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
                   style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  0&M& / Cancel
+                  Cancel
                 </button>
               </div>
             </form>
