@@ -523,12 +523,12 @@ function LayoutInner({ children }) {
           flex-direction: column;
           gap: 14px;
           background:
-            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.08), transparent 28%),
-            radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.06), transparent 28%),
-            radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.08), transparent 32%),
-            #ffffff;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.12), transparent 28%),
+            radial-gradient(circle at 0% 100%, rgba(45, 212, 191, 0.1), transparent 28%),
+            radial-gradient(circle at 50% 12%, rgba(91, 80, 255, 0.12), transparent 32%),
+            linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,255,0.88));
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          box-shadow: 0 24px 50px rgba(15, 23, 42, 0.09);
         }
 
         .sidebar-panel::before {
@@ -585,9 +585,9 @@ function LayoutInner({ children }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #eef2ff;
-          border: 1px solid #c7d2fe;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+          background: linear-gradient(135deg, rgba(91,80,255,0.16), rgba(124,58,237,0.08));
+          border: 1px solid rgba(91,80,255,0.18);
+          box-shadow: 0 16px 30px rgba(91, 80, 255, 0.12);
           overflow: hidden;
           color: #4f46e5;
           position: relative;
@@ -606,7 +606,7 @@ function LayoutInner({ children }) {
           font-size: 23px;
           line-height: 1;
           font-weight: 900;
-          color: #4f46e5;
+          color: #5b50ff;
           letter-spacing: -0.06em;
           text-shadow: none;
         }
@@ -625,9 +625,9 @@ function LayoutInner({ children }) {
           margin-top: 14px;
           border-radius: 20px;
           padding: 14px;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+          background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(248,250,255,0.76));
+          border: 1px solid rgba(148, 163, 184, 0.16);
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -667,26 +667,27 @@ function LayoutInner({ children }) {
 
         .sidebar-shortcut {
           text-decoration: none;
-          color: white;
+          color: #0f172a;
           padding: 14px;
           border-radius: 20px;
           display: flex;
           gap: 12px;
           align-items: flex-start;
-          background: linear-gradient(135deg, rgba(37,99,235,0.22), rgba(56,189,248,0.08), rgba(255,255,255,0.03));
-          border: 1px solid rgba(147,197,253,0.14);
-          box-shadow: 0 18px 34px rgba(2, 8, 23, 0.2);
+          background: linear-gradient(135deg, rgba(91,80,255,0.12), rgba(56,189,248,0.08), rgba(255,255,255,0.56));
+          border: 1px solid rgba(148,163,184,0.16);
+          box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
           transform: translateY(0);
         }
 
         .sidebar-shortcut.is-secondary {
-          background: linear-gradient(135deg, rgba(16,185,129,0.16), rgba(74,222,128,0.08));
-          border-color: rgba(110,231,183,0.12);
+          background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(74,222,128,0.06), rgba(255,255,255,0.54));
+          border-color: rgba(16,185,129,0.14);
         }
 
         .sidebar-shortcut:hover {
           transform: translateY(-3px);
-          box-shadow: 0 24px 46px rgba(2, 8, 23, 0.28);
+          border-color: rgba(91,80,255,0.2);
+          box-shadow: 0 24px 46px rgba(15, 23, 42, 0.12);
         }
 
         .sidebar-shortcut-icon {
@@ -696,8 +697,8 @@ function LayoutInner({ children }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255,255,255,0.12);
-          color: #eff6ff;
+          background: rgba(91,80,255,0.1);
+          color: #5b50ff;
           flex-shrink: 0;
         }
 
@@ -709,7 +710,7 @@ function LayoutInner({ children }) {
         .sidebar-shortcut-copy {
           font-size: 11px;
           margin-top: 4px;
-          color: rgba(226, 232, 240, 0.6);
+          color: #64748b;
         }
 
         .language-toggle {
@@ -730,16 +731,16 @@ function LayoutInner({ children }) {
         .sidebar-user-card {
           width: 100%;
           border-radius: 20px;
-          border: 1px solid rgba(255,255,255,0.1);
-          background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.035));
+          border: 1px solid rgba(148,163,184,0.16);
+          background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(248,250,255,0.72));
           padding: 12px;
           display: flex;
           align-items: center;
           gap: 12px;
-          color: white;
+          color: #0f172a;
           text-align: left;
           cursor: pointer;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 34px rgba(2, 8, 23, 0.12);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 16px 34px rgba(15, 23, 42, 0.08);
         }
 
         .sidebar-avatar,
@@ -750,11 +751,11 @@ function LayoutInner({ children }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #2563eb, #14b8a6);
+          background: linear-gradient(135deg, #5b50ff, #14b8a6);
           color: white;
           font-size: 15px;
           font-weight: 900;
-          box-shadow: 0 16px 30px rgba(37, 99, 235, 0.2);
+          box-shadow: 0 16px 30px rgba(91, 80, 255, 0.18);
           flex-shrink: 0;
         }
 
@@ -944,14 +945,14 @@ function LayoutInner({ children }) {
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          background: #ffffff;
+          background: rgba(255,255,255,0.78);
           backdrop-filter: blur(18px);
-          border-bottom: 1px solid #e2e8f0;
+          border-bottom: 1px solid rgba(148,163,184,0.16);
         }
 
         .premium-topbar.is-scrolled {
-          background: #ffffff;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+          background: rgba(255,255,255,0.88);
+          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
         }
 
         .mobile-topbar-brand,
@@ -981,8 +982,8 @@ function LayoutInner({ children }) {
         .mobile-user-chip,
         .language-compact,
         .top-upgrade-chip {
-          border: 1px solid #e2e8f0;
-          background: #ffffff;
+          border: 1px solid rgba(148,163,184,0.18);
+          background: rgba(255,255,255,0.8);
           color: #0f172a;
           border-radius: 999px;
           display: flex;
@@ -1016,8 +1017,8 @@ function LayoutInner({ children }) {
           flex-shrink: 0;
           box-shadow: none;
           background: transparent;
-          border-color: #4f46e5;
-          color: #4f46e5;
+          border-color: rgba(91,80,255,0.28);
+          color: #5b50ff;
         }
 
         .top-upgrade-chip.is-manage {
@@ -1054,11 +1055,27 @@ function LayoutInner({ children }) {
           margin-left: 288px;
           padding: 30px 26px 108px;
           min-height: 100vh;
+          position: relative;
         }
 
         .content-container {
           max-width: 1440px;
           margin: 0 auto;
+          position: relative;
+        }
+
+        .content-container::before {
+          content: '';
+          position: fixed;
+          top: 110px;
+          right: 40px;
+          width: 260px;
+          height: 260px;
+          border-radius: 999px;
+          background: radial-gradient(circle, rgba(91,80,255,0.12), transparent 70%);
+          pointer-events: none;
+          filter: blur(12px);
+          z-index: -1;
         }
 
         .content-top-actions {
@@ -1067,6 +1084,13 @@ function LayoutInner({ children }) {
           justify-content: space-between;
           gap: 16px;
           margin: 0 0 18px;
+          padding: 14px 16px;
+          border-radius: 22px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(248,250,255,0.64));
+          border: 1px solid rgba(148,163,184,0.16);
+          box-shadow: 0 14px 30px rgba(15,23,42,0.06);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
         }
 
         .content-top-actions-kicker {
@@ -1223,9 +1247,9 @@ function LayoutInner({ children }) {
           gap: 6px;
           padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
           border-radius: 26px;
-          background: linear-gradient(180deg, rgba(4,11,21,0.98), rgba(7,17,31,0.96));
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: 0 28px 70px rgba(2, 8, 23, 0.36);
+          background: rgba(255,255,255,0.82);
+          border: 1px solid rgba(148,163,184,0.18);
+          box-shadow: 0 18px 34px rgba(15,23,42,0.1);
           backdrop-filter: blur(18px);
         }
 
@@ -1233,7 +1257,7 @@ function LayoutInner({ children }) {
           position: relative;
           flex: 1;
           min-width: 0;
-          color: rgba(226,232,240,0.5);
+          color: #64748b;
           text-decoration: none;
           display: flex;
           flex-direction: column;
@@ -1251,15 +1275,15 @@ function LayoutInner({ children }) {
           position: absolute;
           inset: 0;
           opacity: 0;
-          background: linear-gradient(180deg, rgba(37,99,235,0.2), rgba(20,184,166,0.08));
+          background: linear-gradient(180deg, rgba(91,80,255,0.18), rgba(20,184,166,0.08));
           transition: opacity 0.2s ease;
         }
 
         .mobile-nav-link.is-active {
-          color: white;
+          color: #5b50ff;
           transform: translateY(-1px);
-          border-color: rgba(147,197,253,0.16);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+          border-color: rgba(91,80,255,0.16);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
         }
 
         .mobile-nav-link.is-active .mobile-nav-glow {
@@ -1273,18 +1297,19 @@ function LayoutInner({ children }) {
 
         .app-shell-root {
           background:
-            radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 24%),
-            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.08), transparent 24%),
-            linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            radial-gradient(circle at top right, rgba(91, 80, 255, 0.12), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.09), transparent 24%),
+            radial-gradient(circle at 15% 20%, rgba(16, 185, 129, 0.08), transparent 18%),
+            linear-gradient(180deg, #f8f9ff 0%, #f3f6fd 100%);
         }
 
         .app-shell-root .sidebar-panel {
           background:
             radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.18), transparent 28%),
             radial-gradient(circle at 0% 100%, rgba(6, 182, 212, 0.12), transparent 28%),
-            radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.12), transparent 32%),
-            linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,245,249,0.98) 44%, rgba(248,250,252,1));
-          border: 1px solid #e2e8f0;
+            radial-gradient(circle at 50% 12%, rgba(91, 80, 255, 0.14), transparent 32%),
+            linear-gradient(180deg, rgba(255,255,255,0.96), rgba(244,247,255,0.94) 44%, rgba(248,250,255,0.98));
+          border: 1px solid rgba(148,163,184,0.18);
           box-shadow: 0 36px 90px rgba(15, 23, 42, 0.12);
         }
 
@@ -1297,7 +1322,7 @@ function LayoutInner({ children }) {
         .app-shell-root .brand-title,
         .app-shell-root .mobile-brand-title {
           color: #0f172a;
-          text-shadow: 0 10px 26px rgba(37, 99, 235, 0.08);
+          text-shadow: 0 10px 26px rgba(91, 80, 255, 0.1);
         }
 
         .app-shell-root .brand-subtitle,
@@ -1328,27 +1353,27 @@ function LayoutInner({ children }) {
         .app-shell-root .brand-status-card,
         .app-shell-root .language-switch-card,
         .app-shell-root .sidebar-user-card {
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
-          box-shadow: none;
+          background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(248,250,255,0.76));
+          border: 1px solid rgba(148,163,184,0.16);
+          box-shadow: 0 14px 28px rgba(15,23,42,0.06);
         }
 
         .app-shell-root .brand-live-pill {
-          background: #ffffff !important;
-          color: #111111 !important;
-          border-color: #d1d5db !important;
+          background: rgba(91,80,255,0.08) !important;
+          color: #5b50ff !important;
+          border-color: rgba(91,80,255,0.16) !important;
         }
 
         .app-shell-root .sidebar-shortcut {
           color: #0f172a;
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
-          box-shadow: none;
+          background: linear-gradient(135deg, rgba(91,80,255,0.12), rgba(56,189,248,0.08), rgba(255,255,255,0.56));
+          border: 1px solid rgba(148,163,184,0.16);
+          box-shadow: 0 18px 34px rgba(15,23,42,0.08);
         }
 
         .app-shell-root .sidebar-shortcut.is-secondary {
-          background: #ffffff;
-          border-color: #e5e7eb;
+          background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(74,222,128,0.06), rgba(255,255,255,0.54));
+          border-color: rgba(16,185,129,0.14);
         }
 
         .app-shell-root .sidebar-shortcut-icon,
@@ -1356,16 +1381,16 @@ function LayoutInner({ children }) {
         .app-shell-root .language-toggle .segmented-option,
         .app-shell-root .mobile-user-chip,
         .app-shell-root .language-compact {
-          background: rgba(241,245,249,0.96);
-          border-color: #e2e8f0;
+          background: rgba(255,255,255,0.72);
+          border-color: rgba(148,163,184,0.18);
           color: #0f172a;
         }
 
         .app-shell-root .language-toggle .segmented-option.is-active,
         .app-shell-root .nav-link.is-active {
           color: #111111;
-          border-color: #d1d5db;
-          box-shadow: none;
+          border-color: rgba(91,80,255,0.18);
+          box-shadow: 0 12px 24px rgba(91,80,255,0.08);
         }
 
         .app-shell-root .nav-tone-home.is-active,
@@ -1433,13 +1458,13 @@ function LayoutInner({ children }) {
 
         .app-shell-root .nav-link:hover {
           color: #0f172a;
-          background: #f8fbff;
+          background: rgba(255,255,255,0.7);
         }
 
         .app-shell-root .sidebar-user-menu {
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
-          box-shadow: none;
+          background: rgba(255,255,255,0.92);
+          border: 1px solid rgba(148,163,184,0.16);
+          box-shadow: 0 18px 40px rgba(15,23,42,0.12);
         }
 
         .app-shell-root .sidebar-user-menu button + button,
@@ -1460,27 +1485,27 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .premium-topbar {
-          background: #ffffff;
-          border-bottom: 1px solid #e5e7eb;
+          background: rgba(255,255,255,0.78);
+          border-bottom: 1px solid rgba(148,163,184,0.16);
         }
 
         .app-shell-root .premium-topbar.is-scrolled {
-          background: #ffffff;
-          box-shadow: none;
+          background: rgba(255,255,255,0.88);
+          box-shadow: 0 14px 32px rgba(15,23,42,0.08);
         }
 
         .app-shell-root .top-upgrade-chip {
-          box-shadow: none;
-          background: #ffffff;
-          border-color: #d1d5db;
-          color: #111111;
+          box-shadow: 0 10px 20px rgba(91,80,255,0.08);
+          background: rgba(255,255,255,0.82);
+          border-color: rgba(91,80,255,0.18);
+          color: #5b50ff;
         }
 
         .app-shell-root .top-upgrade-chip.is-manage {
-          background: #ffffff;
-          border-color: #d1d5db;
-          box-shadow: none;
-          color: #111111;
+          background: rgba(255,255,255,0.82);
+          border-color: rgba(91,80,255,0.18);
+          box-shadow: 0 10px 20px rgba(91,80,255,0.08);
+          color: #5b50ff;
         }
 
         .app-shell-root .premium-trial-banner {
