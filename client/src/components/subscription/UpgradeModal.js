@@ -133,54 +133,66 @@ export default function UpgradeModal({
           aria-label="Close upgrade modal"
         >x</button>
 
-        <div className="subscription-modal-hero">
-          <div className="subscription-pill">Premium membership</div>
-          <h2>{title}</h2>
-          <p>{subtitle}</p>
-        </div>
-
-        <div className="subscription-plan-grid">
-          {activePlans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              selected={selectedPlan === plan.id}
-              onSelect={setSelectedPlan}
-              compact
-            />
-          ))}
-        </div>
-
-        <div className="subscription-checkout-summary">
-          <div className="subscription-checkout-copy">
-            <div className="subscription-checkout-label">Selected plan</div>
-            <div className="subscription-checkout-name">{selected?.label || 'Premium membership'}</div>
-            <div className="subscription-checkout-note">Secure payment. Premium stays active right away.</div>
+        <div className="subscription-modal-scroll">
+          <div className="subscription-modal-hero">
+            <div className="subscription-pill">Premium membership</div>
+            <h2>{title}</h2>
+            <p>{subtitle}</p>
           </div>
-          <div className="subscription-checkout-price">{selected?.amount ? `Rs ${selected.amount}` : 'Rs 0'}</div>
-        </div>
 
-        <div className="subscription-trust-row">
-          <span>Secure payment via Razorpay</span>
-          <span>No hidden charges</span>
-          <span>Cancel anytime</span>
-        </div>
-
-        {subscription?.shouldWarnTrial && (
-          <div className="subscription-inline-note">
-            Trial ends in {subscription.trialDaysLeft} day{subscription.trialDaysLeft === 1 ? '' : 's'}.
+          <div className="subscription-plan-grid">
+            {activePlans.map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                selected={selectedPlan === plan.id}
+                onSelect={setSelectedPlan}
+                compact
+              />
+            ))}
           </div>
-        )}
 
-        {error && <div className="alert-error" style={{ marginBottom: 0 }}>{error}</div>}
+          <div className="subscription-checkout-summary">
+            <div className="subscription-checkout-copy">
+              <div className="subscription-checkout-label">Selected plan</div>
+              <div className="subscription-checkout-name">{selected?.label || 'Premium membership'}</div>
+              <div className="subscription-checkout-note">Secure payment. Premium stays active right away.</div>
+            </div>
+            <div className="subscription-checkout-price">{selected?.amount ? `Rs ${selected.amount}` : 'Rs 0'}</div>
+          </div>
 
-        <div className="subscription-modal-actions">
-          <button type="button" className="btn-primary" onClick={startCheckout} disabled={loading}>
-            {loading ? 'Starting secure checkout...' : `Unlock ${selected?.label || 'Premium'}`}
-          </button>
-          <button type="button" className="btn-ghost" onClick={onClose} disabled={loading}>
-            Maybe later
-          </button>
+          <div className="subscription-trust-row">
+            <span>Secure payment via Razorpay</span>
+            <span>No hidden charges</span>
+            <span>Cancel anytime</span>
+          </div>
+
+          {subscription?.shouldWarnTrial && (
+            <div className="subscription-inline-note">
+              Trial ends in {subscription.trialDaysLeft} day{subscription.trialDaysLeft === 1 ? '' : 's'}.
+            </div>
+          )}
+
+          {error && <div className="alert-error" style={{ marginBottom: 0 }}>{error}</div>}
+        </div>
+
+        <div className="subscription-modal-footer">
+          <div className="subscription-modal-footer-top">
+            <div>
+              <div className="subscription-checkout-label">Ready to pay</div>
+              <div className="subscription-modal-footer-name">{selected?.label || 'Premium membership'}</div>
+            </div>
+            <div className="subscription-modal-footer-price">{selected?.amount ? `Rs ${selected.amount}` : 'Rs 0'}</div>
+          </div>
+
+          <div className="subscription-modal-actions">
+            <button type="button" className="btn-primary" onClick={startCheckout} disabled={loading}>
+              {loading ? 'Starting secure checkout...' : `Unlock ${selected?.label || 'Premium'}`}
+            </button>
+            <button type="button" className="btn-ghost" onClick={onClose} disabled={loading}>
+              Maybe later
+            </button>
+          </div>
         </div>
       </div>
     </div>
