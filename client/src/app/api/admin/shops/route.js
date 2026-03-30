@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import {
   ADMIN_COOKIE_NAME,
   getAdminEnv,
+  readAdminUpstreamResponse,
   verifyAdminToken,
 } from '../../../../lib/adminAuth';
 
@@ -29,6 +30,6 @@ export async function GET(request) {
     cache: 'no-store',
   });
 
-  const data = await response.json();
-  return NextResponse.json(data, { status: response.status });
+  const { status: upstreamStatus, data } = await readAdminUpstreamResponse(response, 'Unable to load shop list.');
+  return NextResponse.json(data, { status: upstreamStatus });
 }

@@ -20,6 +20,45 @@ export function getMissingAdminEnvKeys(env = getAdminEnv()) {
   return missing;
 }
 
+export async function readAdminUpstreamResponse(response, fallbackMessage = 'Admin upstream request failed.') {
+  const contentType = response.headers.get('content-type') || '';
+  const rawText = await response.text();
+
+  if (!rawText) {
+    return {
+      status: response.status,
+      data: {
+        message: `${fallbackMessage} Empty response from ${response.url}. Check ADMIN_API_BASE_URL and backend health.`,
+      },
+    };
+  }
+
+  if (contentType.includes('application/json')) {
+    try {
+      return {
+        status: response.status,
+        data: JSON.parse(rawText),
+      };
+    } catch {
+      return {
+        status: response.status,
+        data: {
+          message: `${fallbackMessage} Invalid JSON from ${response.url}. Check backend response format.`,
+        },
+      };
+    }
+  }
+
+  const shortBody = rawText.replace(/\s+/g, ' ').trim().slice(0, 180);
+  return {
+    status: response.status,
+    data: {
+      message: `${fallbackMessage} Non-JSON response from ${response.url}. This usually means ADMIN_API_BASE_URL is pointing to the wrong place or the backend returned an HTML error page.`,
+      details: shortBody,
+    },
+  };
+}
+
 function toBase64Url(input) {
   const bytes = input instanceof Uint8Array ? input : new TextEncoder().encode(input);
   let binary = '';

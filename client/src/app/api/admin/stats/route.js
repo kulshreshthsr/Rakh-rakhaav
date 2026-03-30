@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import {
   ADMIN_COOKIE_NAME,
   getAdminEnv,
+  readAdminUpstreamResponse,
   verifyAdminToken,
 } from '../../../../lib/adminAuth';
 
@@ -23,6 +24,6 @@ export async function GET() {
     cache: 'no-store',
   });
 
-  const data = await response.json();
-  return NextResponse.json(data, { status: response.status });
+  const { status, data } = await readAdminUpstreamResponse(response, 'Unable to load admin stats.');
+  return NextResponse.json(data, { status });
 }
