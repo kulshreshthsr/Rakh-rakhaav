@@ -401,15 +401,18 @@ function LayoutInner({ children }) {
           <div className="mobile-topbar-brand">
             <div>
               <div className="mobile-brand-title brand-title-hindi">रखरखाव</div>
-              <div className="mobile-brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
+              <div className="mobile-brand-subtitle">Business Manager</div>
             </div>
           </div>
 
           <div className="mobile-topbar-actions">
+            <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
+              <Glyph name="pricing" size={14} />
+              PRICING
+            </a>
             <div ref={mobileDropRef} style={{ position: 'relative' }}>
-              <button type="button" className="mobile-user-chip" onClick={() => setMobileDropOpen((value) => !value)}>
+              <button type="button" className="mobile-user-chip mobile-avatar-button" onClick={() => setMobileDropOpen((value) => !value)} aria-label="Open user menu">
                 <div className="mobile-avatar">{initial}</div>
-                <span>{firstName}</span>
               </button>
               {mobileDropOpen && (
                 <div className="sidebar-user-menu mobile-user-menu">
@@ -432,10 +435,6 @@ function LayoutInner({ children }) {
                 </div>
               )}
             </div>
-            <a href="/pricing" className={`top-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
-              <Glyph name="pricing" size={14} />
-              {upgradeButtonLabel}
-            </a>
           </div>
         </div>
 
@@ -1211,9 +1210,9 @@ function LayoutInner({ children }) {
 
         .premium-bottom-nav {
           position: fixed;
-          left: 12px;
-          right: 12px;
-          bottom: 10px;
+          left: 0;
+          right: 0;
+          bottom: 0;
           z-index: 60;
           display: none;
         }
@@ -1221,30 +1220,37 @@ function LayoutInner({ children }) {
         .mobile-bottom-nav-card {
           display: flex;
           gap: 6px;
-          padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
-          border-radius: 26px;
-          background: linear-gradient(180deg, rgba(4,11,21,0.98), rgba(7,17,31,0.96));
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: 0 28px 70px rgba(2, 8, 23, 0.36);
-          backdrop-filter: blur(18px);
+          min-height: calc(64px + env(safe-area-inset-bottom));
+          padding: 0 4px env(safe-area-inset-bottom);
+          border-radius: 0;
+          background: #161929;
+          border-top: 1px solid #FFFFFF0D;
+          border-left: none;
+          border-right: none;
+          border-bottom: none;
+          box-shadow: none;
+          backdrop-filter: none;
+          align-items: stretch;
         }
 
         .mobile-nav-link {
           position: relative;
           flex: 1;
           min-width: 0;
-          color: rgba(226,232,240,0.5);
+          color: #555870;
           text-decoration: none;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 5px;
-          padding: 10px 4px;
-          border-radius: 18px;
+          justify-content: center;
+          gap: 4px;
+          min-height: 64px;
+          padding: 8px 4px;
+          border-radius: 0;
           overflow: hidden;
           font-size: 10px;
-          font-weight: 800;
-          border: 1px solid transparent;
+          font-weight: 600;
+          border: none;
         }
 
         .mobile-nav-glow {
@@ -1256,10 +1262,10 @@ function LayoutInner({ children }) {
         }
 
         .mobile-nav-link.is-active {
-          color: white;
-          transform: translateY(-1px);
-          border-color: rgba(147,197,253,0.16);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+          color: #6C63FF;
+          transform: none;
+          border-color: transparent;
+          box-shadow: none;
         }
 
         .mobile-nav-link.is-active .mobile-nav-glow {
@@ -1576,7 +1582,9 @@ function LayoutInner({ children }) {
         }
 
         .app-shell-root .mobile-brand-subtitle {
-          display: none !important;
+          display: block !important;
+          font-size: 12px !important;
+          font-weight: 400 !important;
         }
 
         .app-shell-root .mobile-user-chip,
@@ -1699,13 +1707,255 @@ function LayoutInner({ children }) {
           border-radius: 0 0 999px 999px;
         }
 
+        .app-shell-root {
+          background:
+            radial-gradient(circle at 14% 12%, rgba(108, 99, 255, 0.14), transparent 22%) !important,
+            radial-gradient(circle at 90% 10%, rgba(255, 179, 71, 0.1), transparent 18%) !important,
+            radial-gradient(circle at 50% 100%, rgba(0, 200, 150, 0.06), transparent 24%) !important,
+            linear-gradient(180deg, #111421 0%, #0D0F1A 46%, #090b13 100%) !important;
+        }
+
+        .app-shell-root .sidebar-panel {
+          background:
+            radial-gradient(circle at top right, rgba(108, 99, 255, 0.18), transparent 26%) !important,
+            radial-gradient(circle at bottom left, rgba(255, 179, 71, 0.08), transparent 26%) !important,
+            linear-gradient(180deg, rgba(22,25,41,0.98), rgba(13,15,26,0.98)) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          box-shadow: 0 34px 90px rgba(2, 6, 23, 0.45) !important;
+        }
+
+        .app-shell-root .sidebar-panel::before {
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.06), transparent 24%) !important,
+            linear-gradient(180deg, transparent, rgba(108,99,255,0.06)) !important;
+        }
+
+        .app-shell-root .brand-title,
+        .app-shell-root .brand-title.brand-title-hindi,
+        .app-shell-root .mobile-brand-title,
+        .app-shell-root .mobile-brand-title.brand-title-hindi {
+          color: #F0F0FF !important;
+          text-shadow: 0 14px 34px rgba(108, 99, 255, 0.26) !important;
+        }
+
+        .app-shell-root .brand-subtitle,
+        .app-shell-root .mobile-brand-subtitle,
+        .app-shell-root .brand-status-label,
+        .app-shell-root .sidebar-section-label,
+        .app-shell-root .sidebar-shortcut-copy,
+        .app-shell-root .sidebar-user-email,
+        .app-shell-root .nav-short,
+        .app-shell-root .content-top-actions-kicker,
+        .app-shell-root .content-top-actions-subtitle {
+          color: #8B8FA8 !important;
+        }
+
+        .app-shell-root .brand-status-copy,
+        .app-shell-root .sidebar-shortcut-title,
+        .app-shell-root .sidebar-user-name,
+        .app-shell-root .nav-link,
+        .app-shell-root .nav-label,
+        .app-shell-root .sidebar-user-menu button,
+        .app-shell-root .sidebar-user-menu a,
+        .app-shell-root .mobile-user-chip,
+        .app-shell-root .top-upgrade-chip {
+          color: #F0F0FF !important;
+        }
+
+        .app-shell-root .brand-status-card,
+        .app-shell-root .language-switch-card,
+        .app-shell-root .sidebar-user-card,
+        .app-shell-root .sidebar-shortcut,
+        .app-shell-root .sidebar-shortcut.is-secondary,
+        .app-shell-root .sidebar-user-menu,
+        .app-shell-root .mobile-user-chip,
+        .app-shell-root .mobile-bottom-nav-card,
+        .app-shell-root .sidebar-logout,
+        .app-shell-root .premium-trial-banner,
+        .app-shell-root .membership-spotlight-pills span,
+        .app-shell-root .membership-spotlight-side,
+        .app-shell-root .membership-mini-plan {
+          background: rgba(30, 34, 53, 0.88) !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          box-shadow: 0 18px 36px rgba(2, 6, 23, 0.24) !important;
+        }
+
+        .app-shell-root .brand-live-pill {
+          background: rgba(0, 200, 150, 0.14) !important;
+          color: #00C896 !important;
+          border-color: rgba(0, 200, 150, 0.28) !important;
+        }
+
+        .app-shell-root .sidebar-shortcut-icon,
+        .app-shell-root .nav-icon-wrap,
+        .app-shell-root .language-toggle .segmented-option,
+        .app-shell-root .language-compact {
+          background: rgba(255,255,255,0.04) !important;
+          border-color: rgba(255,255,255,0.08) !important;
+          color: #F0F0FF !important;
+        }
+
+        .app-shell-root .language-toggle .segmented-option.is-active,
+        .app-shell-root .nav-link.is-active,
+        .app-shell-root .mobile-nav-link.is-active {
+          color: #F0F0FF !important;
+          border-color: rgba(108, 99, 255, 0.28) !important;
+          box-shadow: 0 16px 34px rgba(108, 99, 255, 0.16) !important;
+        }
+
+        .app-shell-root .nav-link:hover {
+          color: #F0F0FF !important;
+          background: rgba(255,255,255,0.03) !important;
+        }
+
+        .app-shell-root .sidebar-user-menu button + button,
+        .app-shell-root .sidebar-user-menu button + a,
+        .app-shell-root .sidebar-user-menu a + button,
+        .app-shell-root .sidebar-user-menu a + a {
+          border-top: 1px solid rgba(255,255,255,0.06) !important;
+        }
+
+        .app-shell-root .sidebar-user-menu .danger,
+        .app-shell-root .sidebar-logout {
+          color: #FF6B6B !important;
+        }
+
+        .app-shell-root .premium-topbar,
+        .app-shell-root .premium-topbar.is-scrolled {
+          background: #0D0F1A !important;
+          border-bottom: 1px solid #FFFFFF0D !important;
+          box-shadow: none !important;
+          backdrop-filter: none;
+        }
+
+        .app-shell-root .mobile-avatar,
+        .app-shell-root .sidebar-avatar {
+          background: linear-gradient(135deg, #6C63FF, #8B63FF) !important;
+          color: #F0F0FF !important;
+          box-shadow: 0 12px 28px rgba(108, 99, 255, 0.28) !important;
+        }
+
+        .app-shell-root .top-upgrade-chip,
+        .app-shell-root .top-upgrade-chip.is-manage {
+          background: transparent !important;
+          border: 1px solid #6C63FF !important;
+          color: #6C63FF !important;
+          box-shadow: none !important;
+          border-radius: 999px !important;
+        }
+
+        .app-shell-root .top-upgrade-chip.is-shining::after {
+          display: none !important;
+        }
+
+        .mobile-topbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .mobile-avatar-button {
+          width: 38px !important;
+          height: 38px !important;
+          min-width: 38px !important;
+          padding: 0 !important;
+          border-radius: 999px !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+
+        .mobile-avatar-button span {
+          display: none !important;
+        }
+
+        .app-shell-root .mobile-bottom-nav-card {
+          background: #161929 !important;
+          border-top: 1px solid #FFFFFF0D !important;
+          border-left: none !important;
+          border-right: none !important;
+          border-bottom: none !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          min-height: calc(64px + env(safe-area-inset-bottom)) !important;
+          padding: 0 4px env(safe-area-inset-bottom) !important;
+        }
+
+        .app-shell-root .premium-bottom-nav {
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+        }
+
+        .app-shell-root .mobile-nav-link {
+          color: #555870 !important;
+          border-radius: 0 !important;
+          border: none !important;
+          min-height: 64px !important;
+          padding: 8px 4px !important;
+          gap: 4px !important;
+          justify-content: center !important;
+        }
+
+        .app-shell-root .mobile-nav-glow {
+          display: block !important;
+          background: linear-gradient(180deg, rgba(108,99,255,0.22), rgba(108,99,255,0.06)) !important;
+        }
+
+        .app-shell-root .mobile-nav-link.is-active {
+          color: #6C63FF !important;
+          background: transparent !important;
+          transform: none !important;
+        }
+
+        .app-shell-root .mobile-nav-link.is-active::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 18% !important;
+          right: 18% !important;
+          height: 2px !important;
+          background: #6C63FF !important;
+          border-radius: 0 0 999px 999px !important;
+        }
+
+        .app-shell-root .content-top-actions-copy,
+        .app-shell-root .membership-spotlight-copy p,
+        .app-shell-root .membership-mini-plan span {
+          color: #8B8FA8 !important;
+        }
+
+        .app-shell-root .membership-spotlight-copy h2,
+        .app-shell-root .membership-mini-plan,
+        .app-shell-root .membership-spotlight-pills span {
+          color: #F0F0FF !important;
+        }
+
         @media (max-width: 900px) {
           .desktop-sidebar { display: none !important; }
           .mobile-topbar { display: flex !important; }
           .mobile-bottom-nav { display: block !important; }
           .premium-main-content {
             margin-left: 0 !important;
-            padding: 86px 14px 116px !important;
+            padding: calc(var(--mobile-header-height) + 12px) 0 calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom) + 12px) !important;
+            min-height: 100dvh !important;
+            overflow: hidden !important;
+          }
+          .content-container {
+            height: calc(100dvh - var(--mobile-header-height) - var(--mobile-bottom-nav-height) - env(safe-area-inset-bottom)) !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 0 !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .premium-topbar {
+            min-height: var(--mobile-header-height) !important;
+            height: var(--mobile-header-height) !important;
+          }
+          .premium-bottom-nav,
+          .mobile-bottom-nav-card {
+            min-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom)) !important;
+            height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom)) !important;
           }
           .content-top-actions {
             display: none;

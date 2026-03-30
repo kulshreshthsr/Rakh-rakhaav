@@ -86,14 +86,14 @@ export default function ForgotPasswordPage() {
               </div>
             ) : (
               <>
-                <div className="auth-title">Forgot password?</div>
+                <div className="auth-title">पासवर्ड भूल गए? / Forgot Password?</div>
                 <div className="auth-subtitle">Enter your email and we&apos;ll send you a password reset link.</div>
 
                 {error && <div className="alert-error">{error}</div>}
 
                 <form onSubmit={handleSubmit}>
                   <div className="form-group">
-                    <label className="form-label">Email</label>
+                    <label className="form-label">ईमेल / EMAIL</label>
                     <input
                       type="email"
                       className="form-input"

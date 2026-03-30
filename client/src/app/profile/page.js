@@ -181,7 +181,7 @@ export default function ProfilePage() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <div className="kicker" style={{ marginBottom: 10 }}>Profile control</div>
-                <div className="page-title" style={{ color: '#0f172a', marginBottom: 4 }}>Profile & Settings</div>
+                <div className="page-title" style={{ color: '#0f172a', marginBottom: 4 }}>प्रोफ़ाइल और सेटिंग्स / Profile & Settings</div>
                 <div style={{ fontSize: 13, color: '#5b6b82' }}>
                   Manage shop identity, invoice details and account security in one place.
                 </div>
@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
         <section className="card" id="shop-details-section">
           <div style={{ marginBottom: 18 }}>
-            <div className="section-title">Shop Details</div>
+            <div className="section-title">दुकान विवरण / Shop Details</div>
             <div className="section-subtitle">GST compliance, billing identity and printed invoice information</div>
           </div>
 
@@ -234,45 +234,45 @@ export default function ProfilePage() {
           <form onSubmit={updateShop}>
             <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">Shop Name *</label>
+                <label className="form-label">दुकान नाम / SHOP NAME *</label>
                 <input className="form-input" value={shopForm.name} onChange={(e) => setShopForm({ ...shopForm, name: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label className="form-label">GSTIN</label>
+                <label className="form-label">जीएसटीआईएन / GSTIN</label>
                 <input className="form-input" placeholder="22AAAAA0000A1Z5" value={shopForm.gstin} onChange={(e) => setShopForm({ ...shopForm, gstin: e.target.value })} />
               </div>
             </div>
 
             <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">Phone</label>
+                <label className="form-label">फोन / PHONE</label>
                 <input className="form-input" placeholder="9876543210" value={shopForm.phone} onChange={(e) => setShopForm({ ...shopForm, phone: e.target.value })} />
               </div>
               <div className="form-group">
-                <label className="form-label">Email</label>
+                <label className="form-label">ईमेल / EMAIL</label>
                 <input className="form-input" placeholder="shop@email.com" value={shopForm.email} onChange={(e) => setShopForm({ ...shopForm, email: e.target.value })} />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Address</label>
+              <label className="form-label">पता / ADDRESS</label>
               <input className="form-input" placeholder="Street address" value={shopForm.address} onChange={(e) => setShopForm({ ...shopForm, address: e.target.value })} />
             </div>
 
             <div className="grid-3">
               <div className="form-group">
-                <label className="form-label">City</label>
+                <label className="form-label">शहर / CITY</label>
                 <input className="form-input" placeholder="City" value={shopForm.city} onChange={(e) => setShopForm({ ...shopForm, city: e.target.value })} />
               </div>
               <div className="form-group">
-                <label className="form-label">State</label>
+                <label className="form-label">राज्य / STATE</label>
                 <select className="form-input" value={shopForm.state} onChange={(e) => setShopForm({ ...shopForm, state: e.target.value })}>
                   <option value="">Select State</option>
                   {STATES.map((state) => <option key={state} value={state}>{state}</option>)}
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Pincode</label>
+                <label className="form-label">पिनकोड / PINCODE</label>
                 <input className="form-input" placeholder="110001" value={shopForm.pincode} onChange={(e) => setShopForm({ ...shopForm, pincode: e.target.value })} />
               </div>
             </div>
@@ -280,36 +280,36 @@ export default function ProfilePage() {
             <div className="divider" />
 
             <div className="soft-panel" style={{ padding: 16, marginBottom: 16 }}>
-              <div className="section-title" style={{ fontSize: 16 }}>Bank Details</div>
+              <div className="section-title" style={{ fontSize: 16 }}>बैंक विवरण / Bank Details</div>
               <div className="section-subtitle">Will appear on invoices when available</div>
               <div className="grid-2" style={{ marginTop: 14 }}>
                 <div className="form-group">
-                  <label className="form-label">Bank Name</label>
+                  <label className="form-label">बैंक नाम / BANK NAME</label>
                   <input className="form-input" placeholder="State Bank of India" value={shopForm.bank_name} onChange={(e) => setShopForm({ ...shopForm, bank_name: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Branch</label>
+                  <label className="form-label">शाखा / BRANCH</label>
                   <input className="form-input" placeholder="Main Branch" value={shopForm.bank_branch} onChange={(e) => setShopForm({ ...shopForm, bank_branch: e.target.value })} />
                 </div>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Account No.</label>
+                  <label className="form-label">खाता संख्या / ACCOUNT NO.</label>
                   <input className="form-input" placeholder="0000000000" value={shopForm.bank_account} onChange={(e) => setShopForm({ ...shopForm, bank_account: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">IFSC Code</label>
+                  <label className="form-label">आईएफएससी कोड / IFSC CODE</label>
                   <input className="form-input" placeholder="SBIN0000000" value={shopForm.bank_ifsc} onChange={(e) => setShopForm({ ...shopForm, bank_ifsc: e.target.value })} />
                 </div>
               </div>
             </div>
 
             <div className="soft-panel" style={{ padding: 16, marginBottom: 18 }}>
-              <div className="section-title" style={{ fontSize: 16 }}>Terms & Conditions</div>
+              <div className="section-title" style={{ fontSize: 16 }}>नियम और शर्तें / Terms & Conditions</div>
               <div className="section-subtitle">Printed on invoices for cleaner business communication</div>
               <div className="form-group" style={{ marginTop: 14, marginBottom: 0 }}>
-                <label className="form-label">Terms</label>
+                <label className="form-label">नियम / TERMS</label>
                 <textarea
                   className="form-input"
                   rows={4}
@@ -330,7 +330,7 @@ export default function ProfilePage() {
         <section className="profile-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
           <div className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="section-title">Update Name</div>
+              <div className="section-title">नाम अपडेट करें / Update Name</div>
               <div className="section-subtitle">This updates your account identity across the app</div>
             </div>
 
@@ -351,7 +351,7 @@ export default function ProfilePage() {
 
           <div className="card">
             <div style={{ marginBottom: 16 }}>
-              <div className="section-title">Change Password</div>
+              <div className="section-title">पासवर्ड बदलें / Change Password</div>
               <div className="section-subtitle">Keep access secure without changing any business data</div>
             </div>
 
@@ -360,15 +360,15 @@ export default function ProfilePage() {
 
             <form onSubmit={updatePassword}>
               <div className="form-group">
-                <label className="form-label">Current Password</label>
+                <label className="form-label">वर्तमान पासवर्ड / CURRENT PASSWORD</label>
                 <input className="form-input" type="password" value={passForm.currentPassword} onChange={(e) => setPassForm({ ...passForm, currentPassword: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label className="form-label">New Password</label>
+                <label className="form-label">नया पासवर्ड / NEW PASSWORD</label>
                 <input className="form-input" type="password" value={passForm.newPassword} onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })} required />
               </div>
               <div className="form-group">
-                <label className="form-label">Confirm Password</label>
+                <label className="form-label">पासवर्ड पुष्टि / CONFIRM PASSWORD</label>
                 <input className="form-input" type="password" value={passForm.confirmPassword} onChange={(e) => setPassForm({ ...passForm, confirmPassword: e.target.value })} required />
               </div>
               <button type="submit" className="btn-primary">Change Password</button>

@@ -176,13 +176,13 @@ export default function UdhaarPage() {
   return (
     <Layout>
       <div className="page-shell ledger-shell">
-        <section className="card">
+        <section className="hero-panel page-header-card ledger-header-card">
           <div className="page-toolbar">
-            <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
+            <div className="page-title page-header-title">उधार बही / Udhaar</div>
           </div>
         </section>
 
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+        <section className="metric-grid ledger-stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           <StatCard
             label="Customer Due"
             value={`₹${totalCustomerUdhaar.toFixed(0)}`}
@@ -197,12 +197,12 @@ export default function UdhaarPage() {
           />
         </section>
 
-        <div className="ui-segmented">
+        <div className="ui-segmented ledger-toggle-tabs">
           <button type="button" onClick={() => switchTab('customers')} className={`ui-segment ${isCustomer ? 'is-active' : ''}`}>
-            Customers ({customers.length})
+            ग्राहक / Customers ({customers.length})
           </button>
           <button type="button" onClick={() => switchTab('suppliers')} className={`ui-segment ${!isCustomer ? 'is-active' : ''}`}>
-            Suppliers ({suppliers.length})
+            आपूर्तिकर्ता / Suppliers ({suppliers.length})
           </button>
         </div>
 
@@ -250,16 +250,16 @@ export default function UdhaarPage() {
                 {list.map((item) => (
                   <div key={item._id}>
                     <div
-                      className={`ui-list-card ${selected?._id === item._id ? 'is-active' : ''}`}
+                      className={`ui-list-card ledger-party-card ${selected?._id === item._id ? 'is-active' : ''}`}
                       onClick={() => openLedger(item)}
                       style={{ cursor: 'pointer' }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                         <div className="ui-avatar">{initials(item.name)}</div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>{item.name}</div>
-                          {item.phone ? <div style={{ fontSize: 12, color: '#9ca3af' }}>Phone: {item.phone}</div> : null}
-                          {item.gstin ? <div style={{ fontSize: 11, color: '#67e8f9' }}>GSTIN: {item.gstin}</div> : null}
+                          <div className="ledger-party-name">{item.name}</div>
+                          {item.phone ? <div className="ledger-party-meta">Phone: {item.phone}</div> : null}
+                          {item.gstin ? <div className="ledger-party-meta">GSTIN: {item.gstin}</div> : null}
                         </div>
                       </div>
 
@@ -274,11 +274,11 @@ export default function UdhaarPage() {
                           </ActionButton>
                         ) : null}
                         <div>
-                          <div className={item.totalUdhaar > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'} style={{ fontSize: 18 }}>
+                          <div className={item.totalUdhaar > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'} style={{ fontSize: 22 }}>
                             ₹{fmt(item.totalUdhaar)}
                           </div>
-                          <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                            {item.totalUdhaar > 0 ? (isCustomer ? 'Amount to collect' : 'Amount to pay') : 'Settled'}
+                          <div className="ledger-party-due-copy">
+                            {item.totalUdhaar > 0 ? (isCustomer ? 'लेना बाकी / Due to collect' : 'देना बाकी / Due to pay') : 'Settled'}
                           </div>
                         </div>
                       </div>
@@ -291,18 +291,13 @@ export default function UdhaarPage() {
                         subtitle={selected.phone ? `Phone: ${selected.phone}` : 'Transaction history'}
                         actions={
                           <>
-                            {isCustomer && selected.phone && selected.totalUdhaar > 0 ? (
-                              <ActionButton variant="whatsapp" onClick={() => sendReminder(selected)}>
-                                WhatsApp Reminder
-                              </ActionButton>
-                            ) : null}
                             {selected.totalUdhaar > 0 ? (
-                              <ActionButton variant="primary" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
-                                {isCustomer ? 'Receive Payment' : 'Make Payment'}
+                              <ActionButton variant={isCustomer ? 'primary' : 'warning'} onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
+                                {isCustomer ? 'Payment लें / Collect' : 'Payment करें / Pay'}
                               </ActionButton>
                             ) : null}
                             <ActionButton variant="dark" onClick={() => { setSelected(null); setLedger([]); }}>
-                              Close
+                              बंद करें
                             </ActionButton>
                           </>
                         }
@@ -334,9 +329,8 @@ export default function UdhaarPage() {
                                 <tr>
                                   <th className="sticky-col">Date</th>
                                   <th className="sticky-col-2">Note</th>
-                                  <th style={{ textAlign: 'right' }}>Debit (+)</th>
-                                  <th style={{ textAlign: 'right' }}>Credit (-)</th>
-                                  <th style={{ textAlign: 'right' }}>Balance</th>
+                                  <th style={{ textAlign: 'right' }}>Debit</th>
+                                  <th style={{ textAlign: 'right' }}>Credit</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -351,9 +345,6 @@ export default function UdhaarPage() {
                                       </td>
                                       <td style={{ textAlign: 'right' }} className="ui-value-danger">{isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
                                       <td style={{ textAlign: 'right' }} className="ui-value-money">{!isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
-                                      <td style={{ textAlign: 'right' }} className={(entry.running_balance ?? 0) > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'}>
-                                        ₹{fmt(entry.running_balance)}
-                                      </td>
                                     </tr>
                                   );
                                 })}
@@ -391,7 +382,7 @@ export default function UdhaarPage() {
 
               <form onSubmit={handleSettle}>
                 <div className="form-group">
-                  <label className="form-label">Amount *</label>
+                  <label className="form-label">राशि / AMOUNT *</label>
                   <input
                     className="form-input"
                     type="number"
@@ -421,7 +412,7 @@ export default function UdhaarPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Note</label>
+                  <label className="form-label">नोट / NOTE</label>
                   <input
                     className="form-input"
                     placeholder="Payment note (optional)"
@@ -449,6 +440,33 @@ export default function UdhaarPage() {
       </div>
       <style>{`
         .ledger-shell .ledger-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
+        .ledger-header-card {
+          padding: 20px !important;
+        }
+        .ledger-stats-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+        .ledger-toggle-tabs {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .ledger-party-card {
+          padding: 20px !important;
+        }
+        .ledger-party-name {
+          font-size: 15px;
+          font-weight: 700;
+          color: #F0F0FF;
+        }
+        .ledger-party-meta {
+          margin-top: 4px;
+          font-size: 12px;
+          color: #8B8FA8;
+        }
+        .ledger-party-due-copy {
+          margin-top: 4px;
+          font-size: 11px;
+          color: #8B8FA8;
+        }
 
         .ledger-shell .ledger-detail-card {
           margin-top: 12px;
@@ -478,6 +496,21 @@ export default function UdhaarPage() {
           border: 1px solid #e2e8f0;
           box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
           margin-bottom: 2px;
+        }
+
+        .compact-ledger-table th:last-child,
+        .compact-ledger-table td:last-child {
+          display: none;
+        }
+
+        @media (max-width: 640px) {
+          .ledger-stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .ledger-party-card {
+            flex-direction: column;
+            align-items: stretch;
+          }
         }
       `}</style>
     </Layout>

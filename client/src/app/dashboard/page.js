@@ -239,7 +239,7 @@ export default function DashboardPage() {
       label: 'Credit',
       value: `₹${fmt(totalCustomerUdhaar)}`,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
-      tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
+      tone: totalCustomerUdhaar > 0 ? 'danger' : 'neutral',
       href: '/udhaar',
       icon: 'Credit',
     },
@@ -265,42 +265,46 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
-        <section className="card">
+        <section className="hero-panel page-header-card dashboard-header-card">
           <div className="page-toolbar dashboard-toolbar">
             <div style={{ minWidth: 0 }}>
               <div className="page-subtitle">Business overview</div>
-              <div className="page-title">Dashboard</div>
+              <div className="page-title page-header-title">रखरखाव</div>
               {refreshing ? (
                 <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
               ) : null}
             </div>
 
-            <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
+            <div className="dashboard-period-picker">
+              <div className="dashboard-period-group">
                 {MONTHS.map((month, index) => (
-                  <option key={month} value={index + 1}>{month}</option>
+                  <button
+                    key={month}
+                    type="button"
+                    className={`dashboard-period-pill ${selectedMonth === index + 1 ? 'is-active' : ''}`}
+                    onClick={() => setSelectedMonth(index + 1)}
+                  >
+                    {month}
+                  </button>
                 ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
+              </div>
+              <div className="dashboard-period-group dashboard-year-group">
                 {[2023, 2024, 2025, 2026].map((year) => (
-                  <option key={year} value={year}>{year}</option>
+                  <button
+                    key={year}
+                    type="button"
+                    className={`dashboard-period-pill ${selectedYear === year ? 'is-active' : ''}`}
+                    onClick={() => setSelectedYear(year)}
+                  >
+                    {year}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="metric-grid">
+        <section className="metric-grid dashboard-summary-grid">
           {statCards.map((card) => (
             <StatCard
               key={card.label}
@@ -319,33 +323,31 @@ export default function DashboardPage() {
           <section className="card dashboard-section-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
               <div>
-                <div className="section-title">Profit Breakdown</div>
+                <div className="section-title">लाभ विभाजन / Profit Breakdown</div>
                 <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
               </div>
               <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
             </div>
 
-            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+            <div className="dashboard-breakdown-stack">
               {[
-                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
-                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
-                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
+                { label: 'Revenue', value: stats?.totalRevenue, color: '#00C896', prefix: '' },
+                { label: 'GST Collected', value: stats?.gstCollected, color: '#FFB347', prefix: '-' },
+                { label: 'Taxable Revenue', value: (stats?.totalRevenue || 0) - (stats?.gstCollected || 0), color: '#F0F0FF', prefix: '=' },
+                { label: 'Profit', value: profit, color: profit >= 0 ? '#00C896' : '#FF6B6B', prefix: '=' },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="dashboard-breakdown-card"
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                  }}
+                  className="dashboard-breakdown-row"
                 >
-                    <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  <div className="dashboard-breakdown-copy">
+                    <div className="dashboard-breakdown-prefix">{item.prefix || '•'}</div>
+                    <div style={{ fontSize: 11, color: '#555870', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                       {item.label}
                     </div>
-                  <div style={{ fontSize: 24, color: item.color, fontWeight: 800, letterSpacing: '-0.05em', marginTop: 8 }}>
-                    {item.prefix}₹{fmt(item.value)}
+                  </div>
+                  <div style={{ fontSize: 24, color: item.color, fontWeight: 700, letterSpacing: '-0.05em' }}>
+                    ₹{fmt(item.value)}
                   </div>
                 </div>
               ))}
@@ -404,53 +406,49 @@ export default function DashboardPage() {
         <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
           <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
             <div>
-              <div className="section-title">Quick Actions</div>
+              <div className="section-title">त्वरित कार्य / Quick Actions</div>
               <div className="section-subtitle">Fast access to your most-used screens</div>
             </div>
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
-          <div className="quick-actions-carousel">
-            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-              {quickActions.map((action) => (
-                <a
-                  key={action.href}
-                  href={action.href}
-                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: 18,
-                    padding: '14px 12px',
-                    minHeight: 94,
-                  }}
-                >
-                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
-                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
-                    </div>
+          <div className="quick-actions-row dashboard-quick-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+            {quickActions.map((action) => (
+              <a
+                key={action.href}
+                href={action.href}
+                className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
+                style={{
+                  textDecoration: 'none',
+                  borderRadius: 16,
+                  padding: '16px',
+                  minHeight: 112,
+                }}
+              >
+                <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
+                  <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 999, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3, color: '#F0F0FF' }}>{action.hi}</div>
+                    <div style={{ fontSize: 11, color: '#8B8FA8', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
                   </div>
-                </a>
-              ))}
-            </div>
-            <div className="quick-actions-fade" aria-hidden="true" />
-            <div className="quick-actions-chevron" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
+                </div>
+              </a>
+            ))}
           </div>
         </section>
 
         <section className="card dashboard-section-card">
           <div style={{ marginBottom: 16 }}>
-            <div className="section-title">Top Products</div>
+            <div className="section-title">टॉप उत्पाद / Top Products</div>
             <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
           </div>
           {topProducts.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">PK</div>
-              <div>No top products yet for this period.</div>
+            <div className="dashboard-empty-illustration">
+              <div className="dashboard-empty-art" aria-hidden="true">
+                <div className="dashboard-empty-orb" />
+                <div className="dashboard-empty-box" />
+              </div>
+              <div className="dashboard-empty-title">अभी कोई टॉप उत्पाद नहीं / No top products yet</div>
+              <div className="dashboard-empty-copy">इस अवधि के लिए बिक्री रिकॉर्ड होने पर यहां आपके सबसे अच्छे उत्पाद दिखेंगे।</div>
             </div>
           ) : (
             <div className="top-products-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
@@ -502,49 +500,155 @@ export default function DashboardPage() {
       </div>
 
       <style>{`
-        .dashboard-shell { color: #111111; }
-        .dashboard-period-shell .form-input { background: #ffffff !important; color: #111111 !important; border: 1px solid #d1d5db !important; box-shadow: none; }
+        .dashboard-shell { color: #F0F0FF; }
+        .dashboard-header-card {
+          padding: 20px !important;
+        }
+        .dashboard-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+        .dashboard-period-picker {
+          display: grid;
+          gap: 10px;
+          min-width: min(100%, 420px);
+        }
+        .dashboard-period-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          justify-content: flex-end;
+        }
+        .dashboard-period-pill {
+          min-height: 38px;
+          padding: 8px 12px;
+          border-radius: 999px;
+          border: 1px solid #FFFFFF15;
+          background: #1E2235;
+          color: #8B8FA8;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        .dashboard-period-pill.is-active {
+          background: #6C63FF22;
+          border-color: #6C63FF;
+          color: #6C63FF;
+        }
         .dashboard-stat-card,
         .dashboard-section-card,
         .dashboard-breakdown-card,
         .dashboard-top-card,
         .dashboard-quick-card,
         .dashboard-warning-card {
-          border: 1px solid #e5e7eb !important;
-          color: #111111 !important;
+          border: 1px solid rgba(255,255,255,0.08) !important;
+          color: #F0F0FF !important;
         }
         .dashboard-stat-card {
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
+          box-shadow: 0 24px 48px rgba(2, 6, 23, 0.28) !important;
+        }
+        .dashboard-stat-card.ui-tone-neutral::before {
+          background: #555870;
+        }
+        .dashboard-stat-card.ui-tone-neutral .ui-stat-value {
+          color: #8B8FA8 !important;
         }
         .dashboard-top-card {
-          background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07) !important;
+          background: linear-gradient(180deg, rgba(30,34,53,0.92) 0%, rgba(22,25,41,0.98) 100%) !important;
+          box-shadow: 0 20px 42px rgba(2, 6, 23, 0.24) !important;
         }
         .dashboard-breakdown-card {
-          box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06) !important;
+          box-shadow: 0 20px 42px rgba(2, 6, 23, 0.22) !important;
         }
         .dashboard-quick-card:hover,
-        .dashboard-top-card:hover { transform: translateY(-3px); border-color: #cbd5e1 !important; }
+        .dashboard-top-card:hover { transform: translateY(-3px); border-color: rgba(108,99,255,0.28) !important; }
         .dashboard-quick-card div[style*='color: #64748b'],
         .dashboard-top-card div[style*='color: #64748b'],
         .dashboard-breakdown-card div[style*='color: #64748b'],
-        .dashboard-warning-card .section-subtitle { color: #6b7280 !important; }
+        .dashboard-warning-card .section-subtitle { color: #8B8FA8 !important; }
         .dashboard-quick-icon,
-        .dashboard-stat-icon { box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08) !important; }
-        .dashboard-progress-track { background: #f3f4f6; border: 1px solid #e5e7eb; }
+        .dashboard-stat-icon { box-shadow: 0 18px 34px rgba(108, 99, 255, 0.14) !important; }
+        .dashboard-progress-track { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
         .dashboard-chip-warning,
-        .dashboard-shell .badge-navy { background: #ffffff !important; color: #111111 !important; border-color: #d1d5db !important; }
-        .dashboard-shell .btn-warning { background: linear-gradient(135deg, #ffffff, #f8fafc); color: #111111; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06); }
-        .quick-actions-carousel {
-          position: relative;
+        .dashboard-shell .badge-navy { background: rgba(255,179,71,0.12) !important; color: #FFB347 !important; border-color: rgba(255,179,71,0.24) !important; }
+        .dashboard-shell .btn-warning { background: linear-gradient(135deg, rgba(255,179,71,0.18), rgba(255,179,71,0.08)); color: #F0F0FF; box-shadow: 0 16px 30px rgba(255, 179, 71, 0.12); border: 1px solid rgba(255,179,71,0.22); }
+        .dashboard-quick-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         }
-        .quick-actions-fade,
-        .quick-actions-chevron {
-          display: none;
+        .dashboard-breakdown-stack {
+          display: grid;
+          gap: 10px;
+        }
+        .dashboard-breakdown-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 14px 0;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .dashboard-breakdown-row:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+        .dashboard-breakdown-copy {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .dashboard-breakdown-prefix {
+          font-size: 18px;
+          font-weight: 700;
+          color: #8B8FA8;
+          width: 16px;
+          text-align: center;
+        }
+        .dashboard-empty-illustration {
+          padding: 16px 4px 8px;
+          display: grid;
+          justify-items: center;
+          text-align: center;
+          gap: 10px;
+        }
+        .dashboard-empty-art {
+          position: relative;
+          width: 120px;
+          height: 84px;
+        }
+        .dashboard-empty-orb {
+          position: absolute;
+          width: 72px;
+          height: 72px;
+          right: 4px;
+          top: 0;
+          border-radius: 999px;
+          background: radial-gradient(circle at 30% 30%, rgba(108,99,255,0.34), rgba(108,99,255,0.08));
+          filter: blur(2px);
+        }
+        .dashboard-empty-box {
+          position: absolute;
+          left: 10px;
+          bottom: 6px;
+          width: 74px;
+          height: 48px;
+          border-radius: 16px;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: linear-gradient(135deg, #1E2235, #161929);
+        }
+        .dashboard-empty-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: #F0F0FF;
+        }
+        .dashboard-empty-copy {
+          max-width: 420px;
+          font-size: 14px;
+          color: #8B8FA8;
         }
 
         @media (max-width: 900px) {
-          .quick-actions-row {
+          .dashboard-summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+          .dashboard-quick-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
 
@@ -580,43 +684,15 @@ export default function DashboardPage() {
             padding: 10px 12px;
           }
 
-          .quick-actions-row {
-            grid-template-columns: repeat(3, minmax(160px, 1fr)) !important;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
-            padding-right: 56px;
-            scrollbar-width: none;
+          .dashboard-period-group {
+            justify-content: flex-start;
           }
-
-          .quick-actions-row::-webkit-scrollbar {
-            display: none;
-          }
-
-          .quick-actions-fade,
-          .quick-actions-chevron {
-            display: flex;
-            pointer-events: none;
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            right: 0;
-          }
-
-          .quick-actions-fade {
-            width: 48px;
-            background: linear-gradient(90deg, rgba(248, 250, 252, 0), #f8fafc 88%);
-          }
-
-          .quick-actions-chevron {
-            width: 28px;
-            align-items: center;
-            justify-content: center;
-            color: #64748b;
+          .dashboard-quick-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
 
           .top-products-row {
-            grid-template-columns: repeat(4, minmax(210px, 1fr)) !important;
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>

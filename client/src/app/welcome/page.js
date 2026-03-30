@@ -46,7 +46,7 @@ export default function WelcomePage() {
       <div className="trial-gate-shell trust-welcome-shell">
         <section className="trial-gate-hero trust-welcome-hero">
           <div className="subscription-pill">Welcome to Rakhrakhaav</div>
-          <h1>A premium business cockpit your customers will feel in every interaction.</h1>
+          <h1>प्रीमियम अनुभव / A premium business cockpit your customers will feel in every interaction.</h1>
           <p>
             This experience is built to make your business feel more serious, more reliable, and more modern from the
             first screen to the final bill.

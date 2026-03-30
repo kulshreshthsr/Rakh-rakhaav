@@ -83,7 +83,7 @@ export default function LoginPage() {
           </div>
 
           <div className="trust-auth-copy">
-            <h1>Run your business with clarity.</h1>
+            <h1>स्पष्टता से व्यापार चलाएं / Run your business with clarity.</h1>
             <p>GST billing, inventory, purchases, and udhaar in one focused workspace.</p>
           </div>
 
@@ -106,14 +106,14 @@ export default function LoginPage() {
         <section className="trust-auth-card-wrap">
           <div className="trust-auth-card">
             <div className="trust-form-topline">Secure sign in</div>
-            <div className="auth-title">Welcome back</div>
+            <div className="auth-title">वापस स्वागत है / Welcome Back</div>
             <div className="auth-subtitle">Sign in to continue running your business with confidence.</div>
 
             {error && <div className="alert-error">{error}</div>}
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label className="form-label">Username</label>
+                <label className="form-label">यूज़रनेम / USERNAME</label>
                 <input
                   type="text"
                   className="form-input"
@@ -125,7 +125,7 @@ export default function LoginPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Password</label>
+                <label className="form-label">पासवर्ड / PASSWORD</label>
                 <div className="trust-password-wrap">
                   <input
                     type={showPass ? 'text' : 'password'}

@@ -54,6 +54,7 @@ export default function ProductsPage() {
   const [historyProduct, setHistoryProduct] = useState(null);
   const [historyData, setHistoryData]   = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState('');
 
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
@@ -217,6 +218,14 @@ export default function ProductsPage() {
     const prefix = parseInt(String(form.hsn_code || '').slice(0, 2), 10);
     return HSN_GST_HINTS[prefix];
   })();
+  const liveMargin = (() => {
+    const cost = Number(form.cost_price || 0);
+    const price = Number(form.price || 0);
+    if (!cost || !price || cost <= 0) return null;
+    return ((price - cost) / cost) * 100;
+  })();
+  const liveMarginColor = liveMargin === null ? '#555870' : liveMargin > 20 ? '#00C896' : liveMargin >= 10 ? '#FFB347' : '#FF6B6B';
+  const liveMarginBg = liveMargin === null ? '#1E2235' : liveMargin > 20 ? '#00C89618' : liveMargin >= 10 ? '#FFB34718' : '#FF6B6B18';
   // â”€â”€ Badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const StockBadge = ({ p }) => {
     if (p.quantity === 0) return <span className="badge badge-red">Out</span>;
@@ -231,8 +240,8 @@ export default function ProductsPage() {
 
   const MarginBadge = ({ margin }) => {
     if (margin === null || margin === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
-    const color = margin >= 30 ? '#059669' : margin >= 15 ? '#d97706' : '#ef4444';
-    const bg    = margin >= 30 ? '#dcfce7' : margin >= 15 ? '#fef3c7' : '#fee2e2';
+    const color = margin > 20 ? '#00C896' : margin >= 10 ? '#FFB347' : '#FF6B6B';
+    const bg    = margin > 20 ? '#00C89618' : margin >= 10 ? '#FFB34718' : '#FF6B6B18';
     return <span style={{ background: bg, color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{margin}%</span>;
   };
 
@@ -244,16 +253,25 @@ export default function ProductsPage() {
     adjustment: 'Adjusted',
   }[type] || type);
 
+  const getProductSubLabel = (product) => {
+    if (product.description?.trim()) return product.description;
+    const parts = [];
+    if (product.barcode) parts.push(`Barcode ${product.barcode}`);
+    if (product.hsn_code) parts.push(`HSN ${product.hsn_code}`);
+    if (product.unit) parts.push(product.unit);
+    return parts.join(' • ') || 'General stock item';
+  };
+
   return (
     <Layout>
       <div className="page-shell product-shell">
-        <section className="card">
+        <section className="card page-header-card">
           <div className="page-toolbar">
             <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
+              <div className="page-title page-header-title">उत्पाद / Products</div>
               <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Your complete product catalog</div>
             </div>
-            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ Add Product</button>
+            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ उत्पाद जोड़ें / Add Product</button>
           </div>
         </section>
 
@@ -324,133 +342,84 @@ export default function ProductsPage() {
             <div>{search || filterStock !== 'all' ? 'No products found' : 'No products yet. Add your first product.'}</div>
           </div>
         ) : (
-          <>
-          {/* Desktop table */}
-          <div className="table-container hidden-xs">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Cost</th>
-                  <th>Price</th>
-                  <th>Margin</th>
-                  <th>GST</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(p => (
-                  <tr key={p._id} style={{ background: p.quantity === 0 ? 'rgba(239,68,68,0.08)' : p.is_low_stock ? 'rgba(245,158,11,0.08)' : 'transparent' }}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
-                      <div style={{ color: '#9ca3af', fontSize: 11 }}>
-                        {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
-                        {p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}
-                        {p.low_stock_threshold !== 5 && ` • Alert <= ${p.low_stock_threshold}`}
-                      </div>
-                    </td>
-                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</td>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</td>
-                    <td><MarginBadge margin={p.margin} /></td>
-                    <td><GSTBadge rate={p.gst_rate} /></td>
-                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>
-                      {p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span>
-                    </td>
-                    <td><StockBadge p={p} /></td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button onClick={() => openStockAdjust(p)}
-                          className="action-soft stock"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Stock
-                        </button>
-                        <button onClick={() => openHistory(p)}
-                          className="action-soft history"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          History
-                        </button>
-                        <button onClick={() => openEdit(p)}
-                          className="action-soft edit"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Edit
-                        </button>
-                        <button onClick={() => handleDelete(p._id)}
-                          className="action-soft delete"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Del
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filtered.map(p => (
-              <div key={p._id} className="card"
-                style={{ borderLeft: `3px solid ${p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#10b981'}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{p.name}</div>
-                    <div style={{ color: '#9ca3af', fontSize: 11 }}>
-                      {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
-                      {p.description || (p.unit ? `Unit: ${p.unit}` : '')}
-                    </div>
+          <div className="product-card-grid">
+            {filtered.map((p) => (
+              <article
+                key={p._id}
+                className="card product-stock-card"
+                style={{ borderLeft: `3px solid ${p.quantity === 0 ? '#FF6B6B' : p.is_low_stock ? '#FFB347' : '#00C896'}` }}
+              >
+                <div className="product-card-top">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="product-card-title">{p.name}</div>
+                    <div className="product-card-subtitle">{getProductSubLabel(p)}</div>
                   </div>
                   <StockBadge p={p} />
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>{p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
+                <div className="product-data-row">
+                  <div className="product-data-point">
+                    <div className="product-data-label">Cost</div>
+                    <div className="product-data-value">{p.cost_price ? `₹${p.cost_price}` : '-'}</div>
+                  </div>
+                  <div className="product-data-point">
+                    <div className="product-data-label">Price</div>
+                    <div className="product-data-value">₹{p.price}</div>
+                  </div>
+                  <div className="product-data-point">
+                    <div className="product-data-label">Margin</div>
+                    <div><MarginBadge margin={p.margin} /></div>
+                  </div>
+                  <div className="product-data-point">
+                    <div className="product-data-label">Qty</div>
+                    <div className="product-data-value" style={{ color: p.quantity === 0 ? '#FF6B6B' : p.is_low_stock ? '#FFB347' : '#00C896' }}>
+                      {p.quantity} <span style={{ color: '#8B8FA8', fontWeight: 600 }}>{p.unit || ''}</span>
+                    </div>
+                  </div>
+                  <div className="product-data-point">
+                    <div className="product-data-label">GST</div>
+                    <div><GSTBadge rate={p.gst_rate} /></div>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => openStockAdjust(p)}
-                    className="action-soft stock"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Stock
-                  </button>
-                  <button onClick={() => openHistory(p)}
-                    className="action-soft history"
-                    style={{ flex: 1, padding: '8px' }}>
-                    History
-                  </button>
-                  <button onClick={() => openEdit(p)}
-                    className="action-soft edit"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Edit
-                  </button>
-                  <button onClick={() => handleDelete(p._id)}
-                    className="action-soft delete"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Delete
-                  </button>
+                <div className="product-card-actions">
+                  <button onClick={() => openStockAdjust(p)} className="btn-ghost product-action-btn">Stock</button>
+                  <button onClick={() => openHistory(p)} className="btn-ghost product-action-btn">History</button>
+                  <button onClick={() => openEdit(p)} className="btn-primary product-action-btn">Edit</button>
+                  <div className="product-overflow">
+                    <button
+                      type="button"
+                      className="btn-ghost product-overflow-trigger"
+                      onClick={() => setOpenMenuId((current) => current === p._id ? '' : p._id)}
+                      aria-label="More product actions"
+                    >
+                      ···
+                    </button>
+                    {openMenuId === p._id ? (
+                      <div className="product-overflow-menu">
+                        <button type="button" className="product-overflow-delete" onClick={() => { setOpenMenuId(''); handleDelete(p._id); }}>
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
-        </>
         )}
       </div>
 
       {/* â”€â”€ Add/Edit Modal â”€â”€ */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal flow-modal" style={{ maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', alignSelf: 'flex-end', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}>
-            <div className="flow-modal-header">
+          <div className="modal flow-modal product-form-modal product-form-modal--fullscreen">
+            <div className="flow-modal-header product-form-header">
               <div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
-              {editProduct ? 'Edit Product' : 'Add Product'}
+                <h3 className="product-form-title">
+              {editProduct ? 'उत्पाद अपडेट करें / Edit Product' : 'उत्पाद जोड़ें / Add Product'}
                 </h3>
+                <div className="product-form-subtitle">Pricing, stock, GST, and margin in one clean inventory form.</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
@@ -458,18 +427,20 @@ export default function ProductsPage() {
               </div>
             </div>
             {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
-            <form onSubmit={handleSubmit}>
-              <div className="flow-section-kicker"><span>Basics</span></div>
-              <div className="form-group">
-                <label className="form-label">Name *</label>
-                <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            <form onSubmit={handleSubmit} className="product-form-shell">
+              <div className="flow-section-kicker"><span>बेसिक जानकारी / Basics</span></div>
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">नाम / NAME *</label>
+                  <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">विवरण / DESCRIPTION</label>
+                  <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Description</label>
-                <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Barcode</label>
+                <label className="form-label">बारकोड / BARCODE</label>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
                   <input
                     className="form-input"
@@ -501,32 +472,33 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              <div className="flow-section-kicker"><span>Pricing</span></div>
-              <div className="grid-2">
+              <div className="flow-section-kicker"><span>मूल्य निर्धारण / Pricing</span></div>
+              <div className="product-pricing-grid">
                 <div className="form-group">
-                  <label className="form-label">Cost Price</label>
+                  <label className="form-label">लागत मूल्य / COST PRICE</label>
                   <input className="form-input" type="number" step="0.01" placeholder="Cost price" value={form.cost_price} onChange={e => setForm({ ...form, cost_price: e.target.value })} />
                 </div>
+                <div className="product-margin-live-pill" style={{ background: liveMarginBg, color: liveMarginColor, borderColor: `${liveMarginColor}40` }}>
+                  <span>MARGIN</span>
+                  <strong>{liveMargin === null ? '--' : `${liveMargin.toFixed(1)}%`}</strong>
+                </div>
                 <div className="form-group">
-                  <label className="form-label">Selling Price *</label>
+                  <label className="form-label">बिक्री मूल्य / SELLING PRICE ₹ *</label>
                   <input className="form-input" type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
                 </div>
               </div>
 
-              {/* Live margin preview */}
-              {form.cost_price && form.price && Number(form.cost_price) > 0 && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#dcfce7', border: '1px solid #86efac', borderRadius: 999, padding: '8px 12px', marginBottom: 12, fontSize: 13, color: '#166534', fontWeight: 700 }}>
-                  <span>
-                    Margin: {(((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%
-                  </span>
-                  <span style={{ color: '#15803d' }}>• ₹{(Number(form.price) - Number(form.cost_price)).toFixed(2)} per unit</span>
+              {liveMargin !== null && (
+                <div className="product-margin-note">
+                  <span>Live margin preview</span>
+                  <strong style={{ color: liveMarginColor }}>₹{(Number(form.price) - Number(form.cost_price)).toFixed(2)} profit per unit</strong>
                 </div>
               )}
-              <div className="flow-section-kicker"><span>Tax & Stock</span></div>
+              <div className="flow-section-kicker"><span>कर और स्टॉक / Tax & Stock</span></div>
               <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">
-                    {editProduct ? 'Quantity' : 'Opening Stock *'}
+                    {editProduct ? 'मात्रा / QUANTITY' : 'शुरुआती स्टॉक / OPENING STOCK *'}
                   </label>
                   <input className="form-input" type="number" min="0"
                     value={form.quantity}
@@ -535,14 +507,14 @@ export default function ProductsPage() {
                     {editProduct && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Use the Stock action to adjust inventory.</div>}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Unit</label>
-                  <input className="form-input" placeholder="kg, pcs, box, litre..." value={form.unit || 'pcs'} onChange={e => setForm({ ...form, unit: e.target.value })} />
+                  <label className="form-label">इकाई / UNIT</label>
+                  <input className="form-input" placeholder="pcs, kg, L, box..." value={form.unit || 'pcs'} onChange={e => setForm({ ...form, unit: e.target.value })} />
                 </div>
               </div>
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">HSN/SAC Code</label>
+                  <label className="form-label">एचएसएन / एसएसी कोड / HSN/SAC CODE</label>
                   <input
                     className="form-input"
                     placeholder="e.g. 8471"
@@ -565,7 +537,7 @@ export default function ProductsPage() {
                   )}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">GST Rate</label>
+                  <label className="form-label">जीएसटी दर / GST RATE</label>
                   <select className="form-input" value={form.gst_rate} onChange={e => setForm({ ...form, gst_rate: parseInt(e.target.value) })}>
                     <option value={0}>0% - No GST</option>
                     <option value={5}>5% GST</option>
@@ -583,7 +555,7 @@ export default function ProductsPage() {
 
               {/* Low stock threshold */}
               <div className="form-group">
-                <label className="form-label">Low Stock Alert Threshold</label>
+                <label className="form-label">लो स्टॉक अलर्ट / LOW STOCK ALERT</label>
                 <input className="form-input" type="number" min="0"
                   placeholder="e.g. 5 (alert when stock <= this)"
                   value={form.low_stock_threshold}
@@ -604,7 +576,7 @@ export default function ProductsPage() {
 
               <div className="flow-actions">
                 <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  {editProduct ? 'Update Product' : 'Add Product'}
+                  {editProduct ? 'उत्पाद अपडेट करें / Update Product' : 'उत्पाद जोड़ें / Save Product'}
                 </button>
                 <button type="button" onClick={() => setShowModal(false)}
                   style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
@@ -753,11 +725,185 @@ export default function ProductsPage() {
       />
 
       <style>{`
-        .product-shell .product-hero { border: 1px solid rgba(186, 230, 253, 0.8); }
-        .product-shell .card[style*='borderLeft'] { background: #ffffff !important; }
+        .product-shell .product-hero { border: 1px solid rgba(108, 99, 255, 0.22); }
+        .product-shell .card[style*='borderLeft'] { background: rgba(22, 25, 41, 0.96) !important; }
+        .product-card-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .product-stock-card {
+          display: grid;
+          gap: 16px;
+        }
+        .product-card-top {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+        }
+        .product-card-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: #F0F0FF;
+          line-height: 1.3;
+        }
+        .product-card-subtitle {
+          margin-top: 6px;
+          font-size: 12px;
+          color: #8B8FA8;
+          line-height: 1.5;
+        }
+        .product-data-row {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .product-data-point {
+          min-width: 0;
+        }
+        .product-data-label {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #555870;
+          margin-bottom: 6px;
+        }
+        .product-data-value {
+          font-size: 14px;
+          font-weight: 600;
+          color: #F0F0FF;
+          white-space: nowrap;
+        }
+        .product-card-actions {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 8px;
+          align-items: start;
+        }
+        .product-action-btn {
+          width: 100%;
+          justify-content: center;
+        }
+        .product-overflow {
+          position: relative;
+        }
+        .product-overflow-trigger {
+          width: 100%;
+          justify-content: center;
+          letter-spacing: 0.08em;
+        }
+        .product-overflow-menu {
+          position: absolute;
+          right: 0;
+          top: calc(100% + 8px);
+          min-width: 120px;
+          padding: 8px;
+          background: #161929;
+          border: 1px solid #FFFFFF0D;
+          border-radius: 12px;
+          z-index: 3;
+        }
+        .product-overflow-delete {
+          width: 100%;
+          min-height: 40px;
+          border-radius: 10px;
+          border: 1px solid #FF6B6B40;
+          background: #FF6B6B18;
+          color: #FF6B6B;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .product-form-modal--fullscreen {
+          width: min(980px, calc(100vw - 24px));
+          max-width: min(980px, calc(100vw - 24px)) !important;
+          max-height: calc(100dvh - 24px) !important;
+          overflow-y: auto !important;
+          align-self: center !important;
+          border-radius: 20px !important;
+          padding: 24px;
+        }
+        .product-form-header {
+          margin-bottom: 16px;
+        }
+        .product-form-title {
+          margin: 0 0 6px;
+          font-size: 22px;
+          font-weight: 700;
+          color: #F0F0FF;
+        }
+        .product-form-subtitle {
+          font-size: 14px;
+          color: #8B8FA8;
+        }
+        .product-form-shell {
+          display: grid;
+          gap: 14px;
+        }
+        .product-pricing-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+          gap: 14px;
+          align-items: end;
+        }
+        .product-margin-live-pill {
+          min-width: 120px;
+          min-height: 48px;
+          display: grid;
+          place-items: center;
+          align-content: center;
+          padding: 10px 14px;
+          border-radius: 999px;
+          border: 1px solid #FFFFFF15;
+          text-align: center;
+        }
+        .product-margin-live-pill span {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          color: #555870;
+        }
+        .product-margin-live-pill strong {
+          font-size: 14px;
+          font-weight: 700;
+        }
+        .product-margin-note {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: #1E2235;
+          border: 1px solid #FFFFFF0D;
+          font-size: 12px;
+          color: #8B8FA8;
+        }
 
-        @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
-        @media (min-width: 641px) { .show-xs { display: none !important; } }
+        @media (max-width: 900px) {
+          .product-card-grid {
+            grid-template-columns: 1fr;
+          }
+          .product-pricing-grid {
+            grid-template-columns: 1fr;
+          }
+          .product-form-modal--fullscreen {
+            width: calc(100vw - 12px);
+            max-width: calc(100vw - 12px) !important;
+            max-height: calc(100dvh - 12px) !important;
+            padding: 16px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .product-data-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .product-card-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
       `}</style>
     </Layout>
   );

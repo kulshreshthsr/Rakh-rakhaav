@@ -27,6 +27,13 @@ const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   hour: '2-digit',
   minute: '2-digit',
 });
+const getLocalDateTimeInputValue = (value = new Date()) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - (offset * 60000));
+  return localDate.toISOString().slice(0, 16);
+};
 const GST_STATE_CODE_MAP = {
   '01': 'Jammu & Kashmir',
   '02': 'Himachal Pradesh',
@@ -254,6 +261,7 @@ export default function SalesPage() {
   const [gstinTouched, setGstinTouched] = useState(false);
   const [form, setForm]             = useState({
     payment_type: 'cash',
+    sold_at: getLocalDateTimeInputValue(),
     amount_paid: '',
     buyer_name: '', buyer_phone: '', buyer_gstin: '',
     buyer_address: '', buyer_state: '', notes: '',
@@ -337,6 +345,7 @@ export default function SalesPage() {
     setItems([emptyItem()]);
     setForm({
       payment_type: 'credit',
+      sold_at: getLocalDateTimeInputValue(),
       amount_paid: '',
       buyer_name: '',
       buyer_phone: '',
@@ -478,7 +487,7 @@ export default function SalesPage() {
   function resetForm() {
     setEditingSaleId('');
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
+    setForm({ payment_type: 'cash', sold_at: getLocalDateTimeInputValue(), amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
@@ -498,8 +507,8 @@ export default function SalesPage() {
     e?.preventDefault();
     setError('');
     setGstinTouched(true);
-    if (form.payment_type === 'credit' && !form.buyer_name) {
-      setError('Customer name is required for credit sales.');
+    if (form.payment_type === 'credit' && (!form.buyer_name || !form.buyer_phone)) {
+      setError('Customer name and phone are required for credit sales.');
       return;
     }
     if (!gstinValid) {
@@ -527,6 +536,7 @@ export default function SalesPage() {
         body: JSON.stringify({
           items: validItems,
           ...form,
+          sold_at: form.sold_at ? new Date(form.sold_at).toISOString() : new Date().toISOString(),
           buyer_gstin: gstinValue,
           amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
         }),
@@ -590,7 +600,7 @@ export default function SalesPage() {
   function resetFormLegacy() {
     setEditingSaleId('');
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
+    setForm({ payment_type: 'cash', sold_at: getLocalDateTimeInputValue(), amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
@@ -613,6 +623,7 @@ export default function SalesPage() {
     })));
     setForm({
       payment_type: sale.payment_type || 'cash',
+      sold_at: getLocalDateTimeInputValue(sale.createdAt || sale.sold_at || new Date()),
       amount_paid: sale.payment_type === 'credit' ? String(sale.amount_paid || '') : '',
       buyer_name: sale.buyer_name || '',
       buyer_phone: sale.buyer_phone || '',
@@ -654,12 +665,34 @@ export default function SalesPage() {
     window.open(waUrl, '_blank');
   };
 
+  const SalesActionGlyph = ({ name }) => {
+    const common = {
+      width: 16,
+      height: 16,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 1.9,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      'aria-hidden': true,
+    };
+
+    if (name === 'print') {
+      return <svg {...common}><path d="M7 9V4h10v5" /><rect x="6" y="14" width="12" height="6" rx="1.5" /><path d="M6 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1" /></svg>;
+    }
+    if (name === 'whatsapp') {
+      return <svg {...common}><path d="M20 11.5A8.5 8.5 0 1 1 6.2 4.9 8.5 8.5 0 0 1 20 11.5Z" /><path d="m8.8 18.5-3.3.9.9-3.2" /><path d="M9.5 8.8c.2-.4.5-.4.7-.4h.6c.2 0 .4 0 .5.4l.5 1.2c.1.2.1.4 0 .6l-.4.6c-.1.2-.1.4 0 .6.3.5.8 1 1.3 1.3.2.1.4.1.6 0l.6-.4c.2-.1.4-.1.6 0l1.2.5c.4.1.4.3.4.5v.6c0 .2 0 .5-.4.7-.5.2-1 .3-1.4.2-1.7-.4-4.2-2.8-4.6-4.6-.1-.4 0-.9.2-1.4Z" /></svg>;
+    }
+    return <svg {...common}><path d="M4 7h16" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" /><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7" /></svg>;
+  };
+
   const PayBadge = ({ type }) => {
     const map = {
-      cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
-      credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
-      upi:    { bg: '#ede9fe', color: '#5b21b6', label: 'UPI' },
-      bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
+      cash:   { bg: '#6C63FF18', color: '#6C63FF', label: 'Cash' },
+      credit: { bg: '#FFB34718', color: '#FFB347', label: 'Udhaar' },
+      upi:    { bg: '#6C63FF18', color: '#6C63FF', label: 'UPI' },
+      bank:   { bg: '#6C63FF18', color: '#6C63FF', label: 'Bank' },
     };
     const s = map[type] || map.cash;
     return (
@@ -672,17 +705,17 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="page-shell sales-shell">
-        <section className="card">
+        <section className="card page-header-card">
           <div className="page-toolbar">
             <div>
-              <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
+              <div className="page-title page-header-title">बिक्री / Sales</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing sales data...</div>}
             </div>
-            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ Record Sale</button>
+            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ बिक्री दर्ज / Record Sale</button>
           </div>
         </section>
 
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+        <section className="metric-grid sales-stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Revenue</div>
             <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmt(summary.totalRevenue)}</div>
@@ -718,130 +751,47 @@ export default function SalesPage() {
             <div>No sales yet.</div>
           </div>
         ) : (
-          <>
-          {/* Desktop table */}
-          <div className="table-container hidden-xs">
-            <table>
-              <thead>
-                <tr>
-                  <th>Invoice</th><th>Items</th><th>Taxable</th><th>GST</th>
-                  <th>Total</th><th>Payment</th><th>Date</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.map(s => (
-                  <tr key={s._id}>
-                    <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
-                        {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
-                      </div>
-                      {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
-                      )}
-                    </td>
-                    <td>₹{fmt(s.taxable_amount)}</td>
-                    <td>
-                      {(s.total_gst || 0) > 0
-                        ? <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{fmt(s.total_gst)}</span>
-                        : <span style={{ color: '#9ca3af' }}>-</span>}
-                    </td>
-                    <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(s.total_amount)}</td>
-                    <td><PayBadge type={s.payment_type} /></td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
-                      {formatFullDateTime(s.createdAt || s.sold_at)}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => printInvoice(s)}
-                          title="Print Invoice"
-                          className="action-soft print"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Print
-                        </button>
-                        <button
-                          onClick={() => shareWhatsApp(s)}
-                          title="Share on WhatsApp"
-                          className="action-soft whatsapp"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          WA
-                        </button>
-                        <button
-                          onClick={() => startEditSale(s)}
-                          className="action-soft edit"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s._id)}
-                          className="action-soft delete"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Del
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {sales.map(s => (
-              <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
-                      {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
-                    {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
-                    )}
+          <div className="sales-list-grid">
+            {sales.map((s) => (
+              <article key={s._id} className="card sales-invoice-card">
+                <div className="sales-invoice-main">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="sales-invoice-title">{s.items && s.items.length > 1 ? `${s.items.length} products` : s.product_name}</div>
+                    <div className="sales-invoice-meta">{s.invoice_number}</div>
+                    <div className="sales-invoice-customer">{s.buyer_name && s.buyer_name !== 'Walk-in Customer' ? s.buyer_name : 'Walk-in Customer'}</div>
+                    <div className="sales-invoice-date">{formatFullDateTime(s.createdAt || s.sold_at)}</div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: 16 }}>₹{fmt(s.total_amount)}</div>
+                  <div className="sales-invoice-side">
+                    <div className="sales-invoice-total">₹{fmt(s.total_amount)}</div>
                     <PayBadge type={s.payment_type} />
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600 }}>₹{fmt(s.taxable_amount)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>₹{fmt(s.total_gst)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
-                </div>
-                <div className="flow-choice-grid">
-                  <button onClick={() => startEditSale(s)} className="action-soft edit" style={{ flex: 1, padding: '9px' }}>
-                    Edit
+                <div className="sales-invoice-actions">
+                  <button onClick={() => printInvoice(s)} title="Print invoice" className="action-soft print sales-icon-btn">
+                    <SalesActionGlyph name="print" />
                   </button>
-                  <button onClick={() => printInvoice(s)} className="action-soft print" style={{ flex: 1, padding: '9px' }}>
-                    Print
+                  <button onClick={() => shareWhatsApp(s)} title="Share on WhatsApp" className="action-soft whatsapp sales-icon-btn">
+                    <SalesActionGlyph name="whatsapp" />
                   </button>
-                  <button
-                    onClick={() => shareWhatsApp(s)}
-                    title="Share on WhatsApp"
-                    className="action-soft whatsapp"
-                    style={{ flex: 1, padding: '9px' }}>
-                    WhatsApp
-                  </button>
-                  <button onClick={() => handleDelete(s._id)} className="action-soft delete" style={{ flex: 1, padding: '9px' }}>
-                    Delete
+                  <button onClick={() => handleDelete(s._id)} title="Delete invoice" className="action-soft delete sales-icon-btn">
+                    <SalesActionGlyph name="delete" />
                   </button>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
-        </>
         )}
       </div>
 
       {/*  Modal  */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal flow-modal sale-entry-modal" style={{ maxWidth: 500 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 0, color: '#0f172a' }}>Record Sale</h3>
+          <div className="modal flow-modal sale-entry-modal sale-entry-modal--fullscreen">
+            <div className="sale-entry-header">
+              <div>
+                <h3 className="sale-entry-title">बिक्री दर्ज करें / Record Sale</h3>
+                <div className="sale-entry-subtitle">Add products, select payment, and save the invoice in one premium flow.</div>
+              </div>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -851,27 +801,27 @@ export default function SalesPage() {
                 ×
               </button>
             </div>
-            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 700, marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: '#8B8FA8', fontWeight: 700, marginBottom: 12 }}>
               Step {saleStep + 1} of 2
-              <span style={{ margin: '0 8px', color: '#cbd5e1' }}>•</span>
+              <span style={{ margin: '0 8px', color: '#555870' }}>•</span>
               {wizardSteps.map((step, index) => (
-                <span key={step.title} style={{ color: saleStep === index ? '#3730a3' : '#94a3b8', marginRight: index === wizardSteps.length - 1 ? 0 : 8 }}>
+                <span key={step.title} style={{ color: saleStep === index ? '#6C63FF' : '#8B8FA8', marginRight: index === wizardSteps.length - 1 ? 0 : 8 }}>
                   {step.title}
                 </span>
               ))}
             </div>
             {editingSaleId ? (
-              <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
+              <div style={{ fontSize: 12, color: '#6C63FF', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
             ) : null}
             {!editingSaleId && <div className="flow-muted-chip" style={{ marginBottom: 10 }}>Ready to bill</div>}
             {error && (
-              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
+              <div style={{ background: '#FF6B6B22', border: '1px solid #FF6B6B40', color: '#FF6B6B', padding: '10px 12px', borderRadius: 12, fontSize: 13, marginBottom: 12 }}>{error}</div>
             )}
               <form onSubmit={(e) => e.preventDefault()} className="sale-entry-form">
 
               {/* Items */}
               <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Items + Payment</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#555870', textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 8 }}>Items + Payment</div>
                 <div className="fast-billing-toolbar">
                   <div>
                     <div className="fast-billing-title">Fast Billing</div>
@@ -882,7 +832,7 @@ export default function SalesPage() {
                       type="button"
                       className="fast-billing-chip fast-billing-scan-chip"
                       onClick={() => setShowBarcodeScanner(true)}
-                      style={{ cursor: 'pointer', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8' }}
+                      style={{ cursor: 'pointer' }}
                     >
                       Scan Barcode
                     </button>
@@ -894,24 +844,24 @@ export default function SalesPage() {
                   const g    = rowGST(item);
                   const prod = products.find(p => p._id === item.product_id);
                   return (
-                    <div key={index} className="fast-item-card" style={{ background: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
+                    <div key={index} className="fast-item-card sale-item-card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#555870' }}>Item {index + 1}</span>
                         <button
                           type="button"
                           onClick={() => duplicateItem(index)}
-                          style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 12, fontWeight: 700, marginLeft: 'auto', marginRight: 4 }}
+                          style={{ background: 'none', border: 'none', color: '#6C63FF', cursor: 'pointer', fontSize: 12, fontWeight: 700, marginLeft: 'auto', marginRight: 4 }}
                         >
                           Duplicate
                         </button>
                         {items.length > 1 && (
                           <button type="button" onClick={() => removeItem(index)}
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
+                            style={{ background: 'none', border: 'none', color: '#FF6B6B', cursor: 'pointer', fontSize: 18 }}>×</button>
                         )}
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label">Product *</label>
+                        <label className="form-label">उत्पाद / PRODUCT *</label>
                         <SearchableProductSelect
                           products={products}
                           value={item.product_id}
@@ -924,7 +874,7 @@ export default function SalesPage() {
 
                       <div className="grid-2">
                         <div className="form-group">
-                          <label className="form-label">Quantity *</label>
+                          <label className="form-label">मात्रा / QUANTITY *</label>
                           <div className="fast-qty-control">
                             <button type="button" className="fast-qty-button" onClick={() => updateItemQuantityBy(index, -1)}>-</button>
                             <input className="form-input fast-qty-input" type="number" min="1"
@@ -948,14 +898,14 @@ export default function SalesPage() {
                           {prod && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Available: {prod.quantity}</div>}
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Price/Unit ₹ *</label>
+                          <label className="form-label">मूल्य / PRICE PER UNIT ₹ *</label>
                           <input className="form-input" type="number" step="0.01"
                             value={item.price_per_unit}
                             onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
                         </div>
                       </div>
                       {g && (
-                        <div className="fast-item-summary" style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ede9fe' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        <div className="fast-item-summary sale-item-summary" style={{ fontSize: 12, borderRadius: 12, padding: '10px 12px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                           <span>Taxable: <strong>₹{fmt(g.taxable)}</strong></span>
                           {g.gst_rate > 0 && (
                             <span>
@@ -971,8 +921,9 @@ export default function SalesPage() {
                   );
                 })}
                 <div className="fast-item-footer">
-                  <button type="button" onClick={addItem} className="fast-add-row-button">
-                    + Add Another Product
+                  <button type="button" onClick={addItem} className="fast-add-row-button sale-add-product-card">
+                    <span>+ Add Another Product</span>
+                    <small>Tap to add one more item card</small>
                   </button>
                   <div className="fast-footer-hint">Alt + A adds a new line on laptop. Compact controls stay easy to tap on mobile.</div>
                 </div>
@@ -993,9 +944,20 @@ export default function SalesPage() {
               </div>
 
               <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none', marginTop: 14 }}>
-                  <div className="flow-section-kicker"><span>Payment</span><span>Method + partial payment</span></div>
+                  <div className="flow-section-kicker"><span>भुगतान / Payment</span><span>Method + partial payment</span></div>
+                  <div className="grid-2" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label className="form-label">तारीख और समय / DATE & TIME</label>
+                      <input
+                        className="form-input"
+                        type="datetime-local"
+                        value={form.sold_at}
+                        onChange={(e) => updateForm({ sold_at: e.target.value })}
+                      />
+                    </div>
+                  </div>
                   <div className="form-group">
-                    <label className="form-label">Payment Type *</label>
+                    <label className="form-label">भुगतान प्रकार / PAYMENT TYPE *</label>
                     <div className="flow-choice-grid">
                       {[
                         { val: 'cash', label: 'Cash' },
@@ -1005,13 +967,6 @@ export default function SalesPage() {
                       ].map((opt) => (
                         <button key={opt.val} type="button"
                           onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
-                          style={{
-                            padding: '11px 10px', borderRadius: 14, border: '1px solid',
-                            borderColor: form.payment_type === opt.val ? '#3730a3' : '#d1d5db',
-                            background: form.payment_type === opt.val ? '#3730a3' : '#ffffff',
-                            color: form.payment_type === opt.val ? '#fff' : '#334155',
-                            cursor: 'pointer', fontWeight: 700, fontSize: 12,
-                          }}
                           className={`flow-choice-pill ${form.payment_type === opt.val ? 'is-active' : ''}`}>
                           {opt.label}
                         </button>
@@ -1019,7 +974,7 @@ export default function SalesPage() {
                     </div>
                     {form.payment_type === 'credit' && (
                       <div style={{ marginTop: 10 }}>
-                        <label className="form-label">Advance Payment (optional)</label>
+                        <label className="form-label">अग्रिम भुगतान / ADVANCE PAYMENT</label>
                         <input ref={amountPaidInputRef} className="form-input" type="number" step="0.01" min="0"
                           placeholder={`Max ₹${fmt(billTotals.total)}`}
                           value={form.amount_paid}
@@ -1029,7 +984,7 @@ export default function SalesPage() {
                           <button type="button" className="fast-qty-pill" onClick={() => updateForm({ amount_paid: String((billTotals.total / 2).toFixed(2)) })}>50%</button>
                           <button type="button" className={`fast-qty-pill ${amountPaidNum === billTotals.total ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: String(billTotals.total.toFixed(2)) })}>Full</button>
                         </div>
-                        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#b45309' }}>
+                        <div className="sale-credit-warning">
                           Balance ₹{fmt(balanceDue)} will be added to the customer ledger automatically.
                         </div>
                       </div>
@@ -1069,11 +1024,11 @@ export default function SalesPage() {
               )}
 
               <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: saleStep === 1 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#FFB347' : '#555870', textTransform: 'uppercase', letterSpacing: 0.08, marginBottom: 12 }}>
                   {form.payment_type === 'credit' ? 'Customer Details' : 'Buyer Details'}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                  <label className="form-label">नाम / NAME {form.payment_type === 'credit' && <span style={{ color: '#FFB347' }}>*</span>}</label>
                   <input className="form-input" placeholder="Enter buyer name"
                     ref={buyerNameInputRef}
                     value={form.buyer_name} onChange={e => updateForm({ buyer_name: e.target.value })}
@@ -1081,11 +1036,11 @@ export default function SalesPage() {
                 </div>
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">Phone</label>
-                    <input className="form-input" placeholder="Mobile" value={form.buyer_phone} onChange={e => updateForm({ buyer_phone: e.target.value })} />
+                    <label className="form-label">फोन / PHONE {form.payment_type === 'credit' && <span style={{ color: '#FFB347' }}>*</span>}</label>
+                    <input className="form-input" placeholder="Mobile" value={form.buyer_phone} onChange={e => updateForm({ buyer_phone: e.target.value })} required={form.payment_type === 'credit'} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">GSTIN</label>
+                    <label className="form-label">जीएसटीआईएन / GSTIN</label>
                     <input
                       className="form-input"
                       placeholder="GSTIN for B2B"
@@ -1104,7 +1059,7 @@ export default function SalesPage() {
                 </div>
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">State</label>
+                    <label className="form-label">राज्य / STATE</label>
                     <select className="form-input" value={form.buyer_state} onChange={e => updateForm({ buyer_state: e.target.value })}>
                       <option value="">Select State/UT</option>
                       <optgroup label=" States ">{STATES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
@@ -1115,12 +1070,12 @@ export default function SalesPage() {
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Address</label>
+                    <label className="form-label">पता / ADDRESS</label>
                     <input className="form-input" placeholder="Address" value={form.buyer_address} onChange={e => updateForm({ buyer_address: e.target.value })} />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Notes</label>
+                  <label className="form-label">नोट / NOTES</label>
                   <input className="form-input" placeholder="Any notes..." value={form.notes} onChange={e => updateForm({ notes: e.target.value })} />
                 </div>
               </div>
@@ -1141,8 +1096,8 @@ export default function SalesPage() {
                     Continue
                   </button>
                 ) : (
-                <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? 'Saving sale...' : editingSaleId ? 'Update Sale' : 'Record Sale'}
+                <button type="button" onClick={handleSubmit} className="btn-primary sale-submit-button" style={{ flex: 1 }} disabled={submitting}>
+                  {submitting ? 'Saving sale...' : 'बिक्री दर्ज करें / Save Sale'}
                 </button>
                 )}
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
@@ -1167,8 +1122,79 @@ export default function SalesPage() {
       <style>{`
         @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
-        .sales-shell .sales-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
-        .sales-shell .card[style*='borderLeft'] { background: #ffffff !important; }
+        .sales-stats-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+        .sales-shell .sales-hero { border: 1px solid rgba(108, 99, 255, 0.22); }
+        .sales-shell .card[style*='borderLeft'] { background: rgba(22, 25, 41, 0.96) !important; }
+        .sales-list-grid {
+          display: grid;
+          gap: 12px;
+        }
+        .sales-invoice-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+        .sales-invoice-main {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+        }
+        .sales-invoice-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: #F0F0FF;
+          line-height: 1.3;
+        }
+        .sales-invoice-meta {
+          margin-top: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #6C63FF;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .sales-invoice-customer {
+          margin-top: 6px;
+          font-size: 14px;
+          color: #8B8FA8;
+        }
+        .sales-invoice-date {
+          margin-top: 8px;
+          font-size: 12px;
+          color: #8B8FA8;
+        }
+        .sales-invoice-side {
+          text-align: right;
+          flex-shrink: 0;
+          display: grid;
+          gap: 8px;
+          justify-items: end;
+        }
+        .sales-invoice-total {
+          font-size: 22px;
+          font-weight: 700;
+          color: #00C896;
+        }
+        .sales-invoice-actions {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        .sales-icon-btn {
+          width: 40px;
+          height: 40px;
+          padding: 0 !important;
+          border-radius: 12px !important;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
         .fast-billing-toolbar {
           display: flex;
           justify-content: space-between;
@@ -1178,18 +1204,18 @@ export default function SalesPage() {
           margin-bottom: 12px;
           padding: 12px 14px;
           border-radius: 14px;
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
+          background: rgba(30, 34, 53, 0.88);
+          border: 1px solid rgba(255,255,255,0.08);
         }
         .fast-billing-title {
           font-size: 14px;
           font-weight: 800;
-          color: #111111;
+          color: #F0F0FF;
         }
         .fast-billing-subtitle {
           margin-top: 4px;
           font-size: 12px;
-          color: #6b7280;
+          color: #8B8FA8;
         }
         .fast-billing-toolbar-actions,
         .fast-qty-pills {
@@ -1199,9 +1225,9 @@ export default function SalesPage() {
         }
         .fast-billing-chip,
         .fast-qty-pill {
-          border: 1px solid #d1d5db;
-          background: #ffffff;
-          color: #111111;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.03);
+          color: #F0F0FF;
           border-radius: 999px;
           padding: 6px 10px;
           font-size: 11px;
@@ -1212,15 +1238,15 @@ export default function SalesPage() {
           font-size: 12.5px;
           font-weight: 900;
           letter-spacing: 0.01em;
-          border: 1px solid #d1d5db !important;
-          background: #ffffff !important;
-          color: #111111 !important;
-          box-shadow: none;
+          border: 1px solid rgba(108,99,255,0.28) !important;
+          background: linear-gradient(135deg, rgba(108,99,255,0.22), rgba(108,99,255,0.1)) !important;
+          color: #F0F0FF !important;
+          box-shadow: 0 16px 34px rgba(108, 99, 255, 0.16);
         }
         .fast-qty-pill.is-active {
-          background: #ffffff;
-          border-color: #111111;
-          color: #111111;
+          background: rgba(108,99,255,0.18);
+          border-color: rgba(108,99,255,0.34);
+          color: #F0F0FF;
         }
         .fast-qty-control {
           display: grid;
@@ -1230,12 +1256,12 @@ export default function SalesPage() {
         }
         .fast-qty-button {
           min-height: 46px;
-          border: 1px solid #d1d5db;
+          border: 1px solid rgba(255,255,255,0.08);
           border-radius: 14px;
-          background: #ffffff;
+          background: rgba(255,255,255,0.03);
           font-size: 18px;
           font-weight: 800;
-          color: #111111;
+          color: #F0F0FF;
         }
         .fast-qty-input {
           text-align: center;
@@ -1243,8 +1269,25 @@ export default function SalesPage() {
         .fast-item-card {
           box-shadow: none;
         }
+        .sale-item-card {
+          background: #161929;
+          border: 1px solid #FFFFFF0D;
+          border-radius: 16px;
+          padding: 20px;
+          margin-bottom: 12px;
+          transition: all 0.2s ease;
+        }
+        .sale-item-card:hover {
+          border-color: #6C63FF40;
+          background: #1E2235;
+        }
         .fast-item-summary {
           align-items: center;
+        }
+        .sale-item-summary {
+          background: #1E2235;
+          color: #8B8FA8;
+          border: 1px solid #FFFFFF0D;
         }
         .fast-item-footer {
           display: grid;
@@ -1253,19 +1296,44 @@ export default function SalesPage() {
         .fast-add-row-button {
           width: 100%;
           padding: 11px 12px;
-          background: #ffffff;
-          border: 1.5px dashed #d1d5db;
+          background: rgba(255,255,255,0.03);
+          border: 1.5px dashed rgba(255,255,255,0.12);
           border-radius: 12px;
-          color: #111111;
+          color: #F0F0FF;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
+        }
+        .sale-add-product-card {
+          min-height: 84px;
+          display: grid;
+          place-items: center;
+          gap: 4px;
+          padding: 18px;
+          background: transparent;
+          border: 1.5px dashed #FFFFFF15;
+          border-radius: 16px;
+          color: #F0F0FF;
+        }
+        .sale-add-product-card small {
+          color: #8B8FA8;
+          font-size: 12px;
+          font-weight: 400;
+        }
+        .sale-credit-warning {
+          background: #FFB34718;
+          border: 1px solid #FFB34740;
+          border-radius: 12px;
+          padding: 10px 12px;
+          margin-top: 8px;
+          font-size: 12px;
+          color: #FFB347;
         }
         .fast-footer-hint,
         .fast-summary-copy,
         .fast-summary-kicker {
           font-size: 11px;
-          color: #64748b;
+          color: #8B8FA8;
         }
         .fast-bill-sticky-summary {
           display: flex;
@@ -1276,8 +1344,8 @@ export default function SalesPage() {
           margin-bottom: 14px;
           padding: 12px 14px;
           border-radius: 16px;
-          background: #ffffff;
-          color: #111111;
+          background: rgba(30, 34, 53, 0.92);
+          color: #F0F0FF;
           position: sticky;
           bottom: 0;
           z-index: 2;
@@ -1302,13 +1370,36 @@ export default function SalesPage() {
           gap: 10px;
           flex-wrap: wrap;
           padding-top: 8px;
-          background: #ffffff;
+          background: linear-gradient(180deg, rgba(13,15,26,0), rgba(13,15,26,0.94) 22%);
         }
         .sale-entry-modal {
           display: flex;
           flex-direction: column;
           max-height: min(calc(100dvh - 40px), 860px);
           overflow: hidden;
+        }
+        .sale-entry-modal--fullscreen {
+          width: min(1080px, calc(100vw - 24px));
+          max-width: min(1080px, calc(100vw - 24px)) !important;
+          max-height: calc(100dvh - 24px);
+          padding: 24px;
+        }
+        .sale-entry-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 8px;
+        }
+        .sale-entry-title {
+          font-size: 22px;
+          font-weight: 700;
+          margin: 0 0 6px;
+          color: #F0F0FF;
+        }
+        .sale-entry-subtitle {
+          font-size: 14px;
+          color: #8B8FA8;
         }
         .sale-entry-form {
           display: flex;
@@ -1321,6 +1412,21 @@ export default function SalesPage() {
           overscroll-behavior: contain;
         }
         @media (max-width: 640px) {
+          .sales-stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .sales-invoice-card,
+          .sales-invoice-main {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .sales-invoice-side {
+            justify-items: start;
+            text-align: left;
+          }
+          .sales-invoice-actions {
+            align-self: flex-start;
+          }
           .fast-item-card {
             padding: 12px 10px !important;
           }
@@ -1335,6 +1441,12 @@ export default function SalesPage() {
           }
           .sale-entry-modal {
             max-height: calc(100dvh - 28px);
+          }
+          .sale-entry-modal--fullscreen {
+            width: calc(100vw - 12px);
+            max-width: calc(100vw - 12px) !important;
+            max-height: calc(100dvh - 12px);
+            padding: 16px;
           }
           .sale-entry-form {
             max-height: calc(100dvh - 170px);
