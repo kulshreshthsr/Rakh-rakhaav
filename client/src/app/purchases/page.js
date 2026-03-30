@@ -75,7 +75,7 @@ const getRoundedBillValues = (amount) => {
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
-  if (normalized.length < 2) return null;
+  if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
 

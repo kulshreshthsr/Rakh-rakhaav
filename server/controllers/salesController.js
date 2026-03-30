@@ -86,7 +86,11 @@ const generateInvoiceNumber = async (shopId, session = null) => {
 const normalizeState = (value = '') => value.trim().toLowerCase();
 const normalizeGstin = (value = '') => String(value).replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
-const getStateFromGstin = (gstin = '') => GST_STATE_CODE_MAP[normalizeGstin(gstin).slice(0, 2)] || '';
+const getStateFromGstin = (gstin = '') => {
+  const normalized = normalizeGstin(gstin);
+  if (!GSTIN_REGEX.test(normalized)) return '';
+  return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || '';
+};
 
 const sumTaxHeads = (records = []) => ({
   cgst: round2(records.reduce((sum, record) => sum + (record.cgst_amount || 0), 0)),

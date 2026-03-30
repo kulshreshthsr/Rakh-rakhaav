@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'];
 const GSTIN_LENGTH = 15;
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const GST_STATE_CODE_MAP = {
   '01': 'Jammu & Kashmir',
   '02': 'Himachal Pradesh',
@@ -47,7 +48,7 @@ const GST_STATE_CODE_MAP = {
 const normalizeGstin = (value = '') => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, GSTIN_LENGTH);
 const getStateFromGstin = (gstin = '') => {
   const normalized = normalizeGstin(gstin);
-  if (normalized.length < 2) return null;
+  if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
 
@@ -303,7 +304,7 @@ export default function ProfilePage() {
                   maxLength={GSTIN_LENGTH}
                   onChange={(e) => handleGstinChange(e.target.value)}
                 />
-                {shopForm.gstin.length >= 2 && shopForm.state ? (
+                {shopForm.gstin.length === GSTIN_LENGTH && getStateFromGstin(shopForm.gstin) && shopForm.state ? (
                   <div style={{ fontSize: 11, color: '#059669', marginTop: 4 }}>State auto-detected from GSTIN</div>
                 ) : null}
               </div>
