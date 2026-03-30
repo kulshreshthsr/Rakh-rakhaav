@@ -1354,7 +1354,7 @@ function LayoutInner({ children }) {
         .app-shell-root .language-switch-card,
         .app-shell-root .sidebar-user-card {
           background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(248,250,255,0.76));
-          border: 1px solid rgba(148,163,184,0.16);
+          border: 1px solid rgba(15,23,42,0.15);
           box-shadow: 0 14px 28px rgba(15,23,42,0.06);
         }
 
@@ -1367,13 +1367,13 @@ function LayoutInner({ children }) {
         .app-shell-root .sidebar-shortcut {
           color: #0f172a;
           background: linear-gradient(135deg, rgba(91,80,255,0.12), rgba(56,189,248,0.08), rgba(255,255,255,0.56));
-          border: 1px solid rgba(148,163,184,0.16);
+          border: 1px solid rgba(15,23,42,0.15);
           box-shadow: 0 18px 34px rgba(15,23,42,0.08);
         }
 
         .app-shell-root .sidebar-shortcut.is-secondary {
           background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(74,222,128,0.06), rgba(255,255,255,0.54));
-          border-color: rgba(16,185,129,0.14);
+          border-color: rgba(15,23,42,0.15);
         }
 
         .app-shell-root .sidebar-shortcut-icon,
@@ -1543,7 +1543,7 @@ function LayoutInner({ children }) {
         .app-shell-root .membership-mini-plan,
         .app-shell-root .mobile-bottom-nav-card {
           background: #ffffff;
-          border-color: #e5e7eb;
+          border-color: rgba(15,23,42,0.15);
           box-shadow: none;
         }
 
