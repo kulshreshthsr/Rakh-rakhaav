@@ -751,10 +751,10 @@ const updateSale = async (req, res) => {
       }
       await sale.save({ session });
       if (data.createdAt) {
-        await Sale.updateOne(
+        await Sale.collection.updateOne(
           { _id: sale._id },
           { $set: { createdAt: data.createdAt } },
-          { session, timestamps: false }
+          { session }
         );
         sale.createdAt = data.createdAt;
       }
