@@ -8,36 +8,6 @@ const withPWA = withPWAInit({
   customWorkerDir: 'public',
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/rakh-rakhaav-1\.onrender\.com\/.*/i,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'api-cache',
-        networkTimeoutSeconds: 5,
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 60 * 60 * 24,
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-    {
-      urlPattern: /\/$/,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'pages-cache',
-        networkTimeoutSeconds: 5,
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 60 * 60 * 24,
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-    {
       urlPattern: /^https?.*\/_next\/static\/.*$/i,
       handler: 'StaleWhileRevalidate',
       options: {
