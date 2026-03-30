@@ -72,16 +72,53 @@ export default function UdhaarPage() {
     setSuccess('');
   };
 
-  const sendReminder = (customer) => {
+  const fetchCustomerLedgerEntries = async (customerId) => {
+    const res = await fetch(`${API}/api/customers/${customerId}/udhaar`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+
+    if (!res.ok) {
+      throw new Error('Ledger could not be loaded');
+    }
+
+    const data = await res.json();
+    return data.entries || data.ledger || [];
+  };
+
+  const sendReminder = async (customer, entries = []) => {
     const phone = cleanPhone(customer.phone || '');
     if (!phone) {
       setError('Is customer ka phone number nahi hai');
       return;
     }
+
+    setError('');
+
+    let ledgerEntries = entries;
+    if (!ledgerEntries.length && customer?._id) {
+      try {
+        ledgerEntries = await fetchCustomerLedgerEntries(customer._id);
+      } catch {
+        setError('Reminder ke liye ledger load nahi ho paya');
+        return;
+      }
+    }
+
+    const latestDebitEntry = ledgerEntries.find((entry) => entry.type === 'debit' || entry.type === 'diya');
+    const productInfo = latestDebitEntry?.note || latestDebitEntry?.reference_id || '';
+    const totalSales = Number(customer.totalSales || 0);
+    const totalPaid = Number(customer.totalPaid || 0);
+    const totalDue = Number(customer.totalUdhaar || 0);
+
     const msg = [
       `Namaste ${customer.name || 'Customer'} ji,`,
       '',
-      `Aapke account me abhi ₹${fmt(customer.totalUdhaar)} baki hai.`,
+      'Aapke udhaar account ka short summary bhej rahe hain:',
+      ...(productInfo ? [`Product / Bill: ${productInfo}`] : []),
+      `Total: ₹${fmt(totalSales)}`,
+      `Paid: ₹${fmt(totalPaid)}`,
+      `Baaki: ₹${fmt(totalDue)}`,
+      '',
       'Kripya suvidha anusar payment kar dein.',
       '',
       'Dhanyavaad',
@@ -292,7 +329,7 @@ export default function UdhaarPage() {
                         actions={
                           <>
                             {isCustomer && selected.phone && selected.totalUdhaar > 0 ? (
-                              <ActionButton variant="whatsapp" onClick={() => sendReminder(selected)}>
+                              <ActionButton variant="whatsapp" onClick={() => sendReminder(selected, ledger)}>
                                 WhatsApp Reminder
                               </ActionButton>
                             ) : null}

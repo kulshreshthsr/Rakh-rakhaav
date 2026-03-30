@@ -290,7 +290,7 @@ function LayoutInner({ children }) {
   };
 
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
-  const firstName = user?.name?.split(' ')?.[0] || t('profile');
+  const firstName = user?.name?.split(' ')?.[0] || 'Profile';
   const translatedNav = useMemo(
     () =>
       navItems.map((item) => ({
@@ -360,11 +360,11 @@ function LayoutInner({ children }) {
                 <div className="sidebar-user-menu">
                   <button type="button" onClick={goToProfile}>
                     <Glyph name="profile" size={16} />
-                    {t('profile')}
+                    Profile
                   </button>
                   <button type="button" onClick={logout} className="danger">
                     <Glyph name="logout" size={16} />
-                    {t('logout')}
+                    Logout
                   </button>
                 </div>
               )}
@@ -392,7 +392,7 @@ function LayoutInner({ children }) {
 
             <button type="button" onClick={logout} className="sidebar-logout">
               <Glyph name="logout" size={16} />
-              {t('logout')}
+              Logout
             </button>
           </div>
         </aside>
@@ -415,19 +415,19 @@ function LayoutInner({ children }) {
                 <div className="sidebar-user-menu mobile-user-menu">
                   <button type="button" onClick={goToProfile}>
                     <Glyph name="profile" size={16} />
-                    {t('profile')}
+                    Profile
                   </button>
                   <a href="/reports">
                     <Glyph name="reports" size={16} />
-                    {t('reports')}
+                    Reports
                   </a>
                   <a href="/pricing">
                     <Glyph name="pricing" size={16} />
-                    {t('pricing')}
+                    Pricing
                   </a>
                   <button type="button" onClick={logout} className="danger">
                     <Glyph name="logout" size={16} />
-                    {t('logout')}
+                    Logout
                   </button>
                 </div>
               )}
@@ -441,18 +441,6 @@ function LayoutInner({ children }) {
 
         <main className="main-content premium-main-content">
           <div className="content-container">
-            <div className="content-top-actions">
-              <div className="content-top-actions-copy">
-                <div className="content-top-actions-kicker">Premium access</div>
-                <div className="content-top-actions-subtitle">
-                  Open plans anytime from this top tab without cluttering your main workspace.
-                </div>
-              </div>
-              <a href="/pricing" className={`top-upgrade-chip desktop-upgrade-chip ${subscription?.isPro ? 'is-manage' : 'is-shining'}`}>
-                <Glyph name="pricing" size={15} />
-                {upgradeButtonLabel}
-              </a>
-            </div>
             {children}
           </div>
         </main>

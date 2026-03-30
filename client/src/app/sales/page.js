@@ -1379,6 +1379,7 @@ const buildTaxSummaryRows = (saleItems, isIGST) => {
 };
 
 function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
+  const INR = '&#8377;';
   const roundedBill = getRoundedBillValues(sale.total_amount);
   const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{
     product_name: sale.product_name,
@@ -1409,17 +1410,17 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
 
   const itemRows = saleItems.map((item, idx) => {
     const gstCells = isIGST
-      ? '<td>' + (item.gst_rate || 0) + '%</td><td>₹' + fmt(item.igst_amount) + '</td>'
-      : '<td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.cgst_amount) + '</td><td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>₹' + fmt(item.sgst_amount) + '</td>';
-    return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '-') + '</td><td>' + item.quantity + '</td><td>₹' + fmt(item.price_per_unit) + '</td><td>₹' + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>₹' + fmt(item.total_amount) + '</strong></td></tr>';
+      ? '<td>' + (item.gst_rate || 0) + '%</td><td>' + INR + fmt(item.igst_amount) + '</td>'
+      : '<td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>' + INR + fmt(item.cgst_amount) + '</td><td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>' + INR + fmt(item.sgst_amount) + '</td>';
+    return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '-') + '</td><td>' + item.quantity + '</td><td>' + INR + fmt(item.price_per_unit) + '</td><td>' + INR + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>' + INR + fmt(item.total_amount) + '</strong></td></tr>';
   }).join('');
 
   const emptyCell  = '<td style="height:20px"></td>';
   const fillerRows = Array(Math.max(0, 5 - saleItems.length)).fill('<tr>' + emptyCell.repeat(colSpan) + '</tr>').join('');
 
   const footerGST = isIGST
-    ? '<td></td><td>₹' + fmt(sale.igst_amount) + '</td>'
-    : '<td></td><td>₹' + fmt(sale.cgst_amount) + '</td><td></td><td>₹' + fmt(sale.sgst_amount) + '</td>';
+    ? '<td></td><td>' + INR + fmt(sale.igst_amount) + '</td>'
+    : '<td></td><td>' + INR + fmt(sale.cgst_amount) + '</td><td></td><td>' + INR + fmt(sale.sgst_amount) + '</td>';
 
   const amountGSTRows = buildTaxSummaryRows(saleItems, isIGST);
 
@@ -1453,7 +1454,7 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
       + '</div>'
     : '';
 
-  const html = '<!DOCTYPE html><html><head><title>Invoice - ' + sale.invoice_number + '</title>'
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Invoice - ' + sale.invoice_number + '</title>'
     + '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;color:#000;background:#fff}'
     + '.invoice{max-width:800px;margin:0 auto;padding:20px;border:2px solid #000}'
     + '.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;border-bottom:3px solid #0B1D35;padding-bottom:10px}'
@@ -1512,19 +1513,19 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '<div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Type</div><div style="font-weight:700">' + (sale.invoice_type || 'B2C') + ' | ' + (isIGST ? 'IGST' : 'CGST+SGST') + '</div></div>'
     + '<div class="inv-detail-box"><div style="font-size:10px;color:#9ca3af">Place of Supply</div><div style="font-weight:700">' + placeOfSupplyLabel + '</div></div>'
     + '</div>'
-    + '<table><thead><tr><th style="width:28px">Sr.</th><th style="text-align:left">Product</th><th>HSN</th><th>Qty</th><th>Rate ?</th><th>Taxable ?</th>' + gstCols + '<th>Total ?</th></tr></thead>'
+    + '<table><thead><tr><th style="width:28px">Sr.</th><th style="text-align:left">Product</th><th>HSN</th><th>Qty</th><th>Rate ' + INR + '</th><th>Taxable ' + INR + '</th>' + gstCols + '<th>Total ' + INR + '</th></tr></thead>'
     + '<tbody>' + itemRows + fillerRows + '</tbody>'
-    + '<tfoot><tr style="background:#f3f4f6;font-weight:700"><td colspan="5" style="text-align:right">Total</td><td>?' + fmt(sale.taxable_amount) + '</td>' + footerGST + '<td><strong>?' + fmt(sale.total_amount) + '</strong></td></tr></tfoot></table>'
+    + '<tfoot><tr style="background:#f3f4f6;font-weight:700"><td colspan="5" style="text-align:right">Total</td><td>' + INR + fmt(sale.taxable_amount) + '</td>' + footerGST + '<td><strong>' + INR + fmt(sale.total_amount) + '</strong></td></tr></tfoot></table>'
     + '<div class="totals-section">'
     + '<div class="words-box"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Amount in Words</div>'
     + '<div style="font-size:11px;font-weight:600;color:#0B1D35;font-style:italic">' + numberToWords(parseFloat(sale.total_amount)) + '</div>' + creditNote + '</div>'
     + '<div class="amounts-box">'
-    + '<div class="amount-row"><span>Taxable Amount</span><span>₹' + fmt(sale.taxable_amount) + '</span></div>'
+    + '<div class="amount-row"><span>Taxable Amount</span><span>' + INR + fmt(sale.taxable_amount) + '</span></div>'
     + amountGSTRows
-    + '<div class="amount-row"><span>Total GST</span><span>₹' + fmt(sale.total_gst) + '</span></div>'
-    + '<div class="amount-row"><span>Round Off</span><span>' + (roundedBill.roundOff >= 0 ? '+' : '') + '₹' + fmt(roundedBill.roundOff) + '</span></div>'
-    + '<div class="amount-total"><span>GRAND TOTAL</span><span>₹' + fmt(sale.total_amount) + '</span></div>'
-    + '<div class="amount-total" style="font-size:13px;color:#059669;border-top:1px dashed #94a3b8"><span>ROUNDED TOTAL</span><span>₹' + fmt(roundedBill.roundedTotal) + '</span></div>'
+    + '<div class="amount-row"><span>Total GST</span><span>' + INR + fmt(sale.total_gst) + '</span></div>'
+    + '<div class="amount-row"><span>Round Off</span><span>' + (roundedBill.roundOff >= 0 ? '+' : '') + INR + fmt(roundedBill.roundOff) + '</span></div>'
+    + '<div class="amount-total"><span>GRAND TOTAL</span><span>' + INR + fmt(sale.total_amount) + '</span></div>'
+    + '<div class="amount-total" style="font-size:13px;color:#059669;border-top:1px dashed #94a3b8"><span>ROUNDED TOTAL</span><span>' + INR + fmt(roundedBill.roundedTotal) + '</span></div>'
     + '</div></div>'
     + '<div class="footer-section"><div class="bank-box">' + bankHTML + '</div>'
     + '<div class="sign-box"><div style="font-size:12px;font-weight:700;margin-bottom:40px">For <strong>' + (shop.name || '00>5') + '</strong></div>'
