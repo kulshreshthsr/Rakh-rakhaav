@@ -135,6 +135,16 @@ export default function PurchasesPage() {
     supplier_name: '', supplier_phone: '', supplier_gstin: '',
     supplier_address: '', supplier_state: '', notes: '',
   });
+  const [showInlineProductForm, setShowInlineProductForm] = useState(false);
+  const [inlineProductRowIndex, setInlineProductRowIndex] = useState(0);
+  const [creatingProduct, setCreatingProduct] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({
+    name: '',
+    price: '',
+    gst_rate: '0',
+    unit: 'pcs',
+    hsn_code: '',
+  });
   const [purchaseStep, setPurchaseStep] = useState(0);
 
   async function fetchAll() {
@@ -245,10 +255,97 @@ export default function PurchasesPage() {
 
   const addItem = () => setItems([...items, emptyItem()]);
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
+  const updateNewProductForm = (patch) => setNewProductForm((current) => ({ ...current, ...patch }));
 
   const removeItem = (index) => {
     if (items.length === 1) return; // keep at least 1
     setItems(items.filter((_, i) => i !== index));
+  };
+
+  const resetInlineProductForm = () => {
+    setShowInlineProductForm(false);
+    setInlineProductRowIndex(0);
+    setCreatingProduct(false);
+    setNewProductForm({
+      name: '',
+      price: '',
+      gst_rate: '0',
+      unit: 'pcs',
+      hsn_code: '',
+    });
+  };
+
+  const openInlineProductForm = (rowIndex) => {
+    setError('');
+    setInlineProductRowIndex(rowIndex);
+    setShowInlineProductForm(true);
+    setNewProductForm({
+      name: '',
+      price: '',
+      gst_rate: '0',
+      unit: 'pcs',
+      hsn_code: '',
+    });
+  };
+
+  const createInlineProduct = async () => {
+    if (!isOnline) {
+      setError('Offline mode me naya product add nahi ho sakta. Internet on karke try karein.');
+      return;
+    }
+
+    if (!newProductForm.name.trim()) {
+      setError('Product name required hai');
+      return;
+    }
+
+    const sellingPrice = Number(newProductForm.price);
+    if (!Number.isFinite(sellingPrice) || sellingPrice < 0) {
+      setError('Valid selling price dijiye');
+      return;
+    }
+
+    const purchasePrice = Number(items[inlineProductRowIndex]?.price_per_unit || 0);
+    setCreatingProduct(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API}/api/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          name: newProductForm.name.trim(),
+          price: sellingPrice,
+          cost_price: Number.isFinite(purchasePrice) ? purchasePrice : 0,
+          quantity: 0,
+          unit: newProductForm.unit || 'pcs',
+          hsn_code: newProductForm.hsn_code || '',
+          gst_rate: Number(newProductForm.gst_rate || 0),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || 'Product create nahi ho paaya');
+        setCreatingProduct(false);
+        return;
+      }
+
+      const nextProducts = [...products, data].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      setProducts(nextProducts);
+      await cacheProducts(nextProducts);
+      updateItem(inlineProductRowIndex, 'product_id', data._id);
+      resetInlineProductForm();
+    } catch {
+      setError('Product create karte waqt server error aayi');
+      setCreatingProduct(false);
+      return;
+    }
+
+    setCreatingProduct(false);
   };
 
   // â”€â”€ GST calculation per row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -468,6 +565,7 @@ export default function PurchasesPage() {
     setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '' });
     setPurchaseStep(0);
     setGstinTouched(false);
+    resetInlineProductForm();
   }
 
   const startEditPurchase = (purchase) => {
@@ -804,7 +902,25 @@ export default function PurchasesPage() {
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label">Product *</label>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
+                          <label className="form-label" style={{ marginBottom: 0 }}>Product *</label>
+                          <button
+                            type="button"
+                            onClick={() => openInlineProductForm(index)}
+                            style={{
+                              border: 'none',
+                              background: '#dbeafe',
+                              color: '#1d4ed8',
+                              padding: '6px 10px',
+                              borderRadius: 999,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            + New Product
+                          </button>
+                        </div>
                         <SearchableProductSelect
                           products={products}
                           value={item.product_id}
@@ -812,6 +928,113 @@ export default function PurchasesPage() {
                           placeholder='Search product...'
                         />
                       </div>
+
+                      {showInlineProductForm && inlineProductRowIndex === index ? (
+                        <div style={{ background: '#ffffff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 800, color: '#1d4ed8', marginBottom: 4 }}>
+                            Naya product yahin add karein
+                          </div>
+                          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 10 }}>
+                            Opening stock 0 rahega. Is purchase ko save karte hi stock badh jayega.
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">Product Name *</label>
+                            <input
+                              className="form-input"
+                              placeholder="Jaise: New Chips 45g"
+                              value={newProductForm.name}
+                              onChange={(e) => updateNewProductForm({ name: e.target.value })}
+                            />
+                          </div>
+
+                          <div className="grid-2">
+                            <div className="form-group">
+                              <label className="form-label">Selling Price *</label>
+                              <input
+                                className="form-input"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="MRP / selling price"
+                                value={newProductForm.price}
+                                onChange={(e) => updateNewProductForm({ price: e.target.value })}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">GST Rate</label>
+                              <select
+                                className="form-input"
+                                value={newProductForm.gst_rate}
+                                onChange={(e) => updateNewProductForm({ gst_rate: e.target.value })}
+                              >
+                                {[0, 5, 12, 18, 28].map((rate) => (
+                                  <option key={rate} value={String(rate)}>{rate}%</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid-2">
+                            <div className="form-group">
+                              <label className="form-label">Unit</label>
+                              <input
+                                className="form-input"
+                                placeholder="pcs / box / kg"
+                                value={newProductForm.unit}
+                                onChange={(e) => updateNewProductForm({ unit: e.target.value })}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">HSN Code</label>
+                              <input
+                                className="form-input"
+                                placeholder="Optional"
+                                value={newProductForm.hsn_code}
+                                onChange={(e) => updateNewProductForm({ hsn_code: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={createInlineProduct}
+                              disabled={creatingProduct}
+                              style={{
+                                flex: 1,
+                                border: 'none',
+                                background: '#1d4ed8',
+                                color: '#fff',
+                                padding: '10px 12px',
+                                borderRadius: 10,
+                                fontSize: 13,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {creatingProduct ? 'Adding...' : 'Save Product'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={resetInlineProductForm}
+                              disabled={creatingProduct}
+                              style={{
+                                border: '1px solid #cbd5e1',
+                                background: '#f8fafc',
+                                color: '#334155',
+                                padding: '10px 12px',
+                                borderRadius: 10,
+                                fontSize: 13,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
 
                       <div className="grid-2">
                         <div className="form-group">
