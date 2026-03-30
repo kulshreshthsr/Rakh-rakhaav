@@ -750,6 +750,14 @@ const updateSale = async (req, res) => {
         sale.markModified('createdAt');
       }
       await sale.save({ session });
+      if (data.createdAt) {
+        await Sale.updateOne(
+          { _id: sale._id },
+          { $set: { createdAt: data.createdAt } },
+          { session, timestamps: false }
+        );
+        sale.createdAt = data.createdAt;
+      }
       await syncCustomerLedgerForSale(shop._id, sale, itemNames, session);
       saleId = sale._id;
     });
