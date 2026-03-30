@@ -31,11 +31,14 @@ const formatDateInputValue = (value) => {
   return `${year}-${month}-${day}`;
 };
 const getDefaultSaleDateValue = () => formatDateInputValue(new Date());
-const getSaleRecordDateISO = (value) => {
+const getSaleRecordDateISO = (value, referenceValue = new Date()) => {
   if (!value) return new Date().toISOString();
   const [year, month, day] = value.split('-').map(Number);
   if (!year || !month || !day) return new Date().toISOString();
-  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).toISOString();
+  const nextDate = new Date(referenceValue);
+  if (Number.isNaN(nextDate.getTime())) return new Date().toISOString();
+  nextDate.setFullYear(year, month - 1, day);
+  return nextDate.toISOString();
 };
 const buildInitialForm = (overrides = {}) => ({
   payment_type: 'cash',

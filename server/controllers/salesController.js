@@ -86,14 +86,17 @@ const generateInvoiceNumber = async (shopId, session = null, invoiceDate = new D
 const normalizeState = (value = '') => value.trim().toLowerCase();
 const normalizeGstin = (value = '') => String(value).replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
-const parseSaleDateInput = (value) => {
+const parseSaleDateInput = (value, referenceDate = new Date()) => {
   if (!value) return null;
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
   if (typeof value === 'string') {
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (match) {
       const [, year, month, day] = match;
-      return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 12, 0, 0));
+      const nextDate = new Date(referenceDate);
+      if (Number.isNaN(nextDate.getTime())) return null;
+      nextDate.setUTCFullYear(Number(year), Number(month) - 1, Number(day));
+      return nextDate;
     }
   }
   const parsed = new Date(value);
@@ -367,7 +370,7 @@ const buildSaleRecordData = async ({
   if (normalizedBuyerGstin && !GSTIN_REGEX.test(normalizedBuyerGstin)) {
     throw new Error('Invalid GSTIN format');
   }
-  const parsedSaleDate = parseSaleDateInput(sale_date);
+  const parsedSaleDate = parseSaleDateInput(sale_date, existingSale?.createdAt || new Date());
   if (sale_date && !parsedSaleDate) {
     throw new Error('Invalid sale date');
   }
@@ -742,6 +745,10 @@ const updateSale = async (req, res) => {
       await syncSaleStock(sale, data.items, session);
 
       Object.assign(sale, data, { customer: null });
+      if (data.createdAt) {
+        sale.createdAt = data.createdAt;
+        sale.markModified('createdAt');
+      }
       await sale.save({ session });
       await syncCustomerLedgerForSale(shop._id, sale, itemNames, session);
       saleId = sale._id;
