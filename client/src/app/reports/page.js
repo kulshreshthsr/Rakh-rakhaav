@@ -1,7 +1,6 @@
 ﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Layout from '../../components/Layout';
 import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
 
@@ -10,10 +9,6 @@ const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const fmtN = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
 const formatShortReportDate = (value) => new Intl.DateTimeFormat('en-IN', {
-  day: 'numeric',
-  month: 'short',
-}).format(new Date(value));
-const formatChartDate = (value) => new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
   month: 'short',
 }).format(new Date(value));
@@ -49,51 +44,33 @@ export default function ReportsPage() {
   const [purchases, setPurchases] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [summary, setSummary] = useState({});
-  const [monthSales, setMonthSales] = useState([]);
-  const [trendSales, setTrendSales] = useState([]);
 
   const fetchAll = async () => {
     setLoading(true);
     const { from, to } = getRange(filter);
     const headers = { Authorization: `Bearer ${getToken()}` };
     const params = from ? `?from=${from}&to=${to}` : '';
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
-    const trendStartDate = new Date(now);
-    trendStartDate.setDate(now.getDate() - 29);
-    trendStartDate.setHours(0, 0, 0, 0);
-    const monthParams = `?from=${monthStart}&to=${monthEnd}`;
-    const trendParams = `?from=${trendStartDate.toISOString()}&to=${now.toISOString()}`;
 
     try {
-      const [sRes, pRes, cRes, profitRes, monthSalesRes, trendSalesRes] = await Promise.all([
+      const [sRes, pRes, cRes, profitRes] = await Promise.all([
         fetch(`${API}/api/sales${params}`, { headers }),
         fetch(`${API}/api/purchases${params}`, { headers }),
         fetch(`${API}/api/customers`, { headers }),
         fetch(`${API}/api/sales/profit-summary${params}`, { headers }),
-        fetch(`${API}/api/sales${monthParams}`, { headers }),
-        fetch(`${API}/api/sales${trendParams}`, { headers }),
       ]);
 
       const sData = await sRes.json();
       const pData = await pRes.json();
       const cData = await cRes.json();
       const profitData = await profitRes.json();
-      const monthSalesData = await monthSalesRes.json();
-      const trendSalesData = await trendSalesRes.json();
 
       const salesList = sData.sales || (Array.isArray(sData) ? sData : []);
       const purchasesList = pData.purchases || (Array.isArray(pData) ? pData : []);
       const customersList = Array.isArray(cData) ? cData : [];
-      const monthSalesList = monthSalesData.sales || (Array.isArray(monthSalesData) ? monthSalesData : []);
-      const trendSalesList = trendSalesData.sales || (Array.isArray(trendSalesData) ? trendSalesData : []);
 
       setSales(salesList);
       setPurchases(purchasesList);
       setCustomers(customersList);
-      setMonthSales(monthSalesList);
-      setTrendSales(trendSalesList);
 
       const totalRevenue = profitData.totalRevenue ?? salesList.reduce((s, x) => s + (x.total_amount || 0), 0);
       const totalGST = profitData.gstCollected ?? salesList.reduce((s, x) => s + (x.total_gst || 0), 0);
@@ -191,48 +168,6 @@ export default function ReportsPage() {
     return Object.values(map).sort((a, b) => b.sortValue - a.sortValue);
   })();
 
-  const monthlyRevenueBars = (() => {
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const map = {};
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const date = new Date(now.getFullYear(), now.getMonth(), day);
-      const key = date.toISOString().slice(0, 10);
-      map[key] = { key, label: formatChartDate(date), revenue: 0 };
-    }
-
-    monthSales.forEach((sale) => {
-      const sourceDate = sale.createdAt || sale.sold_at;
-      const key = new Date(sourceDate).toISOString().slice(0, 10);
-      if (!map[key]) return;
-      map[key].revenue += sale.total_amount || 0;
-    });
-
-    return Object.values(map);
-  })();
-
-  const profitTrend = (() => {
-    const map = {};
-
-    for (let index = 29; index >= 0; index -= 1) {
-      const date = new Date();
-      date.setDate(date.getDate() - index);
-      date.setHours(0, 0, 0, 0);
-      const key = date.toISOString().slice(0, 10);
-      map[key] = { key, label: formatChartDate(date), profit: 0 };
-    }
-
-    trendSales.forEach((sale) => {
-      const sourceDate = sale.createdAt || sale.sold_at;
-      const key = new Date(sourceDate).toISOString().slice(0, 10);
-      if (!map[key]) return;
-      map[key].profit += sale.gross_profit || 0;
-    });
-
-    return Object.values(map);
-  })();
-
   const exportCSV = (type) => {
     const { label } = getRange(filter);
     let rows = [];
@@ -291,39 +226,6 @@ export default function ReportsPage() {
       filename = `Top_Customers_${label.replace(' ', '_')}.csv`;
     }
 
-    if (type === 'revenue-bars') {
-      rows = [
-        ['Daily Revenue - Current Month'],
-        ['Date', 'Revenue'],
-        ...monthlyRevenueBars.map((day) => [day.label, fmt(day.revenue)]),
-      ];
-      filename = 'Daily_Revenue_Current_Month.csv';
-    }
-
-    if (type === 'profit-trend') {
-      rows = [
-        ['Profit Trend - Last 30 Days'],
-        ['Date', 'Profit'],
-        ...profitTrend.map((day) => [day.label, fmt(day.profit)]),
-      ];
-      filename = 'Profit_Trend_30_Days.csv';
-    }
-
-    if (type === 'daily-sales') {
-      rows = [
-        [`Daily Sales - ${label}`],
-        ['Date', 'Orders', 'Revenue', 'Profit', 'Margin %'],
-        ...dailySales.map((day) => [
-          day.date,
-          day.count,
-          fmt(day.revenue),
-          fmt(day.profit),
-          fmt(day.revenue > 0 ? (day.profit / day.revenue) * 100 : 0),
-        ]),
-      ];
-      filename = `Daily_Sales_${label.replace(' ', '_')}.csv`;
-    }
-
     const csv = rows.map((row) => row.map((value) => `"${value}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -345,10 +247,10 @@ export default function ReportsPage() {
   return (
     <Layout>
       <div className="page-shell reports-shell">
-        <section className="hero-panel reports-hero page-header-card">
+        <section className="hero-panel reports-hero">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div className="page-title page-header-title" style={{ marginBottom: 4 }}>रिपोर्ट / Reports</div>
+              <div className="page-title" style={{ marginBottom: 4, color: '#0f172a' }}>Reports</div>
               <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
               <div style={{ fontSize: 13, color: '#5b6b82', maxWidth: 420 }}>
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
@@ -378,79 +280,22 @@ export default function ReportsPage() {
         ) : null}
 
         {loading ? (
-          <div style={{ display: 'grid', gap: 16 }}>
-            <section className="metric-grid reports-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="ui-skeleton-card">
-                  <div className="ui-skeleton-line is-short" />
-                  <div className="ui-skeleton-line is-medium" style={{ marginTop: 16, height: 28 }} />
-                  <div className="ui-skeleton-line is-long" style={{ marginTop: 14 }} />
-                </div>
-              ))}
-            </section>
-            <div className="split-grid reports-chart-grid">
-              <div className="ui-skeleton-card"><div className="ui-skeleton-block" /></div>
-              <div className="ui-skeleton-card"><div className="ui-skeleton-block" /></div>
-            </div>
-            <div className="ui-skeleton-card"><div className="ui-skeleton-block" style={{ height: 220 }} /></div>
+          <div className="ui-empty">
+            <div style={{ fontSize: 32, marginBottom: 12 }}>Loading</div>
+            <div>Reports are loading...</div>
           </div>
         ) : (
           <>
-            <div className="split-grid reports-chart-grid" style={{ marginBottom: 20 }}>
-              <Card
-                title="दैनिक राजस्व / Daily Revenue"
-                subtitle="Daily revenue bars for the current month"
-                actions={<ActionButton variant="secondary" onClick={() => exportCSV('revenue-bars')}>CSV Download</ActionButton>}
-              >
-                <div className="reports-chart-wrap">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={monthlyRevenueBars}>
-                      <CartesianGrid stroke="#FFFFFF12" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fill: '#8B8FA8', fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={18} />
-                      <YAxis tick={{ fill: '#8B8FA8', fontSize: 11 }} tickLine={false} axisLine={false} width={60} tickFormatter={(value) => `₹${fmtN(value)}`} />
-                      <Tooltip
-                        cursor={{ fill: '#6C63FF10' }}
-                        contentStyle={{ background: '#161929', border: '1px solid #FFFFFF15', borderRadius: 12, color: '#F0F0FF' }}
-                        formatter={(value) => [`₹${fmtN(value)}`, 'Revenue']}
-                      />
-                      <Bar dataKey="revenue" fill="#6C63FF" radius={[8, 8, 0, 0]} isAnimationActive animationDuration={900} animationEasing="ease-out" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              <Card
-                title="लाभ ट्रेंड / Profit Trend"
-                subtitle="Profit movement over the last 30 days"
-                actions={<ActionButton variant="secondary" onClick={() => exportCSV('profit-trend')}>CSV Download</ActionButton>}
-              >
-                <div className="reports-chart-wrap">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={profitTrend}>
-                      <CartesianGrid stroke="#FFFFFF12" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fill: '#8B8FA8', fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={18} />
-                      <YAxis tick={{ fill: '#8B8FA8', fontSize: 11 }} tickLine={false} axisLine={false} width={60} tickFormatter={(value) => `₹${fmtN(value)}`} />
-                      <Tooltip
-                        contentStyle={{ background: '#161929', border: '1px solid #FFFFFF15', borderRadius: 12, color: '#F0F0FF' }}
-                        formatter={(value) => [`₹${fmtN(value)}`, 'Profit']}
-                      />
-                      <Line type="monotone" dataKey="profit" stroke="#00C896" strokeWidth={3} dot={false} activeDot={{ r: 4, fill: '#00C896' }} isAnimationActive animationDuration={900} animationEasing="ease-out" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-            </div>
-
             <Card
               className="reports-profit-card"
-              title="लाभ विवरण / Profit Breakdown"
+              title="Profit Breakdown"
               subtitle="Revenue, GST and profit in one clear stack"
               actions={<ActionButton variant="secondary" onClick={() => exportCSV('profit')}>CSV Download</ActionButton>}
             >
-              <DataRow label="Revenue" value={`₹${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
-              <DataRow label="GST" note="Tax collected on behalf of the government" prefix="-" value={`₹${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
-              <DataRow label="Taxable" note="Revenue after GST deduction" prefix="=" value={`₹${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
-              <DataRow label="Profit" note="Final retained profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
+              <DataRow label="Total Revenue" value={`₹${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
+              <DataRow label="GST Collected" note="Tax collected on behalf of the government" prefix="-" value={`₹${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
+              <DataRow label="Taxable Revenue (Revenue - GST)" prefix="=" value={`₹${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
+              <DataRow label="Profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
 
               {(summary.totalRevenue || 0) > 0 && (
                 <div style={{ marginTop: 16 }}>
@@ -474,8 +319,8 @@ export default function ReportsPage() {
 
             {dailySales.length > 0 && (
               <Card
-                title="दैनिक बिक्री / Daily Sales"
-                actions={<ActionButton variant="secondary" onClick={() => exportCSV('daily-sales')}>CSV Download</ActionButton>}
+                title="Daily Sales"
+                actions={<ActionButton variant="secondary" onClick={() => exportCSV('sales')}>Sales CSV</ActionButton>}
               >
                 <div className="ui-table-wrap">
                   <table className="ui-table">
@@ -485,7 +330,7 @@ export default function ReportsPage() {
                         <th>Orders</th>
                         <th>Revenue</th>
                         <th>Profit</th>
-                        <th>Margin%</th>
+                        <th>Margin</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -512,7 +357,7 @@ export default function ReportsPage() {
             )}
 
             <div className="split-grid reports-split-grid" style={{ marginBottom: 20 }}>
-              <Card title="टॉप उत्पाद / Top Products" actions={<ActionButton variant="secondary" onClick={() => exportCSV('products')}>CSV</ActionButton>}>
+              <Card title="Top Products" actions={<ActionButton variant="secondary" onClick={() => exportCSV('products')}>CSV</ActionButton>}>
                 {topProducts.length === 0 ? (
                   <div className="ui-empty">No data</div>
                 ) : (
@@ -536,7 +381,7 @@ export default function ReportsPage() {
                 )}
               </Card>
 
-              <Card title="टॉप ग्राहक / Top Customers" actions={<ActionButton variant="secondary" onClick={() => exportCSV('customers')}>CSV</ActionButton>}>
+              <Card title="Top Customers" actions={<ActionButton variant="secondary" onClick={() => exportCSV('customers')}>CSV</ActionButton>}>
                 {topCustomers.length === 0 ? (
                   <div className="ui-empty">No data</div>
                 ) : (
@@ -573,28 +418,19 @@ export default function ReportsPage() {
       </div>
 
       <style>{`
-        .reports-shell .reports-hero { border: 1px solid rgba(108, 99, 255, 0.22); }
+        .reports-shell .reports-hero { border: 1px solid rgba(186, 230, 253, 0.8); }
 
         .reports-shell .reports-filter-pills {
           align-items: center;
         }
 
         .reports-shell .stack-row {
-          background: linear-gradient(180deg, rgba(30,34,53,0.92), rgba(22,25,41,0.98));
-          border: 1px solid rgba(255,255,255,0.08);
+          background: linear-gradient(180deg, #ffffff, #f8fbff);
+          border: 1px solid rgba(203, 213, 225, 0.78);
         }
 
         .reports-shell .reports-split-grid {
           align-items: start;
-        }
-
-        .reports-shell .reports-chart-grid {
-          align-items: stretch;
-        }
-
-        .reports-shell .reports-chart-wrap {
-          width: 100%;
-          height: 280px;
         }
 
         @media (max-width: 640px) {

@@ -194,11 +194,10 @@ export default function GSTPage() {
   const monthHi = MONTHS_HI[month - 1];
   const monthEn = MONTHS[month - 1];
   const isPayable = payableTotal > 0;
-  const years = [2024, 2025, 2026, 2027];
   const returnStatus = summary
     ? summary.sales.total > 0
-      ? { ok: true, msg: 'Return दाखिल करने के लिए तैयार' }
-      : { ok: false, msg: 'इस महीने कोई बिक्री नहीं' }
+      ? { ok: true, msg: 'Return ready to file' }
+      : { ok: false, msg: 'No sales this month' }
     : null;
 
   const renderDrillRows = (type) => {
@@ -238,105 +237,48 @@ export default function GSTPage() {
   return (
     <Layout>
       <div className="page-shell gst-shell">
-        <section className="page-header-card gst-header-card">
-          <div className="gst-header-copy">
-            <div className="page-title">GST सारांश / GST Summary</div>
-            <div className="page-subtitle">
-              Output GST, input tax credit, filing readiness, and CA-ready exports for the selected period.
+        <section className="card">
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <div className="page-title">GST Summary</div>
+              <div className="page-subtitle">
+                Track collected GST, ITC and filing-ready exports for the selected period.
+              </div>
             </div>
-          </div>
-          <div className="gst-period-group">
-            <div className="gst-period-picker" aria-label="Select month">
-              {MONTHS.map((item, index) => {
-                const active = month === index + 1;
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    className={`gst-period-pill ${active ? 'is-active' : ''}`}
-                    onClick={() => setMonth(index + 1)}
-                  >
-                    {MONTHS_HI[index]} / {item}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="gst-period-picker gst-year-picker" aria-label="Select year">
-              {years.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={`gst-period-pill ${year === item ? 'is-active' : ''}`}
-                  onClick={() => setYear(item)}
-                >
-                  {item}
-                </button>
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, width: 'min(320px, 100%)' }}>
+              <select className="form-input" value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
+                {MONTHS.map((item, index) => (
+                  <option key={item} value={index + 1}>{MONTHS_HI[index]} / {item}</option>
+                ))}
+              </select>
+              <select className="form-input" value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))}>
+                {[2023, 2024, 2025, 2026, 2027].map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
             </div>
           </div>
         </section>
 
         {!summary ? (
-          loading ? (
-            <div style={{ display: 'grid', gap: 16 }}>
-              <div className="ui-skeleton-card">
-                <div className="ui-skeleton-line is-medium" />
-                <div className="ui-skeleton-line is-long" style={{ marginTop: 14 }} />
-              </div>
-              <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="ui-skeleton-card">
-                    <div className="ui-skeleton-line is-short" />
-                    <div className="ui-skeleton-line is-medium" style={{ marginTop: 16, height: 28 }} />
-                    <div className="ui-skeleton-line is-long" style={{ marginTop: 14 }} />
-                  </div>
-                ))}
-              </section>
-              <div className="ui-skeleton-card"><div className="ui-skeleton-block" style={{ height: 220 }} /></div>
-            </div>
-          ) : (
-            <div className="ui-empty">
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>Summary unavailable</div>
-            </div>
-          )
+          <div className="ui-empty">
+            <div style={{ fontSize: 40, marginBottom: 12 }}>Tax</div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>{loading ? 'Loading summary...' : 'Summary unavailable'}</div>
+          </div>
         ) : (
           <>
-            <section className={`card gst-alert-card ${isPayable ? 'is-payable' : 'is-balanced'}`}>
-              <div className="gst-alert-head">
-                <div className="gst-alert-icon" aria-hidden="true">{isPayable ? '!' : '✓'}</div>
-                <div className="gst-alert-copy">
-                  <h2>{monthHi} {year}: {isPayable ? `₹${fmt(payableTotal)} GST भरना है` : 'GST liability clear है'}</h2>
-                  <p>{monthEn} {year} GST position after input tax credit set-off.</p>
-                </div>
-                {returnStatus ? (
-                  <div className={`gst-status-pill ${returnStatus.ok ? 'is-success' : 'is-warning'}`}>
-                    {returnStatus.ok ? '✓ ' : ''}{returnStatus.msg}
-                  </div>
-                ) : null}
+            <Card
+              tone={isPayable ? 'danger' : 'success'}
+              title={`${monthHi} ${year}: ${isPayable ? `₹${fmt(payableTotal)} GST payable` : 'No GST payable'}`}
+              subtitle={`${monthEn} ${year} GST position after ITC set-off`}
+              actions={returnStatus ? <StatusBadge tone={returnStatus.ok ? 'success' : 'warning'}>{returnStatus.msg}</StatusBadge> : null}
+            >
+              <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+                <StatCard label="Output GST" value={`₹${fmt(gstCollected)}`} note="Collected from sales" tone="money" />
+                <StatCard label="Input GST / ITC" value={`₹${fmt(gstITC)}`} note="Claimed from purchases" tone="secondary" />
+                <StatCard label="Net Position" value={`₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`} note={isPayable ? 'Payable after ITC' : excessCreditTotal > 0 ? 'Unused ITC left' : 'Balanced'} tone={isPayable ? 'danger' : excessCreditTotal > 0 ? 'money' : 'warning'} />
               </div>
-            </section>
+            </Card>
 
-            <section className="metric-grid gst-calc-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-              <div className="metric-card metric-card--success">
-                <div className="metric-label">OUTPUT GST</div>
-                <div className="metric-value" style={{ color: '#00C896' }}>₹{fmt(gstCollected)}</div>
-                <div className="metric-note">Collected from sales</div>
-              </div>
-              <div className="metric-card metric-card--accent">
-                <div className="metric-label">INPUT GST / ITC</div>
-                <div className="metric-value" style={{ color: '#6C63FF' }}>₹{fmt(gstITC)}</div>
-                <div className="metric-note">Claimed from purchases</div>
-              </div>
-              <div className="metric-card metric-card--danger">
-                <div className="metric-label">NET PAYABLE</div>
-                <div className="metric-value" style={{ color: '#FF6B6B' }}>₹{fmt(isPayable ? payableTotal : 0)}</div>
-                <div className="metric-note">
-                  {isPayable ? 'Tax still payable after ITC' : excessCreditTotal > 0 ? `Excess ITC ₹${fmt(excessCreditTotal)}` : 'Return currently balanced'}
-                </div>
-              </div>
-            </section>
-
-            <Card title="जीएसटी गणना / GST Calculation" subtitle="Drill into output GST and purchase ITC">
+            <Card title="GST Calculation" subtitle="Drill into output GST and purchase ITC">
               <DataRow
                 label="GST Collected (Output)"
                 note={`Collected from customers through sales. CGST ₹${fmt(summary.sales.cgst)} + SGST ₹${fmt(summary.sales.sgst)} + IGST ₹${fmt(summary.sales.igst)}`}
@@ -382,7 +324,7 @@ export default function GSTPage() {
               </div>
             </Card>
 
-            <Card title="जीएसटीआर-3बी सारांश / GSTR-3B Summary">
+            <Card title="GSTR-3B Summary">
               <div className="ui-table-wrap">
                 <table className="ui-table">
                   <thead>
@@ -421,36 +363,10 @@ export default function GSTPage() {
               </div>
             </Card>
 
-            <section className="gst-bucket-grid">
-              <div className="card gst-bucket-card">
-                <div className="gst-bucket-label">B2B</div>
-                <div className="gst-bucket-title">Business invoices with GSTIN</div>
-                <div className="gst-bucket-metrics">
-                  <div>
-                    <div className="metric-label">INVOICES</div>
-                    <div className="metric-value" style={{ color: '#F0F0FF' }}>{summary.sales.b2b_count}</div>
-                  </div>
-                  <div>
-                    <div className="metric-label">AMOUNT</div>
-                    <div className="metric-value" style={{ color: '#6C63FF' }}>₹{fmt(summary.sales.b2b_taxable)}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="card gst-bucket-card">
-                <div className="gst-bucket-label">B2C</div>
-                <div className="gst-bucket-title">Retail invoices without GSTIN</div>
-                <div className="gst-bucket-metrics">
-                  <div>
-                    <div className="metric-label">INVOICES</div>
-                    <div className="metric-value" style={{ color: '#F0F0FF' }}>{summary.sales.b2c_count}</div>
-                  </div>
-                  <div>
-                    <div className="metric-label">AMOUNT</div>
-                    <div className="metric-value" style={{ color: '#00C896' }}>₹{fmt(summary.sales.b2c_taxable)}</div>
-                  </div>
-                </div>
-              </div>
-            </section>
+            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+              <StatCard label="B2B Invoices" value={String(summary.sales.b2b_count)} note={`Taxable ₹${fmt(summary.sales.b2b_taxable)}`} tone="secondary" />
+              <StatCard label="B2C Invoices" value={String(summary.sales.b2c_count)} note={`Taxable ₹${fmt(summary.sales.b2c_taxable)}`} tone="money" />
+            </div>
 
             {summary.gstr1.b2b_invoices.length === 0 ? (
               <div className="ui-empty">
@@ -459,7 +375,7 @@ export default function GSTPage() {
                 <div style={{ fontSize: 12 }}>Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
               </div>
             ) : (
-              <Card title="बी2बी चालान / B2B Invoices" subtitle="GSTR-1 filing list">
+              <Card title="B2B Invoices" subtitle="GSTR-1 filing list">
                 <div className="ui-table-wrap hidden-xs">
                   <table className="ui-table">
                     <thead>
@@ -506,7 +422,7 @@ export default function GSTPage() {
               </Card>
             )}
 
-            <Card title="बी2सी सारांश / B2C Summary" subtitle="Regular customers without GSTIN">
+            <Card title="B2C Summary" subtitle="Regular customers without GSTIN">
               <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
                 <StatCard label="Invoices" value={String(summary.gstr1.b2c_summary.count)} note="B2C count" />
                 <StatCard label="Taxable" value={`₹${fmt(summary.gstr1.b2c_summary.taxable_amount)}`} />
@@ -516,27 +432,22 @@ export default function GSTPage() {
             </Card>
 
             <Card
-              title="सीए एक्सपोर्ट / CA Export"
-              subtitle="GSTR files ready to hand over"
+              title="Export for CA"
+              subtitle="Share directly with your CA"
               actions={<StatusBadge tone="neutral">{MONTHS[month - 1]} {year}</StatusBadge>}
             >
-              <div className="gst-export-grid">
-                <button type="button" className="gst-export-btn gst-export-btn--gstr1" onClick={() => exportCSV('gstr1')}>
-                  <span>GSTR-1 CSV</span>
-                  <small>B2B and B2C invoice export</small>
-                </button>
-                <button type="button" className="gst-export-btn gst-export-btn--gstr3b" onClick={() => exportCSV('gstr3b')}>
-                  <span>GSTR-3B CSV</span>
-                  <small>Monthly liability summary</small>
-                </button>
-                <button type="button" className="gst-export-btn gst-export-btn--json" onClick={exportJSON}>
-                  <span>JSON</span>
-                  <small>Structured data backup</small>
-                </button>
-                <button type="button" className="gst-export-btn gst-export-btn--zip" onClick={exportZIP} disabled={zipping}>
-                  <span>{zipping ? 'Building ZIP...' : 'Download ZIP'}</span>
-                  <small>CSV + JSON in one bundle</small>
-                </button>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                <ActionButton variant="primary" onClick={() => exportCSV('gstr1')}>GSTR-1 CSV</ActionButton>
+                <ActionButton variant="secondary" onClick={() => exportCSV('gstr3b')}>GSTR-3B CSV</ActionButton>
+                <ActionButton variant="dark" onClick={exportJSON}>JSON</ActionButton>
+              </div>
+              <div style={{ borderTop: '1px solid rgba(148,163,184,0.14)', paddingTop: 14 }}>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 10 }}>
+                  Download everything in one ZIP: GSTR1 + GSTR3B, CSV and JSON together.
+                </div>
+                <ActionButton variant="secondary" onClick={exportZIP} disabled={zipping}>
+                  {zipping ? 'Building ZIP...' : 'Download ZIP (GSTR1 + GSTR3B)'}
+                </ActionButton>
               </div>
             </Card>
           </>
@@ -544,213 +455,12 @@ export default function GSTPage() {
       </div>
 
       <style>{`
-        .gst-shell .gst-header-card {
-          display: grid;
-          gap: 18px;
-          background: linear-gradient(135deg, #1A1D35 0%, #161929 100%);
-          border-radius: 16px;
-        }
-
-        .gst-shell .gst-period-group {
-          display: grid;
-          gap: 12px;
-        }
-
-        .gst-shell .gst-period-picker {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .gst-shell .gst-period-pill {
-          min-height: 40px;
-          padding: 10px 14px;
-          border-radius: 999px;
-          border: 1px solid #FFFFFF15;
-          background: #1E2235;
-          color: #8B8FA8;
-          font-size: 13px;
-          font-weight: 600;
-          transition: all 0.15s ease;
-        }
-
-        .gst-shell .gst-period-pill.is-active {
-          border-color: #6C63FF;
-          background: #6C63FF22;
-          color: #6C63FF;
-        }
-
-        .gst-shell .gst-alert-card.is-payable {
-          background: linear-gradient(135deg, rgba(255, 179, 71, 0.14) 0%, rgba(255, 107, 107, 0.08) 100%), #161929;
-        }
-
-        .gst-shell .gst-alert-card.is-balanced {
-          background: linear-gradient(135deg, rgba(0, 200, 150, 0.12) 0%, rgba(108, 99, 255, 0.08) 100%), #161929;
-        }
-
-        .gst-shell .gst-alert-head {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 14px;
-          align-items: start;
-        }
-
-        .gst-shell .gst-alert-icon {
-          width: 42px;
-          height: 42px;
-          display: grid;
-          place-items: center;
-          border-radius: 12px;
-          background: #FFB34718;
-          border: 1px solid #FFB34740;
-          color: #FFB347;
-          font-size: 20px;
-          font-weight: 700;
-        }
-
-        .gst-shell .gst-alert-copy h2 {
-          margin: 0 0 6px;
-          font-size: 22px;
-          font-weight: 700;
-          color: #F0F0FF;
-        }
-
-        .gst-shell .gst-alert-copy p {
-          margin: 0;
-          color: #8B8FA8;
-        }
-
-        .gst-shell .gst-status-pill {
-          justify-self: start;
-          margin-top: 12px;
-          padding: 8px 14px;
-          border-radius: 999px;
-          border: 1px solid #FFFFFF15;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        .gst-shell .gst-status-pill.is-success {
-          background: #00C89618;
-          border-color: #00C89640;
-          color: #00C896;
-        }
-
-        .gst-shell .gst-status-pill.is-warning {
-          background: #FFB34718;
-          border-color: #FFB34740;
-          color: #FFB347;
-        }
-
-        .gst-shell .gst-calc-grid {
-          margin-top: 0;
-        }
-
-        .gst-shell .metric-card--accent::before {
-          background: #6C63FF;
-        }
-
-        .gst-shell .gst-bucket-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
-        }
-
-        .gst-shell .gst-bucket-card {
-          display: grid;
-          gap: 12px;
-        }
-
-        .gst-shell .gst-bucket-label {
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          color: #555870;
-        }
-
-        .gst-shell .gst-bucket-title {
-          font-size: 15px;
-          font-weight: 600;
-          color: #F0F0FF;
-        }
-
-        .gst-shell .gst-bucket-metrics {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 14px;
-        }
-
-        .gst-shell .gst-export-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 12px;
-        }
-
-        .gst-shell .gst-export-btn {
-          min-height: 88px;
-          padding: 16px;
-          border-radius: 16px;
-          border: 1px solid #FFFFFF15;
-          background: #1E2235;
-          color: #F0F0FF;
-          text-align: left;
-          transition: all 0.15s ease;
-        }
-
-        .gst-shell .gst-export-btn:hover {
-          filter: brightness(1.08);
-        }
-
-        .gst-shell .gst-export-btn span {
-          display: block;
-          margin-bottom: 6px;
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .gst-shell .gst-export-btn small {
-          display: block;
-          color: #8B8FA8;
-          font-size: 12px;
-          line-height: 1.5;
-        }
-
-        .gst-shell .gst-export-btn--gstr1 {
-          background: #6C63FF22;
-          border-color: #6C63FF40;
-          color: #6C63FF;
-        }
-
-        .gst-shell .gst-export-btn--gstr3b {
-          background: #00C89618;
-          border-color: #00C89640;
-          color: #00C896;
-        }
-
-        .gst-shell .gst-export-btn--json {
-          background: #1E2235;
-          border-color: #FFFFFF15;
-          color: #F0F0FF;
-        }
-
-        .gst-shell .gst-export-btn--zip {
-          background: #FFB34718;
-          border-color: #FFB34740;
-          color: #FFB347;
-        }
-
-        .gst-shell .gst-export-btn:disabled {
-          opacity: 0.7;
-          cursor: wait;
-        }
-
-        .gst-shell .ui-list-card strong { color: #F0F0FF; }
+        .gst-shell .gst-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
+        .gst-shell .ui-empty,
+        .gst-shell .ui-list-card { box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08); }
+        .gst-shell .ui-list-card strong { color: #111111; }
 
         @media (max-width: 640px) {
-          .gst-shell .gst-bucket-grid {
-            grid-template-columns: 1fr;
-          }
-
           .hidden-xs { display: none !important; }
           .show-xs { display: flex !important; }
         }

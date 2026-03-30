@@ -107,28 +107,6 @@ const buildPurchaseWhatsAppMessage = (purchase) => {
   ].join('\n');
 };
 
-function PurchaseActionGlyph({ name }) {
-  const common = {
-    width: 16,
-    height: 16,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.9,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': true,
-  };
-
-  if (name === 'whatsapp') {
-    return <svg {...common}><path d="M20 11.5A8.5 8.5 0 1 1 6.2 4.9 8.5 8.5 0 0 1 20 11.5Z" /><path d="m8.8 18.5-3.3.9.9-3.2" /><path d="M9.5 8.8c.2-.4.5-.4.7-.4h.6c.2 0 .4 0 .5.4l.5 1.2c.1.2.1.4 0 .6l-.4.6c-.1.2-.1.4 0 .6.3.5.8 1 1.3 1.3.2.1.4.1.6 0l.6-.4c.2-.1.4-.1.6 0l1.2.5c.4.1.4.3.4.5v.6c0 .2 0 .5-.4.7-.5.2-1 .3-1.4.2-1.7-.4-4.2-2.8-4.6-4.6-.1-.4 0-.9.2-1.4Z" /></svg>;
-  }
-  if (name === 'edit') {
-    return <svg {...common}><path d="m4 20 4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z" /><path d="M13 6.5 17.5 11" /></svg>;
-  }
-  return <svg {...common}><path d="M4 7h16" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" /><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7" /></svg>;
-}
-
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
@@ -436,10 +414,10 @@ export default function PurchasesPage() {
   // â”€â”€ Payment type badge helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const PayBadge = ({ type }) => {
     const map = {
-      cash:   { bg: '#6C63FF18', color: '#6C63FF', label: 'Cash' },
-      credit: { bg: '#FFB34718', color: '#FFB347', label: 'Udhaar' },
-      upi:    { bg: '#6C63FF18', color: '#6C63FF', label: 'UPI' },
-      bank:   { bg: '#6C63FF18', color: '#6C63FF', label: 'Bank' },
+      cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
+      credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
+      upi:    { bg: '#ede9fe', color: '#5b21b6', label: 'UPI' },
+      bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
     };
     const s = map[type] || map.cash;
     return (
@@ -452,19 +430,19 @@ export default function PurchasesPage() {
   return (
     <Layout>
       <div className="page-shell purchases-shell">
-        <section className="card page-header-card">
+        <section className="card">
           <div className="page-toolbar">
             <div>
-              <div className="page-title page-header-title">खरीद / Purchases</div>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Purchases</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
             </div>
             <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
-              + खरीद दर्ज / Record Purchase
+              + Record Purchase
             </button>
           </div>
         </section>
 
-        <section className="metric-grid purchases-stats-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Total Spend</div>
             <div className="metric-value" style={{ color: '#b45309' }}>₹{(summary.totalPurchaseValue || 0).toFixed(2)}</div>
@@ -483,7 +461,7 @@ export default function PurchasesPage() {
               <button
                 type="button"
                 onClick={focusPendingPurchase}
-                className="purchases-pay-now"
+                style={{ marginTop: 10, padding: 0, border: 'none', background: 'none', color: '#3730a3', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
               >
                 Pay Now
               </button>
@@ -509,44 +487,150 @@ export default function PurchasesPage() {
             <div>No purchases yet.</div>
           </div>
         ) : (
-          <div className="purchases-list-grid">
-            {purchases.map((p) => (
-              <article
-                key={p._id}
-                className={`card purchases-invoice-card ${highlightedPurchaseId === p._id ? 'purchase-row-highlight' : ''}`}
+          <>
+          {/* Desktop table */}
+          <div className="table-container hidden-xs">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bill No.</th>
+                  <th>Product</th>
+                  <th>Items</th>
+                  <th>Taxable</th>
+                  <th>GST (ITC)</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Balance Due</th>
+                  <th>Payment</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchases.map(p => (
+                  <tr
+                    key={p._id}
+                    data-purchase-anchor={p._id}
+                    className={highlightedPurchaseId === p._id ? 'purchase-row-highlight' : ''}
+                  >
+                    <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>{p.invoice_number}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
+                        {/* Show all item names if multi-item */}
+                        {p.items && p.items.length > 1
+                          ? p.items.map(i => i.product_name).join(', ')
+                          : p.product_name}
+                      </div>
+                      {p.supplier_name && (
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>
+                      )}
+                    </td>
+                    <td style={{ fontSize: 12, color: '#6b7280' }}>
+                      {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
+                    </td>
+                    <td>₹{(p.taxable_amount || 0).toFixed(2)}</td>
+                    <td>
+                      {p.total_gst > 0
+                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
+                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>â€”</span>}
+                    </td>
+                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
+                    <td style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
+                    <td>
+                      {(p.balance_due || 0) > 0
+                        ? <span style={{ color: '#ef4444', fontWeight: 700 }}>₹{p.balance_due.toFixed(2)}</span>
+                        : <span style={{ color: '#10b981' }}>Paid</span>}
+                    </td>
+                    <td><PayBadge type={p.payment_type} /></td>
+                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
+                      {formatFullDateTime(p.createdAt)}
+                    </td>
+                    <td>
+                      {p.supplier_phone ? (
+                        <button
+                          onClick={() => sendPurchaseWhatsApp(p)}
+                          className="action-soft whatsapp"
+                          style={{ borderRadius: 999, padding: '6px 10px', marginRight: 6, background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}
+                        >
+                          WhatsApp
+                        </button>
+                      ) : null}
+                      <button onClick={() => startEditPurchase(p)}
+                        className="action-soft edit"
+                        style={{ borderRadius: 999, padding: '6px 10px' }}>
+                        Edit
+                      </button>
+                      <button onClick={() => handleDelete(p._id)}
+                        className="action-soft delete"
+                        style={{ borderRadius: 999, padding: '6px 10px' }}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {purchases.map(p => (
+              <div key={p._id} className="card"
                 data-purchase-anchor={p._id}
-              >
-                <div className="purchases-invoice-main">
-                  <div style={{ minWidth: 0 }}>
-                    <div className="purchases-invoice-title">{p.items && p.items.length > 1 ? `${p.items.length} products` : p.product_name}</div>
-                    <div className="purchases-invoice-meta">{p.invoice_number}</div>
-                    <div className="purchases-invoice-customer">{p.supplier_name || 'Walk-in Supplier'}</div>
-                    <div className="purchases-invoice-date">{formatFullDateTime(p.createdAt)}</div>
+                style={{
+                  borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#f59e0b'}`,
+                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(55, 48, 163, 0.22), 0 18px 32px rgba(55, 48, 163, 0.12)' : undefined,
+                  transition: 'box-shadow 0.2s ease',
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
+                      {p.items && p.items.length > 1
+                        ? `${p.items.length} products`
+                        : p.product_name}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>{p.invoice_number}</div>
+                    {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>}
                   </div>
-                  <div className="purchases-invoice-side">
-                    <div className="purchases-invoice-total">₹{(p.total_amount || 0).toFixed(2)}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 16 }}>
+                      ₹{(p.total_amount || 0).toFixed(2)}
+                    </div>
                     <PayBadge type={p.payment_type} />
-                    {(p.balance_due || 0) > 0 ? (
-                      <button type="button" className="purchases-pay-now" onClick={focusPendingPurchase}>Pay Now</button>
-                    ) : null}
                   </div>
                 </div>
-                <div className="purchases-invoice-actions">
-                  {p.supplier_phone ? (
-                    <button onClick={() => sendPurchaseWhatsApp(p)} title="Share on WhatsApp" className="action-soft whatsapp purchases-icon-btn">
-                      <PurchaseActionGlyph name="whatsapp" />
-                    </button>
-                  ) : null}
-                  <button onClick={() => startEditPurchase(p)} title="Edit purchase" className="action-soft edit purchases-icon-btn">
-                    <PurchaseActionGlyph name="edit" />
-                  </button>
-                  <button onClick={() => handleDelete(p._id)} title="Delete purchase" className="action-soft delete purchases-icon-btn">
-                    <PurchaseActionGlyph name="delete" />
-                  </button>
+
+                <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{(p.taxable_amount || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6366f1' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>₹{(p.amount_paid || 0).toFixed(2)}</div></div>
+                  {(p.balance_due || 0) > 0 && (
+                    <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>₹{p.balance_due.toFixed(2)}</div></div>
+                  )}
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{formatFullDateTime(p.createdAt)}</div></div>
                 </div>
-              </article>
+
+                {p.supplier_phone ? (
+                  <button onClick={() => sendPurchaseWhatsApp(p)}
+                    className="action-soft whatsapp"
+                    style={{ width: '100%', padding: '9px', marginBottom: 8, background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}>
+                    WhatsApp
+                  </button>
+                ) : null}
+                <button onClick={() => startEditPurchase(p)}
+                  className="action-soft edit"
+                  style={{ width: '100%', padding: '9px', marginBottom: 8 }}>
+                  Edit
+                </button>
+                <button onClick={() => handleDelete(p._id)}
+                  className="action-soft delete"
+                  style={{ width: '100%', padding: '9px' }}>
+                  Delete
+                </button>
+              </div>
             ))}
           </div>
+        </>
         )}
       </div>
 
@@ -595,7 +679,7 @@ export default function PurchasesPage() {
                       </div>
 
                       <div className="form-group">
-                        <label className="form-label">उत्पाद / PRODUCT *</label>
+                        <label className="form-label">Product *</label>
                         <SearchableProductSelect
                           products={products}
                           value={item.product_id}
@@ -606,13 +690,13 @@ export default function PurchasesPage() {
 
                       <div className="grid-2">
                         <div className="form-group">
-                          <label className="form-label">मात्रा / QUANTITY *</label>
+                          <label className="form-label">Quantity *</label>
                           <input className="form-input" type="number" min="1"
                             value={item.quantity}
                             onChange={e => updateItem(index, 'quantity', e.target.value)} required />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">खरीद मूल्य / PURCHASE PRICE *</label>
+                          <label className="form-label">Purchase Price *</label>
                           <input className="form-input" type="number" step="0.01"
                             value={item.price_per_unit}
                             onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
@@ -704,21 +788,29 @@ export default function PurchasesPage() {
                   </div>
                 </div>
                 )}
-                <div className="flow-section-kicker"><span>भुगतान / Payment</span><span>Method + advance</span></div>
+                <div className="flow-section-kicker"><span>Payment</span><span>Method + advance</span></div>
                 <div className="form-group">
-                  <label className="form-label">भुगतान प्रकार / PAYMENT TYPE *</label>
+                  <label className="form-label">Payment Type *</label>
                   <div className="flow-choice-grid">
                     {[
-                      { val: 'cash', label: 'Cash' },
-                      { val: 'credit', label: 'Credit' },
-                      { val: 'upi', label: 'UPI' },
-                      { val: 'bank', label: 'Bank' },
+                      { val: 'cash', label: 'Cash', color: '#10b981' },
+                      { val: 'credit', label: 'Credit', color: '#ef4444' },
+                      { val: 'upi', label: 'UPI', color: '#8b5cf6' },
+                      { val: 'bank', label: 'Bank', color: '#3b82f6' },
                     ].map(opt => (
                       <button
                         key={opt.val}
                         type="button"
                         onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
-                        className={`flow-choice-pill ${form.payment_type === opt.val ? 'is-active' : ''}`}
+                        style={{
+                          padding: '11px 10px',
+                          borderRadius: 14,
+                          border: '2px solid',
+                          borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
+                          background: form.payment_type === opt.val ? opt.color : '#f9fafb',
+                          color: form.payment_type === opt.val ? '#fff' : '#374151',
+                          fontWeight: 700,
+                        }}
                       >
                         {opt.label}
                       </button>
@@ -728,7 +820,7 @@ export default function PurchasesPage() {
 
                 {form.payment_type === 'credit' && (
                   <div style={{ marginTop: 10 }}>
-                    <label className="form-label">अग्रिम भुगतान / ADVANCE PAYMENT</label>
+                    <label className="form-label">Advance Payment (optional)</label>
                     <input className="form-input" type="number" step="0.01" min="0"
                       placeholder={`Max ₹${billTotals.total.toFixed(2)}`}
                       value={form.amount_paid}
@@ -749,7 +841,7 @@ export default function PurchasesPage() {
 
                 <div className="form-group">
                   <label className="form-label">
-                    आपूर्तिकर्ता नाम / SUPPLIER NAME {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}
+                    Supplier Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}
                   </label>
                     <input className="form-input" placeholder="Supplier ka naam"
                       value={form.supplier_name}
@@ -759,13 +851,13 @@ export default function PurchasesPage() {
 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">फोन / PHONE</label>
+                    <label className="form-label">Phone</label>
                     <input className="form-input" placeholder="Mobile number"
                       value={form.supplier_phone}
                       onChange={e => updateForm({ supplier_phone: e.target.value })} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">जीएसटीआईएन / GSTIN</label>
+                    <label className="form-label">GSTIN (optional)</label>
                       <input className="form-input" placeholder="Supplier GSTIN"
                         value={form.supplier_gstin}
                         maxLength={GSTIN_LENGTH}
@@ -783,7 +875,7 @@ export default function PurchasesPage() {
 
                 <div className="grid-2">
                   <div className="form-group">
-                    <label className="form-label">आपूर्तिकर्ता राज्य / SUPPLIER STATE</label>
+                    <label className="form-label">Supplier State</label>
                     <select className="form-input" value={form.supplier_state}
                       onChange={e => updateForm({ supplier_state: e.target.value })}>
                       <option value="">Select State/UT</option>
@@ -799,7 +891,7 @@ export default function PurchasesPage() {
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">पता / ADDRESS</label>
+                    <label className="form-label">Address</label>
                     <input className="form-input" placeholder="Supplier address"
                       value={form.supplier_address}
                       onChange={e => updateForm({ supplier_address: e.target.value })} />
@@ -807,7 +899,7 @@ export default function PurchasesPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">नोट / NOTES</label>
+                  <label className="form-label">Notes</label>
                   <input className="form-input" placeholder="Any notes..."
                     value={form.notes}
                     onChange={e => updateForm({ notes: e.target.value })} />
@@ -841,114 +933,15 @@ export default function PurchasesPage() {
       )}
 
       <style>{`
-        .purchases-stats-grid {
-          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        }
         .purchases-shell .purchases-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
         .purchases-shell .card[style*='borderLeft'] { background: #ffffff !important; }
-        .purchases-list-grid {
-          display: grid;
-          gap: 12px;
-        }
-        .purchases-invoice-card {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-        }
-        .purchases-invoice-main {
-          flex: 1;
-          min-width: 0;
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 16px;
-        }
-        .purchases-invoice-title {
-          font-size: 15px;
-          font-weight: 700;
-          color: #F0F0FF;
-          line-height: 1.3;
-        }
-        .purchases-invoice-meta {
-          margin-top: 4px;
-          font-size: 11px;
-          font-weight: 600;
-          color: #FFB347;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        .purchases-invoice-customer {
-          margin-top: 6px;
-          font-size: 14px;
-          color: #8B8FA8;
-        }
-        .purchases-invoice-date {
-          margin-top: 8px;
-          font-size: 12px;
-          color: #8B8FA8;
-        }
-        .purchases-invoice-side {
-          text-align: right;
-          flex-shrink: 0;
-          display: grid;
-          gap: 8px;
-          justify-items: end;
-        }
-        .purchases-invoice-total {
-          font-size: 22px;
-          font-weight: 700;
-          color: #FFB347;
-        }
-        .purchases-invoice-actions {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-        .purchases-icon-btn {
-          width: 40px;
-          height: 40px;
-          padding: 0 !important;
-          border-radius: 12px !important;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .purchases-pay-now {
-          min-height: 34px;
-          padding: 6px 12px;
-          border-radius: 999px;
-          border: 1px solid #FFB34740;
-          background: #FFB34718;
-          color: #FFB347;
-          font-size: 12px;
-          font-weight: 600;
-        }
         .purchases-shell .purchase-row-highlight {
           background: rgba(55, 48, 163, 0.08) !important;
           outline: 2px solid rgba(55, 48, 163, 0.18);
           outline-offset: -2px;
         }
 
-        @media (max-width: 640px) {
-          .hidden-xs { display: none !important; }
-          .show-xs { display: flex !important; }
-          .purchases-stats-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .purchases-invoice-card,
-          .purchases-invoice-main {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .purchases-invoice-side {
-            justify-items: start;
-            text-align: left;
-          }
-          .purchases-invoice-actions {
-            align-self: flex-start;
-          }
-        }
+        @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
         @media (min-width: 641px) { .show-xs { display: none !important; } }
       `}</style>
     </Layout>

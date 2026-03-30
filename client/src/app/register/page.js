@@ -95,14 +95,14 @@ export default function RegisterPage() {
         <section className="trust-auth-card-wrap">
           <div className="trust-auth-card">
             <div className="trust-form-topline">Create secure workspace</div>
-            <div className="auth-title">खाता बनाएं / Create Account</div>
+            <div className="auth-title">Create account</div>
             <div className="auth-subtitle">Start managing your business today.</div>
 
             {error && <div className="alert-error">{error}</div>}
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label className="form-label">पूरा नाम / FULL NAME</label>
+                <label className="form-label">Full Name</label>
                 <input
                   className="form-input"
                   type="text"
@@ -114,7 +114,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">यूज़रनेम / USERNAME</label>
+                <label className="form-label">Username</label>
                 <input
                   className="form-input"
                   type="text"
@@ -127,7 +127,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">पासवर्ड / PASSWORD</label>
+                <label className="form-label">Password</label>
                 <div className="trust-password-wrap">
                   <input
                     className="form-input trust-password-input"
