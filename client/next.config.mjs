@@ -1,52 +1,71 @@
-import withPWAInit from 'next-pwa';
+import withPWAInit from '@uora/next-pwa';
 
 const withPWA = withPWAInit({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
-  customWorkerDir: 'public',
-  runtimeCaching: [
-    {
-      urlPattern: /^https?.*\/_next\/static\/.*$/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'next-static-assets',
-        expiration: {
-          maxEntries: 64,
-          maxAgeSeconds: 60 * 60 * 24 * 30,
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-    {
-      urlPattern: /^https?.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'image-assets',
-        expiration: {
-          maxEntries: 80,
-          maxAgeSeconds: 60 * 60 * 24 * 30,
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
+  workboxOptions: {
+    runtimeCaching: [
+      {
+        urlPattern: /^https?.*\/_next\/static\/.*$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'next-static-assets',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 60 * 60 * 24 * 30,
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
         },
       },
-    },
-    {
-      urlPattern: /^https?.*\.(?:woff2?|ttf|otf)$/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'font-assets',
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 60 * 60 * 24 * 30,
+      {
+        urlPattern: /^https?.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'image-assets',
+          expiration: {
+            maxEntries: 80,
+            maxAgeSeconds: 60 * 60 * 24 * 30,
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
         },
       },
-    },
-  ],
+      {
+        urlPattern: /^https?.*\.(?:woff2?|ttf|otf)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'font-assets',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 60 * 60 * 24 * 30,
+          },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/rakh-rakhaav-3v1l\.vercel\.app\/.*$/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'app-pages',
+          networkTimeoutSeconds: 10,
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 60 * 60 * 24 * 7,
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+    ],
+  },
+  fallbacks: {
+    document: '/offline.html',
+  },
 });
 
 /** @type {import('next').NextConfig} */
