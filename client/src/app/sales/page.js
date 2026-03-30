@@ -315,6 +315,7 @@ export default function SalesPage() {
     const deferredId = scheduleDeferred(async () => {
       setRefreshing(Boolean(cached?.sales));
       await fetchAll();
+      await fetchProducts();
       setRefreshing(false);
     });
 
