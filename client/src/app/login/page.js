@@ -72,13 +72,13 @@ export default function LoginPage() {
   return (
     <div className="trust-auth-root">
       <div className="trust-auth-shell">
-        <section className="trust-auth-showcase">
+        <section className="trust-auth-showcase trust-auth-showcase-login">
           <div className="trust-auth-kicker">Premium retail operating system</div>
           <div className="trust-auth-brand-row">
             <div className="trust-auth-logo">R</div>
             <div>
-              <div className="trust-auth-brand-name">Rakhrakhaav</div>
-              <div className="trust-auth-brand-subtitle">Built for confident Indian shop owners</div>
+              <div className="trust-auth-brand-name">रख-रखाव</div>
+              <div className="trust-auth-brand-subtitle">Confident Indian shop owners ke liye</div>
             </div>
           </div>
 

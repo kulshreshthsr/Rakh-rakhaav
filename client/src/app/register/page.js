@@ -47,13 +47,13 @@ export default function RegisterPage() {
   return (
     <div className="trust-auth-root trust-auth-root-register">
       <div className="trust-auth-shell">
-        <section className="trust-auth-showcase">
+        <section className="trust-auth-showcase trust-auth-showcase-register">
           <div className="trust-auth-kicker">Premium onboarding experience</div>
           <div className="trust-auth-brand-row">
             <div className="trust-auth-logo">R</div>
             <div>
-              <div className="trust-auth-brand-name">Rakhrakhaav</div>
-              <div className="trust-auth-brand-subtitle">For business owners who want a sharper first impression</div>
+              <div className="trust-auth-brand-name">रख-रखाव</div>
+              <div className="trust-auth-brand-subtitle">Business owners ke liye ek focused shuruaat</div>
             </div>
           </div>
 

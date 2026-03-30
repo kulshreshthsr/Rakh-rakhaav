@@ -15,6 +15,7 @@ const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const GSTIN_LENGTH = 15;
 const SALES_CACHE_KEY = 'sales-page';
 const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
 const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
@@ -453,8 +454,10 @@ export default function SalesPage() {
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
   const roundedBill = getRoundedBillValues(billTotals.total);
   const gstinValue = normalizeGstin(form.buyer_gstin);
-  const gstinValid = !gstinValue || GSTIN_REGEX.test(gstinValue);
-  const showGstinError = gstinTouched && !!gstinValue && !gstinValid;
+  const gstinComplete = gstinValue.length === GSTIN_LENGTH;
+  const gstinValid = !gstinValue || (gstinComplete && GSTIN_REGEX.test(gstinValue));
+  const showGstinError = gstinTouched && gstinComplete && !gstinValid;
+  const showGstinLengthHint = gstinTouched && !!gstinValue && !gstinComplete;
   const handleBuyerGstinChange = (value) => {
     const normalized = normalizeGstin(value);
     const detectedState = getStateFromGstin(normalized);
@@ -1087,10 +1090,13 @@ export default function SalesPage() {
                       className="form-input"
                       placeholder="GSTIN for B2B"
                       value={form.buyer_gstin}
-                      maxLength={15}
+                      maxLength={GSTIN_LENGTH}
                       onChange={e => handleBuyerGstinChange(e.target.value)}
                       onBlur={() => setGstinTouched(true)}
                     />
+                    {showGstinLengthHint && (
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>GSTIN should be 15 characters</div>
+                    )}
                     {showGstinError && (
                       <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
                     )}
