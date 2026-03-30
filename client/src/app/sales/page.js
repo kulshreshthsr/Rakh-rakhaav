@@ -6,7 +6,7 @@ import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
-import { queueSale } from '../../lib/offlineQueue';
+import { getQueue, queueSale } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
@@ -290,6 +290,82 @@ export default function SalesPage() {
   const amountPaidInputRef = useRef(null);
   const buyerNameInputRef = useRef(null);
 
+  async function loadPendingOfflineSales() {
+    try {
+      const queueItems = await getQueue();
+
+      if (!Array.isArray(queueItems) || queueItems.length === 0) {
+        return [];
+      }
+
+      return queueItems
+        .filter((operation) => operation?.type === 'CREATE_SALE')
+        .map((operation) => {
+          const queuedItems = Array.isArray(operation?.payload?.items)
+            ? operation.payload.items
+            : [];
+          const taxableAmount = queuedItems.reduce((sum, item) => {
+            return sum + parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
+          }, 0);
+          const totalGst = queuedItems.reduce((sum, item) => {
+            const product = products.find((prod) => prod._id === item.product_id);
+            const taxable = parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
+            const gstRate = product?.gst_rate || 0;
+            return sum + (taxable * gstRate) / 100;
+          }, 0);
+
+          return {
+            _id: operation.id,
+            invoice_number: operation.tempId,
+            items: queuedItems.map((item) => {
+              const product = products.find((prod) => prod._id === item.product_id);
+
+              return {
+                product_name: product?.name || 'Product',
+                quantity: item.quantity,
+                price_per_unit: item.price_per_unit,
+                total_amount: parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0),
+              };
+            }),
+            product_name: (() => {
+              const firstItem = queuedItems[0];
+              const product = products.find((prod) => prod._id === firstItem?.product_id);
+              return product?.name || 'Product';
+            })(),
+            total_amount: taxableAmount + totalGst,
+            taxable_amount: taxableAmount,
+            total_gst: totalGst,
+            payment_type: operation?.payload?.payment_type,
+            buyer_name: operation?.payload?.buyer_name || 'Walk-in Customer',
+            buyer_phone: operation?.payload?.buyer_phone,
+            createdAt: operation?.createdAt || new Date().toISOString(),
+            _isOffline: true,
+          };
+        });
+    } catch {
+      return [];
+    }
+  }
+
+  async function mergeSalesWithPendingQueue(nextSales) {
+    try {
+      const pendingOfflineSales = await loadPendingOfflineSales();
+
+      if (!pendingOfflineSales.length) {
+        return nextSales;
+      }
+
+      const seenIds = new Set((nextSales || []).map((sale) => sale._id));
+      const mergedOfflineSales = pendingOfflineSales.filter((sale) => !seenIds.has(sale._id));
+
+      return [...mergedOfflineSales, ...(nextSales || [])].sort(
+        (a, b) => new Date(b.createdAt || b.sold_at || 0).getTime() - new Date(a.createdAt || a.sold_at || 0).getTime()
+      );
+    } catch {
+      return nextSales;
+    }
+  }
+
   async function fetchAll() {
     setLoading(true);
     await fetchSales();
@@ -303,9 +379,10 @@ export default function SalesPage() {
       const data = await res.json();
       const nextSales = data.sales || (Array.isArray(data) ? data : []);
       const nextSummary = data.summary || {};
-      setSales(nextSales);
+      const mergedSales = await mergeSalesWithPendingQueue(nextSales);
+      setSales(mergedSales);
       setSummary(nextSummary);
-      writePageCache(SALES_CACHE_KEY, { sales: nextSales, summary: nextSummary });
+      writePageCache(SALES_CACHE_KEY, { sales: mergedSales, summary: nextSummary });
     } catch { setError('Sales load nahi ho saki'); }
   }
 
@@ -329,7 +406,9 @@ export default function SalesPage() {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(SALES_CACHE_KEY);
     if (cached?.sales) {
-      setSales(cached.sales);
+      mergeSalesWithPendingQueue(cached.sales).then((mergedSales) => {
+        setSales(mergedSales);
+      });
       setSummary(cached.summary || {});
       setLoading(false);
     }
@@ -374,6 +453,28 @@ export default function SalesPage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isOnline || typeof window === 'undefined' || !localStorage.getItem('token')) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      fetchSales();
+    }, 2500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (!products.length) {
+      return;
+    }
+
+    mergeSalesWithPendingQueue(sales).then((mergedSales) => {
+      setSales(mergedSales);
+    });
+  }, [products.length]);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -616,6 +717,15 @@ export default function SalesPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        if (isEditing && data?._id) {
+          setSales((current) => current
+            .map((sale) => (sale._id === data._id ? data : sale))
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt || b.sold_at || 0).getTime() -
+                new Date(a.createdAt || a.sold_at || 0).getTime()
+            ));
+        }
         setShowModal(false);
         resetForm();
         fetchAll();
