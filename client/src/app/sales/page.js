@@ -22,6 +22,33 @@ const SALES_CACHE_KEY = 'sales-page';
 const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
 const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const normalizeState = (value = '') => value.trim().toLowerCase();
+const formatDateInputValue = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const getDefaultSaleDateValue = () => formatDateInputValue(new Date());
+const getSaleRecordDateISO = (value) => {
+  if (!value) return new Date().toISOString();
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return new Date().toISOString();
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).toISOString();
+};
+const buildInitialForm = (overrides = {}) => ({
+  payment_type: 'cash',
+  amount_paid: '',
+  buyer_name: '',
+  buyer_phone: '',
+  buyer_gstin: '',
+  buyer_address: '',
+  buyer_state: '',
+  notes: '',
+  sale_date: getDefaultSaleDateValue(),
+  ...overrides,
+});
 const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   day: '2-digit',
   month: 'short',
@@ -257,12 +284,7 @@ export default function SalesPage() {
   const [error, setError]           = useState('');
   const [items, setItems]           = useState([emptyItem()]);
   const [gstinTouched, setGstinTouched] = useState(false);
-  const [form, setForm]             = useState({
-    payment_type: 'cash',
-    amount_paid: '',
-    buyer_name: '', buyer_phone: '', buyer_gstin: '',
-    buyer_address: '', buyer_state: '', notes: '',
-  });
+  const [form, setForm]             = useState(buildInitialForm());
   const [saleStep, setSaleStep] = useState(0);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const amountPaidInputRef = useRef(null);
@@ -360,16 +382,9 @@ export default function SalesPage() {
     if (params.get('open') !== '1' || params.get('payment') !== 'credit') return;
     setEditingSaleId('');
     setItems([emptyItem()]);
-    setForm({
+    setForm(buildInitialForm({
       payment_type: 'credit',
-      amount_paid: '',
-      buyer_name: '',
-      buyer_phone: '',
-      buyer_gstin: '',
-      buyer_address: '',
-      buyer_state: '',
-      notes: '',
-    });
+    }));
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
@@ -503,7 +518,7 @@ export default function SalesPage() {
   function resetForm() {
     setEditingSaleId('');
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
+    setForm(buildInitialForm());
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
@@ -576,7 +591,7 @@ export default function SalesPage() {
           payment_type: form.payment_type,
           buyer_name: form.buyer_name || 'Walk-in Customer',
           buyer_phone: form.buyer_phone,
-          createdAt: new Date().toISOString(),
+          createdAt: getSaleRecordDateISO(form.sale_date),
           _isOffline: true,
         }, ...prev]);
       } catch (err) {
@@ -595,6 +610,7 @@ export default function SalesPage() {
           items: validItems,
           ...form,
           buyer_gstin: gstinValue,
+          sale_date: form.sale_date,
           amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
         }),
       });
@@ -657,7 +673,7 @@ export default function SalesPage() {
   function resetFormLegacy() {
     setEditingSaleId('');
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '', buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '' });
+    setForm(buildInitialForm());
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
@@ -678,7 +694,7 @@ export default function SalesPage() {
       quantity: item.quantity || 1,
       price_per_unit: item.price_per_unit || '',
     })));
-    setForm({
+    setForm(buildInitialForm({
       payment_type: sale.payment_type || 'cash',
       amount_paid: sale.payment_type === 'credit' ? String(sale.amount_paid || '') : '',
       buyer_name: sale.buyer_name || '',
@@ -687,7 +703,8 @@ export default function SalesPage() {
       buyer_address: sale.buyer_address || '',
       buyer_state: sale.buyer_state || '',
       notes: sale.notes || '',
-    });
+      sale_date: formatDateInputValue(sale.createdAt || sale.sold_at) || getDefaultSaleDateValue(),
+    }));
     setSaleStep(0);
     setGstinTouched(false);
     setError('');
@@ -1091,6 +1108,19 @@ export default function SalesPage() {
 
               <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none', marginTop: 14 }}>
                   <div className="flow-section-kicker"><span>Payment</span><span>Method + partial payment</span></div>
+                  <div className="form-group">
+                    <label className="form-label">Record Date</label>
+                    <input
+                      className="form-input"
+                      type="date"
+                      max={getDefaultSaleDateValue()}
+                      value={form.sale_date}
+                      onChange={e => updateForm({ sale_date: e.target.value })}
+                    />
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                      Invoice, reports and saved sale date will use this selected date.
+                    </div>
+                  </div>
                   <div className="form-group">
                     <label className="form-label">Payment Type *</label>
                     <div className="flow-choice-grid">

@@ -70,8 +70,8 @@ const getFinancialYear = (date = new Date()) => {
   return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
 };
 
-const generateInvoiceNumber = async (shopId, session = null) => {
-  const financialYear = getFinancialYear();
+const generateInvoiceNumber = async (shopId, session = null, invoiceDate = new Date()) => {
+  const financialYear = getFinancialYear(invoiceDate);
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'sale', financial_year: financialYear },
     { $inc: { last_number: 1 } },
@@ -86,6 +86,19 @@ const generateInvoiceNumber = async (shopId, session = null) => {
 const normalizeState = (value = '') => value.trim().toLowerCase();
 const normalizeGstin = (value = '') => String(value).replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
+const parseSaleDateInput = (value) => {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const [, year, month, day] = match;
+      return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 12, 0, 0));
+    }
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 const getStateFromGstin = (gstin = '') => {
   const normalized = normalizeGstin(gstin);
   if (!GSTIN_REGEX.test(normalized)) return '';
@@ -281,7 +294,7 @@ const syncCustomerLedgerForSale = async (shopId, saleDoc, itemNames = [], sessio
     amount: saleDoc.total_amount,
     running_balance: customer.totalUdhaar,
     note: `Credit Sale â€” ${itemNames.join(', ')} (${saleDoc.invoice_number})`,
-    date: new Date(),
+    date: saleDoc.createdAt || new Date(),
     reference_id: saleDoc.invoice_number,
     reference_type: 'sale',
   }], session ? { session } : {});
@@ -294,7 +307,7 @@ const syncCustomerLedgerForSale = async (shopId, saleDoc, itemNames = [], sessio
       amount: saleDoc.amount_paid,
       running_balance: customer.totalUdhaar,
       note: `Advance payment at time of sale (${saleDoc.invoice_number})`,
-      date: new Date(),
+      date: saleDoc.createdAt || new Date(),
       reference_id: saleDoc.invoice_number,
       reference_type: 'sale',
     }], session ? { session } : {});
@@ -335,6 +348,7 @@ const buildSaleRecordData = async ({
     payment_type = 'cash',
     amount_paid = 0,
     notes,
+    sale_date,
   } = payload;
 
   if (payment_type === 'credit' && !buyer_name) {
@@ -353,6 +367,11 @@ const buildSaleRecordData = async ({
   if (normalizedBuyerGstin && !GSTIN_REGEX.test(normalizedBuyerGstin)) {
     throw new Error('Invalid GSTIN format');
   }
+  const parsedSaleDate = parseSaleDateInput(sale_date);
+  if (sale_date && !parsedSaleDate) {
+    throw new Error('Invalid sale date');
+  }
+  const saleDate = parsedSaleDate || existingSale?.createdAt || new Date();
   const resolvedBuyerState = getStateFromGstin(normalizedBuyerGstin) || buyer_state || '';
   const requestedAmountPaid = Number(amount_paid || 0);
   if (!Number.isFinite(requestedAmountPaid) || requestedAmountPaid < 0) {
@@ -440,7 +459,7 @@ const buildSaleRecordData = async ({
       gst_rate: uniqueRates.length === 1 ? firstItem.gst_rate : 0,
       gst_type: firstItem.gst_type,
       invoice_type,
-      invoice_number: invoiceNumber || await generateInvoiceNumber(shop._id, session),
+      invoice_number: invoiceNumber || await generateInvoiceNumber(shop._id, session, saleDate),
       taxable_amount: totalTaxable,
       cgst_amount: round2(totalCGST),
       sgst_amount: round2(totalSGST),
@@ -457,6 +476,7 @@ const buildSaleRecordData = async ({
       buyer_address,
       buyer_state: resolvedBuyerState,
       notes,
+      createdAt: saleDate,
     },
   };
 };
@@ -507,11 +527,9 @@ const createSale = async (req, res) => {
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
-      const invoiceNumber = await generateInvoiceNumber(shop._id, session);
       const { data, itemNames } = await buildSaleRecordData({
         shop,
         payload: req.body,
-        invoiceNumber,
         session,
       });
 

@@ -69,6 +69,8 @@ const saleSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+saleSchema.path('createdAt').immutable(false);
+
 saleSchema.index(
   { shop: 1, invoice_number: 1 },
   { unique: true }
