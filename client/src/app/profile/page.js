@@ -4,6 +4,52 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'];
+const GSTIN_LENGTH = 15;
+const GST_STATE_CODE_MAP = {
+  '01': 'Jammu & Kashmir',
+  '02': 'Himachal Pradesh',
+  '03': 'Punjab',
+  '04': 'Chandigarh',
+  '05': 'Uttarakhand',
+  '06': 'Haryana',
+  '07': 'Delhi',
+  '08': 'Rajasthan',
+  '09': 'Uttar Pradesh',
+  '10': 'Bihar',
+  '11': 'Sikkim',
+  '12': 'Arunachal Pradesh',
+  '13': 'Nagaland',
+  '14': 'Manipur',
+  '15': 'Mizoram',
+  '16': 'Tripura',
+  '17': 'Meghalaya',
+  '18': 'Assam',
+  '19': 'West Bengal',
+  '20': 'Jharkhand',
+  '21': 'Odisha',
+  '22': 'Chhattisgarh',
+  '23': 'Madhya Pradesh',
+  '24': 'Gujarat',
+  '26': 'Dadra & Nagar Haveli and Daman & Diu',
+  '27': 'Maharashtra',
+  '28': 'Andhra Pradesh',
+  '29': 'Karnataka',
+  '30': 'Goa',
+  '31': 'Lakshadweep',
+  '32': 'Kerala',
+  '33': 'Tamil Nadu',
+  '34': 'Puducherry',
+  '35': 'Andaman & Nicobar Islands',
+  '36': 'Telangana',
+  '37': 'Andhra Pradesh',
+  '38': 'Ladakh',
+};
+const normalizeGstin = (value = '') => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, GSTIN_LENGTH);
+const getStateFromGstin = (gstin = '') => {
+  const normalized = normalizeGstin(gstin);
+  if (normalized.length < 2) return null;
+  return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
+};
 
 export default function ProfilePage() {
   const [user, setUser] = useState(() => {
@@ -150,6 +196,17 @@ export default function ProfilePage() {
     document.getElementById('shop-details-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const handleGstinChange = (value) => {
+    const normalized = normalizeGstin(value);
+    const detectedState = getStateFromGstin(normalized);
+
+    setShopForm((current) => ({
+      ...current,
+      gstin: normalized,
+      ...(detectedState ? { state: detectedState } : {}),
+    }));
+  };
+
   const profileTiles = [
     { label: 'GSTIN', value: shop?.gstin || 'GSTIN: Not added' },
     { label: 'Phone', value: shop?.phone || 'Phone: Tap to add' },
@@ -239,7 +296,16 @@ export default function ProfilePage() {
               </div>
               <div className="form-group">
                 <label className="form-label">GSTIN</label>
-                <input className="form-input" placeholder="22AAAAA0000A1Z5" value={shopForm.gstin} onChange={(e) => setShopForm({ ...shopForm, gstin: e.target.value })} />
+                <input
+                  className="form-input"
+                  placeholder="22AAAAA0000A1Z5"
+                  value={shopForm.gstin}
+                  maxLength={GSTIN_LENGTH}
+                  onChange={(e) => handleGstinChange(e.target.value)}
+                />
+                {shopForm.gstin.length >= 2 && shopForm.state ? (
+                  <div style={{ fontSize: 11, color: '#059669', marginTop: 4 }}>State auto-detected from GSTIN</div>
+                ) : null}
               </div>
             </div>
 
