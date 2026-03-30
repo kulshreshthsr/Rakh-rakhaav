@@ -5,6 +5,7 @@ import {
   ADMIN_SESSION_MAX_AGE,
   createAdminToken,
   getAdminEnv,
+  getMissingAdminEnvKeys,
 } from '../../../../lib/adminAuth';
 
 function safeCompare(expected, received) {
@@ -19,9 +20,18 @@ function safeCompare(expected, received) {
 }
 
 export async function POST(request) {
-  const { username, password, secret } = getAdminEnv();
-  if (!username || !password || !secret) {
-    return NextResponse.json({ message: 'Admin environment is not configured.' }, { status: 500 });
+  const env = getAdminEnv();
+  const { username, password, secret } = env;
+  const missingKeys = getMissingAdminEnvKeys(env);
+
+  if (missingKeys.length > 0) {
+    return NextResponse.json(
+      {
+        message: `Admin login is not configured. Missing ${missingKeys.join(', ')} in client/.env.local.`,
+        missingKeys,
+      },
+      { status: 500 }
+    );
   }
 
   const body = await request.json();

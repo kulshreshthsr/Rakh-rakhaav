@@ -10,6 +10,16 @@ export function getAdminEnv() {
   };
 }
 
+export function getMissingAdminEnvKeys(env = getAdminEnv()) {
+  const missing = [];
+
+  if (!env.username) missing.push('ADMIN_USERNAME');
+  if (!env.password) missing.push('ADMIN_PASSWORD');
+  if (!env.secret) missing.push('ADMIN_JWT_SECRET');
+
+  return missing;
+}
+
 function toBase64Url(input) {
   const bytes = input instanceof Uint8Array ? input : new TextEncoder().encode(input);
   let binary = '';
