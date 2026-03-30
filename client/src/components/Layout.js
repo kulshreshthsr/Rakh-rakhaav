@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
+import SyncStatusBar from './SyncStatusBar';
 import { API, FALLBACK_PLANS, hasTrialGateSeen, hasWelcomePending, readStoredSubscription, writeStoredSubscription } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
 
@@ -439,6 +440,7 @@ function LayoutInner({ children }) {
           </div>
         </div>
 
+        <SyncStatusBar />
         <main className="main-content premium-main-content">
           <div className="content-container">
             {children}

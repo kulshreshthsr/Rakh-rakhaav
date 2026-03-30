@@ -5,6 +5,7 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
+  customWorkerDir: 'public',
   runtimeCaching: [
     {
       urlPattern: /^https?.*\/_next\/static\/.*$/i,

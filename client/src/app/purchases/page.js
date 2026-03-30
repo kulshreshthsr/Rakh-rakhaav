@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
+import { queuePurchase } from '../../lib/offlineQueue';
+import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -120,6 +122,9 @@ export default function PurchasesPage() {
   const [gstinTouched, setGstinTouched] = useState(false);
   const [shopState, setShopState] = useState('');
   const [highlightedPurchaseId, setHighlightedPurchaseId] = useState('');
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
   const router = useRouter();
 
   // â”€â”€ Form state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -159,8 +164,15 @@ export default function PurchasesPage() {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data : data.products || []);
-    } catch {}
+      const productList = Array.isArray(data) ? data : data.products || [];
+      setProducts(productList);
+      await cacheProducts(productList);
+    } catch {
+      if (!isOnline) {
+        const cached = await getCachedProducts();
+        if (cached && cached.length > 0) setProducts(cached);
+      }
+    }
   }
 
   async function fetchShopMeta() {
@@ -206,6 +218,18 @@ export default function PurchasesPage() {
     fetchShopMeta();
   }, [shopState]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // â”€â”€ Item row handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const updateItem = (index, field, value) => {
@@ -302,6 +326,72 @@ export default function PurchasesPage() {
     }
 
     setSubmitting(true);
+
+    if (!isOnline) {
+      try {
+        const payload = {
+          items: validItems,
+          payment_type: form.payment_type,
+          amount_paid: form.payment_type === 'credit'
+            ? (amountPaidNum || 0)
+            : billTotals.total,
+          supplier_name: form.supplier_name,
+          supplier_phone: form.supplier_phone,
+          supplier_gstin: gstinValue,
+          supplier_address: form.supplier_address,
+          supplier_state: form.supplier_state,
+          notes: form.notes,
+        };
+
+        const operation = await queuePurchase(payload, validItems);
+        if (!operation) {
+          throw new Error('Unable to save purchase offline');
+        }
+
+        resetModal();
+
+        setPurchases(prev => [{
+          _id: operation.id,
+          invoice_number: operation.tempId,
+          items: validItems.map(i => {
+            const prod = products.find(p => p._id === i.product_id);
+            return {
+              product_name: prod?.name || 'Product',
+              quantity: i.quantity,
+              price_per_unit: i.price_per_unit,
+              total_amount: parseFloat(i.quantity) *
+                            parseFloat(i.price_per_unit),
+            };
+          }),
+          product_name: (() => {
+            const prod = products.find(
+              p => p._id === validItems[0]?.product_id
+            );
+            return prod?.name || 'Product';
+          })(),
+          total_amount: billTotals.total,
+          taxable_amount: billTotals.taxable,
+          total_gst: billTotals.gst,
+          amount_paid: form.payment_type === 'credit'
+            ? amountPaidNum
+            : billTotals.total,
+          balance_due: form.payment_type === 'credit'
+            ? balanceDue
+            : 0,
+          payment_type: form.payment_type,
+          supplier_name: form.supplier_name,
+          supplier_phone: form.supplier_phone,
+          createdAt: new Date().toISOString(),
+          _isOffline: true,
+        }, ...prev]);
+
+      } catch (err) {
+        setError('Offline save failed: ' + (err?.message || 'Unknown error'));
+      }
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         items: validItems,
@@ -381,6 +471,11 @@ export default function PurchasesPage() {
   }
 
   const startEditPurchase = (purchase) => {
+    if (purchase._isOffline) {
+      setError('Yeh entry abhi sync nahi hui — internet aane pe edit kar sakte hain');
+      return;
+    }
+
     const sourceItems = purchase.items && purchase.items.length > 0
       ? purchase.items
       : [{
@@ -513,7 +608,23 @@ export default function PurchasesPage() {
                     data-purchase-anchor={p._id}
                     className={highlightedPurchaseId === p._id ? 'purchase-row-highlight' : ''}
                   >
-                    <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>{p.invoice_number}</td>
+                    <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>
+                      {p.invoice_number}
+                      {p._isOffline && (
+                        <span style={{
+                          display: 'block',
+                          fontSize: 9,
+                          background: '#f59e0b',
+                          color: '#000',
+                          padding: '1px 6px',
+                          borderRadius: 20,
+                          fontWeight: 700,
+                          marginTop: 2,
+                        }}>
+                          ⏳ Sync pending
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
                         {/* Show all item names if multi-item */}
@@ -590,6 +701,20 @@ export default function PurchasesPage() {
                         : p.product_name}
                     </div>
                     <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>{p.invoice_number}</div>
+                    {p._isOffline && (
+                      <span style={{
+                        display: 'block',
+                        fontSize: 9,
+                        background: '#f59e0b',
+                        color: '#000',
+                        padding: '1px 6px',
+                        borderRadius: 20,
+                        fontWeight: 700,
+                        marginTop: 2,
+                      }}>
+                        ⏳ Sync pending
+                      </span>
+                    )}
                     {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>}
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -919,7 +1044,15 @@ export default function PurchasesPage() {
                   </button>
                 ) : (
                 <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? 'Saving...' : editingPurchaseId ? 'Update Purchase' : form.payment_type === 'credit' ? 'Credit Purchase' : 'Record Purchase'}
+                  {submitting
+                    ? 'Saving...'
+                    : !isOnline
+                      ? '📥 Offline Save'
+                      : editingPurchaseId
+                        ? 'Update Purchase'
+                        : form.payment_type === 'credit'
+                          ? 'Credit Purchase'
+                          : 'Record Purchase'}
                 </button>
                 )}
                 <button type="button" onClick={resetModal}

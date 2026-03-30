@@ -6,6 +6,8 @@ import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
+import { queueSale } from '../../lib/offlineQueue';
+import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -248,6 +250,9 @@ export default function SalesPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
   const [editingSaleId, setEditingSaleId] = useState('');
   const [error, setError]           = useState('');
   const [items, setItems]           = useState([emptyItem()]);
@@ -286,8 +291,15 @@ export default function SalesPage() {
     try {
       const res = await fetch(`${API}/api/products`, { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data : data.products || []);
-    } catch {}
+      const productList = Array.isArray(data) ? data : data.products || [];
+      setProducts(productList);
+      await cacheProducts(productList);
+    } catch {
+      if (!isOnline) {
+        const cached = await getCachedProducts();
+        if (cached && cached.length > 0) setProducts(cached);
+      }
+    }
   }
 
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
@@ -327,6 +339,18 @@ export default function SalesPage() {
       })
       .catch(() => {});
   }, [showModal, sales.length, shopName, shopState]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -519,6 +543,48 @@ export default function SalesPage() {
       }
     }
     setSubmitting(true);
+
+    if (!isOnline) {
+      if (editingSaleId) {
+        setError('Editing existing sales requires internet connection.');
+        setSubmitting(false);
+        return;
+      }
+
+      try {
+        const operation = await queueSale(form, validItems);
+        if (!operation) {
+          throw new Error('Unable to save sale offline');
+        }
+        setShowModal(false);
+        resetForm();
+        setSales(prev => [{
+          _id: operation.id,
+          invoice_number: operation.tempId,
+          items: validItems.map(i => {
+            const prod = products.find(p => p._id === i.product_id);
+            return {
+              product_name: prod?.name || 'Product',
+              quantity: i.quantity,
+              total_amount: parseFloat(i.quantity) * parseFloat(i.price_per_unit),
+            };
+          }),
+          total_amount: billTotals.total,
+          taxable_amount: billTotals.taxable,
+          total_gst: billTotals.gst,
+          payment_type: form.payment_type,
+          buyer_name: form.buyer_name || 'Walk-in Customer',
+          buyer_phone: form.buyer_phone,
+          createdAt: new Date().toISOString(),
+          _isOffline: true,
+        }, ...prev]);
+      } catch (err) {
+        setError('Offline save failed: ' + (err?.message || 'Unknown error'));
+      }
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const isEditing = Boolean(editingSaleId);
       const res = await fetch(isEditing ? `${API}/api/sales/${editingSaleId}` : `${API}/api/sales`, {
@@ -731,7 +797,23 @@ export default function SalesPage() {
               <tbody>
                 {sales.map(s => (
                   <tr key={s._id}>
-                    <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>{s.invoice_number}</td>
+                    <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>
+                      {s.invoice_number}
+                      {s._isOffline && (
+                        <span style={{
+                          display: 'block',
+                          fontSize: 9,
+                          background: '#f59e0b',
+                          color: '#000',
+                          padding: '1px 6px',
+                          borderRadius: 20,
+                          fontWeight: 700,
+                          marginTop: 2,
+                        }}>
+                          ⏳ Sync pending
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
                         {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
@@ -797,6 +879,20 @@ export default function SalesPage() {
                       {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
                     </div>
                     <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
+                    {s._isOffline && (
+                      <span style={{
+                        display: 'block',
+                        fontSize: 9,
+                        background: '#f59e0b',
+                        color: '#000',
+                        padding: '1px 6px',
+                        borderRadius: 20,
+                        fontWeight: 700,
+                        marginTop: 2,
+                      }}>
+                        ⏳ Sync pending
+                      </span>
+                    )}
                     {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
                     )}
@@ -1142,7 +1238,13 @@ export default function SalesPage() {
                   </button>
                 ) : (
                 <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? 'Saving sale...' : editingSaleId ? 'Update Sale' : 'Record Sale'}
+                  {submitting
+                    ? '⏳ दर्ज हो रहा है...'
+                    : !isOnline
+                      ? '📥 Offline Save करें'
+                      : form.payment_type === 'credit'
+                        ? '📒 Credit Sale'
+                        : '💵 बिक्री दर्ज'}
                 </button>
                 )}
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
