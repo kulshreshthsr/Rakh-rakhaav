@@ -929,6 +929,7 @@ export default function SalesPage() {
     const map = {
       cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
       credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
+      card:   { bg: '#dbeafe', color: '#1d4ed8', label: 'Card' },
       upi:    { bg: '#ede9fe', color: '#5b21b6', label: 'UPI' },
       bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
     };
@@ -940,6 +941,114 @@ export default function SalesPage() {
     );
   };
 
+  const SalesMetricIcon = ({ kind }) => {
+    const commonProps = {
+      width: 22,
+      height: 22,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 1.9,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      'aria-hidden': true,
+    };
+
+    if (kind === 'revenue') {
+      return (
+        <svg {...commonProps}>
+          <path d="M12 2v20" />
+          <path d="M17 6.5c0-1.933-2.239-3.5-5-3.5S7 4.567 7 6.5 9.239 10 12 10s5 1.567 5 3.5S14.761 17 12 17s-5-1.567-5-3.5" />
+        </svg>
+      );
+    }
+
+    if (kind === 'gst') {
+      return (
+        <svg {...commonProps}>
+          <path d="M8 3.5h5l4 4V20a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" />
+          <path d="M13 3.5v4h4" />
+          <path d="M9.5 12H15" />
+          <path d="M9.5 16H14" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg {...commonProps}>
+        <path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" />
+        <path d="M14 3.5v4h4" />
+        <path d="M9 12h6" />
+        <path d="M9 16h6" />
+      </svg>
+    );
+  };
+
+  const SalesActionIcon = ({ kind }) => {
+    const commonProps = {
+      width: 15,
+      height: 15,
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 1.9,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      'aria-hidden': true,
+    };
+
+    if (kind === 'edit') {
+      return (
+        <svg {...commonProps}>
+          <path d="M12 20h9" />
+          <path d="m16.5 3.5 4 4L8 20l-5 1 1-5 12.5-12.5Z" />
+        </svg>
+      );
+    }
+
+    if (kind === 'print') {
+      return (
+        <svg {...commonProps}>
+          <path d="M7 8V4h10v4" />
+          <path d="M6 17H5a2 2 0 0 1-2-2v-4a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v4a2 2 0 0 1-2 2h-1" />
+          <path d="M7 14h10v6H7z" />
+        </svg>
+      );
+    }
+
+    if (kind === 'whatsapp') {
+      return (
+        <svg {...commonProps}>
+          <path d="M20 11.5A8.5 8.5 0 0 1 7.5 19l-4.5 1 1-4.5A8.5 8.5 0 1 1 20 11.5Z" />
+          <path d="M9 8.8c.2-.4.4-.4.7-.4h.6c.2 0 .4 0 .5.3l.8 1.8c.1.2.1.4 0 .6l-.5.7c-.1.1-.1.3 0 .5.3.6.8 1.2 1.4 1.7.7.6 1.5 1 2.3 1.3.2.1.4.1.5-.1l.8-.9c.1-.2.4-.2.6-.1l1.7.8c.3.1.4.3.4.5v.6c0 .3-.1.6-.4.7-.5.3-1.2.4-1.9.2a10 10 0 0 1-5.5-3.7A9.3 9.3 0 0 1 8.8 10c-.2-.7-.1-1.4.2-1.9Z" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg {...commonProps}>
+        <path d="M3 6h18" />
+        <path d="M8 6V4h8v2" />
+        <path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" />
+        <path d="M10 11v6" />
+        <path d="M14 11v6" />
+      </svg>
+    );
+  };
+
+  const SalesMetricCard = ({ kind, title, value, note }) => (
+    <div className={`sales-metric-card sales-metric-card-${kind}`}>
+      <div className="sales-metric-head">
+        <div className="sales-metric-label">{title}</div>
+        <div className="sales-metric-icon-shell">
+          <SalesMetricIcon kind={kind} />
+        </div>
+      </div>
+      <div className="sales-metric-value">{value}</div>
+      <div className="sales-metric-note">{note}</div>
+    </div>
+  );
+
   const pendingOfflineSales = sales.filter((sale) => sale?._isOffline);
   const offlineRevenue = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0);
   const offlineGst = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0);
@@ -949,32 +1058,39 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="page-shell sales-shell">
-        <section className="card">
-          <div className="page-toolbar">
-            <div>
+        <section className="card sales-hero">
+          <div className="page-toolbar sales-hero-toolbar">
+            <div className="sales-hero-copy">
               <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
+              <div className="sales-hero-subtitle">Track revenue and collections with precision</div>
               {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing sales data...</div>}
             </div>
-            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ Record Sale</button>
+            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary sales-record-button" style={{ width: 'auto' }}>
+              <span aria-hidden="true">+</span>
+              <span>Record Sale</span>
+            </button>
           </div>
         </section>
 
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Revenue</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmt(revenueDisplay)}</div>
-            <div className="metric-note">Total billed amount</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{fmt(gstDisplay)}</div>
-            <div className="metric-note">Collected in sales</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Invoices</div>
-            <div className="metric-value" style={{ color: '#2563eb' }}>{sales.length}</div>
-            <div className="metric-note">Recorded sales entries</div>
-          </div>
+        <section className="sales-metric-grid">
+          <SalesMetricCard
+            kind="revenue"
+            title="Revenue"
+            value={`₹${fmt(revenueDisplay)}`}
+            note="Total billed amount"
+          />
+          <SalesMetricCard
+            kind="gst"
+            title="GST"
+            value={`₹${fmt(gstDisplay)}`}
+            note="Collected in sales"
+          />
+          <SalesMetricCard
+            kind="invoices"
+            title="Invoices"
+            value={sales.length}
+            note="Recorded sales entries"
+          />
         </section>
 
         {pendingOfflineSales.length > 0 ? (
@@ -1004,181 +1120,107 @@ export default function SalesPage() {
             <div>No sales yet.</div>
           </div>
         ) : (
-          <>
-          {/* Desktop table */}
-          <div className="table-container hidden min-[641px]:block">
-            <table>
-              <thead>
-                <tr>
-                  <th>Invoice</th><th>Items</th><th>Taxable</th><th>GST</th>
-                  <th>Total</th><th>Payment</th><th>Date</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.map(s => (
-                  <tr key={s._id}>
-                    <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>
-                      {s.invoice_number}
-                      {s._isOffline && (
-                        (() => {
-                          const badge = getOfflineBadgeMeta(s._queueStatus);
-                          return (
-                        <span style={{
-                          display: 'block',
-                          fontSize: 9,
-                          background: badge.background,
-                          color: badge.color,
-                          padding: '1px 6px',
-                          borderRadius: 20,
-                          fontWeight: 700,
-                          marginTop: 2,
-                        }}>
-                          {badge.label}
-                        </span>
-                          );
-                        })()
-                      )}
-                      {s._isOffline && s._queueError ? (
-                        <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 160 }}>
-                          {s._queueError}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
-                        {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
-                      </div>
-                      {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
-                      )}
-                    </td>
-                    <td>₹{fmt(s.taxable_amount)}</td>
-                    <td>
-                      {(s.total_gst || 0) > 0
-                        ? <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{fmt(s.total_gst)}</span>
-                        : <span style={{ color: '#9ca3af' }}>-</span>}
-                    </td>
-                    <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(s.total_amount)}</td>
-                    <td><PayBadge type={s.payment_type} /></td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
-                      {formatFullDateTime(s.createdAt || s.sold_at)}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => printInvoice(s)}
-                          title="Print Invoice"
-                          className="action-soft print"
-                          disabled={Boolean(s._isOffline)}
-                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                          Print
-                        </button>
-                        <button
-                          onClick={() => shareWhatsApp(s)}
-                          title="Share on WhatsApp"
-                          className="action-soft whatsapp"
-                          disabled={Boolean(s._isOffline)}
-                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                          WA
-                        </button>
-                        <button
-                          onClick={() => startEditSale(s)}
-                          className="action-soft edit"
-                          disabled={Boolean(s._isOffline)}
-                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s)}
-                          className="action-soft delete"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          {s._isOffline ? 'Remove' : 'Del'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <section className="sales-list">
+            {sales.map((s) => {
+              const accentColor = s.payment_type === 'credit' ? '#ef4444' : '#10b981';
+              const hasBuyer = s.buyer_name && s.buyer_name !== 'Walk-in Customer';
+              const offlineBadge = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
+              const saleTitle = s.items && s.items.length > 1 ? `${s.items.length} products` : s.product_name;
+              const hasPhone = Boolean(s.buyer_phone);
 
-          {/* Mobile cards */}
-          <div className="flex flex-col gap-3 min-[641px]:hidden">
-            {sales.map(s => (
-              <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
-                      {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
-                    {s._isOffline && (
-                      (() => {
-                        const badge = getOfflineBadgeMeta(s._queueStatus);
-                        return (
-                      <span style={{
-                        display: 'block',
-                        fontSize: 9,
-                        background: badge.background,
-                        color: badge.color,
-                        padding: '1px 6px',
-                        borderRadius: 20,
-                        fontWeight: 700,
-                        marginTop: 2,
-                      }}>
-                        {badge.label}
-                      </span>
-                        );
-                      })()
-                    )}
-                    {s._isOffline && s._queueError ? (
-                      <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 180 }}>
-                        {s._queueError}
-                      </div>
-                    ) : null}
-                    {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: 16 }}>₹{fmt(s.total_amount)}</div>
-                    <PayBadge type={s.payment_type} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600 }}>₹{fmt(s.taxable_amount)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>₹{fmt(s.total_gst)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                    gap: 8,
-                  }}
+              return (
+                <article
+                  key={s._id}
+                  className="sales-entry-card"
+                  style={{ borderLeftColor: accentColor }}
                 >
-                  <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="action-soft edit" style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                    Edit
-                  </button>
-                  <button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)} className="action-soft print" style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                    Print
-                  </button>
-                  <button
-                    onClick={() => shareWhatsApp(s)}
-                    title="Share on WhatsApp"
-                    className="action-soft whatsapp"
-                    disabled={Boolean(s._isOffline)}
-                    style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                    WhatsApp
-                  </button>
-                  <button onClick={() => handleDelete(s)} className="action-soft delete" style={{ flex: 1, padding: '9px' }}>
-                    {s._isOffline ? 'Remove' : 'Delete'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+                  <div className="sales-entry-top">
+                    <div className="sales-entry-copy">
+                      <div className="sales-entry-title-row">
+                        <div className="sales-entry-title">{saleTitle}</div>
+                        {offlineBadge ? (
+                          <span
+                            className="sales-offline-badge"
+                            style={{ background: offlineBadge.background, color: offlineBadge.color }}
+                          >
+                            {offlineBadge.label}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="sales-entry-invoice">{s.invoice_number}</div>
+                      {s._isOffline && s._queueError ? (
+                        <div className="sales-entry-error">{s._queueError}</div>
+                      ) : null}
+                    </div>
+                    <div className="sales-entry-amount-wrap">
+                      <div className="sales-entry-amount">₹{fmt(s.total_amount)}</div>
+                      <PayBadge type={s.payment_type} />
+                    </div>
+                  </div>
+
+                  <div className="sales-entry-meta-row">
+                    <div className="sales-entry-metric">
+                      <div className="sales-entry-metric-label">Taxable</div>
+                      <div className="sales-entry-metric-value">₹{fmt(s.taxable_amount)}</div>
+                    </div>
+                    <div className="sales-entry-metric">
+                      <div className="sales-entry-metric-label">GST</div>
+                      <div className="sales-entry-metric-value sales-entry-metric-gst">₹{fmt(s.total_gst)}</div>
+                    </div>
+                    <div className="sales-entry-metric sales-entry-metric-date">
+                      <div className="sales-entry-metric-label">Date</div>
+                      <div className="sales-entry-metric-value">{formatFullDateTime(s.createdAt || s.sold_at)}</div>
+                    </div>
+                  </div>
+
+                  {hasBuyer ? (
+                    <div className="sales-buyer-block">
+                      <div className="sales-buyer-name">{s.buyer_name}</div>
+                      {s.buyer_phone ? (
+                        <div className="sales-buyer-phone">{s.buyer_phone}</div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <div className="sales-entry-actions">
+                    <button
+                      onClick={() => startEditSale(s)}
+                      disabled={Boolean(s._isOffline)}
+                      className="sales-action-button sales-action-edit"
+                    >
+                      <SalesActionIcon kind="edit" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => printInvoice(s)}
+                      title="Print Invoice"
+                      disabled={Boolean(s._isOffline)}
+                      className="sales-action-button sales-action-print"
+                    >
+                      <SalesActionIcon kind="print" />
+                      <span>Print</span>
+                    </button>
+                    <button
+                      onClick={() => shareWhatsApp(s)}
+                      title="Share on WhatsApp"
+                      disabled={Boolean(s._isOffline)}
+                      className={`sales-action-button sales-action-whatsapp${hasPhone ? ' has-phone' : ''}`}
+                    >
+                      <SalesActionIcon kind="whatsapp" />
+                      <span>WhatsApp</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s)}
+                      className="sales-action-button sales-action-delete"
+                    >
+                      <SalesActionIcon kind="delete" />
+                      <span>{s._isOffline ? 'Remove' : 'Delete'}</span>
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
         )}
       </div>
 

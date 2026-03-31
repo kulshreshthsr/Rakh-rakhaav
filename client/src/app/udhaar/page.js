@@ -213,32 +213,39 @@ export default function UdhaarPage() {
   return (
     <Layout>
       <div className="page-shell ledger-shell">
-        <section className="card">
-          <div className="page-toolbar">
-            <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
+        <section className="card ledger-hero">
+          <div className="page-toolbar ledger-hero-toolbar">
+            <div>
+              <div className="page-title" style={{ color: '#1a1a1a', marginBottom: 0 }}>Credit Ledger</div>
+              <div className="ledger-hero-subtitle">Track customer and supplier credits</div>
+            </div>
           </div>
         </section>
 
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+        <section className="ledger-summary-grid">
           <StatCard
             label="Customer Due"
             value={`₹${totalCustomerUdhaar.toFixed(0)}`}
             note={`${customers.filter((item) => item.totalUdhaar > 0).length} pending • ${customers.length} total`}
             tone="danger"
+            icon={<LedgerSummaryIcon kind="customer" />}
+            className="ledger-summary-card ledger-summary-card-customer"
           />
           <StatCard
             label="Supplier Due"
             value={`₹${totalSupplierUdhaar.toFixed(0)}`}
             note={`${suppliers.filter((item) => item.totalUdhaar > 0).length} pending • ${suppliers.length} total`}
             tone="warning"
+            icon={<LedgerSummaryIcon kind="supplier" />}
+            className="ledger-summary-card ledger-summary-card-supplier"
           />
         </section>
 
-        <div className="ui-segmented">
-          <button type="button" onClick={() => switchTab('customers')} className={`ui-segment ${isCustomer ? 'is-active' : ''}`}>
+        <div className="ledger-tabs">
+          <button type="button" onClick={() => switchTab('customers')} className={`ledger-tab ${isCustomer ? 'is-active' : ''}`}>
             Customers ({customers.length})
           </button>
-          <button type="button" onClick={() => switchTab('suppliers')} className={`ui-segment ${!isCustomer ? 'is-active' : ''}`}>
+          <button type="button" onClick={() => switchTab('suppliers')} className={`ledger-tab ${!isCustomer ? 'is-active' : ''}`}>
             Suppliers ({suppliers.length})
           </button>
         </div>
@@ -283,38 +290,44 @@ export default function UdhaarPage() {
                 ) : null}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="ledger-list">
                 {list.map((item) => (
                   <div key={item._id}>
                     <div
-                      className={`ui-list-card ${selected?._id === item._id ? 'is-active' : ''}`}
+                      className={`ui-list-card ledger-person-card ${selected?._id === item._id ? 'is-active' : ''}`}
                       onClick={() => openLedger(item)}
                       style={{ cursor: 'pointer' }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                        <div className="ui-avatar">{initials(item.name)}</div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>{item.name}</div>
-                          {item.phone ? <div style={{ fontSize: 12, color: '#9ca3af' }}>Phone: {item.phone}</div> : null}
+                      <div className="ledger-person-main">
+                        <div className="ledger-person-avatar">{initials(item.name)}</div>
+                        <div className="ledger-person-copy">
+                          <div className="ledger-person-name">{item.name}</div>
+                          {item.phone ? (
+                            <div className="ledger-person-phone">
+                              <LedgerPhoneIcon />
+                              <span>{item.phone}</span>
+                            </div>
+                          ) : null}
                           {item.gstin ? <div style={{ fontSize: 11, color: '#67e8f9' }}>GSTIN: {item.gstin}</div> : null}
                         </div>
                       </div>
 
-                      <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <div className="ledger-person-side">
                         {isCustomer && item.phone && item.totalUdhaar > 0 ? (
-                          <ActionButton
+                          <button
                             variant="whatsapp"
                             type="button"
+                            className="ledger-wa-button"
                             onClick={(event) => { event.stopPropagation(); sendReminder(item); }}
                           >
-                            WA
-                          </ActionButton>
+                            <LedgerActionIcon kind="whatsapp" />
+                          </button>
                         ) : null}
                         <div>
-                          <div className={item.totalUdhaar > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'} style={{ fontSize: 18 }}>
+                          <div className={`ledger-person-amount ${item.totalUdhaar > 0 ? (isCustomer ? 'is-danger' : 'is-warning') : 'is-success'}`}>
                             ₹{fmt(item.totalUdhaar)}
                           </div>
-                          <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                          <div className="ledger-person-note">
                             {item.totalUdhaar > 0 ? (isCustomer ? 'Amount to collect' : 'Amount to pay') : 'Settled'}
                           </div>
                         </div>
@@ -324,27 +337,48 @@ export default function UdhaarPage() {
                     {selected?._id === item._id ? (
                       <Card
                         className="ledger-detail-card"
-                        title={selected.name}
-                        subtitle={selected.phone ? `Phone: ${selected.phone}` : 'Transaction history'}
+                        title={
+                          <div className="ledger-detail-header-title-wrap">
+                            <div className="ledger-detail-header-title">{selected.name}</div>
+                            {selected.phone ? (
+                              <div className="ledger-detail-header-phone">
+                                <LedgerPhoneIcon />
+                                <span>{selected.phone}</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        }
+                        subtitle={isCustomer ? 'Customer transaction history' : 'Supplier transaction history'}
                         actions={
                           <>
                             {isCustomer && selected.phone && selected.totalUdhaar > 0 ? (
-                              <ActionButton variant="whatsapp" onClick={() => sendReminder(selected, ledger)}>
+                              <ActionButton variant="whatsapp" className="ledger-detail-top-action" onClick={() => sendReminder(selected, ledger)}>
+                                <LedgerActionIcon kind="whatsapp" />
                                 WhatsApp Reminder
                               </ActionButton>
                             ) : null}
                             {selected.totalUdhaar > 0 ? (
-                              <ActionButton variant="primary" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
+                              <ActionButton variant="primary" className="ledger-detail-top-action" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
+                                <LedgerActionIcon kind="payment" />
                                 {isCustomer ? 'Receive Payment' : 'Make Payment'}
                               </ActionButton>
                             ) : null}
-                            <ActionButton variant="dark" onClick={() => { setSelected(null); setLedger([]); }}>
+                            <ActionButton variant="dark" className="ledger-detail-top-action" onClick={() => { setSelected(null); setLedger([]); }}>
                               Close
                             </ActionButton>
                           </>
                         }
                       >
-                        <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 16 }}>
+                        <div className="ledger-detail-summary">
+                          <div className={`ledger-detail-due ${selected.totalUdhaar > 0 ? (isCustomer ? 'is-danger' : 'is-warning') : 'is-success'}`}>
+                            ₹{fmt(selected.totalUdhaar)}
+                          </div>
+                          <div className="ledger-detail-due-note">
+                            {isCustomer ? 'Amount to collect' : 'Amount to pay'}
+                          </div>
+                        </div>
+
+                        <div className="metric-grid ledger-breakdown-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 16 }}>
                           {isCustomer ? (
                             <>
                               <BalanceTile label="Total Sales" value={`₹${fmt(selected.totalSales)}`} />
@@ -365,8 +399,8 @@ export default function UdhaarPage() {
                         ) : ledger.length === 0 ? (
                           <div className="ui-empty">No entries found</div>
                         ) : (
-                          <div className="ui-table-wrap">
-                            <table className="ui-table compact-ledger-table">
+                          <div className="ui-table-wrap ledger-table-wrap">
+                            <table className="ui-table compact-ledger-table ledger-transaction-table">
                               <thead>
                                 <tr>
                                   <th className="sticky-col">Date</th>
@@ -379,16 +413,23 @@ export default function UdhaarPage() {
                               <tbody>
                                 {[...ledger].reverse().map((entry, index) => {
                                   const isDebit = entry.type === 'debit' || entry.type === 'diya';
+                                  const noteText = entry.note || (isDebit ? (isCustomer ? 'Credit Sale' : 'Credit Purchase') : 'Payment');
+                                  const noteLower = String(noteText).toLowerCase();
+                                  const rowClass = noteLower.includes('advance')
+                                    ? 'is-advance'
+                                    : noteLower.includes('sale')
+                                      ? 'is-sale'
+                                      : '';
                                   return (
-                                    <tr key={index} className={isDebit ? 'ledger-debit-row' : 'ledger-credit-row'}>
-                                      <td className="sticky-col">{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</td>
+                                    <tr key={index} className={`${isDebit ? 'ledger-debit-row' : 'ledger-credit-row'} ${rowClass}`.trim()}>
+                                      <td className="sticky-col ledger-date-cell">{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</td>
                                       <td className="sticky-col-2">
-                                        <div>{entry.note || (isDebit ? (isCustomer ? 'Credit Sale' : 'Credit Purchase') : 'Payment')}</div>
-                                        {entry.reference_id ? <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 4 }}>{entry.reference_id}</div> : null}
+                                        <div className="ledger-note-main">{noteText}</div>
+                                        {entry.reference_id ? <div className="ledger-note-ref">{entry.reference_id}</div> : null}
                                       </td>
-                                      <td style={{ textAlign: 'right' }} className="ui-value-danger">{isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
-                                      <td style={{ textAlign: 'right' }} className="ui-value-money">{!isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
-                                      <td style={{ textAlign: 'right' }} className={(entry.running_balance ?? 0) > 0 ? (isCustomer ? 'ui-value-danger' : 'ui-value-warning') : 'ui-value-money'}>
+                                      <td style={{ textAlign: 'right' }} className={`ledger-amount-cell ${isDebit ? 'is-debit' : ''}`}>{isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
+                                      <td style={{ textAlign: 'right' }} className={`ledger-amount-cell ${!isDebit ? 'is-credit' : ''}`}>{!isDebit ? `₹${fmt(entry.amount)}` : '-'}</td>
+                                      <td style={{ textAlign: 'right' }} className={`ledger-amount-cell ${(entry.running_balance ?? 0) > 0 ? (isCustomer ? 'is-debit' : 'is-warning') : 'is-credit'}`}>
                                         ₹{fmt(entry.running_balance)}
                                       </td>
                                     </tr>
@@ -398,6 +439,24 @@ export default function UdhaarPage() {
                             </table>
                           </div>
                         )}
+
+                        <div className="ledger-detail-actions">
+                          {isCustomer && selected.phone && selected.totalUdhaar > 0 ? (
+                            <ActionButton variant="whatsapp" className="ledger-detail-action-btn" onClick={() => sendReminder(selected, ledger)}>
+                              <LedgerActionIcon kind="whatsapp" />
+                              WhatsApp Reminder
+                            </ActionButton>
+                          ) : null}
+                          {selected.totalUdhaar > 0 ? (
+                            <ActionButton variant="primary" className="ledger-detail-action-btn" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
+                              <LedgerActionIcon kind="payment" />
+                              {isCustomer ? 'Receive Payment' : 'Make Payment'}
+                            </ActionButton>
+                          ) : null}
+                          <ActionButton variant="dark" className="ledger-detail-action-btn" onClick={() => { setSelected(null); setLedger([]); }}>
+                            Close
+                          </ActionButton>
+                        </div>
                       </Card>
                     ) : null}
                   </div>
@@ -485,6 +544,88 @@ export default function UdhaarPage() {
         ) : null}
       </div>
     </Layout>
+  );
+}
+
+function LedgerSummaryIcon({ kind }) {
+  const commonProps = {
+    width: 20,
+    height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  if (kind === 'customer') {
+    return (
+      <svg {...commonProps}>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M20 8v6" />
+        <path d="M17 11h6" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...commonProps}>
+      <path d="M3 21h18" />
+      <path d="M5 21V8l7-4 7 4v13" />
+      <path d="M9 21v-6h6v6" />
+    </svg>
+  );
+}
+
+function LedgerPhoneIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72l.34 2.71a2 2 0 0 1-.57 1.72l-1.27 1.27a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 1.72-.57l2.71.34A2 2 0 0 1 22 16.92Z" />
+    </svg>
+  );
+}
+
+function LedgerActionIcon({ kind }) {
+  const commonProps = {
+    width: 16,
+    height: 16,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  if (kind === 'whatsapp') {
+    return (
+      <svg {...commonProps}>
+        <path d="M20 11.5A8.5 8.5 0 0 1 7.5 19l-4.5 1 1-4.5A8.5 8.5 0 1 1 20 11.5Z" />
+        <path d="M9 8.8c.2-.4.4-.4.7-.4h.6c.2 0 .4 0 .5.3l.8 1.8c.1.2.1.4 0 .6l-.5.7c-.1.1-.1.3 0 .5.3.6.8 1.2 1.4 1.7.7.6 1.5 1 2.3 1.3.2.1.4.1.5-.1l.8-.9c.1-.2.4-.2.6-.1l1.7.8c.3.1.4.3.4.5v.6c0 .3-.1.6-.4.7-.5.3-1.2.4-1.9.2a10 10 0 0 1-5.5-3.7A9.3 9.3 0 0 1 8.8 10c-.2-.7-.1-1.4.2-1.9Z" />
+      </svg>
+    );
+  }
+
+  if (kind === 'payment') {
+    return (
+      <svg {...commonProps}>
+        <path d="M2 7h20" />
+        <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+        <rect x="3" y="7" width="18" height="14" rx="2" />
+        <path d="M16 14h.01" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...commonProps}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
   );
 }
 

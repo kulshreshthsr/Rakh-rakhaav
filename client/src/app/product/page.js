@@ -19,6 +19,47 @@ const HSN_GST_HINTS = {
 const PRODUCTS_CACHE_KEY = 'products-page';
 const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
 
+function ProductGlyph({ name, size = 18 }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  switch (name) {
+    case 'plus':
+      return <svg {...common}><path d="M12 5v14" /><path d="M5 12h14" /></svg>;
+    case 'search':
+      return <svg {...common}><circle cx="11" cy="11" r="6" /><path d="m20 20-3.5-3.5" /></svg>;
+    case 'warning':
+      return <svg {...common}><path d="M12 3 2.5 19h19L12 3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>;
+    case 'stock':
+      return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></svg>;
+    case 'out':
+      return <svg {...common}><circle cx="12" cy="12" r="8" /><path d="M9 9l6 6" /><path d="m15 9-6 6" /></svg>;
+    case 'value':
+      return <svg {...common}><path d="M12 3v18" /><path d="M16 7.5c0-2-1.8-3.5-4-3.5S8 5.5 8 7.5 9.8 11 12 11s4 1.5 4 3.5S14.2 18 12 18s-4-1.5-4-3.5" /></svg>;
+    case 'box':
+      return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /></svg>;
+    case 'history':
+      return <svg {...common}><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /><path d="M12 7v5l3 2" /></svg>;
+    case 'edit':
+      return <svg {...common}><path d="m4 20 4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z" /><path d="m13.5 6.5 3 3" /></svg>;
+    case 'delete':
+      return <svg {...common}><path d="M4 7h16" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M6 7l1 12h10l1-12" /><path d="M9 7V4h6v3" /></svg>;
+    case 'chevron':
+      return <svg {...common}><path d="m9 6 6 6-6 6" /></svg>;
+    default:
+      return <svg {...common}><circle cx="12" cy="12" r="3" /></svg>;
+  }
+}
+
 export default function ProductsPage() {
   const router = useRouter();
   const [products, setProducts]   = useState([]);
@@ -259,23 +300,25 @@ export default function ProductsPage() {
         minute: '2-digit',
       })
     : null;
+  const formatMoney = (value) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(value || 0));
+  const getStatusTone = (p) => (p.quantity === 0 ? 'out' : p.is_low_stock ? 'low' : 'ok');
+  const getStatusLabel = (p) => (p.quantity === 0 ? 'Out (0)' : p.is_low_stock ? `Low (${p.quantity})` : `In (${p.quantity})`);
   // â”€â”€ Badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const StockBadge = ({ p }) => {
-    if (p.quantity === 0) return <span className="badge badge-red">Out</span>;
-    if (p.is_low_stock)   return <span className="badge badge-yellow">Low ({p.quantity})</span>;
-    return <span className="badge badge-green">In Stock</span>;
+    if (p.quantity === 0) return <span className="product-status-badge is-out">Out (0)</span>;
+    if (p.is_low_stock)   return <span className="product-status-badge is-low">Low ({p.quantity})</span>;
+    return <span className="product-status-badge is-in">In Stock</span>;
   };
 
   const GSTBadge = ({ rate }) => {
-    if (rate === null || rate === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
-    return <span style={{ background: '#e0f2fe', color: '#0c4a6e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>GST {rate}%</span>;
+    if (rate === null || rate === undefined) return <span className="product-metric-muted">-</span>;
+    return <span className="product-gst-badge">GST {rate}%</span>;
   };
 
   const MarginBadge = ({ margin }) => {
-    if (margin === null || margin === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
-    const color = margin >= 30 ? '#059669' : margin >= 15 ? '#d97706' : '#ef4444';
-    const bg    = margin >= 30 ? '#dcfce7' : margin >= 15 ? '#fef3c7' : '#fee2e2';
-    return <span style={{ background: bg, color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{margin}%</span>;
+    if (margin === null || margin === undefined) return <span className="product-metric-muted">-</span>;
+    const tierClass = margin > 50 ? 'is-high' : margin >= 30 ? 'is-mid' : 'is-low';
+    return <span className={`product-margin-badge ${tierClass}`}>{margin}%</span>;
   };
 
   const historyTypeLabel = (type) => ({
@@ -289,22 +332,22 @@ export default function ProductsPage() {
   return (
     <Layout>
       <div className="page-shell product-shell">
-        <section className="card">
-          <div className="page-toolbar">
+        <section className="card product-hero">
+          <div className="page-toolbar product-hero-toolbar">
             <div>
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
-              <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+              <div className="product-hero-subtitle">
                 {refreshing
                   ? 'Refreshing latest inventory...'
                   : !isOnline
                     ? `Offline inventory snapshot${cacheLabel ? ` • last updated ${cacheLabel}` : ''}`
                     : cacheLabel
-                      ? `Inventory ready • last synced ${cacheLabel}`
-                      : 'Your complete product catalog'}
+                      ? `Manage your catalog with precision • last synced ${cacheLabel}`
+                      : 'Manage your catalog with precision'}
               </div>
             </div>
-            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }} disabled={!isOnline}>
-              + Add Product
+            <button onClick={openAdd} className="btn-primary product-add-button" style={{ width: 'auto' }} disabled={!isOnline}>
+              <ProductGlyph name="plus" size={18} /> Add Product
             </button>
           </div>
         </section>
@@ -318,41 +361,53 @@ export default function ProductsPage() {
           </div>
         ) : null}
 
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Total Products</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>{products.length}</div>
-            <div className="metric-note">Catalog in your inventory</div>
+        <section className="product-stats-grid">
+          <div className="product-stat-card product-stat-total">
+            <div className="product-stat-top">
+              <div className="product-stat-label">TOTAL PRODUCTS</div>
+              <div className="product-stat-icon"><ProductGlyph name="box" /></div>
+            </div>
+            <div className="product-stat-value">{products.length}</div>
           </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Low Stock</div>
-            <div className="metric-value" style={{ color: '#b45309' }}>{lowStockCount}</div>
-            <div className="metric-note">Need reorder attention</div>
+          <div className="product-stat-card product-stat-low">
+            <div className="product-stat-top">
+              <div className="product-stat-label">LOW STOCK</div>
+              <div className="product-stat-icon"><ProductGlyph name="warning" /></div>
+            </div>
+            <div className="product-stat-value">{lowStockCount}</div>
           </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Out Of Stock</div>
-            <div className="metric-value" style={{ color: '#ef4444' }}>{outOfStockCount}</div>
-            <div className="metric-note">Unavailable for sale</div>
+          <div className="product-stat-card product-stat-out">
+            <div className="product-stat-top">
+              <div className="product-stat-label">OUT OF STOCK</div>
+              <div className="product-stat-icon"><ProductGlyph name="out" /></div>
+            </div>
+            <div className="product-stat-value">{outOfStockCount}</div>
           </div>
-            <div className="metric-card" style={{ cursor: 'default' }}>
-              <div className="metric-label">Inventory Value</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>₹{totalValue.toFixed(0)}</div>
-            <div className="metric-note">Based on cost price</div>
+          <div className="product-stat-card product-stat-value-card">
+            <div className="product-stat-top">
+              <div className="product-stat-label">INVENTORY VALUE</div>
+              <div className="product-stat-icon"><ProductGlyph name="value" /></div>
+            </div>
+            <div className="product-stat-value">₹{formatMoney(totalValue)}</div>
           </div>
         </section>
 
-        <div className="toolbar-card">
-          <div className="toolbar">
-            <input className="form-input" style={{ flex: 1, minWidth: 180 }}
-              placeholder="Search products..."
-              value={search} onChange={e => setSearch(e.target.value)} />
-            <select className="form-input" style={{ minWidth: 140 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
+        <div className="toolbar-card product-filters-card">
+          <div className="toolbar product-filters-toolbar">
+            <div className="product-search-wrap">
+              <span className="product-search-icon"><ProductGlyph name="search" /></span>
+              <input className="form-input product-search-input"
+                style={{ flex: 1, minWidth: 180 }}
+                placeholder="Search products by name, SKU..."
+                value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <select className="form-input product-filter-select" style={{ minWidth: 140 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
               <option value="all">All</option>
               <option value="instock">In Stock</option>
               <option value="low">Low Stock</option>
               <option value="out">Out of Stock</option>
             </select>
-            <select className="form-input" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <select className="form-input product-filter-select" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
               <option value="name">Name</option>
               <option value="price_asc">Price Low to High</option>
               <option value="price_desc">Price High to Low</option>
@@ -385,121 +440,76 @@ export default function ProductsPage() {
             <div>{search || filterStock !== 'all' ? 'No products found' : 'No products yet. Add your first product.'}</div>
           </div>
         ) : (
-          <>
-          {/* Desktop table */}
-          <div className="table-container hidden min-[641px]:block">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Cost</th>
-                  <th>Price</th>
-                  <th>Margin</th>
-                  <th>GST</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(p => (
-                  <tr key={p._id} style={{ background: p.quantity === 0 ? 'rgba(239,68,68,0.08)' : p.is_low_stock ? 'rgba(245,158,11,0.08)' : 'transparent' }}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
-                      <div style={{ color: '#9ca3af', fontSize: 11 }}>
-                        {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
-                        {p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}
-                        {p.low_stock_threshold !== 5 && ` • Alert <= ${p.low_stock_threshold}`}
-                      </div>
-                    </td>
-                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</td>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</td>
-                    <td><MarginBadge margin={p.margin} /></td>
-                    <td><GSTBadge rate={p.gst_rate} /></td>
-                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>
-                      {p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span>
-                    </td>
-                    <td><StockBadge p={p} /></td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button onClick={() => openStockAdjust(p)}
-                          className="action-soft stock"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Stock
-                        </button>
-                        <button onClick={() => openHistory(p)}
-                          className="action-soft history"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          History
-                        </button>
-                        <button onClick={() => openEdit(p)}
-                          className="action-soft edit"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Edit
-                        </button>
-                        <button onClick={() => handleDelete(p._id)}
-                          className="action-soft delete"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Del
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="flex flex-col gap-3 min-[641px]:hidden">
+          <div className="product-list">
             {filtered.map(p => (
-              <div key={p._id} className="card"
-                style={{ borderLeft: `3px solid ${p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#10b981'}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{p.name}</div>
-                    <div style={{ color: '#9ca3af', fontSize: 11 }}>
-                      {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
-                      {p.description || (p.unit ? `Unit: ${p.unit}` : '')}
+              <article key={p._id} className={`product-card product-card-${getStatusTone(p)}`}>
+                <div className="product-card-top">
+                  <div className="product-card-main">
+                    <div className="product-card-avatar">
+                      <ProductGlyph name="box" size={20} />
+                    </div>
+                    <div className="product-card-copy">
+                      <div className="product-card-title">{p.name}</div>
+                      <div className="product-card-subtitle">
+                        {p.barcode ? `Barcode: ${p.barcode}` : p.description || 'No description'}
+                        {p.hsn_code ? ` • HSN ${p.hsn_code}` : ''}
+                        {p.unit ? ` • ${p.unit}` : ''}
+                      </div>
                     </div>
                   </div>
-                  <StockBadge p={p} />
+                  <div className={`product-status-badge ${getStatusTone(p) === 'out' ? 'is-out' : getStatusTone(p) === 'low' ? 'is-low' : 'is-in'}`}>
+                    {getStatusLabel(p)}
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>{p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
+                <div className="product-metrics-row">
+                  <div className="product-metric-cell">
+                    <div className="product-metric-label">COST</div>
+                    <div className="product-metric-value">{p.cost_price ? `₹${formatMoney(p.cost_price)}` : '-'}</div>
+                  </div>
+                  <div className="product-metric-cell">
+                    <div className="product-metric-label">PRICE</div>
+                    <div className="product-metric-value">₹{formatMoney(p.price)}</div>
+                  </div>
+                  <div className="product-metric-cell">
+                    <div className="product-metric-label">MARGIN</div>
+                    <div className="product-metric-value"><MarginBadge margin={p.margin} /></div>
+                  </div>
+                  <div className="product-metric-cell">
+                    <div className="product-metric-label">QTY</div>
+                    <div className={`product-metric-value product-qty-value is-${getStatusTone(p)}`}>{p.quantity}</div>
+                  </div>
+                  <div className="product-metric-cell">
+                    <div className="product-metric-label">GST</div>
+                    <div className="product-metric-value"><GSTBadge rate={p.gst_rate} /></div>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div className="product-card-actions">
                   <button onClick={() => openStockAdjust(p)}
-                    className="action-soft stock"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Stock
+                    className="product-icon-button stock"
+                    aria-label={`Adjust stock for ${p.name}`}>
+                    <ProductGlyph name="stock" size={16} />
                   </button>
                   <button onClick={() => openHistory(p)}
-                    className="action-soft history"
-                    style={{ flex: 1, padding: '8px' }}>
-                    History
+                    className="product-icon-button history"
+                    aria-label={`View history for ${p.name}`}>
+                    <ProductGlyph name="history" size={16} />
                   </button>
                   <button onClick={() => openEdit(p)}
-                    className="action-soft edit"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Edit
+                    className="product-icon-button edit"
+                    aria-label={`Edit ${p.name}`}>
+                    <ProductGlyph name="edit" size={16} />
                   </button>
                   <button onClick={() => handleDelete(p._id)}
-                    className="action-soft delete"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Delete
+                    className="product-icon-button delete"
+                    aria-label={`Delete ${p.name}`}>
+                    <ProductGlyph name="delete" size={16} />
                   </button>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
-        </>
         )}
       </div>
 

@@ -215,6 +215,47 @@ const buildLocalGSTSummary = (sales = [], purchases = [], month, year) => {
   };
 };
 
+const GstStepIcon = ({ kind }) => {
+  const commonProps = {
+    width: 18,
+    height: 18,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  if (kind === 'output') {
+    return (
+      <svg {...commonProps}>
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+    );
+  }
+
+  if (kind === 'input') {
+    return (
+      <svg {...commonProps}>
+        <path d="M8 3.5h5l4 4V20a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" />
+        <path d="M13 3.5v4h4" />
+        <path d="M9.5 12H15" />
+        <path d="M9.5 16H14" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...commonProps}>
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+    </svg>
+  );
+};
+
 export default function GSTPage() {
   const router = useRouter();
   const now = new Date();
@@ -457,21 +498,21 @@ export default function GSTPage() {
   return (
     <Layout>
       <div className="page-shell gst-shell">
-        <section className="card">
-          <div style={{ display: 'grid', gap: 14 }}>
-            <div style={{ minWidth: 0 }}>
+        <section className="card gst-hero">
+          <div className="gst-hero-layout">
+            <div className="gst-hero-copy" style={{ minWidth: 0 }}>
               <div className="page-title">GST Summary</div>
-              <div className="page-subtitle">
+              <div className="page-subtitle gst-hero-subtitle">
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, width: 'min(320px, 100%)' }}>
-              <select className="form-input" value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
+            <div className="gst-period-grid">
+              <select className="form-input gst-period-select" value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
                 {MONTHS.map((item, index) => (
                   <option key={item} value={index + 1}>{MONTHS_HI[index]} / {item}</option>
                 ))}
               </select>
-              <select className="form-input" value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))}>
+              <select className="form-input gst-period-select" value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))}>
                 {[2023, 2024, 2025, 2026, 2027].map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </div>
@@ -486,74 +527,113 @@ export default function GSTPage() {
         ) : (
           <>
             <Card
-              tone={isPayable ? 'danger' : 'success'}
-              title={`${monthHi} ${year}: ${isPayable ? `₹${fmt(payableTotal)} GST payable` : 'No GST payable'}`}
-              subtitle={`${monthEn} ${year} GST position after ITC set-off`}
-              actions={returnStatus ? <StatusBadge tone={returnStatus.ok ? 'success' : 'warning'}>{returnStatus.msg}</StatusBadge> : null}
+              className="gst-status-card"
+              title={
+                <div className="gst-status-copy">
+                  <div className="gst-status-amount">
+                    {isPayable ? `₹${fmt(payableTotal)} GST payable` : `₹${fmt(excessCreditTotal)} excess ITC`}
+                  </div>
+                  <div className="gst-status-subtitle">{`${monthEn} ${year} GST position after ITC set-off`}</div>
+                </div>
+              }
+              subtitle={null}
+              actions={returnStatus ? <StatusBadge className="gst-status-badge" tone={returnStatus.ok ? 'success' : 'warning'}>{returnStatus.msg}</StatusBadge> : null}
             >
-              <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                <StatCard label="Output GST" value={`₹${fmt(gstCollected)}`} note="Collected from sales" tone="money" />
-                <StatCard label="Input GST / ITC" value={`₹${fmt(gstITC)}`} note="Claimed from purchases" tone="secondary" />
-                <StatCard label="Net Position" value={`₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`} note={isPayable ? 'Payable after ITC' : excessCreditTotal > 0 ? 'Unused ITC left' : 'Balanced'} tone={isPayable ? 'danger' : excessCreditTotal > 0 ? 'money' : 'warning'} />
+              <div className="gst-step-stack">
+                <div className="gst-step-card gst-step-output">
+                  <div className="gst-step-left">
+                    <div className="gst-step-icon"><GstStepIcon kind="output" /></div>
+                    <div>
+                      <div className="gst-step-label">Output GST</div>
+                      <div className="gst-step-note">Collected from sales</div>
+                    </div>
+                  </div>
+                  <div className="gst-step-value">₹{fmt(gstCollected)}</div>
+                </div>
+                <div className="gst-step-card gst-step-input">
+                  <div className="gst-step-left">
+                    <div className="gst-step-icon"><GstStepIcon kind="input" /></div>
+                    <div>
+                      <div className="gst-step-label">Input GST / ITC</div>
+                      <div className="gst-step-note">Claimed from purchases</div>
+                    </div>
+                  </div>
+                  <div className="gst-step-value">₹{fmt(gstITC)}</div>
+                </div>
+                <div className="gst-step-card gst-step-net">
+                  <div className="gst-step-left">
+                    <div className="gst-step-icon"><GstStepIcon kind="net" /></div>
+                    <div>
+                      <div className="gst-step-label">Net Position</div>
+                      <div className="gst-step-note">{isPayable ? 'Payable after ITC' : excessCreditTotal > 0 ? 'Unused ITC left' : 'Balanced'}</div>
+                    </div>
+                  </div>
+                  <div className="gst-step-value">₹{fmt(isPayable ? payableTotal : excessCreditTotal)}</div>
+                </div>
               </div>
             </Card>
 
-            <Card title="GST Calculation" subtitle="Drill into output GST and purchase ITC">
-              <DataRow
-                label="GST Collected (Output)"
-                note={`Collected from customers through sales. CGST ₹${fmt(summary.sales.cgst)} + SGST ₹${fmt(summary.sales.sgst)} + IGST ₹${fmt(summary.sales.igst)}`}
-                value={`₹${fmt(gstCollected)}`}
-                valueTone="ui-value-money"
-              />
-              <div style={{ marginTop: 10, marginBottom: 12 }}>
-                <ActionButton variant="secondary" onClick={() => openDrill('sales')}>
-                  {drillType === 'sales' ? 'Hide Sales' : 'View Sales'}
-                </ActionButton>
+            <Card className="gst-calc-card" title="GST Input Credit (ITC)" subtitle={`Paid to suppliers on purchases. CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}>
+              <div className="gst-calc-block">
+                <DataRow
+                  label="GST Collected (Output)"
+                  note={`Collected from customers through sales. CGST ₹${fmt(summary.sales.cgst)} + SGST ₹${fmt(summary.sales.sgst)} + IGST ₹${fmt(summary.sales.igst)}`}
+                  value={`₹${fmt(gstCollected)}`}
+                  valueTone="ui-value-money"
+                />
+                <div className="gst-action-row">
+                  <ActionButton className="gst-drill-button" variant="primary" onClick={() => openDrill('sales')}>
+                    <span aria-hidden="true">↗</span>
+                    <span>{drillType === 'sales' ? 'Hide Sales' : 'View Sales'}</span>
+                  </ActionButton>
+                </div>
               </div>
               {drillType === 'sales' ? renderDrillRows('sales') : null}
 
-              <div style={{ height: 1, background: 'rgba(148,163,184,0.14)', margin: '16px 0' }} />
+              <div className="gst-divider" />
 
-              <DataRow
-                label="GST Input Credit (ITC)"
-                note={`Paid to suppliers on purchases. CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}
-                value={`₹${fmt(gstITC)}`}
-                valueTone="ui-value-secondary"
-              />
-              <div style={{ marginTop: 10, marginBottom: 12 }}>
-                <ActionButton variant="secondary" onClick={() => openDrill('purchases')}>
-                  {drillType === 'purchases' ? 'Hide Purchases' : 'View Purchases'}
-                </ActionButton>
+              <div className="gst-calc-block">
+                <DataRow
+                  label="GST Input Credit (ITC)"
+                  note={`Paid to suppliers on purchases. CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}
+                  value={`₹${fmt(gstITC)}`}
+                  valueTone="ui-value-secondary"
+                />
+                <div className="gst-action-row">
+                  <ActionButton className="gst-drill-button" variant="primary" onClick={() => openDrill('purchases')}>
+                    <span aria-hidden="true">↘</span>
+                    <span>{drillType === 'purchases' ? 'Hide Purchases' : 'View Purchases'}</span>
+                  </ActionButton>
+                </div>
               </div>
               {drillType === 'purchases' ? renderDrillRows('purchases') : null}
 
               {gstITC === 0 ? (
-                <div style={{ marginTop: 14 }}>
-                  <StatusBadge tone="warning">No ITC claimed - you may be overpaying tax</StatusBadge>
+                <div className="gst-warning-banner">
+                  <span className="gst-warning-icon" aria-hidden="true">⚠️</span>
+                  <span>No ITC claimed - you may be overpaying tax</span>
                 </div>
               ) : null}
 
-              <div style={{ marginTop: 16 }}>
-                <DataRow
-                  label={isPayable ? 'Net GST Payable' : 'Excess ITC Available'}
-                  note="Remaining position after ITC set-off"
-                  value={`₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`}
-                  valueTone={isPayable ? 'ui-value-danger' : 'ui-value-money'}
-                  tone={isPayable ? 'danger' : 'success'}
-                />
+              <div className="gst-net-highlight">
+                <div className="gst-net-highlight-label">{isPayable ? 'Net GST Payable' : 'Excess ITC Available'}</div>
+                <div className={`gst-net-highlight-value ${isPayable ? 'is-payable' : 'is-favorable'}`}>
+                  ₹{fmt(isPayable ? payableTotal : excessCreditTotal)}
+                </div>
+                <div className="gst-net-highlight-note">Remaining position after ITC set-off</div>
               </div>
             </Card>
 
-            <Card title="GSTR-3B Summary">
-              <div className="ui-table-wrap">
-                <table className="ui-table">
+            <Card className="gst-gstr-card" title="GSTR-3B Summary">
+              <div className="ui-table-wrap gst-gstr-table-wrap">
+                <table className="ui-table gst-gstr-table">
                   <thead>
                     <tr>
                       <th>Description</th>
-                      <th>CGST</th>
-                      <th>SGST</th>
-                      <th>IGST</th>
-                      <th>Total</th>
+                      <th style={{ textAlign: 'right' }}>CGST</th>
+                      <th style={{ textAlign: 'right' }}>SGST</th>
+                      <th style={{ textAlign: 'right' }}>IGST</th>
+                      <th style={{ textAlign: 'right' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -562,21 +642,21 @@ export default function GSTPage() {
                       <td>₹{fmt(summary.sales.cgst)}</td>
                       <td>₹{fmt(summary.sales.sgst)}</td>
                       <td>₹{fmt(summary.sales.igst)}</td>
-                      <td className="ui-value-money">₹{fmt(summary.sales.total_gst)}</td>
+                      <td className={summary.sales.total_gst > 0 ? 'gst-total-payable' : 'gst-total-favorable'}>₹{fmt(summary.sales.total_gst)}</td>
                     </tr>
                     <tr>
                       <td>Input / ITC (Purchase)</td>
                       <td>₹{fmt(summary.purchases.cgst)}</td>
                       <td>₹{fmt(summary.purchases.sgst)}</td>
                       <td>₹{fmt(summary.purchases.igst)}</td>
-                      <td className="ui-value-secondary">₹{fmt(summary.purchases.total_gst)}</td>
+                      <td className={summary.purchases.total_gst > 0 ? 'gst-total-favorable' : 'gst-total-neutral'}>₹{fmt(summary.purchases.total_gst)}</td>
                     </tr>
-                    <tr className="gstr3b-total-row">
+                    <tr className="gst-gstr-final-row">
                       <td>{isPayable ? 'Payable After ITC Set-Off' : 'Unused ITC / Nil Liability'}</td>
                       <td>₹{fmt(isPayable ? payableByHead.cgst : excessCredit.cgst)}</td>
                       <td>₹{fmt(isPayable ? payableByHead.sgst : excessCredit.sgst)}</td>
                       <td>₹{fmt(isPayable ? payableByHead.igst : excessCredit.igst)}</td>
-                      <td className={isPayable ? 'ui-value-danger' : 'ui-value-money'}>₹{fmt(isPayable ? payableTotal : excessCreditTotal)}</td>
+                      <td className={isPayable ? 'gst-total-payable' : 'gst-total-favorable'}>₹{fmt(isPayable ? payableTotal : excessCreditTotal)}</td>
                     </tr>
                   </tbody>
                 </table>
