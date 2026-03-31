@@ -1,0 +1,8 @@
+{
+  "name": "rakh-rakhaav-main",
+  "private": true,
+  "scripts": {
+    "dev:client": "npm.cmd --prefix client run dev",
+    "dev:server": "npm.cmd --prefix server run dev"
+  }
+}

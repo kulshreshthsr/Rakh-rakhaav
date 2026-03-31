@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
+import { apiUrl } from '../../lib/api';
 
-const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const HSN_GST_HINTS = {
   84: 18,
@@ -26,6 +26,10 @@ export default function ProductsPage() {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]         = useState('');
+  const [isOnline, setIsOnline]   = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
   // Filters
   const [search, setSearch]           = useState('');
@@ -61,6 +65,7 @@ export default function ProductsPage() {
     const cached = readPageCache(PRODUCTS_CACHE_KEY);
     if (cached?.products) {
       setProducts(cached.products);
+      setCacheUpdatedAt(cached.cachedAt || null);
       setLoading(false);
     }
 
@@ -73,6 +78,18 @@ export default function ProductsPage() {
     return () => cancelDeferred(deferredId);
   }, []);
   /* eslint-enable react-hooks/exhaustive-deps */
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     let result = [...products];
@@ -94,7 +111,7 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`${API}/api/products`, {
+      const res = await fetch(apiUrl('/api/products'), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.status === 401) { router.push('/login'); return; }
@@ -102,6 +119,7 @@ export default function ProductsPage() {
       const nextProducts = Array.isArray(data) ? data : data.products || [];
       setProducts(nextProducts);
       writePageCache(PRODUCTS_CACHE_KEY, { products: nextProducts });
+      setCacheUpdatedAt(new Date().toISOString());
     } catch { setError('Products could not be loaded'); }
     finally { setLoading(false); }
   };
@@ -131,9 +149,13 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError('');
+    if (!isOnline) {
+      setError('Offline mode me product save nahi hoga. Internet on karke try karein.');
+      return;
+    }
     const url = editProduct
-      ? `${API}/api/products/${editProduct._id}`
-      : `${API}/api/products`;
+      ? apiUrl(`/api/products/${editProduct._id}`)
+      : apiUrl('/api/products');
     try {
       const res = await fetch(url, {
         method: editProduct ? 'PUT' : 'POST',
@@ -154,9 +176,13 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id) => {
+    if (!isOnline) {
+      setError('Offline mode me product delete nahi hoga.');
+      return;
+    }
     if (!confirm('Delete this product?')) return;
     try {
-      const res = await fetch(`${API}/api/products/${id}`, {
+      const res = await fetch(apiUrl(`/api/products/${id}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${getToken()}` },
       });
@@ -178,9 +204,13 @@ export default function ProductsPage() {
 
   const handleStockAdjust = async (e) => {
     e.preventDefault(); setError('');
+    if (!isOnline) {
+      setError('Offline mode me stock adjust nahi hoga.');
+      return;
+    }
     setStockSubmitting(true);
     try {
-      const res = await fetch(`${API}/api/products/${stockProduct._id}/adjust-stock`, {
+      const res = await fetch(apiUrl(`/api/products/${stockProduct._id}/adjust-stock`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify(stockForm),
@@ -196,11 +226,15 @@ export default function ProductsPage() {
 
   // â”€â”€ Stock History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openHistory = async (p) => {
+    if (!isOnline) {
+      setError('Offline mode me stock history load nahi hogi.');
+      return;
+    }
     setHistoryProduct(p);
     setShowHistory(true);
     setHistoryLoading(true);
     try {
-      const res = await fetch(`${API}/api/products/${p._id}/stock-history`, {
+      const res = await fetch(apiUrl(`/api/products/${p._id}/stock-history`), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -217,6 +251,14 @@ export default function ProductsPage() {
     const prefix = parseInt(String(form.hsn_code || '').slice(0, 2), 10);
     return HSN_GST_HINTS[prefix];
   })();
+  const cacheLabel = cacheUpdatedAt
+    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
   // â”€â”€ Badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const StockBadge = ({ p }) => {
     if (p.quantity === 0) return <span className="badge badge-red">Out</span>;
@@ -251,11 +293,30 @@ export default function ProductsPage() {
           <div className="page-toolbar">
             <div>
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
-              <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Your complete product catalog</div>
+              <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+                {refreshing
+                  ? 'Refreshing latest inventory...'
+                  : !isOnline
+                    ? `Offline inventory snapshot${cacheLabel ? ` • last updated ${cacheLabel}` : ''}`
+                    : cacheLabel
+                      ? `Inventory ready • last synced ${cacheLabel}`
+                      : 'Your complete product catalog'}
+              </div>
             </div>
-            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }}>+ Add Product</button>
+            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }} disabled={!isOnline}>
+              + Add Product
+            </button>
           </div>
         </section>
+
+        {!isOnline ? (
+          <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+            <strong>Offline inventory mode</strong>
+            <div style={{ marginTop: 6, fontSize: 13 }}>
+              Products list cached snapshot se dikh rahi hai. Add, edit, delete aur stock actions internet wapas aane par hi chalenge.
+            </div>
+          </div>
+        ) : null}
 
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>

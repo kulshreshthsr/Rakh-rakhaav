@@ -1,4 +1,6 @@
-export const API = 'https://rakh-rakhaav.onrender.com';
+import { getApiBaseUrl } from './api';
+
+export const API = getApiBaseUrl();
 const WELCOME_PENDING_KEY = 'rr-welcome-pending';
 const TRIAL_GATE_SEEN_KEY = 'rr-trial-gate-seen';
 

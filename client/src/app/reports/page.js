@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
+import { apiUrl } from '../../lib/api';
 
-const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const fmtN = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
@@ -53,10 +53,10 @@ export default function ReportsPage() {
 
     try {
       const [sRes, pRes, cRes, profitRes] = await Promise.all([
-        fetch(`${API}/api/sales${params}`, { headers }),
-        fetch(`${API}/api/purchases${params}`, { headers }),
-        fetch(`${API}/api/customers`, { headers }),
-        fetch(`${API}/api/sales/profit-summary${params}`, { headers }),
+        fetch(apiUrl(`/api/sales${params}`), { headers }),
+        fetch(apiUrl(`/api/purchases${params}`), { headers }),
+        fetch(apiUrl('/api/customers'), { headers }),
+        fetch(apiUrl(`/api/sales/profit-summary${params}`), { headers }),
       ]);
 
       const sData = await sRes.json();

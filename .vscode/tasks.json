@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev All",
+      "dependsOn": [
+        "Server Dev",
+        "Client Dev"
+      ],
+      "dependsOrder": "parallel"
+    },
+    {
+      "label": "Client Dev",
+      "type": "shell",
+      "command": "npm.cmd run dev:client",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "ready in|Ready in|Local:"
+        }
+      }
+    },
+    {
+      "label": "Server Dev",
+      "type": "shell",
+      "command": "npm.cmd run dev:server",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "listening|Server running|connected|MongoDB connected"
+        }
+      }
+    }
+  ]
+}

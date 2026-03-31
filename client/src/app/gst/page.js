@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
+import { apiUrl } from '../../lib/api';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTHS_HI = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 
@@ -27,7 +27,7 @@ export default function GSTPage() {
     setLoading(true);
     setDrillType(null);
     try {
-      const res = await fetch(`${API}/api/sales/gst-summary?month=${month}&year=${year}`, {
+      const res = await fetch(apiUrl(`/api/sales/gst-summary?month=${month}&year=${year}`), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.status === 401) { router.push('/login'); return; }
@@ -53,8 +53,8 @@ export default function GSTPage() {
 
     try {
       const url = type === 'sales'
-        ? `${API}/api/sales?from=${from}&to=${to}`
-        : `${API}/api/purchases?from=${from}&to=${to}`;
+        ? apiUrl(`/api/sales?from=${from}&to=${to}`)
+        : apiUrl(`/api/purchases?from=${from}&to=${to}`);
 
       const res = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();

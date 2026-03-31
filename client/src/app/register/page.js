@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearTrialGateSeen, setWelcomePending, writeStoredSubscription } from '../../lib/subscription';
+import { apiUrl } from '../../lib/api';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -17,7 +18,7 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/register', {
+      const res = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, username, password }),

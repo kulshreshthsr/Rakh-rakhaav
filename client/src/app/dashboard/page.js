@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { StatCard, StatusBadge } from '../../components/ui/AppUI';
+import { apiUrl } from '../../lib/api';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
-const API = 'https://rakh-rakhaav.onrender.com';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v2';
+const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v3';
 
 const getToken = () => localStorage.getItem('token');
 const getBusinessName = () => {
@@ -28,40 +29,10 @@ const getUserCacheNamespace = () => {
 };
 const getCacheKey = (month, year) => `${DASHBOARD_CACHE_PREFIX}:${getUserCacheNamespace()}:${year}:${month}`;
 
-const readDashboardCache = (month, year) => {
-  try {
-    const raw = localStorage.getItem(getCacheKey(month, year));
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
+const readDashboardCache = (month, year) => readPageCache(getCacheKey(month, year));
 
 const writeDashboardCache = (month, year, value) => {
-  try {
-    localStorage.setItem(
-      getCacheKey(month, year),
-      JSON.stringify({
-        ...value,
-        cachedAt: new Date().toISOString(),
-      })
-    );
-  } catch {}
-};
-
-const scheduleIdle = (callback) => {
-  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    return window.requestIdleCallback(callback, { timeout: 1200 });
-  }
-  return window.setTimeout(callback, 150);
-};
-
-const cancelIdle = (id) => {
-  if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
-    window.cancelIdleCallback(id);
-    return;
-  }
-  clearTimeout(id);
+  writePageCache(getCacheKey(month, year), value);
 };
 
 function QuickActionGlyph({ name }) {
@@ -142,6 +113,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cacheLoaded, setCacheLoaded] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
   useEffect(() => {
     const token = getToken();
@@ -156,6 +131,7 @@ export default function DashboardPage() {
       setTopProducts(cached.topProducts || []);
       setLowStockProducts(cached.lowStockProducts || []);
       setTotalCustomerUdhaar(cached.totalCustomerUdhaar || 0);
+      setCacheUpdatedAt(cached.cachedAt || null);
       setLoading(false);
       setCacheLoaded(true);
     } else {
@@ -164,11 +140,11 @@ export default function DashboardPage() {
     }
 
     const controller = new AbortController();
-    const idleId = scheduleIdle(async () => {
+    const idleId = scheduleDeferred(async () => {
       try {
         setRefreshing(Boolean(cached));
         const params = `?month=${selectedMonth}&year=${selectedYear}`;
-        const res = await fetch(`${API}/api/dashboard/summary${params}`, {
+        const res = await fetch(apiUrl(`/api/dashboard/summary${params}`), {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
@@ -186,6 +162,7 @@ export default function DashboardPage() {
         setLoading(false);
         setCacheLoaded(true);
         writeDashboardCache(selectedMonth, selectedYear, data);
+        setCacheUpdatedAt(new Date().toISOString());
       } catch (error) {
         if (error.name !== 'AbortError' && !cached) {
           setLoading(false);
@@ -197,11 +174,31 @@ export default function DashboardPage() {
 
     return () => {
       controller.abort();
-      cancelIdle(idleId);
+      cancelDeferred(idleId);
     };
   }, [router, selectedMonth, selectedYear]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const fmt = (n) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
+  const cacheLabel = cacheUpdatedAt
+    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
   if (loading && !cacheLoaded) {
     return (
@@ -272,6 +269,12 @@ export default function DashboardPage() {
               <div className="page-title">Dashboard</div>
               {refreshing ? (
                 <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
+              ) : !isOnline ? (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#92400e' }}>
+                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
+                </div>
+              ) : cacheLoaded && cacheLabel ? (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
               ) : null}
             </div>
 
@@ -299,6 +302,15 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {!isOnline ? (
+          <section className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+            <strong>Dashboard offline mode</strong>
+            <div style={{ marginTop: 6, fontSize: 13 }}>
+              Abhi cached business snapshot dikh raha hai. Sales, GST, low stock aur credit numbers live nahi hain jab tak internet wapas na aaye.
+            </div>
+          </section>
+        ) : null}
 
         <section className="metric-grid">
           {statCards.map((card) => (

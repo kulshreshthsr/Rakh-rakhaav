@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
+import { apiUrl } from '../../lib/api';
 
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'];
 const GSTIN_LENGTH = 15;
@@ -83,7 +84,7 @@ export default function ProfilePage() {
 
   async function fetchShop() {
     try {
-      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/shop', {
+      const res = await fetch(apiUrl('/api/auth/shop'), {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       const data = await res.json();
@@ -122,7 +123,7 @@ export default function ProfilePage() {
     setNameMsg('');
     setNameError('');
     try {
-      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/profile', {
+      const res = await fetch(apiUrl('/api/auth/profile'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ name: nameForm.name }),
@@ -154,7 +155,7 @@ export default function ProfilePage() {
       return;
     }
     try {
-      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/password', {
+      const res = await fetch(apiUrl('/api/auth/password'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ currentPassword: passForm.currentPassword, newPassword: passForm.newPassword }),
@@ -176,7 +177,7 @@ export default function ProfilePage() {
     setShopMsg('');
     setShopError('');
     try {
-      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/shop', {
+      const res = await fetch(apiUrl('/api/auth/shop'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify(shopForm),

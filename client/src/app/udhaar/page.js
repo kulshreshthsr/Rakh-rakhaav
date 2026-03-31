@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { ActionButton, Card, StatCard } from '../../components/ui/AppUI';
+import { apiUrl } from '../../lib/api';
 
-const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'NA';
@@ -43,7 +43,7 @@ export default function UdhaarPage() {
 
   async function fetchCustomers() {
     try {
-      const res = await fetch(`${API}/api/customers`, {
+      const res = await fetch(apiUrl('/api/customers'), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.status === 401) { router.push('/login'); return; }
@@ -56,7 +56,7 @@ export default function UdhaarPage() {
 
   async function fetchSuppliers() {
     try {
-      const res = await fetch(`${API}/api/suppliers`, {
+      const res = await fetch(apiUrl('/api/suppliers'), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -73,7 +73,7 @@ export default function UdhaarPage() {
   };
 
   const fetchCustomerLedgerEntries = async (customerId) => {
-    const res = await fetch(`${API}/api/customers/${customerId}/udhaar`, {
+    const res = await fetch(apiUrl(`/api/customers/${customerId}/udhaar`), {
       headers: { Authorization: `Bearer ${getToken()}` },
     });
 
@@ -147,7 +147,7 @@ export default function UdhaarPage() {
 
     try {
       const base = activeTab === 'customers' ? 'customers' : 'suppliers';
-      const res = await fetch(`${API}/api/${base}/${item._id}/udhaar`, {
+      const res = await fetch(apiUrl(`/api/${base}/${item._id}/udhaar`), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -170,7 +170,7 @@ export default function UdhaarPage() {
 
     try {
       const base = activeTab === 'customers' ? 'customers' : 'suppliers';
-      const res = await fetch(`${API}/api/${base}/${selected._id}/settle`, {
+      const res = await fetch(apiUrl(`/api/${base}/${selected._id}/settle`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ amount: settleAmount, note: settleNote }),
@@ -191,7 +191,7 @@ export default function UdhaarPage() {
         }
 
         const ledgerBase = activeTab === 'customers' ? 'customers' : 'suppliers';
-        const lRes = await fetch(`${API}/api/${ledgerBase}/${selected._id}/udhaar`, {
+        const lRes = await fetch(apiUrl(`/api/${ledgerBase}/${selected._id}/udhaar`), {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
         const lData = await lRes.json();

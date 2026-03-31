@@ -170,3 +170,16 @@ export async function clearQueue() {
     return null;
   }
 }
+
+export async function removeQueuedOperation(id) {
+  try {
+    if (!isBrowser()) {
+      return null;
+    }
+
+    await deleteQueueItem(id);
+    return true;
+  } catch {
+    return null;
+  }
+}

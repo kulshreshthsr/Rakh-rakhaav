@@ -6,13 +6,13 @@ import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
-import { getQueue, queueSale } from '../../lib/offlineQueue';
+import { getQueue, queueSale, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
+import { apiUrl } from '../../lib/api';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
 
-const API      = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
@@ -377,7 +377,7 @@ export default function SalesPage() {
 
   async function fetchSales() {
     try {
-      const res = await fetch(`${API}/api/sales`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(apiUrl('/api/sales'), { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
       const nextSales = data.sales || (Array.isArray(data) ? data : []);
@@ -391,7 +391,7 @@ export default function SalesPage() {
 
   async function fetchProducts() {
     try {
-      const res = await fetch(`${API}/api/products`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(apiUrl('/api/products'), { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
       const productList = Array.isArray(data) ? data : data.products || [];
       setProducts(productList);
@@ -436,7 +436,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     if ((!showModal && !sales.length) || (shopName && shopState) || !localStorage.getItem('token')) return;
-    fetch(`${API}/api/auth/shop`, { headers: { Authorization: `Bearer ${getToken()}` } })
+    fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } })
       .then(r => r.json())
       .then(shop => {
         setShopName(shop.name || '');
@@ -707,17 +707,20 @@ export default function SalesPage() {
 
     try {
       const isEditing = Boolean(editingSaleId);
-      const res = await fetch(isEditing ? `${API}/api/sales/${editingSaleId}` : `${API}/api/sales`, {
-        method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({
-          items: validItems,
-          ...form,
-          buyer_gstin: gstinValue,
-          sale_date: form.sale_date,
-          amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
-        }),
-      });
+      const res = await fetch(
+        isEditing ? apiUrl(`/api/sales/${editingSaleId}`) : apiUrl('/api/sales'),
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify({
+            items: validItems,
+            ...form,
+            buyer_gstin: gstinValue,
+            sale_date: form.sale_date,
+            amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
+          }),
+        }
+      );
       const data = await res.json();
       if (res.ok) {
         if (isEditing && data?._id) {
@@ -793,6 +796,11 @@ export default function SalesPage() {
   }
 
   const startEditSale = (sale) => {
+    if (sale?._isOffline) {
+      setError('Pending offline sale sync hone se pehle edit nahi hogi. Zarurat ho to delete karke dobara save karein.');
+      return;
+    }
+
     const sourceItems = sale.items && sale.items.length > 0
       ? sale.items
       : [{
@@ -824,17 +832,36 @@ export default function SalesPage() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (sale) => {
+    if (sale?._isOffline) {
+      if (!confirm('Is pending offline sale ko local queue se hatana hai?')) return;
+
+      const removed = await removeQueuedOperation(sale._id);
+      if (!removed) {
+        setError('Pending offline sale remove nahi ho paayi');
+        return;
+      }
+
+      setSales((current) => current.filter((entry) => entry._id !== sale._id));
+      setError('');
+      return;
+    }
+
     if (!confirm('Are you sure? Stock will also adjust.')) return;
     try {
-      await fetch(`${API}/api/sales/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
+      await fetch(apiUrl(`/api/sales/${sale._id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
       fetchAll();
     } catch { setError('Delete failed'); }
   };
 
   const printInvoice = async (sale) => {
+    if (sale?._isOffline) {
+      setError('Pending offline sale ka invoice sync ke baad print hoga');
+      return;
+    }
+
     try {
-      const shopRes = await fetch(`${API}/api/auth/shop`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const shopRes = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } });
       const shop = await shopRes.json();
       generateInvoiceHTML(sale, shop, true);
     } catch { alert('Invoice could not be generated.'); }
@@ -842,6 +869,11 @@ export default function SalesPage() {
 
   // WhatsApp share: pure text, no API call, no PDF
   const shareWhatsApp = (sale) => {
+    if (sale?._isOffline) {
+      setError('Pending offline sale ko sync ke baad share karein');
+      return;
+    }
+
     const msg   = buildWhatsAppShareMessage(sale, shopName);
     const phone = sale.buyer_phone ? sale.buyer_phone.replace(/\D/g, '') : '';
     // If phone number exists ₹ open direct chat, else ₹ open WhatsApp contact picker
@@ -866,6 +898,12 @@ export default function SalesPage() {
     );
   };
 
+  const pendingOfflineSales = sales.filter((sale) => sale?._isOffline);
+  const offlineRevenue = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0);
+  const offlineGst = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0);
+  const revenueDisplay = Number(summary.totalRevenue || 0) + offlineRevenue;
+  const gstDisplay = Number(summary.totalGST || 0) + offlineGst;
+
   return (
     <Layout>
       <div className="page-shell sales-shell">
@@ -882,12 +920,12 @@ export default function SalesPage() {
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Revenue</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmt(summary.totalRevenue)}</div>
+            <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmt(revenueDisplay)}</div>
             <div className="metric-note">Total billed amount</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{fmt(summary.totalGST)}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{fmt(gstDisplay)}</div>
             <div className="metric-note">Collected in sales</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
@@ -896,6 +934,15 @@ export default function SalesPage() {
             <div className="metric-note">Recorded sales entries</div>
           </div>
         </section>
+
+        {pendingOfflineSales.length > 0 ? (
+          <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+            <strong>{pendingOfflineSales.length} offline sale pending</strong>
+            <div style={{ marginTop: 6, fontSize: 13 }}>
+              Ye entries local queue me saved hain. Internet aate hi sync ho jayengi, aur tab invoice actions fully available honge.
+            </div>
+          </div>
+        ) : null}
 
         {error && !showModal && (
           <div className="alert-error">
@@ -970,27 +1017,30 @@ export default function SalesPage() {
                           onClick={() => printInvoice(s)}
                           title="Print Invoice"
                           className="action-soft print"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
+                          disabled={Boolean(s._isOffline)}
+                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
                           Print
                         </button>
                         <button
                           onClick={() => shareWhatsApp(s)}
                           title="Share on WhatsApp"
                           className="action-soft whatsapp"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
+                          disabled={Boolean(s._isOffline)}
+                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
                           WA
                         </button>
                         <button
                           onClick={() => startEditSale(s)}
                           className="action-soft edit"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
+                          disabled={Boolean(s._isOffline)}
+                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(s._id)}
+                          onClick={() => handleDelete(s)}
                           className="action-soft delete"
                           style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Del
+                          {s._isOffline ? 'Remove' : 'Del'}
                         </button>
                       </div>
                     </td>
@@ -1039,21 +1089,22 @@ export default function SalesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
                 </div>
                 <div className="flow-choice-grid">
-                  <button onClick={() => startEditSale(s)} className="action-soft edit" style={{ flex: 1, padding: '9px' }}>
+                  <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="action-soft edit" style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
                     Edit
                   </button>
-                  <button onClick={() => printInvoice(s)} className="action-soft print" style={{ flex: 1, padding: '9px' }}>
+                  <button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)} className="action-soft print" style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
                     Print
                   </button>
                   <button
                     onClick={() => shareWhatsApp(s)}
                     title="Share on WhatsApp"
                     className="action-soft whatsapp"
-                    style={{ flex: 1, padding: '9px' }}>
+                    disabled={Boolean(s._isOffline)}
+                    style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
                     WhatsApp
                   </button>
-                  <button onClick={() => handleDelete(s._id)} className="action-soft delete" style={{ flex: 1, padding: '9px' }}>
-                    Delete
+                  <button onClick={() => handleDelete(s)} className="action-soft delete" style={{ flex: 1, padding: '9px' }}>
+                    {s._isOffline ? 'Remove' : 'Delete'}
                   </button>
                 </div>
               </div>

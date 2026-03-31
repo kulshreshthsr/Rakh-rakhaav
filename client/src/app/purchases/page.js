@@ -4,13 +4,13 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
-import { queuePurchase } from '../../lib/offlineQueue';
+import { getQueue, queuePurchase, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
+import { apiUrl } from '../../lib/api';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
 
-const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const GSTIN_LENGTH = 15;
@@ -153,24 +153,105 @@ export default function PurchasesPage() {
     setLoading(false);
   }
 
+  async function loadPendingOfflinePurchases() {
+    try {
+      const queueItems = await getQueue();
+
+      if (!Array.isArray(queueItems) || queueItems.length === 0) {
+        return [];
+      }
+
+      return queueItems
+        .filter((operation) => operation?.type === 'CREATE_PURCHASE')
+        .map((operation) => {
+          const queuedItems = Array.isArray(operation?.payload?.items)
+            ? operation.payload.items
+            : [];
+          const taxableAmount = queuedItems.reduce((sum, item) => {
+            return sum + parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
+          }, 0);
+          const totalGst = queuedItems.reduce((sum, item) => {
+            const product = products.find((prod) => prod._id === item.product_id);
+            const taxable = parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
+            const gstRate = product?.gst_rate || 0;
+            return sum + (taxable * gstRate) / 100;
+          }, 0);
+          const amountPaid = Number(operation?.payload?.amount_paid || 0);
+          const totalAmount = taxableAmount + totalGst;
+
+          return {
+            _id: operation.id,
+            invoice_number: operation.tempId,
+            items: queuedItems.map((item) => {
+              const product = products.find((prod) => prod._id === item.product_id);
+
+              return {
+                product_name: product?.name || 'Product',
+                quantity: item.quantity,
+                price_per_unit: item.price_per_unit,
+                total_amount: parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0),
+              };
+            }),
+            product_name: (() => {
+              const firstItem = queuedItems[0];
+              const product = products.find((prod) => prod._id === firstItem?.product_id);
+              return product?.name || 'Product';
+            })(),
+            total_amount: totalAmount,
+            taxable_amount: taxableAmount,
+            total_gst: totalGst,
+            amount_paid: amountPaid,
+            balance_due: Math.max(0, totalAmount - amountPaid),
+            payment_type: operation?.payload?.payment_type,
+            supplier_name: operation?.payload?.supplier_name || '',
+            supplier_phone: operation?.payload?.supplier_phone,
+            createdAt: operation?.createdAt || new Date().toISOString(),
+            _isOffline: true,
+          };
+        });
+    } catch {
+      return [];
+    }
+  }
+
+  async function mergePurchasesWithPendingQueue(nextPurchases) {
+    try {
+      const pendingOfflinePurchases = await loadPendingOfflinePurchases();
+
+      if (!pendingOfflinePurchases.length) {
+        return nextPurchases;
+      }
+
+      const seenIds = new Set((nextPurchases || []).map((purchase) => purchase._id));
+      const mergedOfflinePurchases = pendingOfflinePurchases.filter((purchase) => !seenIds.has(purchase._id));
+
+      return [...mergedOfflinePurchases, ...(nextPurchases || [])].sort(
+        (a, b) => new Date(b.createdAt || b.purchased_at || 0).getTime() - new Date(a.createdAt || a.purchased_at || 0).getTime()
+      );
+    } catch {
+      return nextPurchases;
+    }
+  }
+
   async function fetchPurchases() {
     try {
-      const res = await fetch(`${API}/api/purchases`, {
+      const res = await fetch(apiUrl('/api/purchases'), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
       const nextPurchases = data.purchases || [];
       const nextSummary = data.summary || {};
-      setPurchases(nextPurchases);
+      const mergedPurchases = await mergePurchasesWithPendingQueue(nextPurchases);
+      setPurchases(mergedPurchases);
       setSummary(nextSummary);
-      writePageCache(PURCHASES_CACHE_KEY, { purchases: nextPurchases, summary: nextSummary });
+      writePageCache(PURCHASES_CACHE_KEY, { purchases: mergedPurchases, summary: nextSummary });
     } catch { setError('Purchases could not be loaded'); }
   }
 
   async function fetchProducts() {
     try {
-      const res = await fetch(`${API}/api/products`, {
+      const res = await fetch(apiUrl('/api/products'), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -187,7 +268,7 @@ export default function PurchasesPage() {
 
   async function fetchShopMeta() {
     try {
-      const res = await fetch(`${API}/api/auth/shop`, {
+      const res = await fetch(apiUrl('/api/auth/shop'), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const shop = await res.json();
@@ -200,7 +281,9 @@ export default function PurchasesPage() {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(PURCHASES_CACHE_KEY);
     if (cached?.purchases) {
-      setPurchases(cached.purchases);
+      mergePurchasesWithPendingQueue(cached.purchases).then((mergedPurchases) => {
+        setPurchases(mergedPurchases);
+      });
       setSummary(cached.summary || {});
       setLoading(false);
     }
@@ -240,6 +323,16 @@ export default function PurchasesPage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (!products.length) {
+      return;
+    }
+
+    mergePurchasesWithPendingQueue(purchases).then((mergedPurchases) => {
+      setPurchases(mergedPurchases);
+    });
+  }, [products.length]);
 
   // â”€â”€ Item row handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const updateItem = (index, field, value) => {
@@ -310,7 +403,7 @@ export default function PurchasesPage() {
     setError('');
 
     try {
-      const res = await fetch(`${API}/api/products`, {
+      const res = await fetch(apiUrl('/api/products'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -503,11 +596,14 @@ export default function PurchasesPage() {
       };
 
       const isEditing = Boolean(editingPurchaseId);
-      const res = await fetch(isEditing ? `${API}/api/purchases/${editingPurchaseId}` : `${API}/api/purchases`, {
-        method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        isEditing ? apiUrl(`/api/purchases/${editingPurchaseId}`) : apiUrl('/api/purchases'),
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json();
 
       if (res.ok) {
@@ -525,10 +621,24 @@ export default function PurchasesPage() {
     setSubmitting(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (purchase) => {
+    if (purchase?._isOffline) {
+      if (!confirm('Is pending offline purchase ko local queue se hatana hai?')) return;
+
+      const removed = await removeQueuedOperation(purchase._id);
+      if (!removed) {
+        setError('Pending offline purchase remove nahi ho paayi');
+        return;
+      }
+
+      setPurchases((current) => current.filter((entry) => entry._id !== purchase._id));
+      setError('');
+      return;
+    }
+
     if (!confirm('Delete this purchase? Stock will be restored.')) return;
     try {
-      await fetch(`${API}/api/purchases/${id}`, {
+      await fetch(apiUrl(`/api/purchases/${purchase._id}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${getToken()}` },
       });
@@ -620,6 +730,14 @@ export default function PurchasesPage() {
     );
   };
 
+  const pendingOfflinePurchases = purchases.filter((purchase) => purchase?._isOffline);
+  const offlinePurchaseValue = pendingOfflinePurchases.reduce((sum, purchase) => sum + Number(purchase?.total_amount || 0), 0);
+  const offlineItc = pendingOfflinePurchases.reduce((sum, purchase) => sum + Number(purchase?.total_gst || 0), 0);
+  const offlineDue = pendingOfflinePurchases.reduce((sum, purchase) => sum + Number(purchase?.balance_due || 0), 0);
+  const totalSpendDisplay = Number(summary.totalPurchaseValue || 0) + offlinePurchaseValue;
+  const totalItcDisplay = Number(summary.totalITC || 0) + offlineItc;
+  const totalDueDisplay = Number(summary.totalDue || 0) + offlineDue;
+
   return (
     <Layout>
       <div className="page-shell purchases-shell">
@@ -638,19 +756,19 @@ export default function PurchasesPage() {
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Total Spend</div>
-            <div className="metric-value" style={{ color: '#b45309' }}>₹{(summary.totalPurchaseValue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#b45309' }}>₹{totalSpendDisplay.toFixed(2)}</div>
             <div className="metric-note">Purchase outflow</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Input GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{(summary.totalITC || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{totalItcDisplay.toFixed(2)}</div>
             <div className="metric-note">ITC available</div>
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Balance Due</div>
-            <div className="metric-value" style={{ color: (summary.totalDue || 0) > 0 ? '#dc2626' : '#0f766e' }}>₹{(summary.totalDue || 0).toFixed(2)}</div>
+            <div className="metric-value" style={{ color: totalDueDisplay > 0 ? '#dc2626' : '#0f766e' }}>₹{totalDueDisplay.toFixed(2)}</div>
             <div className="metric-note">Supplier credit outstanding</div>
-            {(summary.totalDue || 0) > 0 ? (
+            {totalDueDisplay > 0 ? (
               <button
                 type="button"
                 onClick={focusPendingPurchase}
@@ -661,6 +779,15 @@ export default function PurchasesPage() {
             ) : null}
           </div>
         </section>
+
+        {pendingOfflinePurchases.length > 0 ? (
+          <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+            <strong>{pendingOfflinePurchases.length} offline purchase pending</strong>
+            <div style={{ marginTop: 6, fontSize: 13 }}>
+              Ye purchase entries local queue me saved hain. Internet aate hi sync ho jayengi. Pending entries ko ab remove bhi kar sakte ho.
+            </div>
+          </div>
+        ) : null}
 
         {error && !showModal && (
           <div className="alert-error">
@@ -765,14 +892,15 @@ export default function PurchasesPage() {
                         </button>
                       ) : null}
                       <button onClick={() => startEditPurchase(p)}
+                        disabled={Boolean(p._isOffline)}
                         className="action-soft edit"
-                        style={{ borderRadius: 999, padding: '6px 10px' }}>
+                        style={{ borderRadius: 999, padding: '6px 10px', opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
                         Edit
                       </button>
-                      <button onClick={() => handleDelete(p._id)}
+                      <button onClick={() => handleDelete(p)}
                         className="action-soft delete"
                         style={{ borderRadius: 999, padding: '6px 10px' }}>
-                        Delete
+                        {p._isOffline ? 'Remove' : 'Delete'}
                       </button>
                     </td>
                   </tr>
@@ -841,14 +969,15 @@ export default function PurchasesPage() {
                   </button>
                 ) : null}
                 <button onClick={() => startEditPurchase(p)}
+                  disabled={Boolean(p._isOffline)}
                   className="action-soft edit"
-                  style={{ width: '100%', padding: '9px', marginBottom: 8 }}>
+                  style={{ width: '100%', padding: '9px', marginBottom: 8, opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
                   Edit
                 </button>
-                <button onClick={() => handleDelete(p._id)}
+                <button onClick={() => handleDelete(p)}
                   className="action-soft delete"
                   style={{ width: '100%', padding: '9px' }}>
-                  Delete
+                  {p._isOffline ? 'Remove' : 'Delete'}
                 </button>
               </div>
             ))}

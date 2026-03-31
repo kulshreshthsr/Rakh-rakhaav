@@ -9,6 +9,7 @@ import {
   setWelcomePending,
   writeStoredSubscription,
 } from '../../lib/subscription';
+import { apiUrl } from '../../lib/api';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -41,7 +42,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('https://rakh-rakhaav.onrender.com/api/auth/login', {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

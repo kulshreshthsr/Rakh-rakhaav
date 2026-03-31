@@ -1,7 +1,7 @@
 import { getQueue, markFailed, markSynced, markSyncing } from './offlineQueue';
 import { getCachedProducts, getDB, updateQueueItem } from './offlineDB';
+import { apiUrl } from './api';
 
-const API = 'https://rakh-rakhaav.onrender.com';
 const getToken = () => localStorage.getItem('token');
 const OFFLINE_QUEUE_STORE = 'offline-queue';
 
@@ -37,7 +37,7 @@ async function syncSale(operation) {
       throw new Error('NETWORK_ERROR');
     }
 
-    const response = await fetch(`${API}/api/sales`, {
+    const response = await fetch(apiUrl('/api/sales'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ async function syncPurchase(operation) {
       throw new Error('NETWORK_ERROR');
     }
 
-    const response = await fetch(`${API}/api/purchases`, {
+    const response = await fetch(apiUrl('/api/purchases'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

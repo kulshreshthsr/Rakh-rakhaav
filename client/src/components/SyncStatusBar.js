@@ -93,7 +93,7 @@ export default function SyncStatusBar() {
           color: '#fff',
         }}
       >
-        <span>{`⏳ Sync ho raha hai${dots}`}</span>
+        <span>{`Sync ho raha hai${dots}`}</span>
       </div>
     );
   } else if (syncError) {
@@ -106,7 +106,7 @@ export default function SyncStatusBar() {
           justifyContent: 'space-between',
         }}
       >
-        <span>{`❌ Sync failed: ${syncError}`}</span>
+        <span>{`Sync failed: ${syncError}`}</span>
         <button type="button" onClick={() => syncNow()} style={actionButtonStyle}>
           Retry
         </button>
@@ -122,10 +122,10 @@ export default function SyncStatusBar() {
           flexWrap: 'wrap',
         }}
       >
-        <span>🔴 Offline — नेटवर्क नहीं है</span>
+        <span>Offline mode active - network available nahi hai</span>
         {pendingCount > 0 ? (
           <>
-            <span>{`• ${pendingCount} entries saved locally, will sync when internet comes back`}</span>
+            <span>{`${pendingCount} entries locally saved hain, internet aate hi sync ho jayengi`}</span>
             <span
               style={{
                 background: '#f59e0b',
@@ -151,7 +151,7 @@ export default function SyncStatusBar() {
           justifyContent: 'space-between',
         }}
       >
-        <span>{`⏳ ${pendingCount} entries sync pending`}</span>
+        <span>{`${pendingCount} entries sync pending`}</span>
         <button type="button" onClick={() => syncNow()} style={actionButtonStyle}>
           Sync Now
         </button>
@@ -188,8 +188,8 @@ export default function SyncStatusBar() {
         >
           <span>
             {visibleToast.failed === 0
-              ? `✅ ${visibleToast.synced} entries synced successfully!`
-              : `⚠️ ${visibleToast.synced} synced, ${visibleToast.failed} failed — Retry karein?`}
+              ? `${visibleToast.synced} entries synced successfully`
+              : `${visibleToast.synced} synced, ${visibleToast.failed} failed - retry karein?`}
           </span>
           {visibleToast.failed > 0 ? (
             <button type="button" onClick={() => syncNow()} style={actionButtonStyle}>
