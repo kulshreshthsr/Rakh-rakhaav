@@ -262,43 +262,50 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
-        <section className="card">
-          <div className="page-toolbar dashboard-toolbar">
-            <div style={{ minWidth: 0 }}>
-              <div className="page-subtitle">Business overview</div>
+        <section className="card dashboard-overview-card">
+          <div className="dashboard-overview-head">
+            <div className="dashboard-overview-copy">
+              <div className="dashboard-overview-kicker">Business overview</div>
               <div className="page-title">Dashboard</div>
+              <div className="dashboard-overview-business">{businessName}</div>
               {refreshing ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
+                <div className="dashboard-overview-status">Refreshing latest data...</div>
               ) : !isOnline ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#92400e' }}>
+                <div className="dashboard-overview-status dashboard-overview-status-offline">
                   Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
                 </div>
               ) : cacheLoaded && cacheLabel ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+                <div className="dashboard-overview-status">Last synced {cacheLabel}</div>
               ) : null}
             </div>
 
-            <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
-                {MONTHS.map((month, index) => (
-                  <option key={month} value={index + 1}>{month}</option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
-                {[2023, 2024, 2025, 2026].map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+            <div className="dashboard-summary-panel">
+              <div className="dashboard-summary-panel-copy">
+                <div className="dashboard-summary-panel-label">Selected period</div>
+                <div className="dashboard-summary-panel-value">{MONTHS[selectedMonth - 1]} {selectedYear}</div>
+              </div>
+              <div className="dashboard-period-controls dashboard-period-shell dashboard-period-grid">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="form-input"
+                  style={{ minWidth: 0, height: 44 }}
+                >
+                  {MONTHS.map((month, index) => (
+                    <option key={month} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="form-input"
+                  style={{ minWidth: 0, height: 44 }}
+                >
+                  {[2023, 2024, 2025, 2026].map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </section>
@@ -312,11 +319,11 @@ export default function DashboardPage() {
           </section>
         ) : null}
 
-        <section className="metric-grid">
+        <section className="dashboard-metric-grid">
           {statCards.map((card) => (
             <StatCard
               key={card.label}
-              className="dashboard-stat-card"
+              className={`dashboard-stat-card dashboard-stat-card-${card.label.toLowerCase().replace(/\s+/g, '-')}`}
               tone={card.tone}
               label={card.label}
               value={card.value}
@@ -329,7 +336,7 @@ export default function DashboardPage() {
 
         {revenue > 0 && (
           <section className="card dashboard-section-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
+            <div className="dashboard-breakdown-head">
               <div>
                 <div className="section-title">Profit Breakdown</div>
                 <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
@@ -337,7 +344,7 @@ export default function DashboardPage() {
               <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
             </div>
 
-            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+            <div className="dashboard-breakdown-grid">
               {[
                 { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
                 { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
@@ -348,25 +355,19 @@ export default function DashboardPage() {
                 <div
                   key={item.label}
                   className="dashboard-breakdown-card"
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                  }}
                 >
-                    <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {item.label}
-                    </div>
-                  <div style={{ fontSize: 24, color: item.color, fontWeight: 800, letterSpacing: '-0.05em', marginTop: 8 }}>
+                  <div className="dashboard-breakdown-label">{item.label}</div>
+                  <div className="dashboard-breakdown-value" style={{ color: item.color }}>
                     {item.prefix}₹{fmt(item.value)}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginTop: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#475569', marginBottom: 6 }}>
+            <div className="dashboard-margin-block">
+              <div className="dashboard-margin-row">
                 <span>Profit Margin</span>
-                <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
+                <strong style={{ color: profit >= 0 ? '#16a34a' : '#dc2626' }}>{margin}%</strong>
               </div>
               <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
                 <div
@@ -375,7 +376,7 @@ export default function DashboardPage() {
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
                     height: '100%',
                     borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #3730a3)' : 'linear-gradient(90deg, #dc2626, #f97316)',
+                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #22c55e)' : 'linear-gradient(90deg, #dc2626, #f97316)',
                   }}
                 />
               </div>
