@@ -1150,7 +1150,13 @@ export default function SalesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>₹{fmt(s.total_gst)}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
                 </div>
-                <div className="flow-choice-grid">
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: 8,
+                  }}
+                >
                   <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="action-soft edit" style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
                     Edit
                   </button>

@@ -1030,24 +1030,32 @@ export default function PurchasesPage() {
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{formatFullDateTime(p.createdAt)}</div></div>
                 </div>
 
-                {p.supplier_phone ? (
-                  <button onClick={() => sendPurchaseWhatsApp(p)}
-                    className="action-soft whatsapp"
-                    style={{ width: '100%', padding: '9px', marginBottom: 8, background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}>
-                    WhatsApp
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: 8,
+                  }}
+                >
+                  {p.supplier_phone ? (
+                    <button onClick={() => sendPurchaseWhatsApp(p)}
+                      className="action-soft whatsapp"
+                      style={{ width: '100%', padding: '9px', background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}>
+                      WhatsApp
+                    </button>
+                  ) : null}
+                  <button onClick={() => startEditPurchase(p)}
+                    disabled={Boolean(p._isOffline)}
+                    className="action-soft edit"
+                    style={{ width: '100%', padding: '9px', opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
+                    Edit
                   </button>
-                ) : null}
-                <button onClick={() => startEditPurchase(p)}
-                  disabled={Boolean(p._isOffline)}
-                  className="action-soft edit"
-                  style={{ width: '100%', padding: '9px', marginBottom: 8, opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
-                  Edit
-                </button>
-                <button onClick={() => handleDelete(p)}
-                  className="action-soft delete"
-                  style={{ width: '100%', padding: '9px' }}>
-                  {p._isOffline ? 'Remove' : 'Delete'}
-                </button>
+                  <button onClick={() => handleDelete(p)}
+                    className="action-soft delete"
+                    style={{ width: '100%', padding: '9px', gridColumn: p.supplier_phone ? 'span 2 / span 2' : undefined }}>
+                    {p._isOffline ? 'Remove' : 'Delete'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
