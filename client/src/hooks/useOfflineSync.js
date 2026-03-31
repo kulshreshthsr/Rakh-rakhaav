@@ -47,12 +47,34 @@ function useOfflineSync() {
       setSyncingState(true);
       setSyncError(null);
 
-      await getSyncStatus();
+      const beforeStatus = await getSyncStatus();
 
       const result = await syncQueue();
-      setLastSyncResult(result);
+      const remainingCount = await refreshPendingCount();
+      const afterStatus = await getSyncStatus();
 
-      await refreshPendingCount();
+      if ((result?.synced || 0) > 0 || (result?.failed || 0) > 0) {
+        setLastSyncResult(result);
+      } else {
+        setLastSyncResult(null);
+      }
+
+      if (
+        remainingCount > 0 &&
+        (result?.synced || 0) === 0 &&
+        (result?.failed || 0) === 0
+      ) {
+        const stuckCount =
+          (afterStatus?.pending || 0) + (afterStatus?.syncing || 0) + (afterStatus?.failed || 0);
+        const hadWorkBefore =
+          (beforeStatus?.pending || 0) + (beforeStatus?.syncing || 0) + (beforeStatus?.failed || 0);
+
+        if (stuckCount > 0 || hadWorkBefore > 0) {
+          setSyncError('Pending entries abhi sync nahi hui. Retry karein.');
+        }
+      } else if ((result?.failed || 0) > 0) {
+        setSyncError('Kuch entries sync nahi hui. Retry karein.');
+      }
 
       setSyncingState(false);
       return result;

@@ -1,4 +1,4 @@
-import { getQueue, markFailed, markSynced, markSyncing, resetStuckSyncingOperations } from './offlineQueue';
+import { getDisplayQueue, markFailed, markSynced, markSyncing, resetStuckSyncingOperations } from './offlineQueue';
 import { getCachedProducts, getDB, updateQueueItem } from './offlineDB';
 import { apiUrl } from './api';
 
@@ -173,7 +173,7 @@ export async function syncQueue() {
     await resetStuckSyncingOperations();
     await getCachedProducts();
 
-    const operations = await getQueue();
+    const operations = await getDisplayQueue();
 
     if (!Array.isArray(operations) || operations.length === 0) {
       return { synced: 0, failed: 0 };

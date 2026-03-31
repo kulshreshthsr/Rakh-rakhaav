@@ -81,7 +81,10 @@ export async function markSyncing(id) {
       return null;
     }
 
-    return await updateQueueItem(id, { status: 'syncing' });
+    return await updateQueueItem(id, {
+      status: 'syncing',
+      error: null,
+    });
   } catch {
     return null;
   }
