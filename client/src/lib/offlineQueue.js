@@ -169,6 +169,50 @@ export async function getDisplayQueue() {
   }
 }
 
+export async function resetStuckSyncingOperations(maxAgeMs = 20000) {
+  try {
+    if (!isBrowser()) {
+      return [];
+    }
+
+    const queue = await getAllQueueItems();
+    if (!Array.isArray(queue)) {
+      return [];
+    }
+
+    const now = Date.now();
+    const recoveredItems = [];
+
+    for (const item of queue) {
+      if (item?.status !== 'syncing') {
+        continue;
+      }
+
+      const createdAt = new Date(item.createdAt || 0).getTime();
+      const updatedAt = new Date(item.updatedAt || item.createdAt || 0).getTime();
+      const referenceTime = Number.isFinite(updatedAt) && updatedAt > 0 ? updatedAt : createdAt;
+
+      if (!Number.isFinite(referenceTime) || now - referenceTime < maxAgeMs) {
+        continue;
+      }
+
+      const recoveredItem = await updateQueueItem(item.id, {
+        status: 'failed',
+        error: 'Sync timed out. Retry karein.',
+        updatedAt: new Date().toISOString(),
+      });
+
+      if (recoveredItem) {
+        recoveredItems.push(recoveredItem);
+      }
+    }
+
+    return recoveredItems;
+  } catch {
+    return [];
+  }
+}
+
 export async function clearQueue() {
   try {
     if (!isBrowser()) {

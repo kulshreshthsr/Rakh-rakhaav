@@ -151,6 +151,7 @@ export async function updateQueueItem(id, patch) {
       ...existingItem,
       ...patch,
       id: existingItem.id,
+      updatedAt: patch?.updatedAt || new Date().toISOString(),
     };
 
     await db.put(OFFLINE_QUEUE_STORE, updatedItem);

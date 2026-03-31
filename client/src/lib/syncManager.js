@@ -1,9 +1,10 @@
-import { getQueue, markFailed, markSynced, markSyncing } from './offlineQueue';
+import { getQueue, markFailed, markSynced, markSyncing, resetStuckSyncingOperations } from './offlineQueue';
 import { getCachedProducts, getDB, updateQueueItem } from './offlineDB';
 import { apiUrl } from './api';
 
 const getToken = () => localStorage.getItem('token');
 const OFFLINE_QUEUE_STORE = 'offline-queue';
+const SYNC_REQUEST_TIMEOUT_MS = 15000;
 
 function isBrowser() {
   return typeof window !== 'undefined';
@@ -32,20 +33,24 @@ async function getAllQueueItems() {
 }
 
 async function syncSale(operation) {
+  let timeoutId = null;
+
   try {
     if (!isBrowser()) {
       throw new Error('NETWORK_ERROR');
     }
 
+    const controller = new AbortController();
+    timeoutId = window.setTimeout(() => controller.abort(), SYNC_REQUEST_TIMEOUT_MS);
     const response = await fetch(apiUrl('/api/sales'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${getToken()}`,
       },
+      signal: controller.signal,
       body: JSON.stringify(operation?.payload),
     });
-
     if (response.ok) {
       return {
         success: true,
@@ -77,29 +82,41 @@ async function syncSale(operation) {
       throw error;
     }
 
+    if (error?.name === 'AbortError') {
+      throw new Error('SYNC_TIMEOUT');
+    }
+
     if (error instanceof TypeError) {
       throw new Error('NETWORK_ERROR');
     }
 
     throw new Error(error?.message || 'NETWORK_ERROR');
+  } finally {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
   }
 }
 
 async function syncPurchase(operation) {
+  let timeoutId = null;
+
   try {
     if (!isBrowser()) {
       throw new Error('NETWORK_ERROR');
     }
 
+    const controller = new AbortController();
+    timeoutId = window.setTimeout(() => controller.abort(), SYNC_REQUEST_TIMEOUT_MS);
     const response = await fetch(apiUrl('/api/purchases'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${getToken()}`,
       },
+      signal: controller.signal,
       body: JSON.stringify(operation?.payload),
     });
-
     if (response.ok) {
       return {
         success: true,
@@ -131,11 +148,19 @@ async function syncPurchase(operation) {
       throw error;
     }
 
+    if (error?.name === 'AbortError') {
+      throw new Error('SYNC_TIMEOUT');
+    }
+
     if (error instanceof TypeError) {
       throw new Error('NETWORK_ERROR');
     }
 
     throw new Error(error?.message || 'NETWORK_ERROR');
+  } finally {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -145,6 +170,7 @@ export async function syncQueue() {
       return { synced: 0, failed: 0 };
     }
 
+    await resetStuckSyncingOperations();
     await getCachedProducts();
 
     const operations = await getQueue();
