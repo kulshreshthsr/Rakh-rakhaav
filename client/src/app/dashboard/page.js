@@ -37,8 +37,8 @@ const writeDashboardCache = (month, year, value) => {
 
 function QuickActionGlyph({ name }) {
   const common = {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
@@ -62,6 +62,41 @@ function QuickActionGlyph({ name }) {
     default:
       return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" /></svg>;
   }
+}
+
+function MetricGlyph({ name }) {
+  const common = {
+    width: 24,
+    height: 24,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  switch (name) {
+    case 'sales':
+      return <svg {...common}><path d="M12 3v18" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></svg>;
+    case 'profit':
+      return <svg {...common}><path d="M4 16 10 10l4 4 6-8" /><path d="M20 9V4h-5" /></svg>;
+    case 'credit':
+      return <svg {...common}><rect x="3" y="6" width="18" height="12" rx="2.5" /><path d="M3 10h18" /><path d="M7 15h3" /></svg>;
+    case 'gst':
+      return <svg {...common}><rect x="4" y="3" width="16" height="18" rx="2.5" /><path d="M8 7h8" /><path d="M8 11h8" /><path d="M8 15h5" /></svg>;
+    default:
+      return <svg {...common}><circle cx="12" cy="12" r="3" /></svg>;
+  }
+}
+
+function ChevronRightGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 const DashboardSkeleton = () => (
@@ -117,6 +152,7 @@ export default function DashboardPage() {
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
+  const [animatedMargin, setAnimatedMargin] = useState(0);
 
   useEffect(() => {
     const token = getToken();
@@ -200,6 +236,23 @@ export default function DashboardPage() {
       })
     : null;
 
+  const netGST = stats?.netGSTPayable ?? 0;
+  const profit = stats?.grossProfit ?? 0;
+  const revenue = stats?.totalRevenue || 0;
+  const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
+  const marginValue = Math.max(0, Math.min(100, Number.parseFloat(margin) || 0));
+  const lowStockCount = lowStockProducts.length;
+  const businessName = getBusinessName();
+
+  useEffect(() => {
+    setAnimatedMargin(0);
+    if (typeof window === 'undefined') return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      setAnimatedMargin(marginValue);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [marginValue]);
+
   if (loading && !cacheLoaded) {
     return (
       <Layout>
@@ -208,13 +261,6 @@ export default function DashboardPage() {
     );
   }
 
-  const netGST = stats?.netGSTPayable ?? 0;
-  const profit = stats?.grossProfit ?? 0;
-  const revenue = stats?.totalRevenue || 0;
-  const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
-  const lowStockCount = lowStockProducts.length;
-  const businessName = getBusinessName();
-
   const statCards = [
     {
       label: 'Sales',
@@ -222,7 +268,7 @@ export default function DashboardPage() {
       note: `${stats?.salesCount || 0} invoices this month`,
       tone: 'money',
       href: '/sales',
-      icon: 'Sales',
+      icon: <MetricGlyph name="sales" />,
     },
     {
       label: 'Profit',
@@ -230,7 +276,7 @@ export default function DashboardPage() {
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
       tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
-      icon: 'Profit',
+      icon: <MetricGlyph name="profit" />,
     },
     {
       label: 'Credit',
@@ -238,7 +284,7 @@ export default function DashboardPage() {
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
       tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
       href: '/udhaar',
-      icon: 'Credit',
+      icon: <MetricGlyph name="credit" />,
     },
     {
       label: 'GST Payable',
@@ -246,7 +292,7 @@ export default function DashboardPage() {
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
       tone: 'warning',
       href: '/gst',
-      icon: 'GST',
+      icon: <MetricGlyph name="gst" />,
     },
   ];
 
@@ -288,7 +334,7 @@ export default function DashboardPage() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="form-input"
+                  className="form-input dashboard-period-select"
                   style={{ minWidth: 0, height: 44 }}
                 >
                   {MONTHS.map((month, index) => (
@@ -298,7 +344,7 @@ export default function DashboardPage() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="form-input"
+                  className="form-input dashboard-period-select"
                   style={{ minWidth: 0, height: 44 }}
                 >
                   {[2023, 2024, 2025, 2026].map((year) => (
@@ -318,6 +364,24 @@ export default function DashboardPage() {
             </div>
           </section>
         ) : null}
+
+        {lowStockCount > 0 && (
+          <section className="dashboard-low-stock-banner">
+            <div className="dashboard-low-stock-main">
+              <div className="dashboard-low-stock-icon" aria-hidden="true">⚠️</div>
+              <div className="dashboard-low-stock-copy">
+                <div className="dashboard-low-stock-title">Low Stock Alert</div>
+                <div className="dashboard-low-stock-text">
+                  {lowStockCount} item{lowStockCount > 1 ? 's' : ''} close to stockout - {lowStockProducts.slice(0, 3).map((product) => `${product.name} (${product.quantity ?? 0})`).join(', ')}
+                  {lowStockCount > 3 ? ` +${lowStockCount - 3} more` : ''}
+                </div>
+              </div>
+            </div>
+            <button type="button" className="btn-ghost dashboard-low-stock-cta" onClick={() => router.push('/product')}>
+              Open Products
+            </button>
+          </section>
+        )}
 
         <section className="dashboard-metric-grid">
           {statCards.map((card) => (
@@ -341,7 +405,28 @@ export default function DashboardPage() {
                 <div className="section-title">Profit Breakdown</div>
                 <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
               </div>
-              <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
+              <div className="dashboard-margin-ring-wrap" aria-label={`Profit margin ${margin}%`}>
+                <svg className="dashboard-margin-ring" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="dashboardMarginGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#5B4FC9" />
+                      <stop offset="100%" stopColor="#2563EB" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="28" cy="28" r="22" className="dashboard-margin-ring-track" />
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="22"
+                    className="dashboard-margin-ring-progress"
+                    style={{
+                      strokeDasharray: 138.23,
+                      strokeDashoffset: 138.23 - (138.23 * animatedMargin) / 100,
+                    }}
+                  />
+                </svg>
+                <div className="dashboard-margin-ring-center">{margin}%</div>
+              </div>
             </div>
 
             <div className="dashboard-breakdown-grid">
@@ -364,52 +449,36 @@ export default function DashboardPage() {
               ))}
             </div>
 
+            <div className="dashboard-gst-formula">
+              <div className="dashboard-gst-formula-row">
+                <span className="dashboard-gst-formula-label">GST Collected</span>
+                <strong className="dashboard-gst-formula-value">₹{fmt(stats?.gstCollected)}</strong>
+              </div>
+              <div className="dashboard-gst-formula-row">
+                <span className="dashboard-gst-formula-label">Less: ITC</span>
+                <strong className="dashboard-gst-formula-value dashboard-gst-formula-value-muted">₹{fmt(stats?.gstITC)}</strong>
+              </div>
+              <div className="dashboard-gst-formula-total">
+                <span className="dashboard-gst-formula-total-label">Net GST</span>
+                <strong className="dashboard-gst-formula-total-value">₹{fmt(netGST)}</strong>
+              </div>
+            </div>
+
             <div className="dashboard-margin-block">
               <div className="dashboard-margin-row">
                 <span>Profit Margin</span>
                 <strong style={{ color: profit >= 0 ? '#16a34a' : '#dc2626' }}>{margin}%</strong>
               </div>
-              <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
+              <div className="dashboard-progress-track">
                 <div
                   className="dashboard-progress-fill"
                   style={{
-                    width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
-                    height: '100%',
-                    borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #22c55e)' : 'linear-gradient(90deg, #dc2626, #f97316)',
+                    width: `${animatedMargin}%`,
                   }}
-                />
-              </div>
-            </div>
-          </section>
-        )}
-
-        {lowStockCount > 0 && (
-          <section
-            className="card dashboard-section-card dashboard-warning-card"
-            onClick={() => router.push('/product')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div>
-                <div className="section-title" style={{ color: '#b45309' }}>Low Stock</div>
-                <div className="section-subtitle" style={{ color: '#d97706' }}>
-                  {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                  {lowStockProducts.slice(0, 5).map((product) => (
-                    <span
-                      key={product._id}
-                      className="dashboard-chip-warning"
-                      style={{ padding: '7px 11px' }}
-                    >
-                      {product.name} ({product.quantity ?? 0})
-                    </span>
-                  ))}
-                  {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
+                >
+                  <span className="dashboard-progress-pulse" />
                 </div>
               </div>
-              <div className="btn-warning" style={{ width: 'auto' }}>Open Products</div>
             </div>
           </section>
         )}
@@ -423,34 +492,25 @@ export default function DashboardPage() {
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
           <div className="quick-actions-carousel">
-            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+            <div className="dashboard-actions-grid">
               {quickActions.map((action) => (
                 <a
                   key={action.href}
                   href={action.href}
                   className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: 18,
-                    padding: '14px 12px',
-                    minHeight: 94,
-                  }}
                 >
-                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
-                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
+                  <div className="dashboard-quick-main">
+                    <div className="dashboard-quick-icon" style={{ background: action.tone, color: action.color }}>
+                      <QuickActionGlyph name={action.icon} />
+                    </div>
+                    <div className="dashboard-quick-copy">
+                      <div className="dashboard-quick-title">{action.hi}</div>
+                      <div className="dashboard-quick-subtitle">{action.sub}</div>
                     </div>
                   </div>
+                  <div className="dashboard-quick-arrow"><ChevronRightGlyph /></div>
                 </a>
               ))}
-            </div>
-            <div className="quick-actions-fade" aria-hidden="true" />
-            <div className="quick-actions-chevron" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
             </div>
           </div>
         </section>
