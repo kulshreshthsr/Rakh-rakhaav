@@ -10,6 +10,123 @@ const MONTHS_HI = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'
 
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
+const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
+const sumTaxHeads = (records = []) => ({
+  cgst: round2(records.reduce((sum, record) => sum + Number(record?.cgst_amount || 0), 0)),
+  sgst: round2(records.reduce((sum, record) => sum + Number(record?.sgst_amount || 0), 0)),
+  igst: round2(records.reduce((sum, record) => sum + Number(record?.igst_amount || 0), 0)),
+});
+
+const applyCredit = (availableCredit, liabilities, fromHead, targets, utilization) => {
+  let remainingCredit = availableCredit[fromHead] || 0;
+
+  for (const target of targets) {
+    if (remainingCredit <= 0) break;
+    const usable = Math.min(remainingCredit, liabilities[target] || 0);
+    if (usable <= 0) continue;
+
+    liabilities[target] = round2(liabilities[target] - usable);
+    remainingCredit = round2(remainingCredit - usable);
+    utilization[fromHead][target] = round2((utilization[fromHead][target] || 0) + usable);
+  }
+
+  availableCredit[fromHead] = remainingCredit;
+};
+
+const calculateGSTR3BSummary = (sales = [], purchases = []) => {
+  const outputTax = sumTaxHeads(sales);
+  const inputCredit = sumTaxHeads(purchases);
+  const liabilities = { ...outputTax };
+  const remainingCredit = { ...inputCredit };
+  const utilization = {
+    igst: { igst: 0, cgst: 0, sgst: 0 },
+    cgst: { igst: 0, cgst: 0, sgst: 0 },
+    sgst: { igst: 0, cgst: 0, sgst: 0 },
+  };
+
+  applyCredit(remainingCredit, liabilities, 'igst', ['igst', 'cgst', 'sgst'], utilization);
+  applyCredit(remainingCredit, liabilities, 'cgst', ['cgst', 'igst'], utilization);
+  applyCredit(remainingCredit, liabilities, 'sgst', ['sgst', 'igst'], utilization);
+
+  return {
+    outward_taxable: round2(sales.reduce((sum, record) => sum + Number(record?.taxable_amount || 0), 0)),
+    output_gst: round2(outputTax.cgst + outputTax.sgst + outputTax.igst),
+    input_gst: round2(inputCredit.cgst + inputCredit.sgst + inputCredit.igst),
+    output_tax: outputTax,
+    input_tax_credit: inputCredit,
+    credit_utilized: utilization,
+    payable_by_head: {
+      cgst: round2(liabilities.cgst),
+      sgst: round2(liabilities.sgst),
+      igst: round2(liabilities.igst),
+    },
+    payable_total: round2(liabilities.cgst + liabilities.sgst + liabilities.igst),
+    excess_credit: {
+      cgst: round2(remainingCredit.cgst),
+      sgst: round2(remainingCredit.sgst),
+      igst: round2(remainingCredit.igst),
+    },
+    net_payable: round2(liabilities.cgst + liabilities.sgst + liabilities.igst),
+  };
+};
+
+const buildLocalGSTSummary = (sales = [], purchases = [], month, year) => {
+  const b2b = sales.filter((sale) => sale?.invoice_type === 'B2B');
+  const b2c = sales.filter((sale) => sale?.invoice_type !== 'B2B');
+  const salesTaxHeads = sumTaxHeads(sales);
+  const purchaseTaxHeads = sumTaxHeads(purchases);
+  const gstr3b = calculateGSTR3BSummary(sales, purchases);
+
+  return {
+    month: Number(month),
+    year: Number(year),
+    sales: {
+      total: sales.length,
+      taxable_amount: round2(sales.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
+      total_gst: round2(sales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0)),
+      cgst: salesTaxHeads.cgst,
+      sgst: salesTaxHeads.sgst,
+      igst: salesTaxHeads.igst,
+      total_amount: round2(sales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0)),
+      b2b_count: b2b.length,
+      b2c_count: b2c.length,
+      b2b_taxable: round2(b2b.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
+      b2c_taxable: round2(b2c.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
+    },
+    purchases: {
+      total: purchases.length,
+      taxable_amount: round2(purchases.reduce((sum, purchase) => sum + Number(purchase?.taxable_amount || 0), 0)),
+      total_gst: round2(purchases.reduce((sum, purchase) => sum + Number(purchase?.total_gst || 0), 0)),
+      cgst: purchaseTaxHeads.cgst,
+      sgst: purchaseTaxHeads.sgst,
+      igst: purchaseTaxHeads.igst,
+    },
+    gstr1: {
+      b2b_invoices: b2b.map((sale) => ({
+        invoice_number: sale.invoice_number,
+        date: sale.createdAt || sale.sold_at,
+        buyer_name: sale.buyer_name,
+        buyer_gstin: sale.buyer_gstin,
+        taxable_amount: round2(sale.taxable_amount),
+        gst_rate: sale.items?.length
+          ? [...new Set(sale.items.map((item) => item.gst_rate))].join('/')
+          : sale.gst_rate,
+        cgst: round2(sale.cgst_amount),
+        sgst: round2(sale.sgst_amount),
+        igst: round2(sale.igst_amount),
+        total: round2(sale.total_amount),
+        gst_type: sale.gst_type,
+      })),
+      b2c_summary: {
+        count: b2c.length,
+        taxable_amount: round2(b2c.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
+        total_gst: round2(b2c.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0)),
+        total_amount: round2(b2c.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0)),
+      },
+    },
+    gstr3b,
+  };
+};
 
 export default function GSTPage() {
   const router = useRouter();
@@ -27,12 +144,28 @@ export default function GSTPage() {
     setLoading(true);
     setDrillType(null);
     try {
-      const res = await fetch(apiUrl(`/api/sales/gst-summary?month=${month}&year=${year}`), {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (res.status === 401) { router.push('/login'); return; }
-      setSummary(await res.json());
-    } catch {}
+      const from = new Date(year, month - 1, 1).toISOString();
+      const to = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
+      const headers = { Authorization: `Bearer ${getToken()}` };
+      const [salesRes, purchasesRes] = await Promise.all([
+        fetch(apiUrl(`/api/sales?from=${from}&to=${to}`), { headers }),
+        fetch(apiUrl(`/api/purchases?from=${from}&to=${to}`), { headers }),
+      ]);
+
+      if (salesRes.status === 401 || purchasesRes.status === 401) {
+        router.push('/login');
+        return;
+      }
+
+      const salesPayload = salesRes.ok ? await salesRes.json() : { sales: [] };
+      const purchasesPayload = purchasesRes.ok ? await purchasesRes.json() : { purchases: [] };
+      const sales = Array.isArray(salesPayload?.sales) ? salesPayload.sales : [];
+      const purchases = Array.isArray(purchasesPayload?.purchases) ? purchasesPayload.purchases : [];
+
+      setSummary(buildLocalGSTSummary(sales, purchases, month, year));
+    } catch {
+      setSummary(null);
+    }
     setLoading(false);
   };
 

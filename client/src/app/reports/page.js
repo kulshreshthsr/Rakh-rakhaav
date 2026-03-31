@@ -27,11 +27,15 @@ const getRange = (filter) => {
   if (filter === 'week') {
     const start = new Date(today);
     start.setDate(today.getDate() - today.getDay());
-    return { from: start.toISOString(), to: new Date().toISOString(), label: 'This Week' };
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString(), label: 'This Week' };
   }
   if (filter === 'month') {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { from: start.toISOString(), to: new Date().toISOString(), label: 'This Month' };
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString(), label: 'This Month' };
   }
   return { from: null, to: null, label: 'All Time' };
 };
@@ -59,10 +63,15 @@ export default function ReportsPage() {
         fetch(apiUrl(`/api/sales/profit-summary${params}`), { headers }),
       ]);
 
-      const sData = await sRes.json();
-      const pData = await pRes.json();
-      const cData = await cRes.json();
-      const profitData = await profitRes.json();
+      if ([sRes.status, pRes.status, cRes.status, profitRes.status].includes(401)) {
+        router.push('/login');
+        return;
+      }
+
+      const sData = sRes.ok ? await sRes.json() : { sales: [] };
+      const pData = pRes.ok ? await pRes.json() : { purchases: [] };
+      const cData = cRes.ok ? await cRes.json() : [];
+      const profitData = profitRes.ok ? await profitRes.json() : {};
 
       const salesList = sData.sales || (Array.isArray(sData) ? sData : []);
       const purchasesList = pData.purchases || (Array.isArray(pData) ? pData : []);
