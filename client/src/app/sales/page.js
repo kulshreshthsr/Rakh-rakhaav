@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
@@ -322,7 +322,7 @@ export default function SalesPage() {
   const amountPaidInputRef = useRef(null);
   const buyerNameInputRef = useRef(null);
 
-  async function loadPendingOfflineSales() {
+  const loadPendingOfflineSales = useCallback(async () => {
     try {
       const queueItems = await getDisplayQueue();
 
@@ -374,9 +374,9 @@ export default function SalesPage() {
     } catch {
       return [];
     }
-  }
+  }, [products]);
 
-  async function mergeSalesWithPendingQueue(nextSales) {
+  const mergeSalesWithPendingQueue = useCallback(async (nextSales) => {
     try {
       const pendingOfflineSales = await loadPendingOfflineSales();
 
@@ -393,15 +393,9 @@ export default function SalesPage() {
     } catch {
       return nextSales;
     }
-  }
+  }, [loadPendingOfflineSales]);
 
-  async function fetchAll() {
-    setLoading(true);
-    await fetchSales();
-    setLoading(false);
-  }
-
-  async function fetchSales() {
+  const fetchSales = useCallback(async () => {
     try {
       const res = await fetch(apiUrl('/api/sales'), { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.status === 401) { router.push('/login'); return; }
@@ -413,9 +407,15 @@ export default function SalesPage() {
       setSummary(nextSummary);
       writePageCache(SALES_CACHE_KEY, { sales: mergedSales, summary: nextSummary });
     } catch { setError('Sales load nahi ho saki'); }
-  }
+  }, [mergeSalesWithPendingQueue, router]);
 
-  async function fetchProducts() {
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    await fetchSales();
+    setLoading(false);
+  }, [fetchSales]);
+
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch(apiUrl('/api/products'), { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
@@ -428,9 +428,8 @@ export default function SalesPage() {
         if (cached && cached.length > 0) setProducts(cached);
       }
     }
-  }
+  }, [isOnline]);
 
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(SALES_CACHE_KEY);
@@ -450,15 +449,12 @@ export default function SalesPage() {
     });
 
     return () => cancelDeferred(deferredId);
-  }, [router]);
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  }, [fetchAll, fetchProducts, mergeSalesWithPendingQueue, router]);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
     fetchProducts();
-  }, [showModal, products.length]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }, [fetchProducts, products.length, showModal]);
 
   useEffect(() => {
     if ((!showModal && !sales.length) || (shopName && shopState) || !localStorage.getItem('token')) return;
@@ -493,17 +489,18 @@ export default function SalesPage() {
     }, 2500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isOnline]);
+  }, [fetchSales, isOnline]);
 
   useEffect(() => {
     if (!products.length) {
-      return;
+      return undefined;
     }
 
     mergeSalesWithPendingQueue(sales).then((mergedSales) => {
       setSales(mergedSales);
     });
-  }, [products.length]);
+    return undefined;
+  }, [mergeSalesWithPendingQueue, products, sales]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !localStorage.getItem('token')) {
@@ -518,9 +515,8 @@ export default function SalesPage() {
     return () => {
       window.removeEventListener('offline-sync-complete', handleSyncComplete);
     };
-  }, []);
+  }, [fetchAll]);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -536,7 +532,6 @@ export default function SalesPage() {
     setShowModal(true);
     router.replace('/sales');
   }, [router]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const updateItem = (index, field, value) => {
     const updated = [...items];

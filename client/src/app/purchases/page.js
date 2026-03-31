@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
@@ -175,13 +175,7 @@ export default function PurchasesPage() {
   });
   const [purchaseStep, setPurchaseStep] = useState(0);
 
-  async function fetchAll() {
-    setLoading(true);
-    await fetchPurchases();
-    setLoading(false);
-  }
-
-  async function loadPendingOfflinePurchases() {
+  const loadPendingOfflinePurchases = useCallback(async () => {
     try {
       const queueItems = await getDisplayQueue();
 
@@ -237,9 +231,9 @@ export default function PurchasesPage() {
     } catch {
       return [];
     }
-  }
+  }, [products]);
 
-  async function mergePurchasesWithPendingQueue(nextPurchases) {
+  const mergePurchasesWithPendingQueue = useCallback(async (nextPurchases) => {
     try {
       const pendingOfflinePurchases = await loadPendingOfflinePurchases();
 
@@ -256,9 +250,9 @@ export default function PurchasesPage() {
     } catch {
       return nextPurchases;
     }
-  }
+  }, [loadPendingOfflinePurchases]);
 
-  async function fetchPurchases() {
+  const fetchPurchases = useCallback(async () => {
     try {
       const res = await fetch(apiUrl('/api/purchases'), {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -272,9 +266,15 @@ export default function PurchasesPage() {
       setSummary(nextSummary);
       writePageCache(PURCHASES_CACHE_KEY, { purchases: mergedPurchases, summary: nextSummary });
     } catch { setError('Purchases could not be loaded'); }
-  }
+  }, [mergePurchasesWithPendingQueue, router]);
 
-  async function fetchProducts() {
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    await fetchPurchases();
+    setLoading(false);
+  }, [fetchPurchases]);
+
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch(apiUrl('/api/products'), {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -289,9 +289,9 @@ export default function PurchasesPage() {
         if (cached && cached.length > 0) setProducts(cached);
       }
     }
-  }
+  }, [isOnline]);
 
-  async function fetchShopMeta() {
+  const fetchShopMeta = useCallback(async () => {
     try {
       const res = await fetch(apiUrl('/api/auth/shop'), {
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -299,9 +299,8 @@ export default function PurchasesPage() {
       const shop = await res.json();
       setShopState(shop.state || '');
     } catch {}
-  }
+  }, []);
 
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(PURCHASES_CACHE_KEY);
@@ -320,22 +319,17 @@ export default function PurchasesPage() {
     });
 
     return () => cancelDeferred(deferredId);
-  }, [router]);
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  }, [fetchAll, mergePurchasesWithPendingQueue, router]);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
     fetchProducts();
-  }, [showModal, products.length]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }, [fetchProducts, products.length, showModal]);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (shopState || !localStorage.getItem('token')) return;
     fetchShopMeta();
-  }, [shopState]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }, [fetchShopMeta, shopState]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -351,13 +345,14 @@ export default function PurchasesPage() {
 
   useEffect(() => {
     if (!products.length) {
-      return;
+      return undefined;
     }
 
     mergePurchasesWithPendingQueue(purchases).then((mergedPurchases) => {
       setPurchases(mergedPurchases);
     });
-  }, [products.length]);
+    return undefined;
+  }, [mergePurchasesWithPendingQueue, products, purchases]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !localStorage.getItem('token')) {
@@ -372,7 +367,7 @@ export default function PurchasesPage() {
     return () => {
       window.removeEventListener('offline-sync-complete', handleSyncComplete);
     };
-  }, []);
+  }, [fetchAll]);
 
   // â”€â”€ Item row handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const updateItem = (index, field, value) => {

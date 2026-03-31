@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
@@ -18,18 +18,9 @@ const NAV_ITEMS = [
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports', tone: 'reports'  },
 ];
 
-const DEVANAGARI_RE = /[\u0900-\u097F]/;
-
 function readStoredUser() {
   if (typeof window === 'undefined') return null;
   try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
-}
-
-function pickLocalizedSegment(text, locale) {
-  const parts = text.split('/').map(s => s.trim()).filter(Boolean);
-  if (parts.length < 2) return text;
-  if (locale === 'hi') return parts.find(s => DEVANAGARI_RE.test(s)) || parts[0];
-  return parts.find(s => !DEVANAGARI_RE.test(s)) || parts[parts.length - 1];
 }
 
 /* ─── Icons ──────────────────────────────── */
@@ -106,7 +97,7 @@ function LayoutInner({ children }) {
   const pathname = usePathname();
 
   /* ── Auth & subscription ─────────────── */
-  const refreshSubscription = async () => {
+  const refreshSubscription = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) return false;
     try {
@@ -129,16 +120,14 @@ function LayoutInner({ children }) {
       setRazorpayKeyId(data.razorpayKeyId || '');
       return true;
     } catch { return false; }
-  };
+  }, [router]);
 
-  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
     const id = window.setTimeout(refreshSubscription, 0);
     return () => window.clearTimeout(id);
-  }, [router]);
-  /* eslint-enable react-hooks/exhaustive-deps */
+  }, [refreshSubscription, router]);
 
   /* ── Scroll ──────────────────────────── */
   useEffect(() => {
@@ -163,38 +152,6 @@ function LayoutInner({ children }) {
     if (hasWelcomePending()) { router.replace('/welcome'); return; }
     if (subscription && !subscription.isPro && !hasTrialGateSeen()) router.replace('/trial-status');
   }, [pathname, router, subscription]);
-
-  /* ── Locale text walker ──────────────── */
-  useEffect(() => {
-    const root = document.querySelector('.app-shell-root');
-    if (!root) return;
-
-    const skip = (node) => {
-      const p = node.parentElement;
-      return !p || !!p.closest('script, style, svg, option') || p.hasAttribute('data-locale-ignore');
-    };
-
-    const apply = (node) => {
-      if (node.nodeType !== Node.TEXT_NODE || !node.nodeValue?.includes('/') || skip(node)) return;
-      node.__rakhaavOriginalText ??= node.nodeValue;
-      node.nodeValue = pickLocalizedSegment(node.__rakhaavOriginalText, locale);
-    };
-
-    const walk = (root) => {
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      while (walker.nextNode()) apply(walker.currentNode);
-    };
-
-    walk(root);
-
-    const observer = new MutationObserver(mutations =>
-      mutations.forEach(m =>
-        m.addedNodes.forEach(n => n.nodeType === Node.TEXT_NODE ? apply(n) : n.nodeType === Node.ELEMENT_NODE && walk(n))
-      )
-    );
-    observer.observe(root, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [locale]);
 
   /* ── Actions ─────────────────────────── */
   const logout = () => {

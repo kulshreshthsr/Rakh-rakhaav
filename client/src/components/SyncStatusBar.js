@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useOfflineSync from '../hooks/useOfflineSync';
 
 const bannerBaseStyle = {
@@ -32,22 +32,16 @@ const actionButtonStyle = {
 export default function SyncStatusBar() {
   const { isOnline, isSyncing, pendingCount, lastSyncResult, syncNow, syncError } =
     useOfflineSync();
-  const [dots, setDots] = useState('.');
-  const [visibleToast, setVisibleToast] = useState(null);
-  const [toastVisible, setToastVisible] = useState(false);
+  const [syncTick, setSyncTick] = useState(0);
+  const [dismissedToastAt, setDismissedToastAt] = useState(null);
 
   useEffect(() => {
     if (!isSyncing || typeof window === 'undefined') {
-      setDots('.');
       return undefined;
     }
 
-    const frames = ['.', '..', '...'];
-    let index = 0;
-
     const intervalId = window.setInterval(() => {
-      index = (index + 1) % frames.length;
-      setDots(frames[index]);
+      setSyncTick((current) => current + 1);
     }, 500);
 
     return () => {
@@ -60,17 +54,23 @@ export default function SyncStatusBar() {
       return undefined;
     }
 
-    setVisibleToast(lastSyncResult);
-    setToastVisible(true);
-
     const timeoutId = window.setTimeout(() => {
-      setToastVisible(false);
+      setDismissedToastAt(lastSyncResult.completedAt);
     }, 4000);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
   }, [lastSyncResult]);
+
+  const dots = useMemo(() => {
+    if (!isSyncing) {
+      return '.';
+    }
+
+    const frames = ['.', '..', '...'];
+    return frames[syncTick % frames.length];
+  }, [isSyncing, syncTick]);
 
   const shouldHideAll =
     isOnline === true &&
@@ -159,7 +159,11 @@ export default function SyncStatusBar() {
     );
   }
 
-  const shouldShowToast = visibleToast && toastVisible;
+  const shouldShowToast = Boolean(
+    lastSyncResult &&
+    lastSyncResult.completedAt &&
+    dismissedToastAt !== lastSyncResult.completedAt
+  );
 
   return (
     <>
@@ -178,8 +182,8 @@ export default function SyncStatusBar() {
             fontWeight: 600,
             boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
             zIndex: 9999,
-            transform: toastVisible ? 'translateY(0)' : 'translateY(16px)',
-            opacity: toastVisible ? 1 : 0,
+            transform: 'translateY(0)',
+            opacity: 1,
             transition: 'transform 220ms ease, opacity 220ms ease',
             display: 'flex',
             alignItems: 'center',
@@ -187,11 +191,11 @@ export default function SyncStatusBar() {
           }}
         >
           <span>
-            {visibleToast.failed === 0
-              ? `${visibleToast.synced} entries synced successfully`
-              : `${visibleToast.synced} synced, ${visibleToast.failed} failed - retry karein?`}
+            {lastSyncResult.failed === 0
+              ? `${lastSyncResult.synced} entries synced successfully`
+              : `${lastSyncResult.synced} synced, ${lastSyncResult.failed} failed - retry karein?`}
           </span>
-          {visibleToast.failed > 0 ? (
+          {lastSyncResult.failed > 0 ? (
             <button type="button" onClick={() => syncNow()} style={actionButtonStyle}>
               Retry
             </button>

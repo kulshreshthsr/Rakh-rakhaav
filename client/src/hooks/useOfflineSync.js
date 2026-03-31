@@ -54,7 +54,10 @@ function useOfflineSync() {
       const afterStatus = await getSyncStatus();
 
       if ((result?.synced || 0) > 0 || (result?.failed || 0) > 0) {
-        setLastSyncResult(result);
+        setLastSyncResult({
+          ...result,
+          completedAt: Date.now(),
+        });
       } else {
         setLastSyncResult(null);
       }
@@ -148,7 +151,9 @@ function useOfflineSync() {
       return undefined;
     }
 
-    refreshPendingCount();
+    const initialRefreshId = window.setTimeout(() => {
+      refreshPendingCount();
+    }, 0);
 
     const onOnline = async () => {
       setIsOnline(true);
@@ -170,6 +175,7 @@ function useOfflineSync() {
     navigator.serviceWorker?.addEventListener('message', handleSWMessage);
 
     return () => {
+      window.clearTimeout(initialRefreshId);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
       navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
