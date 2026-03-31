@@ -18,6 +18,24 @@ const PURCHASES_CACHE_KEY = 'purchases-page';
 const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 const normalizeState = (value = '') => value.trim().toLowerCase();
 const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
+const formatDateInputValue = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const getDefaultPurchaseDateValue = () => formatDateInputValue(new Date());
+const getPurchaseRecordDateISO = (value, referenceValue = new Date()) => {
+  if (!value) return new Date().toISOString();
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return new Date().toISOString();
+  const nextDate = new Date(referenceValue);
+  if (Number.isNaN(nextDate.getTime())) return new Date().toISOString();
+  nextDate.setFullYear(year, month - 1, day);
+  return nextDate.toISOString();
+};
 const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   day: '2-digit',
   month: 'short',
@@ -162,6 +180,7 @@ export default function PurchasesPage() {
     amount_paid: '',
     supplier_name: '', supplier_phone: '', supplier_gstin: '',
     supplier_address: '', supplier_state: '', notes: '',
+    purchase_date: getDefaultPurchaseDateValue(),
   });
   const [showInlineProductForm, setShowInlineProductForm] = useState(false);
   const [inlineProductRowIndex, setInlineProductRowIndex] = useState(0);
@@ -566,6 +585,7 @@ export default function PurchasesPage() {
           supplier_gstin: gstinValue,
           supplier_address: form.supplier_address,
           supplier_state: form.supplier_state,
+          purchase_date: form.purchase_date,
           notes: form.notes,
         };
 
@@ -598,7 +618,7 @@ export default function PurchasesPage() {
           payment_type: form.payment_type,
           supplier_name: form.supplier_name,
           supplier_phone: form.supplier_phone,
-          createdAt: new Date().toISOString(),
+          createdAt: getPurchaseRecordDateISO(form.purchase_date),
           _isOffline: true,
         }, ...prev]);
 
@@ -619,6 +639,7 @@ export default function PurchasesPage() {
         supplier_gstin: gstinValue,
         supplier_address: form.supplier_address,
         supplier_state: form.supplier_state,
+        purchase_date: form.purchase_date,
         notes: form.notes,
       };
 
@@ -636,7 +657,7 @@ export default function PurchasesPage() {
       if (res.ok) {
         setShowModal(false);
         setItems([emptyItem()]);
-        setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '' });
+        setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue() });
         setGstinTouched(false);
         fetchPurchases();
       } else {
@@ -699,7 +720,7 @@ export default function PurchasesPage() {
     setShowModal(false);
     setError('');
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '' });
+    setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue() });
     setPurchaseStep(0);
     setGstinTouched(false);
     resetInlineProductForm();
@@ -734,6 +755,7 @@ export default function PurchasesPage() {
       supplier_address: purchase.supplier_address || '',
       supplier_state: purchase.supplier_state || '',
       notes: purchase.notes || '',
+      purchase_date: formatDateInputValue(purchase.createdAt || purchase.purchased_at || new Date()),
     });
     setPurchaseStep(0);
     setGstinTouched(false);
@@ -1398,6 +1420,15 @@ export default function PurchasesPage() {
                 </div>
 
                 <div className="grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Purchase Date</label>
+                    <input
+                      className="form-input"
+                      type="date"
+                      value={form.purchase_date}
+                      onChange={e => updateForm({ purchase_date: e.target.value })}
+                    />
+                  </div>
                   <div className="form-group">
                     <label className="form-label">Supplier State</label>
                     <select className="form-input" value={form.supplier_state}

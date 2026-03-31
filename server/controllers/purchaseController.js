@@ -69,8 +69,8 @@ const getFinancialYear = (date = new Date()) => {
   return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
 };
 
-const generateBillNumber = async (shopId, session = null) => {
-  const financialYear = getFinancialYear();
+const generateBillNumber = async (shopId, session = null, invoiceDate = new Date()) => {
+  const financialYear = getFinancialYear(invoiceDate);
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'purchase', financial_year: financialYear },
     { $inc: { last_number: 1 } },
@@ -89,6 +89,22 @@ const normalizeOfflineOperationId = (value = '') => {
   return normalized || null;
 };
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
+const parsePurchaseDateInput = (value, referenceDate = new Date()) => {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const [, year, month, day] = match;
+      const nextDate = new Date(referenceDate);
+      if (Number.isNaN(nextDate.getTime())) return null;
+      nextDate.setUTCFullYear(Number(year), Number(month) - 1, Number(day));
+      return nextDate;
+    }
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 const getStateFromGstin = (gstin = '') => GST_STATE_CODE_MAP[normalizeGstin(gstin).slice(0, 2)] || '';
 
 const calculateGST = (taxable_amount, gst_rate, shopState, supplierState) => {
@@ -264,6 +280,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
     supplier_address, supplier_state,
     payment_type = 'cash',
     amount_paid = 0,
+    purchase_date,
     notes,
   } = payload;
 
@@ -284,6 +301,11 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
     throw new Error('Invalid GSTIN format');
   }
   const resolvedSupplierState = getStateFromGstin(normalizedSupplierGstin) || supplier_state || '';
+  const parsedPurchaseDate = parsePurchaseDateInput(purchase_date, existingPurchase?.createdAt || new Date());
+  if (purchase_date && !parsedPurchaseDate) {
+    throw new Error('Invalid purchase date');
+  }
+  const purchaseDate = parsedPurchaseDate || existingPurchase?.createdAt || new Date();
   const requestedAmountPaid = Number(amount_paid || 0);
   if (!Number.isFinite(requestedAmountPaid) || requestedAmountPaid < 0) {
     throw new Error('Invalid amount paid');
@@ -357,7 +379,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
       gst_rate: firstItem.gst_rate,
       gst_type: firstItem.gst_type,
       invoice_type: normalizedSupplierGstin ? 'B2B' : 'B2C',
-      invoice_number: invoiceNumber || existingPurchase?.invoice_number || await generateBillNumber(shop._id, session),
+      invoice_number: invoiceNumber || existingPurchase?.invoice_number || await generateBillNumber(shop._id, session, purchaseDate),
       taxable_amount: totalTaxable,
       cgst_amount: round2(totalCGST),
       sgst_amount: round2(totalSGST),
@@ -372,6 +394,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
       supplier_address: supplier_address || '',
       supplier_state: resolvedSupplierState,
       notes,
+      createdAt: purchaseDate,
     },
   };
 };
@@ -439,7 +462,8 @@ const createPurchase = async (req, res) => {
           return;
         }
       }
-      const invoiceNumber = await generateBillNumber(shop._id, session);
+      const parsedPurchaseDate = parsePurchaseDateInput(req.body?.purchase_date, new Date()) || new Date();
+      const invoiceNumber = await generateBillNumber(shop._id, session, parsedPurchaseDate);
       const { data, itemNames } = await buildPurchaseRecordData({
         shop,
         payload: req.body,
