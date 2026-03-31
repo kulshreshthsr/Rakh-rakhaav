@@ -387,7 +387,7 @@ export default function ProductsPage() {
         ) : (
           <>
           {/* Desktop table */}
-          <div className="table-container hidden-xs">
+          <div className="table-container hidden min-[641px]:block">
             <table>
               <thead>
                 <tr>
@@ -451,7 +451,7 @@ export default function ProductsPage() {
           </div>
 
           {/* Mobile cards */}
-          <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex flex-col gap-3 min-[641px]:hidden">
             {filtered.map(p => (
               <div key={p._id} className="card"
                 style={{ borderLeft: `3px solid ${p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#10b981'}` }}>

@@ -858,7 +858,7 @@ export default function PurchasesPage() {
         ) : (
           <>
           {/* Desktop table */}
-          <div className="table-container hidden-xs">
+          <div className="table-container hidden min-[641px]:block">
             <table>
               <thead>
                 <tr>
@@ -969,7 +969,7 @@ export default function PurchasesPage() {
           </div>
 
           {/* Mobile cards */}
-          <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex flex-col gap-3 min-[641px]:hidden">
             {purchases.map(p => (
               <div key={p._id} className="card"
                 data-purchase-anchor={p._id}

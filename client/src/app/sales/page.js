@@ -1006,7 +1006,7 @@ export default function SalesPage() {
         ) : (
           <>
           {/* Desktop table */}
-          <div className="table-container hidden-xs">
+          <div className="table-container hidden min-[641px]:block">
             <table>
               <thead>
                 <tr>
@@ -1103,7 +1103,7 @@ export default function SalesPage() {
           </div>
 
           {/* Mobile cards */}
-          <div className="show-xs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex flex-col gap-3 min-[641px]:hidden">
             {sales.map(s => (
               <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
