@@ -443,27 +443,6 @@ export default function ProfilePage() {
             </form>
           </div>
         </section>
-
-        <style>{`
-          @media (max-width: 900px) {
-            .profile-two-col {
-              grid-template-columns: 1fr;
-            }
-          }
-
-          @media (max-width: 640px) {
-            .profile-hero-header {
-              align-items: flex-start !important;
-            }
-
-            .profile-hero-tiles {
-              width: 100%;
-              display: grid !important;
-              grid-template-columns: repeat(3, minmax(0, 1fr));
-              gap: 8px !important;
-            }
-          }
-        `}</style>
       </div>
     </Layout>
   );

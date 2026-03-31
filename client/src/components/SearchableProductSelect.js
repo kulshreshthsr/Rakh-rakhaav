@@ -353,13 +353,6 @@ export default function SearchableProductSelect({
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes dropFadeIn {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

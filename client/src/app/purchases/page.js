@@ -1494,19 +1494,6 @@ export default function PurchasesPage() {
           </div>
         </div>
       )}
-
-      <style>{`
-        .purchases-shell .purchases-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
-        .purchases-shell .card[style*='borderLeft'] { background: #ffffff !important; }
-        .purchases-shell .purchase-row-highlight {
-          background: rgba(55, 48, 163, 0.08) !important;
-          outline: 2px solid rgba(55, 48, 163, 0.18);
-          outline-offset: -2px;
-        }
-
-        @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
-        @media (min-width: 641px) { .show-xs { display: none !important; } }
-      `}</style>
     </Layout>
   );
 }

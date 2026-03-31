@@ -812,14 +812,6 @@ export default function ProductsPage() {
         onClose={() => setShowBarcodeScanner(false)}
         onDetected={handleBarcodeDetected}
       />
-
-      <style>{`
-        .product-shell .product-hero { border: 1px solid rgba(186, 230, 253, 0.8); }
-        .product-shell .card[style*='borderLeft'] { background: #ffffff !important; }
-
-        @media (max-width: 640px) { .hidden-xs { display: none !important; } .show-xs { display: flex !important; } }
-        @media (min-width: 641px) { .show-xs { display: none !important; } }
-      `}</style>
     </Layout>
   );
 }

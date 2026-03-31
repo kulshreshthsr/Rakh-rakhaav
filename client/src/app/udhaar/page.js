@@ -484,39 +484,6 @@ export default function UdhaarPage() {
           </div>
         ) : null}
       </div>
-      <style>{`
-        .ledger-shell .ledger-hero { border: 1px solid rgba(191, 219, 254, 0.85); }
-
-        .ledger-shell .ledger-detail-card {
-          margin-top: 12px;
-        }
-
-        .ledger-shell .ui-list-card:hover {
-          border-color: rgba(59, 130, 246, 0.28);
-        }
-
-        .ledger-shell .ledger-empty-state {
-          min-height: 52vh;
-          display: grid;
-          place-items: center;
-          align-content: center;
-          gap: 10px;
-          text-align: center;
-          padding: 28px 20px;
-        }
-
-        .ledger-shell .ledger-empty-illustration {
-          width: 88px;
-          height: 88px;
-          border-radius: 28px;
-          display: grid;
-          place-items: center;
-          background: linear-gradient(180deg, #ffffff, #f8fafc);
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
-          margin-bottom: 2px;
-        }
-      `}</style>
     </Layout>
   );
 }

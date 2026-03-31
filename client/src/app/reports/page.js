@@ -416,29 +416,6 @@ export default function ReportsPage() {
           </>
         )}
       </div>
-
-      <style>{`
-        .reports-shell .reports-hero { border: 1px solid rgba(186, 230, 253, 0.8); }
-
-        .reports-shell .reports-filter-pills {
-          align-items: center;
-        }
-
-        .reports-shell .stack-row {
-          background: linear-gradient(180deg, #ffffff, #f8fbff);
-          border: 1px solid rgba(203, 213, 225, 0.78);
-        }
-
-        .reports-shell .reports-split-grid {
-          align-items: start;
-        }
-
-        @media (max-width: 640px) {
-          .reports-profit-card .ui-data-row-value {
-            font-size: 16px;
-          }
-        }
-      `}</style>
     </Layout>
   );
 }
