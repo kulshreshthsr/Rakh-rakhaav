@@ -6,7 +6,7 @@ import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
-import { getQueue, queueSale, removeQueuedOperation } from '../../lib/offlineQueue';
+import { getDisplayQueue, queueSale, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 import { apiUrl } from '../../lib/api';
 
@@ -150,6 +150,16 @@ const getStateFromGstin = (gstin) => {
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
 const QUICK_QUANTITY_OPTIONS = [1, 2, 5, 10];
+
+const getOfflineBadgeMeta = (status) => {
+  if (status === 'syncing') {
+    return { label: 'Syncing...', background: '#dbeafe', color: '#1d4ed8' };
+  }
+  if (status === 'failed') {
+    return { label: 'Sync failed', background: '#fee2e2', color: '#b91c1c' };
+  }
+  return { label: 'Sync pending', background: '#f59e0b', color: '#000' };
+};
 
 const numberToWords = (num) => {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -295,7 +305,7 @@ export default function SalesPage() {
 
   async function loadPendingOfflineSales() {
     try {
-      const queueItems = await getQueue();
+      const queueItems = await getDisplayQueue();
 
       if (!Array.isArray(queueItems) || queueItems.length === 0) {
         return [];
@@ -320,6 +330,8 @@ export default function SalesPage() {
           return {
             _id: operation.id,
             invoice_number: operation.tempId,
+            _queueStatus: operation.status || 'pending',
+            _queueError: operation.error || '',
             items: queuedItems.map((item) => {
               const product = products.find((prod) => prod._id === item.product_id);
 
@@ -978,19 +990,29 @@ export default function SalesPage() {
                     <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>
                       {s.invoice_number}
                       {s._isOffline && (
+                        (() => {
+                          const badge = getOfflineBadgeMeta(s._queueStatus);
+                          return (
                         <span style={{
                           display: 'block',
                           fontSize: 9,
-                          background: '#f59e0b',
-                          color: '#000',
+                          background: badge.background,
+                          color: badge.color,
                           padding: '1px 6px',
                           borderRadius: 20,
                           fontWeight: 700,
                           marginTop: 2,
                         }}>
-                          ⏳ Sync pending
+                          {badge.label}
                         </span>
+                          );
+                        })()
                       )}
+                      {s._isOffline && s._queueError ? (
+                        <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 160 }}>
+                          {s._queueError}
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
@@ -1061,19 +1083,29 @@ export default function SalesPage() {
                     </div>
                     <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
                     {s._isOffline && (
+                      (() => {
+                        const badge = getOfflineBadgeMeta(s._queueStatus);
+                        return (
                       <span style={{
                         display: 'block',
                         fontSize: 9,
-                        background: '#f59e0b',
-                        color: '#000',
+                        background: badge.background,
+                        color: badge.color,
                         padding: '1px 6px',
                         borderRadius: 20,
                         fontWeight: 700,
                         marginTop: 2,
                       }}>
-                        ⏳ Sync pending
+                        {badge.label}
                       </span>
+                        );
+                      })()
                     )}
+                    {s._isOffline && s._queueError ? (
+                      <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 180 }}>
+                        {s._queueError}
+                      </div>
+                    ) : null}
                     {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
                     )}

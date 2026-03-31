@@ -2,6 +2,7 @@ import {
   addToQueue,
   deleteQueueItem,
   getDB,
+  getAllQueueItems,
   getPendingQueue,
   updateQueueItem,
 } from './offlineDB';
@@ -136,10 +137,35 @@ export async function getQueueCount() {
       return 0;
     }
 
-    const queue = await getPendingQueue();
-    return Array.isArray(queue) ? queue.length : 0;
+    const queue = await getAllQueueItems();
+    if (!Array.isArray(queue)) {
+      return 0;
+    }
+
+    return queue.filter(
+      (item) => item?.status === 'pending' || item?.status === 'syncing' || item?.status === 'failed'
+    ).length;
   } catch {
     return 0;
+  }
+}
+
+export async function getDisplayQueue() {
+  try {
+    if (!isBrowser()) {
+      return [];
+    }
+
+    const queue = await getAllQueueItems();
+    if (!Array.isArray(queue)) {
+      return [];
+    }
+
+    return queue.filter(
+      (item) => item?.status === 'pending' || item?.status === 'syncing' || item?.status === 'failed'
+    );
+  } catch {
+    return [];
   }
 }
 

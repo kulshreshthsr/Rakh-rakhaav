@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
-import { getQueue, queuePurchase, removeQueuedOperation } from '../../lib/offlineQueue';
+import { getDisplayQueue, queuePurchase, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 import { apiUrl } from '../../lib/api';
 
@@ -109,6 +109,16 @@ const buildPurchaseWhatsAppMessage = (purchase) => {
   ].join('\n');
 };
 
+const getOfflineBadgeMeta = (status) => {
+  if (status === 'syncing') {
+    return { label: 'Syncing...', background: '#dbeafe', color: '#1d4ed8' };
+  }
+  if (status === 'failed') {
+    return { label: 'Sync failed', background: '#fee2e2', color: '#b91c1c' };
+  }
+  return { label: 'Sync pending', background: '#f59e0b', color: '#000' };
+};
+
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
@@ -155,7 +165,7 @@ export default function PurchasesPage() {
 
   async function loadPendingOfflinePurchases() {
     try {
-      const queueItems = await getQueue();
+      const queueItems = await getDisplayQueue();
 
       if (!Array.isArray(queueItems) || queueItems.length === 0) {
         return [];
@@ -182,6 +192,8 @@ export default function PurchasesPage() {
           return {
             _id: operation.id,
             invoice_number: operation.tempId,
+            _queueStatus: operation.status || 'pending',
+            _queueError: operation.error || '',
             items: queuedItems.map((item) => {
               const product = products.find((prod) => prod._id === item.product_id);
 
@@ -836,19 +848,29 @@ export default function PurchasesPage() {
                     <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>
                       {p.invoice_number}
                       {p._isOffline && (
+                        (() => {
+                          const badge = getOfflineBadgeMeta(p._queueStatus);
+                          return (
                         <span style={{
                           display: 'block',
                           fontSize: 9,
-                          background: '#f59e0b',
-                          color: '#000',
+                          background: badge.background,
+                          color: badge.color,
                           padding: '1px 6px',
                           borderRadius: 20,
                           fontWeight: 700,
                           marginTop: 2,
                         }}>
-                          ⏳ Sync pending
+                          {badge.label}
                         </span>
+                          );
+                        })()
                       )}
+                      {p._isOffline && p._queueError ? (
+                        <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 160 }}>
+                          {p._queueError}
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
@@ -928,19 +950,29 @@ export default function PurchasesPage() {
                     </div>
                     <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>{p.invoice_number}</div>
                     {p._isOffline && (
+                      (() => {
+                        const badge = getOfflineBadgeMeta(p._queueStatus);
+                        return (
                       <span style={{
                         display: 'block',
                         fontSize: 9,
-                        background: '#f59e0b',
-                        color: '#000',
+                        background: badge.background,
+                        color: badge.color,
                         padding: '1px 6px',
                         borderRadius: 20,
                         fontWeight: 700,
                         marginTop: 2,
                       }}>
-                        ⏳ Sync pending
+                        {badge.label}
                       </span>
+                        );
+                      })()
                     )}
+                    {p._isOffline && p._queueError ? (
+                      <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 180 }}>
+                        {p._queueError}
+                      </div>
+                    ) : null}
                     {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>}
                   </div>
                   <div style={{ textAlign: 'right' }}>

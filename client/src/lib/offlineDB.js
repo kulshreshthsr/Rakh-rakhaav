@@ -107,6 +107,28 @@ export async function getPendingQueue() {
   }
 }
 
+export async function getAllQueueItems() {
+  try {
+    if (!isBrowser()) {
+      return null;
+    }
+
+    const db = await getDB();
+
+    if (!db) {
+      return null;
+    }
+
+    const items = await db.getAll(OFFLINE_QUEUE_STORE);
+
+    return items.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function updateQueueItem(id, patch) {
   try {
     if (!isBrowser()) {
