@@ -116,8 +116,26 @@ const getOfflineBadgeMeta = (status) => {
   if (status === 'failed') {
     return { label: 'Sync failed', background: '#fee2e2', color: '#b91c1c' };
   }
+  if (status === 'abandoned') {
+    return { label: 'Sync retry needed', background: '#fde68a', color: '#92400e' };
+  }
   return { label: 'Sync pending', background: '#f59e0b', color: '#000' };
 };
+
+const buildOfflinePurchaseItems = (rawItems, products) => (
+  (rawItems || []).map((item) => {
+    const product = products.find((prod) => prod._id === item.product_id);
+    return {
+      product_id: item.product_id,
+      product: item.product_id,
+      quantity: Number(item.quantity || 0),
+      price_per_unit: Number(item.price_per_unit || 0),
+      product_name: product?.name || item.product_name || 'Product',
+      hsn_code: product?.hsn_code || item.hsn_code || '',
+      gst_rate: Number(item.gst_rate ?? product?.gst_rate ?? 0),
+    };
+  }).filter((item) => item.product_id && item.quantity > 0)
+);
 
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
@@ -178,12 +196,12 @@ export default function PurchasesPage() {
             ? operation.payload.items
             : [];
           const taxableAmount = queuedItems.reduce((sum, item) => {
-            return sum + parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
+            return sum + Number(item.quantity || 0) * Number(item.price_per_unit || 0);
           }, 0);
           const totalGst = queuedItems.reduce((sum, item) => {
             const product = products.find((prod) => prod._id === item.product_id);
-            const taxable = parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
-            const gstRate = product?.gst_rate || 0;
+            const taxable = Number(item.quantity || 0) * Number(item.price_per_unit || 0);
+            const gstRate = Number(item.gst_rate ?? product?.gst_rate ?? 0);
             return sum + (taxable * gstRate) / 100;
           }, 0);
           const amountPaid = Number(operation?.payload?.amount_paid || 0);
@@ -196,19 +214,14 @@ export default function PurchasesPage() {
             _queueError: operation.error || '',
             items: queuedItems.map((item) => {
               const product = products.find((prod) => prod._id === item.product_id);
-
               return {
-                product_name: product?.name || 'Product',
+                product_name: item.product_name || product?.name || 'Product',
                 quantity: item.quantity,
                 price_per_unit: item.price_per_unit,
-                total_amount: parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0),
+                total_amount: Number(item.quantity || 0) * Number(item.price_per_unit || 0),
               };
             }),
-            product_name: (() => {
-              const firstItem = queuedItems[0];
-              const product = products.find((prod) => prod._id === firstItem?.product_id);
-              return product?.name || 'Product';
-            })(),
+            product_name: queuedItems[0]?.product_name || products.find((prod) => prod._id === queuedItems[0]?.product_id)?.name || 'Product',
             total_amount: totalAmount,
             taxable_amount: taxableAmount,
             total_gst: totalGst,
@@ -345,6 +358,21 @@ export default function PurchasesPage() {
       setPurchases(mergedPurchases);
     });
   }, [products.length]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !localStorage.getItem('token')) {
+      return undefined;
+    }
+
+    const handleSyncComplete = () => {
+      fetchAll();
+    };
+
+    window.addEventListener('offline-sync-complete', handleSyncComplete);
+    return () => {
+      window.removeEventListener('offline-sync-complete', handleSyncComplete);
+    };
+  }, []);
 
   // â”€â”€ Item row handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const updateItem = (index, field, value) => {
@@ -531,8 +559,9 @@ export default function PurchasesPage() {
 
     if (!isOnline) {
       try {
+        const offlineItems = buildOfflinePurchaseItems(validItems, products);
         const payload = {
-          items: validItems,
+          items: offlineItems,
           payment_type: form.payment_type,
           amount_paid: form.payment_type === 'credit'
             ? (amountPaidNum || 0)
@@ -545,7 +574,7 @@ export default function PurchasesPage() {
           notes: form.notes,
         };
 
-        const operation = await queuePurchase(payload, validItems);
+        const operation = await queuePurchase(payload, offlineItems);
         if (!operation) {
           throw new Error('Unable to save purchase offline');
         }
@@ -555,22 +584,13 @@ export default function PurchasesPage() {
         setPurchases(prev => [{
           _id: operation.id,
           invoice_number: operation.tempId,
-          items: validItems.map(i => {
-            const prod = products.find(p => p._id === i.product_id);
-            return {
-              product_name: prod?.name || 'Product',
-              quantity: i.quantity,
-              price_per_unit: i.price_per_unit,
-              total_amount: parseFloat(i.quantity) *
-                            parseFloat(i.price_per_unit),
-            };
-          }),
-          product_name: (() => {
-            const prod = products.find(
-              p => p._id === validItems[0]?.product_id
-            );
-            return prod?.name || 'Product';
-          })(),
+          items: offlineItems.map((item) => ({
+            product_name: item.product_name,
+            quantity: item.quantity,
+            price_per_unit: item.price_per_unit,
+            total_amount: Number(item.quantity) * Number(item.price_per_unit),
+          })),
+          product_name: offlineItems[0]?.product_name || 'Product',
           total_amount: billTotals.total,
           taxable_amount: billTotals.taxable,
           total_gst: billTotals.gst,

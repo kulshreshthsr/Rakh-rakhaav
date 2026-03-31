@@ -57,6 +57,7 @@ const purchaseSchema = new mongoose.Schema({
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true },
+  offline_operation_id: { type: String, default: null },
   notes: { type: String },
 
 }, { timestamps: true });
@@ -64,6 +65,11 @@ const purchaseSchema = new mongoose.Schema({
 purchaseSchema.index(
   { shop: 1, invoice_number: 1 },
   { unique: true }
+);
+
+purchaseSchema.index(
+  { shop: 1, offline_operation_id: 1 },
+  { unique: true, sparse: true }
 );
 
 // Auto-set payment_status before save

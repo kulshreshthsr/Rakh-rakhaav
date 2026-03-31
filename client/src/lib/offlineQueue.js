@@ -8,6 +8,7 @@ import {
 } from './offlineDB';
 
 const OFFLINE_QUEUE_STORE = 'offline-queue';
+const DISPLAYABLE_QUEUE_STATUSES = ['pending', 'syncing', 'failed', 'abandoned'];
 
 function isBrowser() {
   return typeof window !== 'undefined';
@@ -122,10 +123,9 @@ export async function markFailed(id, errorMessage) {
     }
 
     const retryCount = (existingItem.retryCount || 0) + 1;
-    const status = retryCount >= 3 ? 'abandoned' : 'failed';
 
     return await updateQueueItem(id, {
-      status,
+      status: 'failed',
       error: errorMessage,
       retryCount,
     });
@@ -145,9 +145,7 @@ export async function getQueueCount() {
       return 0;
     }
 
-    return queue.filter(
-      (item) => item?.status === 'pending' || item?.status === 'syncing' || item?.status === 'failed'
-    ).length;
+    return queue.filter((item) => DISPLAYABLE_QUEUE_STATUSES.includes(item?.status)).length;
   } catch {
     return 0;
   }
@@ -164,9 +162,7 @@ export async function getDisplayQueue() {
       return [];
     }
 
-    return queue.filter(
-      (item) => item?.status === 'pending' || item?.status === 'syncing' || item?.status === 'failed'
-    );
+    return queue.filter((item) => DISPLAYABLE_QUEUE_STATUSES.includes(item?.status));
   } catch {
     return [];
   }

@@ -65,16 +65,32 @@ function useOfflineSync() {
         (result?.failed || 0) === 0
       ) {
         const stuckCount =
-          (afterStatus?.pending || 0) + (afterStatus?.syncing || 0) + (afterStatus?.failed || 0);
+          (afterStatus?.pending || 0) +
+          (afterStatus?.syncing || 0) +
+          (afterStatus?.failed || 0) +
+          (afterStatus?.abandoned || 0);
         const hadWorkBefore =
-          (beforeStatus?.pending || 0) + (beforeStatus?.syncing || 0) + (beforeStatus?.failed || 0);
+          (beforeStatus?.pending || 0) +
+          (beforeStatus?.syncing || 0) +
+          (beforeStatus?.failed || 0) +
+          (beforeStatus?.abandoned || 0);
 
         if (stuckCount > 0 || hadWorkBefore > 0) {
           setSyncError('Pending entries abhi sync nahi hui. Retry karein.');
         }
       } else if ((result?.failed || 0) > 0) {
         setSyncError('Kuch entries sync nahi hui. Retry karein.');
+      } else {
+        setSyncError(null);
       }
+
+      window.dispatchEvent(new CustomEvent('offline-sync-complete', {
+        detail: {
+          result,
+          remainingCount,
+          afterStatus,
+        },
+      }));
 
       setSyncingState(false);
       return result;

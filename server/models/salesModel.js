@@ -65,6 +65,7 @@ const saleSchema = new mongoose.Schema({
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true },
+  offline_operation_id: { type: String, default: null },
   notes: { type: String },
 
 }, { timestamps: true });
@@ -74,6 +75,11 @@ saleSchema.path('createdAt').immutable(false);
 saleSchema.index(
   { shop: 1, invoice_number: 1 },
   { unique: true }
+);
+
+saleSchema.index(
+  { shop: 1, offline_operation_id: 1 },
+  { unique: true, sparse: true }
 );
 
 saleSchema.pre('save', async function () {

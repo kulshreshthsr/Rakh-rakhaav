@@ -158,8 +158,27 @@ const getOfflineBadgeMeta = (status) => {
   if (status === 'failed') {
     return { label: 'Sync failed', background: '#fee2e2', color: '#b91c1c' };
   }
+  if (status === 'abandoned') {
+    return { label: 'Sync retry needed', background: '#fde68a', color: '#92400e' };
+  }
   return { label: 'Sync pending', background: '#f59e0b', color: '#000' };
 };
+
+const buildOfflineSaleItems = (rawItems, products) => (
+  (rawItems || []).map((item) => {
+    const product = products.find((prod) => prod._id === item.product_id);
+    return {
+      product_id: item.product_id,
+      product: item.product_id,
+      quantity: Number(item.quantity || 0),
+      price_per_unit: Number(item.price_per_unit || 0),
+      product_name: product?.name || item.product_name || 'Product',
+      hsn_code: product?.hsn_code || item.hsn_code || '',
+      gst_rate: Number(item.gst_rate ?? product?.gst_rate ?? 0),
+      cost_price: Number(item.cost_price ?? product?.cost_price ?? 0),
+    };
+  }).filter((item) => item.product_id && item.quantity > 0)
+);
 
 const numberToWords = (num) => {
   const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
@@ -318,12 +337,12 @@ export default function SalesPage() {
             ? operation.payload.items
             : [];
           const taxableAmount = queuedItems.reduce((sum, item) => {
-            return sum + parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
+            return sum + Number(item.quantity || 0) * Number(item.price_per_unit || 0);
           }, 0);
           const totalGst = queuedItems.reduce((sum, item) => {
             const product = products.find((prod) => prod._id === item.product_id);
-            const taxable = parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0);
-            const gstRate = product?.gst_rate || 0;
+            const taxable = Number(item.quantity || 0) * Number(item.price_per_unit || 0);
+            const gstRate = Number(item.gst_rate ?? product?.gst_rate ?? 0);
             return sum + (taxable * gstRate) / 100;
           }, 0);
 
@@ -334,19 +353,14 @@ export default function SalesPage() {
             _queueError: operation.error || '',
             items: queuedItems.map((item) => {
               const product = products.find((prod) => prod._id === item.product_id);
-
               return {
-                product_name: product?.name || 'Product',
+                product_name: item.product_name || product?.name || 'Product',
                 quantity: item.quantity,
                 price_per_unit: item.price_per_unit,
-                total_amount: parseFloat(item.quantity || 0) * parseFloat(item.price_per_unit || 0),
+                total_amount: Number(item.quantity || 0) * Number(item.price_per_unit || 0),
               };
             }),
-            product_name: (() => {
-              const firstItem = queuedItems[0];
-              const product = products.find((prod) => prod._id === firstItem?.product_id);
-              return product?.name || 'Product';
-            })(),
+            product_name: queuedItems[0]?.product_name || products.find((prod) => prod._id === queuedItems[0]?.product_id)?.name || 'Product',
             total_amount: taxableAmount + totalGst,
             taxable_amount: taxableAmount,
             total_gst: totalGst,
@@ -490,6 +504,21 @@ export default function SalesPage() {
       setSales(mergedSales);
     });
   }, [products.length]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !localStorage.getItem('token')) {
+      return undefined;
+    }
+
+    const handleSyncComplete = () => {
+      fetchAll();
+    };
+
+    window.addEventListener('offline-sync-complete', handleSyncComplete);
+    return () => {
+      window.removeEventListener('offline-sync-complete', handleSyncComplete);
+    };
+  }, []);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -684,7 +713,16 @@ export default function SalesPage() {
       }
 
       try {
-        const operation = await queueSale(form, validItems);
+        const offlineItems = buildOfflineSaleItems(validItems, products);
+        const operation = await queueSale(
+          {
+            ...form,
+            buyer_gstin: gstinValue,
+            sale_date: form.sale_date,
+            amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total,
+          },
+          offlineItems
+        );
         if (!operation) {
           throw new Error('Unable to save sale offline');
         }
@@ -693,14 +731,11 @@ export default function SalesPage() {
         setSales(prev => [{
           _id: operation.id,
           invoice_number: operation.tempId,
-          items: validItems.map(i => {
-            const prod = products.find(p => p._id === i.product_id);
-            return {
-              product_name: prod?.name || 'Product',
-              quantity: i.quantity,
-              total_amount: parseFloat(i.quantity) * parseFloat(i.price_per_unit),
-            };
-          }),
+          items: offlineItems.map((item) => ({
+            product_name: item.product_name,
+            quantity: item.quantity,
+            total_amount: Number(item.quantity) * Number(item.price_per_unit),
+          })),
           total_amount: billTotals.total,
           taxable_amount: billTotals.taxable,
           total_gst: billTotals.gst,

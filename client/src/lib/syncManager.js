@@ -49,7 +49,10 @@ async function syncSale(operation) {
         Authorization: `Bearer ${getToken()}`,
       },
       signal: controller.signal,
-      body: JSON.stringify(operation?.payload),
+      body: JSON.stringify({
+        ...(operation?.payload || {}),
+        offline_operation_id: operation?.id,
+      }),
     });
     if (response.ok) {
       return {
@@ -115,7 +118,10 @@ async function syncPurchase(operation) {
         Authorization: `Bearer ${getToken()}`,
       },
       signal: controller.signal,
-      body: JSON.stringify(operation?.payload),
+      body: JSON.stringify({
+        ...(operation?.payload || {}),
+        offline_operation_id: operation?.id,
+      }),
     });
     if (response.ok) {
       return {
@@ -197,11 +203,12 @@ export async function syncQueue() {
         await markSynced(operation.id);
         synced += 1;
       } catch (error) {
-        await markFailed(operation.id, error?.message || 'NETWORK_ERROR');
-
-        if (error?.message === 'AUTH_EXPIRED') {
-          await updateQueueItem(operation.id, { status: 'abandoned' });
-        }
+        await markFailed(
+          operation.id,
+          error?.message === 'AUTH_EXPIRED'
+            ? 'Login expired. Dobara login karke sync karein.'
+            : (error?.message || 'NETWORK_ERROR')
+        );
 
         failed += 1;
       }
@@ -254,9 +261,7 @@ export async function retryfailed() {
     const items = await getAllQueueItems();
     const retryableItems = items.filter(
       (item) =>
-        item?.status === 'failed' &&
-        item?.error !== 'AUTH_EXPIRED' &&
-        (item?.retryCount || 0) < 3
+        item?.status === 'failed' || item?.status === 'abandoned'
     );
 
     for (const item of retryableItems) {

@@ -85,6 +85,10 @@ const generateInvoiceNumber = async (shopId, session = null, invoiceDate = new D
 
 const normalizeState = (value = '') => value.trim().toLowerCase();
 const normalizeGstin = (value = '') => String(value).replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
+const normalizeOfflineOperationId = (value = '') => {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+};
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
 const parseSaleDateInput = (value, referenceDate = new Date()) => {
   if (!value) return null;
@@ -406,8 +410,8 @@ const buildSaleRecordData = async ({
       throw new Error(`${product.name}: sirf ${product.quantity} stock available hai`);
     }
 
-    const cost = product.cost_price || 0;
-    const gst_rate = product.gst_rate || 0;
+    const cost = Number.isFinite(Number(item.cost_price)) ? Number(item.cost_price) : (product.cost_price || 0);
+    const gst_rate = Number.isFinite(Number(item.gst_rate)) ? Number(item.gst_rate) : (product.gst_rate || 0);
     const taxable = parseFloat((qty * ppu).toFixed(2));
     const gstCalc = calculateGST(taxable, gst_rate, shop.state, resolvedBuyerState);
     const lineTotal = parseFloat((taxable + gstCalc.total_gst).toFixed(2));
@@ -423,8 +427,8 @@ const buildSaleRecordData = async ({
 
     resolvedItems.push({
       product: product._id,
-      product_name: product.name,
-      hsn_code: product.hsn_code,
+      product_name: item.product_name || product.name,
+      hsn_code: item.hsn_code || product.hsn_code,
       quantity: qty,
       price_per_unit: ppu,
       cost_price: cost,
@@ -527,9 +531,21 @@ const createSale = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let createdSaleId;
+    const offlineOperationId = normalizeOfflineOperationId(req.body?.offline_operation_id);
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      if (offlineOperationId) {
+        const existingSale = await Sale.findOne({
+          shop: shop._id,
+          offline_operation_id: offlineOperationId,
+        }).session(session);
+
+        if (existingSale) {
+          createdSaleId = existingSale._id;
+          return;
+        }
+      }
       const { data, itemNames } = await buildSaleRecordData({
         shop,
         payload: req.body,
@@ -541,6 +557,7 @@ const createSale = async (req, res) => {
       const createdSales = await Sale.create([{
         ...data,
         shop: shop._id,
+        offline_operation_id: offlineOperationId,
       }], { session });
 
       const createdSale = createdSales[0];
@@ -715,6 +732,16 @@ const createSale = async (req, res) => {
 
     res.status(201).json(sale);
   } catch (err) {
+    if (err?.code === 11000 && req.body?.offline_operation_id) {
+      const shop = await getOrCreateShop(req.user.id);
+      const existingSale = await Sale.findOne({
+        shop: shop._id,
+        offline_operation_id: normalizeOfflineOperationId(req.body.offline_operation_id),
+      }).populate('customer', 'name phone gstin');
+      if (existingSale) {
+        return res.status(200).json(existingSale);
+      }
+    }
     console.error('createSale error:', err);
     res.status(500).json({ message: err.message });
   } finally {

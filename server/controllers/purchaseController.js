@@ -84,6 +84,10 @@ const generateBillNumber = async (shopId, session = null) => {
 
 const normalizeState = (value = '') => value.trim().toLowerCase();
 const normalizeGstin = (value = '') => String(value).replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
+const normalizeOfflineOperationId = (value = '') => {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+};
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
 const getStateFromGstin = (gstin = '') => GST_STATE_CODE_MAP[normalizeGstin(gstin).slice(0, 2)] || '';
 
@@ -306,7 +310,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
     if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(ppu) || ppu < 0) {
       throw new Error(`Invalid quantity or price for ${product.name}`);
     }
-    const gst_rate = product.gst_rate || 0;
+    const gst_rate = Number.isFinite(Number(item.gst_rate)) ? Number(item.gst_rate) : (product.gst_rate || 0);
     const taxable = parseFloat((qty * ppu).toFixed(2));
     const gstCalc = calculateGST(taxable, gst_rate, shop.state, resolvedSupplierState);
     const lineTotal = parseFloat((taxable + gstCalc.total_gst).toFixed(2));
@@ -320,8 +324,8 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
 
     resolvedItems.push({
       product: product._id,
-      product_name: product.name,
-      hsn_code: product.hsn_code,
+      product_name: item.product_name || product.name,
+      hsn_code: item.hsn_code || product.hsn_code,
       quantity: qty,
       price_per_unit: ppu,
       gst_rate,
@@ -420,9 +424,21 @@ const createPurchase = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let createdPurchaseId;
+    const offlineOperationId = normalizeOfflineOperationId(req.body?.offline_operation_id);
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      if (offlineOperationId) {
+        const existingPurchase = await Purchase.findOne({
+          shop: shop._id,
+          offline_operation_id: offlineOperationId,
+        }).session(session);
+
+        if (existingPurchase) {
+          createdPurchaseId = existingPurchase._id;
+          return;
+        }
+      }
       const invoiceNumber = await generateBillNumber(shop._id, session);
       const { data, itemNames } = await buildPurchaseRecordData({
         shop,
@@ -436,6 +452,7 @@ const createPurchase = async (req, res) => {
       const createdPurchases = await Purchase.create([{
         ...data,
         shop: shop._id,
+        offline_operation_id: offlineOperationId,
       }], { session });
 
       const createdPurchase = createdPurchases[0];
@@ -641,6 +658,16 @@ const createPurchase = async (req, res) => {
 
     res.status(201).json(purchase);
   } catch (err) {
+    if (err?.code === 11000 && req.body?.offline_operation_id) {
+      const shop = await getOrCreateShop(req.user.id);
+      const existingPurchase = await Purchase.findOne({
+        shop: shop._id,
+        offline_operation_id: normalizeOfflineOperationId(req.body.offline_operation_id),
+      }).populate('supplier', 'name phone gstin');
+      if (existingPurchase) {
+        return res.status(200).json(existingPurchase);
+      }
+    }
     console.error('createPurchase error:', err);
     res.status(500).json({ message: err.message });
   } finally {
