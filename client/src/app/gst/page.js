@@ -11,11 +11,70 @@ const MONTHS_HI = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
-const sumTaxHeads = (records = []) => ({
-  cgst: round2(records.reduce((sum, record) => sum + Number(record?.cgst_amount || 0), 0)),
-  sgst: round2(records.reduce((sum, record) => sum + Number(record?.sgst_amount || 0), 0)),
-  igst: round2(records.reduce((sum, record) => sum + Number(record?.igst_amount || 0), 0)),
-});
+const getRecordGstRate = (record = {}) => {
+  if (record?.items?.length) {
+    const itemRate = Number(record.items.find((item) => Number(item?.gst_rate || 0) > 0)?.gst_rate || 0);
+    if (itemRate > 0) return itemRate;
+  }
+
+  return Number(record?.gst_rate || 0);
+};
+
+const getRecordGstType = (record = {}) => {
+  if (record?.gst_type === 'IGST' || record?.gst_type === 'CGST_SGST') {
+    return record.gst_type;
+  }
+
+  if (Number(record?.igst_amount || 0) > 0) return 'IGST';
+  return 'CGST_SGST';
+};
+
+const getRecordInvoiceType = (record = {}, kind = 'sale') => {
+  if (record?.invoice_type === 'B2B' || record?.invoice_type === 'B2C') {
+    return record.invoice_type;
+  }
+
+  const gstin = kind === 'sale' ? record?.buyer_gstin : record?.supplier_gstin;
+  return gstin ? 'B2B' : 'B2C';
+};
+
+const getRecordTaxHeads = (record = {}) => {
+  const directCgst = Number(record?.cgst_amount || 0);
+  const directSgst = Number(record?.sgst_amount || 0);
+  const directIgst = Number(record?.igst_amount || 0);
+
+  if (directCgst || directSgst || directIgst) {
+    return {
+      cgst: round2(directCgst),
+      sgst: round2(directSgst),
+      igst: round2(directIgst),
+    };
+  }
+
+  const totalGst = Number(record?.total_gst || 0);
+  if (!totalGst) {
+    return { cgst: 0, sgst: 0, igst: 0 };
+  }
+
+  if (getRecordGstType(record) === 'IGST') {
+    return { cgst: 0, sgst: 0, igst: round2(totalGst) };
+  }
+
+  const half = round2(totalGst / 2);
+  return {
+    cgst: half,
+    sgst: round2(totalGst - half),
+    igst: 0,
+  };
+};
+
+const sumTaxHeads = (records = []) => records.reduce((acc, record) => {
+  const heads = getRecordTaxHeads(record);
+  acc.cgst = round2(acc.cgst + heads.cgst);
+  acc.sgst = round2(acc.sgst + heads.sgst);
+  acc.igst = round2(acc.igst + heads.igst);
+  return acc;
+}, { cgst: 0, sgst: 0, igst: 0 });
 
 const applyCredit = (availableCredit, liabilities, fromHead, targets, utilization) => {
   let remainingCredit = availableCredit[fromHead] || 0;
@@ -71,32 +130,60 @@ const calculateGSTR3BSummary = (sales = [], purchases = []) => {
 };
 
 const buildLocalGSTSummary = (sales = [], purchases = [], month, year) => {
-  const b2b = sales.filter((sale) => sale?.invoice_type === 'B2B');
-  const b2c = sales.filter((sale) => sale?.invoice_type !== 'B2B');
-  const salesTaxHeads = sumTaxHeads(sales);
-  const purchaseTaxHeads = sumTaxHeads(purchases);
-  const gstr3b = calculateGSTR3BSummary(sales, purchases);
+  const normalizedSales = sales.map((sale) => {
+    const taxHeads = getRecordTaxHeads(sale);
+    return {
+      ...sale,
+      invoice_type: getRecordInvoiceType(sale, 'sale'),
+      gst_type: getRecordGstType(sale),
+      gst_rate: getRecordGstRate(sale),
+      cgst_amount: taxHeads.cgst,
+      sgst_amount: taxHeads.sgst,
+      igst_amount: taxHeads.igst,
+      total_gst: round2(sale?.total_gst || taxHeads.cgst + taxHeads.sgst + taxHeads.igst),
+    };
+  });
+
+  const normalizedPurchases = purchases.map((purchase) => {
+    const taxHeads = getRecordTaxHeads(purchase);
+    return {
+      ...purchase,
+      invoice_type: getRecordInvoiceType(purchase, 'purchase'),
+      gst_type: getRecordGstType(purchase),
+      gst_rate: getRecordGstRate(purchase),
+      cgst_amount: taxHeads.cgst,
+      sgst_amount: taxHeads.sgst,
+      igst_amount: taxHeads.igst,
+      total_gst: round2(purchase?.total_gst || taxHeads.cgst + taxHeads.sgst + taxHeads.igst),
+    };
+  });
+
+  const b2b = normalizedSales.filter((sale) => sale?.invoice_type === 'B2B');
+  const b2c = normalizedSales.filter((sale) => sale?.invoice_type !== 'B2B');
+  const salesTaxHeads = sumTaxHeads(normalizedSales);
+  const purchaseTaxHeads = sumTaxHeads(normalizedPurchases);
+  const gstr3b = calculateGSTR3BSummary(normalizedSales, normalizedPurchases);
 
   return {
     month: Number(month),
     year: Number(year),
     sales: {
-      total: sales.length,
-      taxable_amount: round2(sales.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
-      total_gst: round2(sales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0)),
+      total: normalizedSales.length,
+      taxable_amount: round2(normalizedSales.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
+      total_gst: round2(normalizedSales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0)),
       cgst: salesTaxHeads.cgst,
       sgst: salesTaxHeads.sgst,
       igst: salesTaxHeads.igst,
-      total_amount: round2(sales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0)),
+      total_amount: round2(normalizedSales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0)),
       b2b_count: b2b.length,
       b2c_count: b2c.length,
       b2b_taxable: round2(b2b.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
       b2c_taxable: round2(b2c.reduce((sum, sale) => sum + Number(sale?.taxable_amount || 0), 0)),
     },
     purchases: {
-      total: purchases.length,
-      taxable_amount: round2(purchases.reduce((sum, purchase) => sum + Number(purchase?.taxable_amount || 0), 0)),
-      total_gst: round2(purchases.reduce((sum, purchase) => sum + Number(purchase?.total_gst || 0), 0)),
+      total: normalizedPurchases.length,
+      taxable_amount: round2(normalizedPurchases.reduce((sum, purchase) => sum + Number(purchase?.taxable_amount || 0), 0)),
+      total_gst: round2(normalizedPurchases.reduce((sum, purchase) => sum + Number(purchase?.total_gst || 0), 0)),
       cgst: purchaseTaxHeads.cgst,
       sgst: purchaseTaxHeads.sgst,
       igst: purchaseTaxHeads.igst,
