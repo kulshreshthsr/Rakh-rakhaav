@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
@@ -42,11 +42,6 @@ const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
-});
-const formatPurchaseDateShort = (value) => new Date(value).toLocaleDateString('en-IN', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
 });
 const GST_STATE_CODE_MAP = {
   '01': 'Jammu & Kashmir',
@@ -164,7 +159,6 @@ export default function PurchasesPage() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({});
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -774,112 +768,16 @@ export default function PurchasesPage() {
     const map = {
       cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
       credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
-      pending:{ bg: '#fef3c7', color: '#92400e', label: 'Pending' },
       upi:    { bg: '#ede9fe', color: '#5b21b6', label: 'UPI' },
       bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
     };
     const s = map[type] || map.cash;
     return (
-      <span className="purchase-payment-badge" style={{ background: s.bg, color: s.color }}>
+      <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
         {s.label}
       </span>
     );
   };
-
-  const PurchaseBadge = ({ purchase }) => {
-    const statusType = Number(purchase?.balance_due || 0) > 0
-      ? 'pending'
-      : purchase?.payment_type;
-
-    return <PayBadge type={statusType} />;
-  };
-
-  const PurchaseMetricIcon = ({ kind }) => {
-    const commonProps = {
-      width: 22,
-      height: 22,
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      strokeWidth: 1.9,
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      'aria-hidden': true,
-    };
-
-    if (kind === 'spend') {
-      return (
-        <svg {...commonProps}>
-          <path d="M12 3v18" />
-          <path d="m18 9-6 6-6-6" />
-        </svg>
-      );
-    }
-
-    if (kind === 'itc') {
-      return (
-        <svg {...commonProps}>
-          <path d="M20 6 9 17l-5-5" />
-        </svg>
-      );
-    }
-
-    return (
-      <svg {...commonProps}>
-        <path d="M3 10h18" />
-        <path d="M5 10V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2" />
-        <path d="M5 10h14v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8Z" />
-        <path d="M9 14h6" />
-      </svg>
-    );
-  };
-
-  const PurchaseActionIcon = ({ kind }) => {
-    const commonProps = {
-      width: 15,
-      height: 15,
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      strokeWidth: 1.9,
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      'aria-hidden': true,
-    };
-
-    if (kind === 'edit') {
-      return (
-        <svg {...commonProps}>
-          <path d="M12 20h9" />
-          <path d="m16.5 3.5 4 4L8 20l-5 1 1-5 12.5-12.5Z" />
-        </svg>
-      );
-    }
-
-    return (
-      <svg {...commonProps}>
-        <path d="M3 6h18" />
-        <path d="M8 6V4h8v2" />
-        <path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" />
-        <path d="M10 11v6" />
-        <path d="M14 11v6" />
-      </svg>
-    );
-  };
-
-  const PurchaseMetricCard = ({ kind, title, value, note, action }) => (
-    <div className={`purchase-metric-card purchase-metric-card-${kind}`}>
-      <div className="purchase-metric-head">
-        <div className="purchase-metric-label">{title}</div>
-        <div className="purchase-metric-icon-shell">
-          <PurchaseMetricIcon kind={kind} />
-        </div>
-      </div>
-      <div className="purchase-metric-value">{value}</div>
-      <div className="purchase-metric-note">{note}</div>
-      {action}
-    </div>
-  );
 
   const pendingOfflinePurchases = purchases.filter((purchase) => purchase?._isOffline);
   const offlinePurchaseValue = pendingOfflinePurchases.reduce((sum, purchase) => sum + Number(purchase?.total_amount || 0), 0);
@@ -888,93 +786,44 @@ export default function PurchasesPage() {
   const totalSpendDisplay = Number(summary.totalPurchaseValue || 0) + offlinePurchaseValue;
   const totalItcDisplay = Number(summary.totalITC || 0) + offlineItc;
   const totalDueDisplay = Number(summary.totalDue || 0) + offlineDue;
-  const visiblePurchases = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    const nextPurchases = term
-      ? purchases.filter((purchase) => {
-          const productText = purchase.items && purchase.items.length > 1
-            ? purchase.items.map((item) => item.product_name).join(' ')
-            : purchase.product_name || '';
-          const haystack = [
-            productText,
-            purchase.invoice_number,
-            purchase.supplier_name,
-          ].join(' ').toLowerCase();
-          return haystack.includes(term);
-        })
-      : [...purchases];
-
-    nextPurchases.sort((a, b) => new Date(b.createdAt || b.purchased_at || 0) - new Date(a.createdAt || a.purchased_at || 0));
-
-    return nextPurchases;
-  }, [purchases, searchTerm]);
-  const recentPurchases = visiblePurchases.slice(0, 4);
 
   return (
     <Layout>
       <div className="page-shell purchases-shell">
-        <section className="card purchases-hero">
-          <div className="page-toolbar purchases-hero-toolbar">
-            <div className="purchases-hero-copy">
+        <section className="card">
+          <div className="page-toolbar">
+            <div>
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Purchases</div>
-              <div className="purchases-hero-subtitle">Manage supplier transactions</div>
+              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
             </div>
-            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary purchases-record-button">
-              <span aria-hidden="true">+</span>
-              <span>Record Purchase</span>
+            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
+              + Record Purchase
             </button>
           </div>
         </section>
 
-        <section className="purchase-metric-grid">
-          <PurchaseMetricCard
-            kind="spend"
-            title="Spend"
-            value={`₹${totalSpendDisplay.toFixed(2)}`}
-            note="Purchase outflow"
-          />
-          <PurchaseMetricCard
-            kind="itc"
-            title="ITC"
-            value={`₹${totalItcDisplay.toFixed(2)}`}
-            note="ITC available"
-          />
-          <PurchaseMetricCard
-            kind="due"
-            title="Due"
-            value={`₹${totalDueDisplay.toFixed(2)}`}
-            note="Supplier credit outstanding"
-            action={totalDueDisplay > 0 ? (
+        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Total Spend</div>
+            <div className="metric-value" style={{ color: '#b45309' }}>₹{totalSpendDisplay.toFixed(2)}</div>
+            <div className="metric-note">Purchase outflow</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Input GST</div>
+            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{totalItcDisplay.toFixed(2)}</div>
+            <div className="metric-note">ITC available</div>
+          </div>
+          <div className="metric-card" style={{ cursor: 'default' }}>
+            <div className="metric-label">Balance Due</div>
+            <div className="metric-value" style={{ color: totalDueDisplay > 0 ? '#dc2626' : '#0f766e' }}>₹{totalDueDisplay.toFixed(2)}</div>
+            <div className="metric-note">Supplier credit outstanding</div>
+            {totalDueDisplay > 0 ? (
               <button
                 type="button"
                 onClick={focusPendingPurchase}
-                className="purchase-due-action"
+                style={{ marginTop: 10, padding: 0, border: 'none', background: 'none', color: '#3730a3', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
               >
-                Review due
-              </button>
-            ) : null}
-          />
-        </section>
-
-        <section className="card purchase-filter-bar">
-          <div className="purchase-filter-toolbar">
-            <div className="purchase-search-wrap">
-              <span className="purchase-search-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m20 20-3.5-3.5" />
-                </svg>
-              </span>
-              <input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by product, supplier, reference..."
-                className="form-input purchase-search-input"
-              />
-            </div>
-            {searchTerm ? (
-              <button type="button" className="btn-ghost purchase-search-clear" onClick={() => setSearchTerm('')}>
-                Clear
+                Pay Now
               </button>
             ) : null}
           </div>
@@ -1001,84 +850,215 @@ export default function PurchasesPage() {
               <div key={index} className="skeleton" style={{ height: 72 }} />
             ))}
           </div>
-        ) : visiblePurchases.length === 0 ? (
+        ) : purchases.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">PO</div>
-            <div>{purchases.length ? 'No purchases match this filter.' : 'No purchases yet.'}</div>
+            <div>No purchases yet.</div>
           </div>
         ) : (
           <>
-          <section className="purchase-list">
-            {recentPurchases.map((p) => {
-              const accentColor = '#f59e0b';
-              const title = p.items && p.items.length > 1
-                ? p.items.map((item) => item.product_name).join(', ')
-                : p.product_name;
-              const offlineBadge = p._isOffline ? getOfflineBadgeMeta(p._queueStatus) : null;
-
-              return (
-                <article
-                  key={p._id}
-                  data-purchase-anchor={p._id}
-                  className={`purchase-entry-card${highlightedPurchaseId === p._id ? ' is-highlighted' : ''}`}
-                  style={{ borderLeftColor: accentColor }}
-                >
-                  <div className="purchase-entry-top">
-                    <div className="purchase-entry-copy">
-                      <div className="purchase-entry-title-row">
-                        <div className="purchase-entry-title">{title}</div>
-                      </div>
-                      <div className="purchase-entry-meta-line">
-                        <span className="purchase-entry-reference">Reference: {p.invoice_number}</span>
-                        <span className="purchase-entry-date">Date: {formatPurchaseDateShort(p.createdAt || p.purchased_at)}</span>
-                      </div>
-                    </div>
-                    <div className="purchase-entry-amount-wrap">
-                      <div className="purchase-entry-amount">₹{(p.total_amount || 0).toFixed(2)}</div>
-                      {offlineBadge ? (
-                        <span
-                          className="purchase-offline-badge"
-                          style={{ background: offlineBadge.background, color: offlineBadge.color }}
-                        >
-                          {offlineBadge.label}
+          {/* Desktop table */}
+          <div className="table-container hidden min-[641px]:block">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bill No.</th>
+                  <th>Product</th>
+                  <th>Items</th>
+                  <th>Taxable</th>
+                  <th>GST (ITC)</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Balance Due</th>
+                  <th>Payment</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {purchases.map(p => (
+                  <tr
+                    key={p._id}
+                    data-purchase-anchor={p._id}
+                    className={highlightedPurchaseId === p._id ? 'purchase-row-highlight' : ''}
+                  >
+                    <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>
+                      {p.invoice_number}
+                      {p._isOffline && (
+                        (() => {
+                          const badge = getOfflineBadgeMeta(p._queueStatus);
+                          return (
+                        <span style={{
+                          display: 'block',
+                          fontSize: 9,
+                          background: badge.background,
+                          color: badge.color,
+                          padding: '1px 6px',
+                          borderRadius: 20,
+                          fontWeight: 700,
+                          marginTop: 2,
+                        }}>
+                          {badge.label}
                         </span>
-                      ) : (
-                        <PurchaseBadge purchase={p} />
+                          );
+                        })()
                       )}
+                      {p._isOffline && p._queueError ? (
+                        <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 160 }}>
+                          {p._queueError}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
+                        {/* Show all item names if multi-item */}
+                        {p.items && p.items.length > 1
+                          ? p.items.map(i => i.product_name).join(', ')
+                          : p.product_name}
+                      </div>
+                      {p.supplier_name && (
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>
+                      )}
+                    </td>
+                    <td style={{ fontSize: 12, color: '#6b7280' }}>
+                      {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
+                    </td>
+                    <td>₹{(p.taxable_amount || 0).toFixed(2)}</td>
+                    <td>
+                      {p.total_gst > 0
+                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
+                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>â€”</span>}
+                    </td>
+                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
+                    <td style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
+                    <td>
+                      {(p.balance_due || 0) > 0
+                        ? <span style={{ color: '#ef4444', fontWeight: 700 }}>₹{p.balance_due.toFixed(2)}</span>
+                        : <span style={{ color: '#10b981' }}>Paid</span>}
+                    </td>
+                    <td><PayBadge type={p.payment_type} /></td>
+                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
+                      {formatFullDateTime(p.createdAt)}
+                    </td>
+                    <td>
+                      {p.supplier_phone ? (
+                        <button
+                          onClick={() => sendPurchaseWhatsApp(p)}
+                          className="action-soft whatsapp"
+                          style={{ borderRadius: 999, padding: '6px 10px', marginRight: 6, background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}
+                        >
+                          WhatsApp
+                        </button>
+                      ) : null}
+                      <button onClick={() => startEditPurchase(p)}
+                        disabled={Boolean(p._isOffline)}
+                        className="action-soft edit"
+                        style={{ borderRadius: 999, padding: '6px 10px', opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
+                        Edit
+                      </button>
+                      <button onClick={() => handleDelete(p)}
+                        className="action-soft delete"
+                        style={{ borderRadius: 999, padding: '6px 10px' }}>
+                        {p._isOffline ? 'Remove' : 'Delete'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="flex flex-col gap-3 min-[641px]:hidden">
+            {purchases.map(p => (
+              <div key={p._id} className="card"
+                data-purchase-anchor={p._id}
+                style={{
+                  borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#f59e0b'}`,
+                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(55, 48, 163, 0.22), 0 18px 32px rgba(55, 48, 163, 0.12)' : undefined,
+                  transition: 'box-shadow 0.2s ease',
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
+                      {p.items && p.items.length > 1
+                        ? `${p.items.length} products`
+                        : p.product_name}
                     </div>
+                    <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>{p.invoice_number}</div>
+                    {p._isOffline && (
+                      (() => {
+                        const badge = getOfflineBadgeMeta(p._queueStatus);
+                        return (
+                      <span style={{
+                        display: 'block',
+                        fontSize: 9,
+                        background: badge.background,
+                        color: badge.color,
+                        padding: '1px 6px',
+                        borderRadius: 20,
+                        fontWeight: 700,
+                        marginTop: 2,
+                      }}>
+                        {badge.label}
+                      </span>
+                        );
+                      })()
+                    )}
+                    {p._isOffline && p._queueError ? (
+                      <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 180 }}>
+                        {p._queueError}
+                      </div>
+                    ) : null}
+                    {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>}
                   </div>
-
-                  <div className="purchase-entry-meta-row">
-                    <span>Taxable <strong>₹{(p.taxable_amount || 0).toFixed(2)}</strong></span>
-                    <span>ITC <strong>₹{(p.total_gst || 0).toFixed(2)}</strong></span>
-                    <span>Paid <strong>₹{(p.amount_paid || 0).toFixed(2)}</strong></span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 16 }}>
+                      ₹{(p.total_amount || 0).toFixed(2)}
+                    </div>
+                    <PayBadge type={p.payment_type} />
                   </div>
+                </div>
 
-                  {p._isOffline && p._queueError ? (
-                    <div className="purchase-entry-error">{p._queueError}</div>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{(p.taxable_amount || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6366f1' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>₹{(p.amount_paid || 0).toFixed(2)}</div></div>
+                  {(p.balance_due || 0) > 0 && (
+                    <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>₹{p.balance_due.toFixed(2)}</div></div>
+                  )}
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{formatFullDateTime(p.createdAt)}</div></div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: 8,
+                  }}
+                >
+                  {p.supplier_phone ? (
+                    <button onClick={() => sendPurchaseWhatsApp(p)}
+                      className="action-soft whatsapp"
+                      style={{ width: '100%', padding: '9px', background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}>
+                      WhatsApp
+                    </button>
                   ) : null}
-
-                  <div className="purchase-entry-actions">
-                    <button
-                      onClick={() => startEditPurchase(p)}
-                      disabled={Boolean(p._isOffline)}
-                      className="purchase-action-button purchase-action-edit"
-                      title="Edit"
-                    >
-                      <PurchaseActionIcon kind="edit" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(p)}
-                      className="purchase-action-button purchase-action-delete"
-                      title={p._isOffline ? 'Remove' : 'Delete'}
-                    >
-                      <PurchaseActionIcon kind="delete" />
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </section>
+                  <button onClick={() => startEditPurchase(p)}
+                    disabled={Boolean(p._isOffline)}
+                    className="action-soft edit"
+                    style={{ width: '100%', padding: '9px', opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
+                    Edit
+                  </button>
+                  <button onClick={() => handleDelete(p)}
+                    className="action-soft delete"
+                    style={{ width: '100%', padding: '9px', gridColumn: p.supplier_phone ? 'span 2 / span 2' : undefined }}>
+                    {p._isOffline ? 'Remove' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </>
         )}
       </div>
