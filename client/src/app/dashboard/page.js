@@ -11,6 +11,14 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v3';
 
 const getToken = () => localStorage.getItem('token');
+const getBusinessName = () => {
+  try {
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    return storedUser?.shopName || storedUser?.shop_name || storedUser?.businessName || storedUser?.name || 'Your Business';
+  } catch {
+    return 'Your Business';
+  }
+};
 const getUserCacheNamespace = () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -29,8 +37,8 @@ const writeDashboardCache = (month, year, value) => {
 
 function QuickActionGlyph({ name }) {
   const common = {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
@@ -54,51 +62,6 @@ function QuickActionGlyph({ name }) {
     default:
       return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" /></svg>;
   }
-}
-
-function MetricGlyph({ name }) {
-  const common = {
-    width: 24,
-    height: 24,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.9,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': true,
-  };
-
-  switch (name) {
-    case 'sales':
-      return <svg {...common}><path d="M12 3v18" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></svg>;
-    case 'profit':
-      return <svg {...common}><path d="M4 16 10 10l4 4 6-8" /><path d="M20 9V4h-5" /></svg>;
-    case 'credit':
-      return <svg {...common}><rect x="3" y="6" width="18" height="12" rx="2.5" /><path d="M3 10h18" /><path d="M7 15h3" /></svg>;
-    case 'gst':
-      return <svg {...common}><rect x="4" y="3" width="16" height="18" rx="2.5" /><path d="M8 7h8" /><path d="M8 11h8" /><path d="M8 15h5" /></svg>;
-    default:
-      return <svg {...common}><circle cx="12" cy="12" r="3" /></svg>;
-  }
-}
-
-function ChevronRightGlyph() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function WarningGlyph() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3.75 21 19.5H3l9-15.75Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 9v4.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="12" cy="16.75" r="1" fill="currentColor" />
-    </svg>
-  );
 }
 
 const DashboardSkeleton = () => (
@@ -237,20 +200,6 @@ export default function DashboardPage() {
       })
     : null;
 
-  const netGST = stats?.netGSTPayable ?? 0;
-  const profit = stats?.grossProfit ?? 0;
-  const revenue = stats?.totalRevenue || 0;
-  const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
-  const marginNumber = Number.parseFloat(margin) || 0;
-  const lowStockCount = lowStockProducts.length;
-  const periodLabel = `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
-  const businessName = 'Paypal Photo Frame';
-  const syncedLabel = refreshing
-    ? 'Syncing...'
-    : cacheLabel
-      ? cacheLabel.replace(',', '')
-      : '01 Apr, 08:27 am';
-
   if (loading && !cacheLoaded) {
     return (
       <Layout>
@@ -259,6 +208,13 @@ export default function DashboardPage() {
     );
   }
 
+  const netGST = stats?.netGSTPayable ?? 0;
+  const profit = stats?.grossProfit ?? 0;
+  const revenue = stats?.totalRevenue || 0;
+  const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
+  const lowStockCount = lowStockProducts.length;
+  const businessName = getBusinessName();
+
   const statCards = [
     {
       label: 'Sales',
@@ -266,7 +222,7 @@ export default function DashboardPage() {
       note: `${stats?.salesCount || 0} invoices this month`,
       tone: 'money',
       href: '/sales',
-      icon: <MetricGlyph name="sales" />,
+      icon: 'Sales',
     },
     {
       label: 'Profit',
@@ -274,7 +230,7 @@ export default function DashboardPage() {
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
       tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
-      icon: <MetricGlyph name="profit" />,
+      icon: 'Profit',
     },
     {
       label: 'Credit',
@@ -282,7 +238,7 @@ export default function DashboardPage() {
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
       tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
       href: '/udhaar',
-      icon: <MetricGlyph name="credit" />,
+      icon: 'Credit',
     },
     {
       label: 'GST Payable',
@@ -290,7 +246,7 @@ export default function DashboardPage() {
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
       tone: 'warning',
       href: '/gst',
-      icon: <MetricGlyph name="gst" />,
+      icon: 'GST',
     },
   ];
 
@@ -309,42 +265,48 @@ export default function DashboardPage() {
         <section className="card dashboard-overview-card">
           <div className="dashboard-overview-head">
             <div className="dashboard-overview-copy">
+              <div className="dashboard-overview-kicker">Business overview</div>
               <div className="page-title">Dashboard</div>
               <div className="dashboard-overview-business">{businessName}</div>
+              {refreshing ? (
+                <div className="dashboard-overview-status">Refreshing latest data...</div>
+              ) : !isOnline ? (
+                <div className="dashboard-overview-status dashboard-overview-status-offline">
+                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
+                </div>
+              ) : cacheLoaded && cacheLabel ? (
+                <div className="dashboard-overview-status">Last synced {cacheLabel}</div>
+              ) : null}
             </div>
-            <div className="dashboard-overview-sync">
-              <span className="dashboard-overview-sync-label">Last synced</span>
-              <span className={`dashboard-overview-sync-value ${!isOnline ? 'is-offline' : ''}`}>
-                {!isOnline && cacheLabel ? `${cacheLabel}` : syncedLabel}
-              </span>
-            </div>
-          </div>
-        </section>
 
-        <section className="dashboard-period-row">
-          <div className="dashboard-period-inline-label">Period</div>
-          <div className="dashboard-period-inline-value">{periodLabel}</div>
-          <div className="dashboard-period-controls dashboard-period-shell dashboard-period-grid">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="form-input dashboard-period-select"
-              aria-label="Select month"
-            >
-              {MONTHS.map((month, index) => (
-                <option key={month} value={index + 1}>{month}</option>
-              ))}
-            </select>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="form-input dashboard-period-select"
-              aria-label="Select year"
-            >
-              {[2023, 2024, 2025, 2026].map((year) => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
+            <div className="dashboard-summary-panel">
+              <div className="dashboard-summary-panel-copy">
+                <div className="dashboard-summary-panel-label">Selected period</div>
+                <div className="dashboard-summary-panel-value">{MONTHS[selectedMonth - 1]} {selectedYear}</div>
+              </div>
+              <div className="dashboard-period-controls dashboard-period-shell dashboard-period-grid">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="form-input"
+                  style={{ minWidth: 0, height: 44 }}
+                >
+                  {MONTHS.map((month, index) => (
+                    <option key={month} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="form-input"
+                  style={{ minWidth: 0, height: 44 }}
+                >
+                  {[2023, 2024, 2025, 2026].map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -356,22 +318,6 @@ export default function DashboardPage() {
             </div>
           </section>
         ) : null}
-
-        {lowStockCount > 0 && (
-          <section className="dashboard-low-stock-banner">
-            <div className="dashboard-low-stock-main">
-              <div className="dashboard-low-stock-icon" aria-hidden="true"><WarningGlyph /></div>
-              <div className="dashboard-low-stock-copy">
-                <div className="dashboard-low-stock-text">
-                  Low Stock Alert: {lowStockCount} item{lowStockCount > 1 ? 's' : ''} close to stockout
-                </div>
-              </div>
-            </div>
-            <button type="button" className="btn-ghost dashboard-low-stock-cta" onClick={() => router.push('/product')}>
-              Open Products
-            </button>
-          </section>
-        )}
 
         <section className="dashboard-metric-grid">
           {statCards.map((card) => (
@@ -388,23 +334,85 @@ export default function DashboardPage() {
           ))}
         </section>
 
-        <section className="dashboard-breakdown-section">
-          <div className="section-title dashboard-breakdown-title">Profit Breakdown</div>
-          <div className="card dashboard-breakdown-compact-card">
-            {[
-              { label: 'Revenue', value: `₹${fmt(stats?.totalRevenue)}` },
-              { label: 'GST', value: `₹${fmt(stats?.gstCollected)}` },
-              { label: 'Profit', value: `${profit >= 0 ? '+' : '-'}₹${fmt(Math.abs(profit))}`, tone: profit >= 0 ? '' : 'is-negative' },
-              { label: 'Margin', value: `${margin}%`, tone: marginNumber >= 0 ? '' : 'is-negative' },
-            ].map((item, index) => (
-              <div key={item.label} className={`dashboard-breakdown-inline-item ${item.tone || ''}`.trim()}>
-                <span className="dashboard-breakdown-inline-label">{item.label}:</span>
-                <strong className="dashboard-breakdown-inline-value">{item.value}</strong>
-                {index < 3 ? <span className="dashboard-breakdown-inline-divider" aria-hidden="true">|</span> : null}
+        {revenue > 0 && (
+          <section className="card dashboard-section-card">
+            <div className="dashboard-breakdown-head">
+              <div>
+                <div className="section-title">Profit Breakdown</div>
+                <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
               </div>
-            ))}
-          </div>
-        </section>
+              <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
+            </div>
+
+            <div className="dashboard-breakdown-grid">
+              {[
+                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
+                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
+                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
+                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
+                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="dashboard-breakdown-card"
+                >
+                  <div className="dashboard-breakdown-label">{item.label}</div>
+                  <div className="dashboard-breakdown-value" style={{ color: item.color }}>
+                    {item.prefix}₹{fmt(item.value)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="dashboard-margin-block">
+              <div className="dashboard-margin-row">
+                <span>Profit Margin</span>
+                <strong style={{ color: profit >= 0 ? '#16a34a' : '#dc2626' }}>{margin}%</strong>
+              </div>
+              <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
+                <div
+                  className="dashboard-progress-fill"
+                  style={{
+                    width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
+                    height: '100%',
+                    borderRadius: 999,
+                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #22c55e)' : 'linear-gradient(90deg, #dc2626, #f97316)',
+                  }}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {lowStockCount > 0 && (
+          <section
+            className="card dashboard-section-card dashboard-warning-card"
+            onClick={() => router.push('/product')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div>
+                <div className="section-title" style={{ color: '#b45309' }}>Low Stock</div>
+                <div className="section-subtitle" style={{ color: '#d97706' }}>
+                  {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+                  {lowStockProducts.slice(0, 5).map((product) => (
+                    <span
+                      key={product._id}
+                      className="dashboard-chip-warning"
+                      style={{ padding: '7px 11px' }}
+                    >
+                      {product.name} ({product.quantity ?? 0})
+                    </span>
+                  ))}
+                  {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
+                </div>
+              </div>
+              <div className="btn-warning" style={{ width: 'auto' }}>Open Products</div>
+            </div>
+          </section>
+        )}
 
         <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
           <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -415,25 +423,34 @@ export default function DashboardPage() {
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
           <div className="quick-actions-carousel">
-            <div className="dashboard-actions-grid">
+            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
               {quickActions.map((action) => (
                 <a
                   key={action.href}
                   href={action.href}
                   className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
+                  style={{
+                    textDecoration: 'none',
+                    borderRadius: 18,
+                    padding: '14px 12px',
+                    minHeight: 94,
+                  }}
                 >
-                  <div className="dashboard-quick-main">
-                    <div className="dashboard-quick-icon" style={{ background: action.tone, color: action.color }}>
-                      <QuickActionGlyph name={action.icon} />
-                    </div>
-                    <div className="dashboard-quick-copy">
-                      <div className="dashboard-quick-title">{action.hi}</div>
-                      <div className="dashboard-quick-subtitle">{action.sub}</div>
+                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
+                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
                     </div>
                   </div>
-                  <div className="dashboard-quick-arrow"><ChevronRightGlyph /></div>
                 </a>
               ))}
+            </div>
+            <div className="quick-actions-fade" aria-hidden="true" />
+            <div className="quick-actions-chevron" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
           </div>
         </section>
