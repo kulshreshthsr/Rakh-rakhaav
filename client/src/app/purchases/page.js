@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
@@ -193,6 +193,7 @@ export default function PurchasesPage() {
     hsn_code: '',
   });
   const [purchaseStep, setPurchaseStep] = useState(0);
+  const hasBootstrappedRef = useRef(false);
 
   const loadPendingOfflinePurchases = useCallback(async () => {
     try {
@@ -321,6 +322,10 @@ export default function PurchasesPage() {
   }, []);
 
   useEffect(() => {
+    if (hasBootstrappedRef.current) {
+      return undefined;
+    }
+    hasBootstrappedRef.current = true;
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(PURCHASES_CACHE_KEY);
     if (cached?.purchases) {
@@ -361,17 +366,6 @@ export default function PurchasesPage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  useEffect(() => {
-    if (!products.length) {
-      return undefined;
-    }
-
-    mergePurchasesWithPendingQueue(purchases).then((mergedPurchases) => {
-      setPurchases(mergedPurchases);
-    });
-    return undefined;
-  }, [mergePurchasesWithPendingQueue, products, purchases]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !localStorage.getItem('token')) {

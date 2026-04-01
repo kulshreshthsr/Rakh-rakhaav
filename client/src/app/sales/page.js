@@ -321,6 +321,7 @@ export default function SalesPage() {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const amountPaidInputRef = useRef(null);
   const buyerNameInputRef = useRef(null);
+  const hasBootstrappedRef = useRef(false);
 
   const loadPendingOfflineSales = useCallback(async () => {
     try {
@@ -431,6 +432,10 @@ export default function SalesPage() {
   }, [isOnline]);
 
   useEffect(() => {
+    if (hasBootstrappedRef.current) {
+      return undefined;
+    }
+    hasBootstrappedRef.current = true;
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(SALES_CACHE_KEY);
     if (cached?.sales) {

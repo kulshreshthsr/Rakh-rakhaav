@@ -18,9 +18,28 @@ const NAV_ITEMS = [
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports', tone: 'reports'  },
 ];
 
+const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
+
 function readStoredUser() {
   if (typeof window === 'undefined') return null;
   try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+}
+
+function shouldRefreshSubscriptionCache() {
+  if (typeof window === 'undefined') return true;
+  try {
+    const lastRefreshedAt = Number(sessionStorage.getItem('subscription-status:last-refresh') || 0);
+    return !lastRefreshedAt || Date.now() - lastRefreshedAt > SUBSCRIPTION_REFRESH_TTL_MS;
+  } catch {
+    return true;
+  }
+}
+
+function markSubscriptionRefreshNow() {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem('subscription-status:last-refresh', String(Date.now()));
+  } catch {}
 }
 
 /* ─── Icons ──────────────────────────────── */
@@ -118,6 +137,7 @@ function LayoutInner({ children }) {
       writeStoredSubscription(data.subscription || null);
       setPlans(data.plans?.length ? data.plans : FALLBACK_PLANS);
       setRazorpayKeyId(data.razorpayKeyId || '');
+      markSubscriptionRefreshNow();
       return true;
     } catch { return false; }
   }, [router]);
@@ -125,6 +145,9 @@ function LayoutInner({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
+    if (!shouldRefreshSubscriptionCache()) {
+      return undefined;
+    }
     const id = window.setTimeout(refreshSubscription, 0);
     return () => window.clearTimeout(id);
   }, [refreshSubscription, router]);
