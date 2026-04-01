@@ -15,6 +15,7 @@ const {
   getAdminSubscriptionStatus,
   mapPlanToSubscriptionType,
   syncSubscriptionState,
+  TRIAL_WARNING_DAYS,
 } = require('../services/subscriptionService');
 const { calculateDaysRemaining } = require('../utils/subscriptionUtils');
 
@@ -61,13 +62,13 @@ const serializeAdminShop = async (shopDoc) => {
     highlight:
       status === 'expired'
         ? 'expired'
-        : status === 'trial' && trialDaysRemaining > 0 && trialDaysRemaining <= 3
+        : status === 'trial' && trialDaysRemaining > 0 && trialDaysRemaining <= TRIAL_WARNING_DAYS
           ? 'trial-ending'
           : status === 'active'
             ? 'active'
             : 'default',
     alerts: {
-      trialEndingSoon: status === 'trial' && trialDaysRemaining > 0 && trialDaysRemaining <= 3,
+      trialEndingSoon: status === 'trial' && trialDaysRemaining > 0 && trialDaysRemaining <= TRIAL_WARNING_DAYS,
       expired: status === 'expired',
       highValueCustomer: subscriptionType === 'yearly',
     },

@@ -1,6 +1,7 @@
 const { calculateDaysRemaining } = require('../utils/subscriptionUtils');
 
-const TRIAL_DAYS = 5;
+const TRIAL_DAYS = 7;
+const TRIAL_WARNING_DAYS = 3;
 
 const PLANS = {
   test_10: {
@@ -58,8 +59,9 @@ function ensureTrialDates(user) {
   if (!user.trialStartDate) {
     user.trialStartDate = now;
   }
-  if (!user.trialEndDate) {
-    user.trialEndDate = addDays(user.trialStartDate, TRIAL_DAYS);
+  const expectedTrialEndDate = addDays(user.trialStartDate, TRIAL_DAYS);
+  if (!user.trialEndDate || new Date(user.trialEndDate) < expectedTrialEndDate) {
+    user.trialEndDate = expectedTrialEndDate;
   }
   if (!user.paymentStatus) {
     user.paymentStatus = 'trial';
@@ -158,7 +160,7 @@ function getSubscriptionSnapshot(user) {
     isTrialActive,
     isTrialExpired: !isTrialActive,
     trialDaysLeft,
-    shouldWarnTrial: isTrialActive && trialDaysLeft <= 3,
+    shouldWarnTrial: isTrialActive && trialDaysLeft <= TRIAL_WARNING_DAYS,
     isSubscriptionActive,
     hasFullAccess,
     isReadOnly: !hasFullAccess,
@@ -201,6 +203,7 @@ function serializePlans() {
 
 module.exports = {
   TRIAL_DAYS,
+  TRIAL_WARNING_DAYS,
   PLANS,
   getPlanConfig,
   ensureTrialDates,

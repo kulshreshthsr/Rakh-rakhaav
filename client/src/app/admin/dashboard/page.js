@@ -247,7 +247,7 @@ export default function AdminDashboardPage() {
                         <td>
                           <div className="admin-alert-stack">
                             {shop.alerts.expired ? <span className="admin-alert-chip alert-red">Expired</span> : null}
-                            {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-amber">Trial ending in 3 days</span> : null}
+                            {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-amber">Trial ending within 3 days</span> : null}
                             {shop.alerts.highValueCustomer ? <span className="admin-alert-chip alert-green">High value</span> : null}
                             {!shop.alerts.expired && !shop.alerts.trialEndingSoon && !shop.alerts.highValueCustomer ? (
                               <span className="admin-alert-chip alert-neutral">Stable</span>
@@ -299,7 +299,7 @@ export default function AdminDashboardPage() {
 
                     <div className="admin-alert-stack">
                       {shop.alerts.expired ? <span className="admin-alert-chip alert-red">Expired</span> : null}
-                      {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-amber">Trial ending in 3 days</span> : null}
+                      {shop.alerts.trialEndingSoon ? <span className="admin-alert-chip alert-amber">Trial ending within 3 days</span> : null}
                       {shop.alerts.highValueCustomer ? <span className="admin-alert-chip alert-green">High value</span> : null}
                       {!shop.alerts.expired && !shop.alerts.trialEndingSoon && !shop.alerts.highValueCustomer ? (
                         <span className="admin-alert-chip alert-neutral">Stable</span>

@@ -53,7 +53,7 @@ export default function WelcomePage() {
           </p>
 
           <div className="trial-gate-chip-row">
-            <span>5-day free trial</span>
+            <span>7-day free trial</span>
             <span>Sharper premium theme</span>
             <span>Razorpay-ready upgrades</span>
           </div>
