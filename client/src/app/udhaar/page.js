@@ -9,6 +9,16 @@ const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'NA';
 const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
+const getMonthFilterValue = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+const getLedgerEntryText = (entry) => [
+  entry.note,
+  entry.reference_id,
+  entry.type,
+].join(' ').toLowerCase();
 
 function BalanceTile({ label, value, tone = 'neutral' }) {
   return (
@@ -34,6 +44,9 @@ export default function UdhaarPage() {
   const [settleLoading, setSettleLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [partySearch, setPartySearch] = useState('');
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [ledgerMonth, setLedgerMonth] = useState('');
 
   async function fetchAll() {
     setLoading(true);
@@ -68,6 +81,8 @@ export default function UdhaarPage() {
     setActiveTab(nextTab);
     setSelected(null);
     setLedger([]);
+    setLedgerSearch('');
+    setLedgerMonth('');
     setError('');
     setSuccess('');
   };
@@ -142,6 +157,8 @@ export default function UdhaarPage() {
 
     setSelected(item);
     setLedger([]);
+    setLedgerSearch('');
+    setLedgerMonth('');
     setLedgerLoading(true);
     setError('');
 
@@ -209,6 +226,20 @@ export default function UdhaarPage() {
   const totalSupplierUdhaar = suppliers.reduce((sum, supplier) => sum + (supplier.totalUdhaar || 0), 0);
   const list = activeTab === 'customers' ? customers : suppliers;
   const isCustomer = activeTab === 'customers';
+  const normalizedPartySearch = partySearch.trim().toLowerCase();
+  const filteredList = list.filter((item) => {
+    if (!normalizedPartySearch) return true;
+    return [item.name, item.phone, item.gstin].join(' ').toLowerCase().includes(normalizedPartySearch);
+  });
+  const normalizedLedgerSearch = ledgerSearch.trim().toLowerCase();
+  const filteredLedger = [...ledger]
+    .reverse()
+    .filter((entry) => {
+      const matchesSearch = !normalizedLedgerSearch || getLedgerEntryText(entry).includes(normalizedLedgerSearch);
+      const matchesMonth = !ledgerMonth || getMonthFilterValue(entry.date || entry.createdAt) === ledgerMonth;
+      return matchesSearch && matchesMonth;
+    });
+  const hasLedgerFilters = Boolean(normalizedLedgerSearch || ledgerMonth);
 
   return (
     <Layout>
@@ -243,6 +274,18 @@ export default function UdhaarPage() {
           </button>
         </div>
 
+        <div className="toolbar-card">
+          <div className="toolbar">
+            <input
+              className="form-input"
+              style={{ flex: 1, minWidth: 220 }}
+              placeholder={isCustomer ? 'Search customer by name, phone or GSTIN...' : 'Search supplier by name, phone or GSTIN...'}
+              value={partySearch}
+              onChange={(e) => setPartySearch(e.target.value)}
+            />
+          </div>
+        </div>
+
         {error ? <div className="alert-error">{error}</div> : null}
         {success ? <div className="alert-success">{success}</div> : null}
 
@@ -250,7 +293,7 @@ export default function UdhaarPage() {
           <div className="ui-empty">Loading...</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {list.length === 0 ? (
+            {filteredList.length === 0 ? (
               <div className="ui-empty ledger-empty-state">
                 <div className="ledger-empty-illustration" aria-hidden="true">
                   {isCustomer ? (
@@ -284,7 +327,7 @@ export default function UdhaarPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {list.map((item) => (
+                {filteredList.map((item) => (
                   <div key={item._id}>
                     <div
                       className={`ui-list-card ${selected?._id === item._id ? 'is-active' : ''}`}
@@ -360,10 +403,34 @@ export default function UdhaarPage() {
                           )}
                         </div>
 
+                        <div className="toolbar-card" style={{ marginBottom: 16 }}>
+                          <div className="toolbar">
+                            <input
+                              className="form-input"
+                              style={{ flex: 1, minWidth: 220 }}
+                              placeholder="Search bill note, reference or type..."
+                              value={ledgerSearch}
+                              onChange={(e) => setLedgerSearch(e.target.value)}
+                            />
+                            <input
+                              className="form-input"
+                              style={{ minWidth: 180 }}
+                              type="month"
+                              value={ledgerMonth}
+                              onChange={(e) => setLedgerMonth(e.target.value)}
+                            />
+                            {hasLedgerFilters ? (
+                              <button type="button" className="btn-ghost" style={{ width: 'auto' }} onClick={() => { setLedgerSearch(''); setLedgerMonth(''); }}>
+                                Clear
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+
                         {ledgerLoading ? (
                           <div className="ui-empty">Loading ledger...</div>
-                        ) : ledger.length === 0 ? (
-                          <div className="ui-empty">No entries found</div>
+                        ) : filteredLedger.length === 0 ? (
+                          <div className="ui-empty">{hasLedgerFilters ? 'No ledger entries found for this search/filter.' : 'No entries found'}</div>
                         ) : (
                           <div className="ui-table-wrap">
                             <table className="ui-table compact-ledger-table">
@@ -377,7 +444,7 @@ export default function UdhaarPage() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {[...ledger].reverse().map((entry, index) => {
+                                {filteredLedger.map((entry, index) => {
                                   const isDebit = entry.type === 'debit' || entry.type === 'diya';
                                   return (
                                     <tr key={index} className={isDebit ? 'ledger-debit-row' : 'ledger-credit-row'}>

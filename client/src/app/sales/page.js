@@ -40,6 +40,22 @@ const getSaleRecordDateISO = (value, referenceValue = new Date()) => {
   nextDate.setFullYear(year, month - 1, day);
   return nextDate.toISOString();
 };
+const getMonthFilterValue = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+const getSaleSearchText = (sale) => {
+  const itemNames = Array.isArray(sale.items) ? sale.items.map((item) => item.product_name || '').join(' ') : '';
+  return [
+    sale.invoice_number,
+    sale.product_name,
+    sale.buyer_name,
+    sale.buyer_phone,
+    sale.notes,
+    itemNames,
+  ].join(' ').toLowerCase();
+};
 const buildInitialForm = (overrides = {}) => ({
   payment_type: 'cash',
   amount_paid: '',
@@ -319,6 +335,8 @@ export default function SalesPage() {
   const [form, setForm]             = useState(buildInitialForm());
   const [saleStep, setSaleStep] = useState(0);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [billSearch, setBillSearch] = useState('');
+  const [billMonth, setBillMonth] = useState('');
   const amountPaidInputRef = useRef(null);
   const buyerNameInputRef = useRef(null);
   const hasBootstrappedRef = useRef(false);
@@ -927,6 +945,13 @@ export default function SalesPage() {
   const offlineGst = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0);
   const revenueDisplay = Number(summary.totalRevenue || 0) + offlineRevenue;
   const gstDisplay = Number(summary.totalGST || 0) + offlineGst;
+  const normalizedBillSearch = billSearch.trim().toLowerCase();
+  const filteredSales = sales.filter((sale) => {
+    const matchesSearch = !normalizedBillSearch || getSaleSearchText(sale).includes(normalizedBillSearch);
+    const matchesMonth = !billMonth || getMonthFilterValue(sale.createdAt || sale.sold_at) === billMonth;
+    return matchesSearch && matchesMonth;
+  });
+  const hasBillFilters = Boolean(normalizedBillSearch || billMonth);
 
   return (
     <Layout>
@@ -954,10 +979,34 @@ export default function SalesPage() {
           </div>
           <div className="metric-card" style={{ cursor: 'default' }}>
             <div className="metric-label">Invoices</div>
-            <div className="metric-value" style={{ color: '#2563eb' }}>{sales.length}</div>
+            <div className="metric-value" style={{ color: '#2563eb' }}>{filteredSales.length}</div>
             <div className="metric-note">Recorded sales entries</div>
           </div>
         </section>
+
+        <div className="toolbar-card">
+          <div className="toolbar">
+            <input
+              className="form-input"
+              style={{ flex: 1, minWidth: 220 }}
+              placeholder="Search invoice, buyer, phone or product..."
+              value={billSearch}
+              onChange={(e) => setBillSearch(e.target.value)}
+            />
+            <input
+              className="form-input"
+              style={{ minWidth: 180 }}
+              type="month"
+              value={billMonth}
+              onChange={(e) => setBillMonth(e.target.value)}
+            />
+            {hasBillFilters ? (
+              <button type="button" className="btn-ghost" style={{ width: 'auto' }} onClick={() => { setBillSearch(''); setBillMonth(''); }}>
+                Clear
+              </button>
+            ) : null}
+          </div>
+        </div>
 
         {pendingOfflineSales.length > 0 ? (
           <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
@@ -980,10 +1029,10 @@ export default function SalesPage() {
               <div key={index} className="skeleton" style={{ height: 72 }} />
             ))}
           </div>
-        ) : sales.length === 0 ? (
+        ) : filteredSales.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">Sales</div>
-            <div>No sales yet.</div>
+            <div>{hasBillFilters ? 'No sales found for this search/filter.' : 'No sales yet.'}</div>
           </div>
         ) : (
           <>
@@ -997,7 +1046,7 @@ export default function SalesPage() {
                 </tr>
               </thead>
               <tbody>
-                {sales.map(s => (
+                {filteredSales.map(s => (
                   <tr key={s._id}>
                     <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>
                       {s.invoice_number}
@@ -1086,7 +1135,7 @@ export default function SalesPage() {
 
           {/* Mobile cards */}
           <div className="flex flex-col gap-3 min-[641px]:hidden">
-            {sales.map(s => (
+            {filteredSales.map(s => (
               <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>

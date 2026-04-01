@@ -36,6 +36,22 @@ const getPurchaseRecordDateISO = (value, referenceValue = new Date()) => {
   nextDate.setFullYear(year, month - 1, day);
   return nextDate.toISOString();
 };
+const getMonthFilterValue = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+const getPurchaseSearchText = (purchase) => {
+  const itemNames = Array.isArray(purchase.items) ? purchase.items.map((item) => item.product_name || '').join(' ') : '';
+  return [
+    purchase.invoice_number,
+    purchase.product_name,
+    purchase.supplier_name,
+    purchase.supplier_phone,
+    purchase.notes,
+    itemNames,
+  ].join(' ').toLowerCase();
+};
 const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   day: '2-digit',
   month: 'short',
@@ -193,6 +209,8 @@ export default function PurchasesPage() {
     hsn_code: '',
   });
   const [purchaseStep, setPurchaseStep] = useState(0);
+  const [billSearch, setBillSearch] = useState('');
+  const [billMonth, setBillMonth] = useState('');
   const hasBootstrappedRef = useRef(false);
 
   const loadPendingOfflinePurchases = useCallback(async () => {
@@ -780,6 +798,13 @@ export default function PurchasesPage() {
   const totalSpendDisplay = Number(summary.totalPurchaseValue || 0) + offlinePurchaseValue;
   const totalItcDisplay = Number(summary.totalITC || 0) + offlineItc;
   const totalDueDisplay = Number(summary.totalDue || 0) + offlineDue;
+  const normalizedBillSearch = billSearch.trim().toLowerCase();
+  const filteredPurchases = purchases.filter((purchase) => {
+    const matchesSearch = !normalizedBillSearch || getPurchaseSearchText(purchase).includes(normalizedBillSearch);
+    const matchesMonth = !billMonth || getMonthFilterValue(purchase.createdAt || purchase.purchased_at) === billMonth;
+    return matchesSearch && matchesMonth;
+  });
+  const hasBillFilters = Boolean(normalizedBillSearch || billMonth);
 
   return (
     <Layout>
@@ -832,6 +857,30 @@ export default function PurchasesPage() {
           </div>
         ) : null}
 
+        <div className="toolbar-card">
+          <div className="toolbar">
+            <input
+              className="form-input"
+              style={{ flex: 1, minWidth: 220 }}
+              placeholder="Search bill, supplier, phone or product..."
+              value={billSearch}
+              onChange={(e) => setBillSearch(e.target.value)}
+            />
+            <input
+              className="form-input"
+              style={{ minWidth: 180 }}
+              type="month"
+              value={billMonth}
+              onChange={(e) => setBillMonth(e.target.value)}
+            />
+            {hasBillFilters ? (
+              <button type="button" className="btn-ghost" style={{ width: 'auto' }} onClick={() => { setBillSearch(''); setBillMonth(''); }}>
+                Clear
+              </button>
+            ) : null}
+          </div>
+        </div>
+
         {error && !showModal && (
           <div className="alert-error">
           {error}
@@ -844,10 +893,10 @@ export default function PurchasesPage() {
               <div key={index} className="skeleton" style={{ height: 72 }} />
             ))}
           </div>
-        ) : purchases.length === 0 ? (
+        ) : filteredPurchases.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">PO</div>
-            <div>No purchases yet.</div>
+            <div>{hasBillFilters ? 'No purchases found for this search/filter.' : 'No purchases yet.'}</div>
           </div>
         ) : (
           <>
@@ -870,7 +919,7 @@ export default function PurchasesPage() {
                 </tr>
               </thead>
               <tbody>
-                {purchases.map(p => (
+                {filteredPurchases.map(p => (
                   <tr
                     key={p._id}
                     data-purchase-anchor={p._id}
@@ -964,7 +1013,7 @@ export default function PurchasesPage() {
 
           {/* Mobile cards */}
           <div className="flex flex-col gap-3 min-[641px]:hidden">
-            {purchases.map(p => (
+            {filteredPurchases.map(p => (
               <div key={p._id} className="card"
                 data-purchase-anchor={p._id}
                 style={{
