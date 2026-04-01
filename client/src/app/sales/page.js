@@ -480,29 +480,6 @@ export default function SalesPage() {
   }, []);
 
   useEffect(() => {
-    if (!isOnline || typeof window === 'undefined' || !localStorage.getItem('token')) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      fetchSales();
-    }, 2500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [fetchSales, isOnline]);
-
-  useEffect(() => {
-    if (!products.length) {
-      return undefined;
-    }
-
-    mergeSalesWithPendingQueue(sales).then((mergedSales) => {
-      setSales(mergedSales);
-    });
-    return undefined;
-  }, [mergeSalesWithPendingQueue, products, sales]);
-
-  useEffect(() => {
     if (typeof window === 'undefined' || !localStorage.getItem('token')) {
       return undefined;
     }
