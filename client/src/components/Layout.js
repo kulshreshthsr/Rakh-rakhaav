@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
@@ -231,20 +232,20 @@ function LayoutInner({ children }) {
 
             {/* Quick shortcuts */}
             <div className="sidebar-quick-grid">
-              <a href="/pricing" className="sidebar-shortcut">
+              <Link href="/pricing" className="sidebar-shortcut">
                 <div className="sidebar-shortcut-icon"><Glyph name="pricing" size={18} /></div>
                 <div>
                   <div className="sidebar-shortcut-title">{t('pricing')}</div>
                   <div className="sidebar-shortcut-copy">{t('plans')}</div>
                 </div>
-              </a>
-              <a href="/reports" className="sidebar-shortcut is-secondary">
+              </Link>
+              <Link href="/reports" className="sidebar-shortcut is-secondary">
                 <div className="sidebar-shortcut-icon"><Glyph name="reports" size={18} /></div>
                 <div>
                   <div className="sidebar-shortcut-title">{t('reports')}</div>
                   <div className="sidebar-shortcut-copy">{t('reportsShortcut')}</div>
                 </div>
-              </a>
+              </Link>
             </div>
 
             {/* User card */}
@@ -265,7 +266,7 @@ function LayoutInner({ children }) {
             {/* Nav */}
             <nav className="sidebar-nav">
               {translatedNav.map(item => (
-                <a key={item.href} href={item.href}
+                <Link key={item.href} href={item.href}
                   className={`nav-link nav-tone-${item.tone}${pathname === item.href ? ' is-active' : ''}`}>
                   <span className="nav-link-accent" />
                   <span className="nav-icon-wrap"><Glyph name={item.key} size={18} /></span>
@@ -273,7 +274,7 @@ function LayoutInner({ children }) {
                     <span className="nav-label">{item.label}</span>
                     <span className="nav-short">{item.shortLabel}</span>
                   </span>
-                </a>
+                </Link>
               ))}
             </nav>
 
@@ -301,15 +302,15 @@ function LayoutInner({ children }) {
               {mobileDropOpen && (
                 <UserDropdown onProfile={goToProfile} onLogout={logout}
                   extraItems={<>
-                    <a href="/reports"><Glyph name="reports" size={16} /> Reports</a>
-                    <a href="/pricing"><Glyph name="pricing" size={16} /> Pricing</a>
+                    <Link href="/reports"><Glyph name="reports" size={16} /> Reports</Link>
+                    <Link href="/pricing"><Glyph name="pricing" size={16} /> Pricing</Link>
                   </>}
                 />
               )}
             </div>
-            <a href="/pricing" className={`top-upgrade-chip${subscription?.isPro ? ' is-manage' : ' is-shining'}`}>
+            <Link href="/pricing" className={`top-upgrade-chip${subscription?.isPro ? ' is-manage' : ' is-shining'}`}>
               <Glyph name="pricing" size={14} /> {upgradeLabel}
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -324,14 +325,14 @@ function LayoutInner({ children }) {
         <nav className="mobile-bottom-nav premium-bottom-nav">
           <div className="mobile-bottom-nav-card">
             {translatedNav.map(item => (
-              <a key={item.href} href={item.href}
+              <Link key={item.href} href={item.href}
                 className={`mobile-nav-link mobile-nav-tone-${item.tone}${pathname === item.href ? ' is-active' : ''}`}>
                 <span className="mobile-nav-icon-wrap">
                   <span className="mobile-nav-glow" />
                   <Glyph name={item.key} size={18} />
                 </span>
                 <span className="mobile-nav-label">{item.shortLabel}</span>
-              </a>
+              </Link>
             ))}
           </div>
         </nav>
