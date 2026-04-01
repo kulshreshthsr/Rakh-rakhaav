@@ -6,6 +6,14 @@ const TRIAL_GATE_SEEN_KEY = 'rr-trial-gate-seen';
 
 export const FALLBACK_PLANS = [
   {
+    id: 'weekly',
+    label: 'Weekly Plan',
+    amount: 120,
+    badge: 'Trial Pack',
+    description: 'Short premium access for quick billing, GST and inventory use through the week.',
+    savingsLabel: null,
+  },
+  {
     id: 'monthly',
     label: 'Starter Monthly',
     amount: 449,

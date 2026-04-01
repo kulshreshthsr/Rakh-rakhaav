@@ -12,6 +12,14 @@ const PLANS = {
     badge: 'Test',
     description: 'Temporary low-value plan for real payment verification.',
   },
+  weekly: {
+    id: 'weekly',
+    label: 'Weekly Plan',
+    amount: 120,
+    days: 7,
+    badge: 'Trial Pack',
+    description: 'Short premium access for quick billing, GST and inventory use through the week.',
+  },
   monthly: {
     id: 'monthly',
     label: 'Starter Monthly',
@@ -72,6 +80,7 @@ function ensureTrialDates(user) {
 }
 
 function mapPlanToSubscriptionType(plan) {
+  if (plan === 'weekly') return 'weekly';
   if (plan === 'six_month') return '6months';
   if (plan === 'test_10' || plan === 'monthly' || plan === 'yearly') return plan;
   return 'trial';
@@ -176,13 +185,14 @@ function activatePlan(user, planId) {
   const now = new Date();
   const currentEnd = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const start = currentEnd && currentEnd > now ? currentEnd : now;
+  const nextEnd = typeof plan.days === 'number' ? addDays(start, plan.days) : addMonths(start, plan.months);
   user.isPro = true;
   user.subscriptionPlan = plan.id;
   user.subscriptionType = mapPlanToSubscriptionType(plan.id);
   if (!user.subscriptionStartDate || !currentEnd || currentEnd <= now) {
     user.subscriptionStartDate = now;
   }
-  user.subscriptionEndDate = addMonths(start, plan.months);
+  user.subscriptionEndDate = nextEnd;
   user.paymentStatus = 'paid';
 
   return user;
@@ -193,7 +203,9 @@ function serializePlans() {
   return Object.values(PLANS).filter((plan) => plan.id !== 'test_10').map((plan) => ({
     ...plan,
     savingsLabel:
-      plan.id === 'six_month'
+      plan.id === 'weekly'
+        ? null
+        : plan.id === 'six_month'
         ? `Save Rs ${(monthly * 6) - plan.amount} compared to monthly`
         : plan.id === 'yearly'
           ? `Maximum savings - Save Rs ${(monthly * 12) - plan.amount}`

@@ -106,7 +106,7 @@ function LayoutInner({ children }) {
   const [plans, setPlans]                 = useState(FALLBACK_PLANS);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [paywallPlan, setPaywallPlan]     = useState('six_month');
+  const [paywallPlan, setPaywallPlan]     = useState('weekly');
   const [scrolled, setScrolled]           = useState(false);
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [mobileDropOpen, setMobileDropOpen] = useState(false);

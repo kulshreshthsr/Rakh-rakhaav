@@ -3,8 +3,9 @@
 import { formatCurrency } from '../../lib/subscription';
 
 export default function PlanCard({ plan, selected, onSelect, compact = false }) {
-  const months = plan.id === 'yearly' ? 12 : plan.id === 'six_month' ? 6 : 1;
-  const effectiveMonthlyPrice = Math.round((plan.amount || 0) / months);
+  const effectiveMonthlyPrice = plan.id === 'weekly'
+    ? Math.round((plan.amount || 0) * (30 / 7))
+    : Math.round((plan.amount || 0) / (plan.id === 'yearly' ? 12 : plan.id === 'six_month' ? 6 : 1));
 
   return (
     <button

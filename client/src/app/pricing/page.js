@@ -6,6 +6,10 @@ import UpgradeModal from '../../components/subscription/UpgradeModal';
 import { API, FALLBACK_PLANS, formatCurrency, getToken, readStoredSubscription, writeStoredSubscription } from '../../lib/subscription';
 
 const PLAN_STYLES = {
+  weekly: {
+    toneClass: 'pricing-plan-card-starter',
+    badge: 'Trial Pack',
+  },
   monthly: {
     toneClass: 'pricing-plan-card-starter',
     badge: null,
@@ -21,13 +25,16 @@ const PLAN_STYLES = {
 };
 
 const COMPARISON_ROWS = [
-  ['Premium billing', true, true, true],
-  ['GST reports', true, true, true],
-  ['Inventory & purchases', true, true, true],
-  ['Lower effective monthly cost', false, true, true],
+  ['Premium billing', true, true, true, true],
+  ['GST reports', true, true, true, true],
+  ['Inventory & purchases', true, true, true, true],
+  ['Lower effective monthly cost', false, false, true, true],
 ];
 
 const getEffectiveMonthly = (plan) => {
+  if (plan.id === 'weekly') {
+    return Math.round((plan.amount || 0) * (30 / 7));
+  }
   const months = plan.id === 'yearly' ? 12 : plan.id === 'six_month' ? 6 : 1;
   return Math.round((plan.amount || 0) / months);
 };
@@ -36,7 +43,7 @@ export default function PricingPage() {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('monthly');
+  const [selectedPlan, setSelectedPlan] = useState('weekly');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isLoggedIn] = useState(() => Boolean(getToken()));
 
@@ -55,7 +62,7 @@ export default function PricingPage() {
         writeStoredSubscription(data.subscription || null);
         setRazorpayKeyId(data.razorpayKeyId || '');
         setSelectedPlan((currentPlan) => (
-          nextPlans.some((plan) => plan.id === currentPlan) ? currentPlan : (nextPlans[0]?.id || 'monthly')
+          nextPlans.some((plan) => plan.id === currentPlan) ? currentPlan : (nextPlans[0]?.id || 'weekly')
         ));
       })
       .catch(() => {});
@@ -114,9 +121,10 @@ export default function PricingPage() {
       <section className="pricing-compare-card">
         <div className="pricing-compare-title">Plan comparison</div>
         <div className="pricing-compare-grid">
-          {COMPARISON_ROWS.map(([label, monthly, sixMonth, yearly]) => (
+          {COMPARISON_ROWS.map(([label, weekly, monthly, sixMonth, yearly]) => (
             <div key={label} className="pricing-compare-row">
               <span>{label}</span>
+              <span>{weekly ? '✓' : '-'}</span>
               <span>{monthly ? '✓' : '-'}</span>
               <span>{sixMonth ? '✓' : '-'}</span>
               <span>{yearly ? '✓' : '-'}</span>

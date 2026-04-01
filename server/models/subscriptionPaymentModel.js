@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const subscriptionPaymentSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  plan: { type: String, enum: ['test_10', 'monthly', 'six_month', 'yearly'], required: true },
+  plan: { type: String, enum: ['test_10', 'weekly', 'monthly', 'six_month', 'yearly'], required: true },
   amount: { type: Number, required: true },
   currency: { type: String, default: 'INR' },
   status: {

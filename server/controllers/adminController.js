@@ -20,6 +20,7 @@ const {
 const { calculateDaysRemaining } = require('../utils/subscriptionUtils');
 
 const formatPlanLabel = (type) => {
+  if (type === 'weekly') return 'Weekly';
   if (type === 'monthly') return 'Monthly';
   if (type === '6months') return '6 Months';
   if (type === 'yearly') return 'Yearly';

@@ -11,7 +11,7 @@ export default function UpgradeModal({
   subscription,
   razorpayKeyId,
   onSuccess,
-  initialPlan = 'six_month',
+  initialPlan = 'weekly',
   title = 'Unlock premium access',
   subtitle = 'Choose a plan and complete secure payment.',
 }) {
@@ -32,7 +32,7 @@ export default function UpgradeModal({
 
   useEffect(() => {
     if (!activePlans.some((plan) => plan.id === selectedPlan)) {
-      setSelectedPlan(activePlans[0]?.id || 'six_month');
+      setSelectedPlan(activePlans[0]?.id || 'weekly');
     }
   }, [activePlans, selectedPlan]);
 
