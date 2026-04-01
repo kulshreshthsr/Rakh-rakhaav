@@ -1,9 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import { StatCard, StatusBadge } from '../../components/ui/AppUI';
 import { apiUrl } from '../../lib/api';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
@@ -28,21 +27,17 @@ const getUserCacheNamespace = () => {
   }
 };
 const getCacheKey = (month, year) => `${DASHBOARD_CACHE_PREFIX}:${getUserCacheNamespace()}:${year}:${month}`;
-
 const readDashboardCache = (month, year) => readPageCache(getCacheKey(month, year));
-
-const writeDashboardCache = (month, year, value) => {
-  writePageCache(getCacheKey(month, year), value);
-};
+const writeDashboardCache = (month, year, value) => writePageCache(getCacheKey(month, year), value);
 
 function QuickActionGlyph({ name }) {
   const common = {
-    width: 18,
-    height: 18,
+    width: 22,
+    height: 22,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
-    strokeWidth: 1.9,
+    strokeWidth: 1.8,
     strokeLinecap: 'round',
     strokeLinejoin: 'round',
     'aria-hidden': true,
@@ -53,52 +48,72 @@ function QuickActionGlyph({ name }) {
       return <svg {...common}><path d="M12 2v20" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></svg>;
     case 'purchase':
       return <svg {...common}><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7" /></svg>;
-    case 'credit':
-      return <svg {...common}><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3" /><path d="M6 3.5v20" /><path d="M9 7.5h6" /><path d="M9 11.5h6" /><path d="M9 15.5h4" /></svg>;
     case 'stock':
       return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></svg>;
     case 'gst':
       return <svg {...common}><path d="M7 4.5h10" /><path d="M7 9.5h10" /><path d="M7 14.5h5" /><path d="M16.5 13v7" /><path d="M13.5 16h6" /><rect x="4" y="3" width="16" height="18" rx="2.5" /></svg>;
     default:
-      return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" /></svg>;
+      return <svg {...common}><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3" /><path d="M6 3.5v20" /><path d="M9 7.5h6" /><path d="M9 11.5h6" /><path d="M9 15.5h4" /></svg>;
   }
 }
 
-const DashboardSkeleton = () => (
-  <div className="page-shell">
-    <section className="card">
-      <div className="page-toolbar">
-        <div>
-          <div className="skeleton" style={{ height: 16, width: 110, marginBottom: 8 }} />
-          <div className="skeleton" style={{ height: 28, width: 180 }} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, maxWidth: 260, width: '100%' }}>
-          <div className="skeleton" style={{ height: 44 }} />
-          <div className="skeleton" style={{ height: 44 }} />
+function useCountUp(target, duration = 900) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    let frameId = 0;
+    let startedAt = 0;
+    const finalValue = Number.isFinite(Number(target)) ? Number(target) : 0;
+
+    const tick = (timestamp) => {
+      if (!startedAt) startedAt = timestamp;
+      const progress = Math.min((timestamp - startedAt) / duration, 1);
+      const eased = 1 - ((1 - progress) ** 3);
+      setValue(Math.round(finalValue * eased));
+      if (progress < 1) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [target, duration]);
+
+  return value;
+}
+
+function CountNumber({ value, prefix = '', suffix = '', sign = '', className = '', color }) {
+  const animated = useCountUp(Math.abs(value));
+  const formatted = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(animated);
+
+  return (
+    <div className={className} style={color ? { color } : undefined}>
+      {sign}{prefix}{formatted}{suffix}
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="premium-page">
+      <div className="premium-panel p-6">
+        <div className="grid gap-3">
+          <div className="skeleton h-3 w-28" />
+          <div className="skeleton h-12 w-72" />
         </div>
       </div>
-    </section>
-
-    <section className="metric-grid">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="card" style={{ minHeight: 138 }}>
-          <div className="skeleton" style={{ height: 12, width: 96, marginBottom: 16 }} />
-          <div className="skeleton" style={{ height: 34, width: 120, marginBottom: 12 }} />
-          <div className="skeleton" style={{ height: 12, width: 140 }} />
-        </div>
-      ))}
-    </section>
-
-    <section className="card">
-      <div className="skeleton" style={{ height: 16, width: 180, marginBottom: 10 }} />
-      <div className="skeleton" style={{ height: 12, width: 240, marginBottom: 18 }} />
-      <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-        <div className="skeleton" style={{ height: 44 }} />
-        <div className="skeleton" style={{ height: 44 }} />
+      <div className="premium-metric-grid">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="premium-metric-card p-6">
+            <div className="skeleton h-3 w-20" />
+            <div className="skeleton mt-4 h-12 w-36" />
+            <div className="skeleton mt-4 h-4 w-32" />
+          </div>
+        ))}
       </div>
-    </section>
-  </div>
-);
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -113,9 +128,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cacheLoaded, setCacheLoaded] = useState(false);
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
   useEffect(() => {
@@ -218,294 +231,271 @@ export default function DashboardPage() {
   const statCards = [
     {
       label: 'Sales',
-      value: `₹${fmt(stats?.totalRevenue)}`,
+      value: stats?.totalRevenue || 0,
       note: `${stats?.salesCount || 0} invoices this month`,
-      tone: 'money',
       href: '/sales',
-      icon: 'Sales',
+      accent: '#6366F1',
+      color: '#0CAF60',
+      prefix: '₹',
     },
     {
       label: 'Profit',
-      value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
+      value: profit,
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
-      tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
-      icon: 'Profit',
+      accent: '#0CAF60',
+      color: profit >= 0 ? '#0CAF60' : '#F43F5E',
+      prefix: '₹',
+      sign: profit >= 0 ? '+' : '-',
     },
     {
       label: 'Credit',
-      value: `₹${fmt(totalCustomerUdhaar)}`,
+      value: totalCustomerUdhaar,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
-      tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
       href: '/udhaar',
-      icon: 'Credit',
+      accent: '#F59E0B',
+      color: '#F59E0B',
+      prefix: '₹',
     },
     {
-      label: 'GST Payable',
-      value: `₹${fmt(Math.abs(netGST))}`,
+      label: 'GST',
+      value: Math.abs(netGST),
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
-      tone: 'warning',
       href: '/gst',
-      icon: 'GST',
+      accent: '#FB923C',
+      color: '#FB923C',
+      prefix: '₹',
     },
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#10b981', semantic: 'sales' },
-    { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#f59e0b', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#f43f5e', semantic: 'credit' },
-    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'stock' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'gst' },
-    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
+    { href: '/sales', icon: 'sales', title: 'Sales', note: 'Record sale', tint: '#eef2ff', color: '#6366F1' },
+    { href: '/purchases', icon: 'purchase', title: 'Purchases', note: 'Record purchase', tint: '#fffbeb', color: '#f59e0b' },
+    { href: '/product', icon: 'stock', title: 'Products', note: 'Update stock', tint: '#ecfdf5', color: '#0caf60' },
+    { href: '/gst', icon: 'gst', title: 'GST', note: 'Tax summary', tint: '#f5f3ff', color: '#8b5cf6' },
+  ];
+
+  const breakdown = [
+    { label: 'Revenue', value: stats?.totalRevenue || 0, color: '#0CAF60', prefix: '₹' },
+    { label: 'Profit', value: Math.abs(profit), color: profit >= 0 ? '#0CAF60' : '#F43F5E', prefix: '₹', sign: profit >= 0 ? '+' : '-' },
+    { label: 'GST Collected', value: stats?.gstCollected || 0, color: '#F59E0B', prefix: '₹' },
+    { label: 'ITC', value: stats?.gstITC || 0, color: '#6366F1', prefix: '₹', sign: '-' },
+    { label: 'Net GST', value: Math.abs(netGST), color: netGST >= 0 ? '#FB923C' : '#0CAF60', prefix: '₹', sign: netGST < 0 ? '-' : '' },
   ];
 
   return (
     <Layout>
-      <div className="page-shell dashboard-shell">
-        <section className="card">
-          <div className="page-toolbar dashboard-toolbar">
-            <div style={{ minWidth: 0 }}>
-              <div className="page-subtitle">Business overview</div>
-              <div className="page-title">Dashboard</div>
-              {refreshing ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
-              ) : !isOnline ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#92400e' }}>
-                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
-                </div>
-              ) : cacheLoaded && cacheLabel ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
-              ) : null}
+      <div className="premium-page">
+        <section className="premium-panel stagger-item p-6" style={{ animationDelay: '0ms' }}>
+          <div className="premium-header-row">
+            <div className="grid gap-3">
+              <div className="premium-kicker">Business overview</div>
+              <div>
+                <h1 className="premium-page-title">Dashboard</h1>
+                <p className="mt-3 text-sm text-slate-400">
+                  {businessName} summary for {MONTHS[selectedMonth - 1]} {selectedYear}
+                </p>
+                <p className="mt-2 text-sm text-slate-400">
+                  {refreshing
+                    ? 'Refreshing latest data...'
+                    : !isOnline
+                      ? `Offline snapshot active${cacheLabel ? ` • last updated ${cacheLabel}` : ''}`
+                      : cacheLoaded && cacheLabel
+                        ? `Last synced ${cacheLabel}`
+                        : 'Live business health at a glance'}
+                </p>
+              </div>
             </div>
 
-            <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
-                {MONTHS.map((month, index) => (
-                  <option key={month} value={index + 1}>{month}</option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
-                {[2023, 2024, 2025, 2026].map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+            <div className="grid min-w-[220px] gap-3 sm:grid-cols-2">
+              <div className="premium-select-wrap">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="form-input"
+                >
+                  {MONTHS.map((month, index) => (
+                    <option key={month} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+                <span className="premium-select-chevron">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </span>
+              </div>
+              <div className="premium-select-wrap">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="form-input"
+                >
+                  {[2023, 2024, 2025, 2026].map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                <span className="premium-select-chevron">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </span>
+              </div>
             </div>
           </div>
         </section>
 
         {!isOnline ? (
-          <section className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+          <section className="premium-alert stagger-item" style={{ animationDelay: '80ms' }}>
             <strong>Dashboard offline mode</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
-              Abhi cached business snapshot dikh raha hai. Sales, GST, low stock aur credit numbers live nahi hain jab tak internet wapas na aaye.
+            <div className="mt-2 text-sm">
+              Cached business snapshot is visible right now. Sales, GST, credit, and stock alerts will refresh again when your connection returns.
             </div>
           </section>
         ) : null}
 
-        <section className="metric-grid">
-          {statCards.map((card) => (
-            <StatCard
+        <section className="premium-metric-grid">
+          {statCards.map((card, index) => (
+            <button
               key={card.label}
-              className="dashboard-stat-card"
-              tone={card.tone}
-              label={card.label}
-              value={card.value}
-              note={card.note}
-              icon={card.icon}
+              type="button"
               onClick={() => router.push(card.href)}
-            />
+              className="premium-metric-card stagger-item text-left"
+              style={{ animationDelay: `${(index + 1) * 80}ms` }}
+            >
+              <span className="premium-metric-strip" style={{ background: card.accent }} />
+              <div className="premium-metric-label">{card.label}</div>
+              <CountNumber
+                value={card.value}
+                prefix={card.prefix}
+                sign={card.sign || ''}
+                className="premium-metric-value"
+                color={card.color}
+              />
+              <div className="premium-metric-note">{card.note}</div>
+            </button>
           ))}
         </section>
 
-        {revenue > 0 && (
-          <section className="card dashboard-section-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
+        {revenue > 0 ? (
+          <section className="premium-panel stagger-item p-6" style={{ animationDelay: '400ms' }}>
+            <div className="premium-header-row">
               <div>
-                <div className="section-title">Profit Breakdown</div>
-                <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
+                <div className="premium-kicker">Financial mix</div>
+                <div className="mt-2 premium-section-title">Revenue, profit and GST in one frame</div>
               </div>
-              <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
+              <div className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-600">
+                Margin {margin}%
+              </div>
             </div>
 
-            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-              {[
-                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
-                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
-                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="dashboard-breakdown-card"
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                  }}
-                >
-                    <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {item.label}
-                    </div>
-                  <div style={{ fontSize: 24, color: item.color, fontWeight: 800, letterSpacing: '-0.05em', marginTop: 8 }}>
-                    {item.prefix}₹{fmt(item.value)}
-                  </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-5">
+              {breakdown.map((item, index) => (
+                <div key={item.label} className="rounded-[20px] border border-indigo-50 bg-[#fbfcff] p-5">
+                  <div className="premium-metric-label">{item.label}</div>
+                  <CountNumber
+                    value={item.value}
+                    prefix={item.prefix}
+                    sign={item.sign || ''}
+                    className="mt-3 premium-stat-figure text-[1.75rem] font-bold"
+                    color={item.color}
+                  />
                 </div>
               ))}
             </div>
-
-            <div style={{ marginTop: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#475569', marginBottom: 6 }}>
-                <span>Profit Margin</span>
-                <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
-              </div>
-              <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
-                <div
-                  className="dashboard-progress-fill"
-                  style={{
-                    width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
-                    height: '100%',
-                    borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #3730a3)' : 'linear-gradient(90deg, #dc2626, #f97316)',
-                  }}
-                />
-              </div>
-            </div>
           </section>
-        )}
+        ) : null}
 
-        {lowStockCount > 0 && (
+        {lowStockCount > 0 ? (
           <section
-            className="card dashboard-section-card dashboard-warning-card"
+            className="premium-panel stagger-item cursor-pointer p-6"
+            style={{ animationDelay: '480ms' }}
             onClick={() => router.push('/product')}
-            style={{ cursor: 'pointer' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="premium-header-row">
               <div>
-                <div className="section-title" style={{ color: '#b45309' }}>Low Stock</div>
-                <div className="section-subtitle" style={{ color: '#d97706' }}>
-                  {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                  {lowStockProducts.slice(0, 5).map((product) => (
-                    <span
-                      key={product._id}
-                      className="dashboard-chip-warning"
-                      style={{ padding: '7px 11px' }}
-                    >
-                      {product.name} ({product.quantity ?? 0})
-                    </span>
-                  ))}
-                  {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
-                </div>
+                <div className="premium-kicker">Attention needed</div>
+                <div className="mt-2 premium-section-title">Low Stock</div>
+                <p className="mt-2 text-sm text-slate-400">
+                  {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout.
+                </p>
               </div>
-              <div className="btn-warning" style={{ width: 'auto' }}>Open Products</div>
+              <div className="premium-secondary-btn">Open Products</div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              {lowStockProducts.slice(0, 6).map((product) => (
+                <span
+                  key={product._id}
+                  className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700"
+                >
+                  {product.name} ({product.quantity ?? 0})
+                </span>
+              ))}
+              {lowStockCount > 6 ? (
+                <span className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600">
+                  +{lowStockCount - 6} more
+                </span>
+              ) : null}
             </div>
           </section>
-        )}
+        ) : null}
 
-        <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
-          <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <section className="premium-panel stagger-item p-6" style={{ animationDelay: '560ms' }}>
+          <div className="premium-header-row">
             <div>
-              <div className="section-title">Quick Actions</div>
-              <div className="section-subtitle">Fast access to your most-used screens</div>
+              <div className="premium-kicker">Work faster</div>
+              <div className="mt-2 premium-section-title">Quick Actions</div>
             </div>
-            <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
-          <div className="quick-actions-carousel">
-            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-              {quickActions.map((action) => (
-                <a
-                  key={action.href}
-                  href={action.href}
-                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: 18,
-                    padding: '14px 12px',
-                    minHeight: 94,
-                  }}
-                >
-                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
-                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-            <div className="quick-actions-fade" aria-hidden="true" />
-            <div className="quick-actions-chevron" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
+
+          <div className="mt-6 premium-quick-grid">
+            {quickActions.map((action, index) => (
+              <a
+                key={action.href}
+                href={action.href}
+                className="premium-quick-card stagger-item"
+                style={{ animationDelay: `${640 + (index * 80)}ms` }}
+              >
+                <div className="premium-icon-box" style={{ background: action.tint, color: action.color }}>
+                  <QuickActionGlyph name={action.icon} />
+                </div>
+                <div className="text-base font-bold text-slate-900">{action.title}</div>
+                <div className="mt-2 text-sm text-slate-400">{action.note}</div>
+              </a>
+            ))}
           </div>
         </section>
 
-        <section className="card dashboard-section-card">
-          <div style={{ marginBottom: 16 }}>
-            <div className="section-title">Top Products</div>
-            <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
+        <section className="premium-panel stagger-item p-6" style={{ animationDelay: '720ms' }}>
+          <div className="premium-header-row">
+            <div>
+              <div className="premium-kicker">Best performers</div>
+              <div className="mt-2 premium-section-title">Top Products</div>
+              <p className="mt-2 text-sm text-slate-400">{MONTHS[selectedMonth - 1]} {selectedYear}</p>
+            </div>
           </div>
+
           {topProducts.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">PK</div>
-              <div>No top products yet for this period.</div>
+            <div className="premium-empty-state mt-6">
+              <div className="text-lg font-semibold text-slate-500">No top products yet for this period.</div>
             </div>
           ) : (
-            <div className="top-products-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {topProducts.map((product, index) => (
                 <div
                   key={product.name}
-                  className="dashboard-top-card"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: 14,
-                    borderRadius: 18,
-                    minWidth: 0,
-                  }}
+                  className="premium-card stagger-item flex items-center gap-4 p-5"
+                  style={{ animationDelay: `${800 + (index * 80)}ms` }}
                 >
                   <div
+                    className="grid h-12 w-12 place-items-center rounded-2xl text-sm font-bold text-white"
                     style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 14,
-                      background: [
-                        'linear-gradient(135deg, #10b981, #34d399)',
-                        'linear-gradient(135deg, #4f46e5, #818cf8)',
-                        'linear-gradient(135deg, #f59e0b, #fbbf24)',
-                        'linear-gradient(135deg, #ef4444, #fb7185)',
-                        'linear-gradient(135deg, #2563eb, #38bdf8)',
-                      ][index],
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      flexShrink: 0,
+                      background: ['#6366F1', '#0CAF60', '#F59E0B', '#F43F5E'][index % 4],
                     }}
                   >
                     {index + 1}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                    <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold text-slate-900">{product.name}</div>
+                    <div className="mt-1 text-sm text-slate-400">{product.qty} units sold</div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
+                  <div className="premium-currency text-xl font-bold text-emerald-600">₹{fmt(product.revenue)}</div>
                 </div>
               ))}
             </div>
@@ -515,4 +505,3 @@ export default function DashboardPage() {
     </Layout>
   );
 }
-

@@ -1,5 +1,6 @@
-﻿'use client';
-import { useState, useEffect } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
@@ -7,56 +8,72 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { apiUrl } from '../../lib/api';
 
 const getToken = () => localStorage.getItem('token');
-const HSN_GST_HINTS = {
-  84: 18,
-  85: 18,
-  30: 12,
-  61: 5,
-  62: 5,
-  64: 12,
-  90: 18,
-};
+const HSN_GST_HINTS = { 84: 18, 85: 18, 30: 12, 61: 5, 62: 5, 64: 12, 90: 18 };
 const PRODUCTS_CACHE_KEY = 'products-page';
 const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
 
+function useCountUp(target, duration = 900) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let frameId = 0;
+    let startedAt = 0;
+    const finalValue = Number.isFinite(Number(target)) ? Number(target) : 0;
+    const tick = (timestamp) => {
+      if (!startedAt) startedAt = timestamp;
+      const progress = Math.min((timestamp - startedAt) / duration, 1);
+      const eased = 1 - ((1 - progress) ** 3);
+      setValue(Math.round(finalValue * eased));
+      if (progress < 1) frameId = window.requestAnimationFrame(tick);
+    };
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [target, duration]);
+  return value;
+}
+
+function CountNumber({ value, prefix = '', className = '', color }) {
+  const animated = useCountUp(Math.abs(value));
+  const formatted = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(animated);
+  return <div className={className} style={color ? { color } : undefined}>{prefix}{formatted}</div>;
+}
+
+const SearchGlyph = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+    <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
+const ChevronGlyph = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export default function ProductsPage() {
   const router = useRouter();
-  const [products, setProducts]   = useState([]);
-  const [filtered, setFiltered]   = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [products, setProducts] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]         = useState('');
-  const [isOnline, setIsOnline]   = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
+  const [error, setError] = useState('');
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
-
-  // Filters
-  const [search, setSearch]           = useState('');
-  const [sortBy, setSortBy]           = useState('name');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('name');
   const [filterStock, setFilterStock] = useState('all');
-
-  // Add/Edit modal
-  const [showModal, setShowModal]   = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [form, setForm] = useState({
-    name: '', description: '', price: '', cost_price: '',
-    quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0,
-    low_stock_threshold: 5,
-  });
+  const [form, setForm] = useState({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [lastScannedBarcode, setLastScannedBarcode] = useState('');
-
-  // Stock adjust modal
-  const [showStockModal, setShowStockModal]   = useState(false);
-  const [stockProduct, setStockProduct]       = useState(null);
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockProduct, setStockProduct] = useState(null);
   const [stockForm, setStockForm] = useState({ type: 'manual_add', quantity: '', note: '' });
   const [stockSubmitting, setStockSubmitting] = useState(false);
-
-  // Stock history modal
-  const [showHistory, setShowHistory]   = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [historyProduct, setHistoryProduct] = useState(null);
-  const [historyData, setHistoryData]   = useState([]);
+  const [historyData, setHistoryData] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -68,13 +85,11 @@ export default function ProductsPage() {
       setCacheUpdatedAt(cached.cachedAt || null);
       setLoading(false);
     }
-
     const deferredId = scheduleDeferred(async () => {
       setRefreshing(Boolean(cached?.products));
       await fetchProducts();
       setRefreshing(false);
     });
-
     return () => cancelDeferred(deferredId);
   }, []);
   /* eslint-enable react-hooks/exhaustive-deps */
@@ -93,27 +108,21 @@ export default function ProductsPage() {
 
   useEffect(() => {
     let result = [...products];
-    if (search) result = result.filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.description && p.description.toLowerCase().includes(search.toLowerCase())) ||
-      (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase()))
-    );
-    if (filterStock === 'low')     result = result.filter(p => p.quantity > 0 && p.is_low_stock);
-    if (filterStock === 'out')     result = result.filter(p => p.quantity === 0);
-    if (filterStock === 'instock') result = result.filter(p => p.quantity > 0 && !p.is_low_stock);
-    if (sortBy === 'name')         result.sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === 'price_asc')    result.sort((a, b) => a.price - b.price);
-    if (sortBy === 'price_desc')   result.sort((a, b) => b.price - a.price);
-    if (sortBy === 'quantity')     result.sort((a, b) => a.quantity - b.quantity);
-    if (sortBy === 'margin')       result.sort((a, b) => (b.margin || 0) - (a.margin || 0));
+    if (search) result = result.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()) || (p.description && p.description.toLowerCase().includes(search.toLowerCase())) || (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase())));
+    if (filterStock === 'low') result = result.filter((p) => p.quantity > 0 && p.is_low_stock);
+    if (filterStock === 'out') result = result.filter((p) => p.quantity === 0);
+    if (filterStock === 'instock') result = result.filter((p) => p.quantity > 0 && !p.is_low_stock);
+    if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === 'price_asc') result.sort((a, b) => a.price - b.price);
+    if (sortBy === 'price_desc') result.sort((a, b) => b.price - a.price);
+    if (sortBy === 'quantity') result.sort((a, b) => a.quantity - b.quantity);
+    if (sortBy === 'margin') result.sort((a, b) => (b.margin || 0) - (a.margin || 0));
     setFiltered(result);
   }, [search, sortBy, filterStock, products]);
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch(apiUrl('/api/products'), {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const res = await fetch(apiUrl('/api/products'), { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
       const nextProducts = Array.isArray(data) ? data : data.products || [];
@@ -124,7 +133,6 @@ export default function ProductsPage() {
     finally { setLoading(false); }
   };
 
-  // â”€â”€ Add / Edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openAdd = () => {
     setEditProduct(null);
     setForm({ name: '', description: '', price: '', cost_price: '', quantity: '', unit: 'pcs', barcode: '', hsn_code: '', gst_rate: 0, low_stock_threshold: 5 });
@@ -135,13 +143,7 @@ export default function ProductsPage() {
 
   const openEdit = (p) => {
     setEditProduct(p);
-    setForm({
-      name: p.name, description: p.description || '',
-      price: p.price, cost_price: p.cost_price || '',
-      quantity: p.quantity, unit: p.unit || 'pcs',
-      barcode: p.barcode || '', hsn_code: p.hsn_code || '', gst_rate: p.gst_rate || 0,
-      low_stock_threshold: p.low_stock_threshold || 5,
-    });
+    setForm({ name: p.name, description: p.description || '', price: p.price, cost_price: p.cost_price || '', quantity: p.quantity, unit: p.unit || 'pcs', barcode: p.barcode || '', hsn_code: p.hsn_code || '', gst_rate: p.gst_rate || 0, low_stock_threshold: p.low_stock_threshold || 5 });
     setLastScannedBarcode('');
     setError('');
     setShowModal(true);
@@ -149,19 +151,10 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError('');
-    if (!isOnline) {
-      setError('Offline mode me product save nahi hoga. Internet on karke try karein.');
-      return;
-    }
-    const url = editProduct
-      ? apiUrl(`/api/products/${editProduct._id}`)
-      : apiUrl('/api/products');
+    if (!isOnline) { setError('Offline mode me product save nahi hoga. Internet on karke try karein.'); return; }
+    const url = editProduct ? apiUrl(`/api/products/${editProduct._id}`) : apiUrl('/api/products');
     try {
-      const res = await fetch(url, {
-        method: editProduct ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(form),
-      });
+      const res = await fetch(url, { method: editProduct ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(form) });
       const data = await res.json();
       if (res.ok) { setShowModal(false); fetchProducts(); }
       else setError(data.message || 'Could not save product');
@@ -176,16 +169,10 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!isOnline) {
-      setError('Offline mode me product delete nahi hoga.');
-      return;
-    }
+    if (!isOnline) { setError('Offline mode me product delete nahi hoga.'); return; }
     if (!confirm('Delete this product?')) return;
     try {
-      const res = await fetch(apiUrl(`/api/products/${id}`), {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const res = await fetch(apiUrl(`/api/products/${id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.ok) fetchProducts();
       else {
         const d = await res.json();
@@ -194,7 +181,6 @@ export default function ProductsPage() {
     } catch { setError('Server error'); }
   };
 
-  // â”€â”€ Stock Adjust â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openStockAdjust = (p) => {
     setStockProduct(p);
     setStockForm({ type: 'manual_add', quantity: '', note: '' });
@@ -204,615 +190,282 @@ export default function ProductsPage() {
 
   const handleStockAdjust = async (e) => {
     e.preventDefault(); setError('');
-    if (!isOnline) {
-      setError('Offline mode me stock adjust nahi hoga.');
-      return;
-    }
+    if (!isOnline) { setError('Offline mode me stock adjust nahi hoga.'); return; }
     setStockSubmitting(true);
     try {
-      const res = await fetch(apiUrl(`/api/products/${stockProduct._id}/adjust-stock`), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(stockForm),
-      });
+      const res = await fetch(apiUrl(`/api/products/${stockProduct._id}/adjust-stock`), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(stockForm) });
       const data = await res.json();
-      if (res.ok) {
-        setShowStockModal(false);
-        fetchProducts();
-      } else setError(data.message || 'Stock update failed');
+      if (res.ok) { setShowStockModal(false); fetchProducts(); }
+      else setError(data.message || 'Stock update failed');
     } catch { setError('Server error'); }
     setStockSubmitting(false);
   };
 
-  // â”€â”€ Stock History â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openHistory = async (p) => {
-    if (!isOnline) {
-      setError('Offline mode me stock history load nahi hogi.');
-      return;
-    }
+    if (!isOnline) { setError('Offline mode me stock history load nahi hogi.'); return; }
     setHistoryProduct(p);
     setShowHistory(true);
     setHistoryLoading(true);
     try {
-      const res = await fetch(apiUrl(`/api/products/${p._id}/stock-history`), {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const res = await fetch(apiUrl(`/api/products/${p._id}/stock-history`), { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
       setHistoryData(data.history || []);
     } catch {}
     setHistoryLoading(false);
   };
 
-  // â”€â”€ Computed stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const lowStockCount = products.filter(p => p.is_low_stock && p.quantity > 0).length;
-  const outOfStockCount = products.filter(p => p.quantity === 0).length;
+  const lowStockCount = products.filter((p) => p.is_low_stock && p.quantity > 0).length;
+  const outOfStockCount = products.filter((p) => p.quantity === 0).length;
   const totalValue = products.reduce((s, p) => s + (p.cost_price || 0) * p.quantity, 0);
-  const suggestedGstRate = (() => {
-    const prefix = parseInt(String(form.hsn_code || '').slice(0, 2), 10);
-    return HSN_GST_HINTS[prefix];
-  })();
-  const cacheLabel = cacheUpdatedAt
-    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
-  // â”€â”€ Badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const StockBadge = ({ p }) => {
-    if (p.quantity === 0) return <span className="badge badge-red">Out</span>;
-    if (p.is_low_stock)   return <span className="badge badge-yellow">Low ({p.quantity})</span>;
-    return <span className="badge badge-green">In Stock</span>;
-  };
-
-  const GSTBadge = ({ rate }) => {
-    if (rate === null || rate === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
-    return <span style={{ background: '#e0f2fe', color: '#0c4a6e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>GST {rate}%</span>;
-  };
-
-  const MarginBadge = ({ margin }) => {
-    if (margin === null || margin === undefined) return <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>;
-    const color = margin >= 30 ? '#059669' : margin >= 15 ? '#d97706' : '#ef4444';
-    const bg    = margin >= 30 ? '#dcfce7' : margin >= 15 ? '#fef3c7' : '#fee2e2';
-    return <span style={{ background: bg, color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{margin}%</span>;
-  };
-
-  const historyTypeLabel = (type) => ({
-    purchase: 'Purchase',
-    sale: 'Sale',
-    manual_add: 'Added',
-    manual_remove: 'Removed',
-    adjustment: 'Adjusted',
-  }[type] || type);
+  const suggestedGstRate = (() => HSN_GST_HINTS[parseInt(String(form.hsn_code || '').slice(0, 2), 10)])();
+  const cacheLabel = cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+  const historyTypeLabel = (type) => ({ purchase: 'Purchase', sale: 'Sale', manual_add: 'Added', manual_remove: 'Removed', adjustment: 'Adjusted' }[type] || type);
+  const formatCurrency = (value) => `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(value || 0))}`;
+  const getStatusMeta = (product) => product.quantity === 0
+    ? { border: '#F43F5E', badgeClass: 'bg-rose-50 text-rose-600 border border-rose-200', badgeLabel: 'Out of Stock', qtyColor: '#F43F5E' }
+    : product.is_low_stock
+      ? { border: '#F59E0B', badgeClass: 'bg-amber-50 text-amber-600 border border-amber-200', badgeLabel: `Low Stock • ${product.quantity}`, qtyColor: '#F59E0B' }
+      : { border: '#34D399', badgeClass: 'bg-emerald-50 text-emerald-600 border border-emerald-200', badgeLabel: 'In Stock', qtyColor: '#6366F1' };
+  const getMarginMeta = (margin) => margin === null || margin === undefined ? { className: 'bg-slate-100 text-slate-500', label: '-' } : margin > 30 ? { className: 'bg-emerald-50 text-emerald-700', label: `${margin}%` } : margin >= 10 ? { className: 'bg-amber-50 text-amber-700', label: `${margin}%` } : { className: 'bg-rose-50 text-rose-700', label: `${margin}%` };
+  const metricCards = [
+    { label: 'Total Products', value: products.length, note: 'Catalog in your inventory', color: '#6366F1', border: '#6366F1', prefix: '' },
+    { label: 'Low Stock', value: lowStockCount, note: 'Need reorder attention', color: '#F59E0B', border: '#F59E0B', prefix: '' },
+    { label: 'Out of Stock', value: outOfStockCount, note: 'Unavailable for sale', color: '#F43F5E', border: '#F43F5E', prefix: '' },
+    { label: 'Inventory Value', value: totalValue, note: 'Based on cost price', color: '#0CAF60', border: '#0CAF60', prefix: '₹' },
+  ];
 
   return (
     <Layout>
-      <div className="page-shell product-shell">
-        <section className="card">
-          <div className="page-toolbar">
-            <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
-              <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
-                {refreshing
-                  ? 'Refreshing latest inventory...'
-                  : !isOnline
-                    ? `Offline inventory snapshot${cacheLabel ? ` • last updated ${cacheLabel}` : ''}`
-                    : cacheLabel
-                      ? `Inventory ready • last synced ${cacheLabel}`
-                      : 'Your complete product catalog'}
+      <div className="premium-page">
+        <section className="premium-panel stagger-item p-6" style={{ animationDelay: '0ms' }}>
+          <div className="premium-header-row">
+            <div className="grid gap-3">
+              <div className="premium-kicker">Inventory control</div>
+              <div>
+                <h1 className="premium-page-title" style={{ fontSize: '2rem' }}>Products</h1>
+                <div className="mt-4 premium-sync-inline">
+                  <span className="premium-sync-dot" />
+                  <span>{refreshing ? 'Refreshing latest inventory...' : !isOnline ? `Offline inventory snapshot${cacheLabel ? ` • last updated ${cacheLabel}` : ''}` : cacheLabel ? `Inventory ready • last synced ${cacheLabel}` : 'Inventory synced and ready'}</span>
+                </div>
               </div>
             </div>
-            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }} disabled={!isOnline}>
-              + Add Product
-            </button>
+            <button onClick={openAdd} className="premium-primary-btn premium-shimmer-btn" disabled={!isOnline} type="button">+ Add Product</button>
           </div>
         </section>
 
-        {!isOnline ? (
-          <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
-            <strong>Offline inventory mode</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
-              Products list cached snapshot se dikh rahi hai. Add, edit, delete aur stock actions internet wapas aane par hi chalenge.
+        {!isOnline ? <section className="premium-alert stagger-item" style={{ animationDelay: '80ms' }}><strong>Offline inventory mode</strong><div className="mt-2 text-sm">Products are visible from the cached snapshot. Add, edit, delete, and stock actions will work again once internet is back.</div></section> : null}
+
+        <section className="premium-metric-grid">
+          {metricCards.map((card, index) => (
+            <div key={card.label} className="premium-metric-card premium-metric-left-accent stagger-item p-6" style={{ animationDelay: `${(index + 1) * 80}ms`, borderLeftColor: card.border }}>
+              <div className="premium-metric-label">{card.label}</div>
+              <CountNumber value={card.value} prefix={card.prefix} className="premium-metric-value" color={card.color} />
+              <div className="premium-metric-note">{card.note}</div>
             </div>
-          </div>
-        ) : null}
+          ))}
+        </section>
 
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Total Products</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>{products.length}</div>
-            <div className="metric-note">Catalog in your inventory</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Low Stock</div>
-            <div className="metric-value" style={{ color: '#b45309' }}>{lowStockCount}</div>
-            <div className="metric-note">Need reorder attention</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Out Of Stock</div>
-            <div className="metric-value" style={{ color: '#ef4444' }}>{outOfStockCount}</div>
-            <div className="metric-note">Unavailable for sale</div>
-          </div>
-            <div className="metric-card" style={{ cursor: 'default' }}>
-              <div className="metric-label">Inventory Value</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>₹{totalValue.toFixed(0)}</div>
-            <div className="metric-note">Based on cost price</div>
+        <section className="premium-toolbar-card stagger-item" style={{ animationDelay: '400ms' }}>
+          <div className="premium-toolbar-grid">
+            <div className="premium-search-wrap">
+              <span className="premium-search-icon"><SearchGlyph /></span>
+              <input className="form-input premium-search-input" placeholder="Search products, descriptions, or barcodes" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div className="premium-select-wrap">
+              <select className="form-input" value={filterStock} onChange={(e) => setFilterStock(e.target.value)}>
+                <option value="all">All Status</option><option value="instock">In Stock</option><option value="low">Low Stock</option><option value="out">Out of Stock</option>
+              </select>
+              <span className="premium-select-chevron"><ChevronGlyph /></span>
+            </div>
+            <div className="premium-select-wrap">
+              <select className="form-input" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="name">Name</option><option value="price_asc">Price Low to High</option><option value="price_desc">Price High to Low</option><option value="quantity">Qty Low to High</option><option value="margin">Margin High to Low</option>
+              </select>
+              <span className="premium-select-chevron"><ChevronGlyph /></span>
+            </div>
+            {(search || filterStock !== 'all') ? <button type="button" onClick={() => { setSearch(''); setFilterStock('all'); }} className="premium-secondary-btn">Clear</button> : <div />}
           </div>
         </section>
 
-        <div className="toolbar-card">
-          <div className="toolbar">
-            <input className="form-input" style={{ flex: 1, minWidth: 180 }}
-              placeholder="Search products..."
-              value={search} onChange={e => setSearch(e.target.value)} />
-            <select className="form-input" style={{ minWidth: 140 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
-              <option value="all">All</option>
-              <option value="instock">In Stock</option>
-              <option value="low">Low Stock</option>
-              <option value="out">Out of Stock</option>
-            </select>
-            <select className="form-input" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-              <option value="name">Name</option>
-              <option value="price_asc">Price Low to High</option>
-              <option value="price_desc">Price High to Low</option>
-              <option value="quantity">Qty Low to High</option>
-              <option value="margin">Margin High to Low</option>
-            </select>
-            {(search || filterStock !== 'all') && (
-              <button onClick={() => { setSearch(''); setFilterStock('all'); }} className="btn-ghost" style={{ width: 'auto' }}>
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
-        {error && !showModal && !showStockModal && (
-          <div className="alert-error">
-          {error}
-          </div>
-        )}
+        {error && !showModal && !showStockModal ? <div className="alert-error">{error}</div> : null}
 
         {loading ? (
-          <div className="card" style={{ display: 'grid', gap: 12 }}>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="skeleton" style={{ height: 72 }} />
-            ))}
+          <div className="premium-product-grid">
+            {Array.from({ length: 6 }).map((_, index) => <div key={index} className="premium-product-card p-6"><div className="skeleton h-6 w-40" /><div className="skeleton mt-3 h-4 w-56" /><div className="skeleton mt-6 h-20 w-full" /></div>)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">PK</div>
-            <div>{search || filterStock !== 'all' ? 'No products found' : 'No products yet. Add your first product.'}</div>
-          </div>
+          <div className="premium-empty-state"><div className="text-lg font-semibold text-slate-500">{search || filterStock !== 'all' ? 'No products found' : 'No products yet. Add your first product.'}</div></div>
         ) : (
-          <>
-          {/* Desktop table */}
-          <div className="table-container hidden min-[641px]:block">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Cost</th>
-                  <th>Price</th>
-                  <th>Margin</th>
-                  <th>GST</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(p => (
-                  <tr key={p._id} style={{ background: p.quantity === 0 ? 'rgba(239,68,68,0.08)' : p.is_low_stock ? 'rgba(245,158,11,0.08)' : 'transparent' }}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
-                      <div style={{ color: '#9ca3af', fontSize: 11 }}>
-                        {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
-                        {p.hsn_code ? `HSN: ${p.hsn_code}` : ''} {p.unit || ''}
-                        {p.low_stock_threshold !== 5 && ` • Alert <= ${p.low_stock_threshold}`}
-                      </div>
-                    </td>
-                    <td style={{ color: '#9ca3af' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</td>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</td>
-                    <td><MarginBadge margin={p.margin} /></td>
-                    <td><GSTBadge rate={p.gst_rate} /></td>
-                    <td style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>
-                      {p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span>
-                    </td>
-                    <td><StockBadge p={p} /></td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button onClick={() => openStockAdjust(p)}
-                          className="action-soft stock"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Stock
-                        </button>
-                        <button onClick={() => openHistory(p)}
-                          className="action-soft history"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          History
-                        </button>
-                        <button onClick={() => openEdit(p)}
-                          className="action-soft edit"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Edit
-                        </button>
-                        <button onClick={() => handleDelete(p._id)}
-                          className="action-soft delete"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          Del
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="flex flex-col gap-3 min-[641px]:hidden">
-            {filtered.map(p => (
-              <div key={p._id} className="card"
-                style={{ borderLeft: `3px solid ${p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#10b981'}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{p.name}</div>
-                    <div style={{ color: '#9ca3af', fontSize: 11 }}>
-                      {p.barcode ? `Barcode: ${p.barcode} • ` : ''}
-                      {p.description || (p.unit ? `Unit: ${p.unit}` : '')}
+          <section className="premium-product-grid">
+            {filtered.map((product, index) => {
+              const status = getStatusMeta(product);
+              const margin = getMarginMeta(product.margin);
+              return (
+                <article key={product._id} className="premium-product-card stagger-item" style={{ animationDelay: `${480 + (index * 80)}ms`, borderLeftColor: status.border }}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="premium-product-name">{product.name}</div>
+                      <div className="mt-2 text-sm text-slate-400">{product.description || 'No description'}{product.barcode ? ` • Barcode ${product.barcode}` : ''}{product.hsn_code ? ` • HSN ${product.hsn_code}` : ''}</div>
                     </div>
+                    <span className={`premium-status-badge ${status.badgeClass}`}>{status.badgeLabel}</span>
                   </div>
-                  <StockBadge p={p} />
-                </div>
-
-                <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>COST</div><div style={{ fontWeight: 700, color: '#0f172a' }}>{p.cost_price ? `₹${p.cost_price}` : '-'}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>PRICE</div><div style={{ fontWeight: 700, color: '#0f172a' }}>₹{p.price}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MARGIN</div><div><MarginBadge margin={p.margin} /></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>QTY</div><div style={{ fontWeight: 700, color: p.quantity === 0 ? '#ef4444' : p.is_low_stock ? '#f59e0b' : '#059669' }}>{p.quantity} <span style={{ color: '#64748b', fontWeight: 800 }}>{p.unit || ''}</span></div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>GST</div><GSTBadge rate={p.gst_rate} /></div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => openStockAdjust(p)}
-                    className="action-soft stock"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Stock
-                  </button>
-                  <button onClick={() => openHistory(p)}
-                    className="action-soft history"
-                    style={{ flex: 1, padding: '8px' }}>
-                    History
-                  </button>
-                  <button onClick={() => openEdit(p)}
-                    className="action-soft edit"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Edit
-                  </button>
-                  <button onClick={() => handleDelete(p._id)}
-                    className="action-soft delete"
-                    style={{ flex: 1, padding: '8px' }}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+                  <div className="premium-stat-grid">
+                    <div><div className="premium-mini-label">Cost</div><div className="premium-mini-value">{product.cost_price ? formatCurrency(product.cost_price) : '-'}</div></div>
+                    <div><div className="premium-mini-label">Price</div><div className="premium-mini-value">{formatCurrency(product.price)}</div></div>
+                    <div><div className="premium-mini-label">Margin</div><div className="mt-2"><span className={`premium-margin-pill ${margin.className}`}>{margin.label}</span></div></div>
+                    <div><div className="premium-mini-label">Qty</div><div className="premium-mini-value" style={{ color: status.qtyColor }}>{product.quantity} <span className="text-slate-400">{product.unit || 'pcs'}</span></div></div>
+                    <div><div className="premium-mini-label">GST</div><div className="mt-2"><span className="premium-gst-pill bg-slate-100 text-slate-500">{product.gst_rate === null || product.gst_rate === undefined ? '-' : `GST ${product.gst_rate}%`}</span></div></div>
+                  </div>
+                  <div className="mt-4 text-sm text-slate-400">Unit: {product.unit || 'pcs'}{product.low_stock_threshold !== 5 ? ` • Alert <= ${product.low_stock_threshold}` : ''}</div>
+                  <div className="premium-product-actions">
+                    <button type="button" onClick={() => openStockAdjust(product)} className="premium-action-pill stock">Stock</button>
+                    <button type="button" onClick={() => openHistory(product)} className="premium-action-pill history">History</button>
+                    <button type="button" onClick={() => openEdit(product)} className="premium-action-pill edit">Edit</button>
+                    <button type="button" onClick={() => handleDelete(product._id)} className="premium-action-pill delete">Delete</button>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
         )}
       </div>
 
-      {/* â”€â”€ Add/Edit Modal â”€â”€ */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal flow-modal" style={{ maxWidth: 560, maxHeight: '88vh', overflowY: 'auto', alignSelf: 'flex-end', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}>
+      {showModal ? (
+        <div className="modal-overlay premium-modal-shell">
+          <div className="modal flow-modal" style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="flow-modal-header">
               <div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
-              {editProduct ? 'Edit Product' : 'Add Product'}
-                </h3>
+                <div className="premium-kicker">{editProduct ? 'Update item' : 'New inventory item'}</div>
+                <h3 className="premium-modal-title mt-2">{editProduct ? 'Edit Product' : 'Add Product'}</h3>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div className="flow-muted-chip">{editProduct ? 'Editing product' : 'New product'}</div>
+              <div className="flex items-center gap-3">
+                <div className="rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">{editProduct ? 'Editing' : 'Create'}</div>
                 <button type="button" className="modal-close-btn" onClick={() => setShowModal(false)} aria-label="Close add product modal">×</button>
               </div>
             </div>
-            {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
-            <form onSubmit={handleSubmit}>
+            {error ? <div className="alert-error mt-4">{error}</div> : null}
+            <form onSubmit={handleSubmit} className="mt-6">
               <div className="flow-section-kicker"><span>Basics</span></div>
-              <div className="form-group">
-                <label className="form-label">Name *</label>
-                <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-              </div>
+              <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
+              <div className="form-group"><label className="form-label">Description</label><input className="form-input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div className="form-group">
                 <label className="form-label">Barcode</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
-                  <input
-                    className="form-input"
-                    style={{ flex: 1 }}
-                    placeholder="Scan or type barcode"
-                    value={form.barcode}
-                    onChange={e => {
-                      const normalizedBarcode = normalizeBarcode(e.target.value);
-                      setForm({ ...form, barcode: normalizedBarcode });
-                      setLastScannedBarcode((current) => (current === normalizedBarcode ? current : ''));
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="btn-ghost"
-                    style={{ whiteSpace: 'nowrap' }}
-                    onClick={() => setShowBarcodeScanner(true)}
-                  >
-                    Scan
-                  </button>
+                <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                  <input className="form-input" placeholder="Scan or type barcode" value={form.barcode} onChange={(e) => {
+                    const normalizedBarcode = normalizeBarcode(e.target.value);
+                    setForm({ ...form, barcode: normalizedBarcode });
+                    setLastScannedBarcode((current) => (current === normalizedBarcode ? current : ''));
+                  }} />
+                  <button type="button" className="premium-secondary-btn" onClick={() => setShowBarcodeScanner(true)}>Scan</button>
                 </div>
-                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-                  Mobile camera scan fills the barcode field automatically.
-                </div>
-                {lastScannedBarcode && (
-                  <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: 12, fontWeight: 600 }}>
-                    Scanned successfully: <span style={{ fontFamily: 'monospace', fontSize: 13 }}>{lastScannedBarcode}</span>
-                  </div>
-                )}
+                <div className="mt-2 text-xs text-slate-400">Mobile camera scan fills the barcode field automatically.</div>
+                {lastScannedBarcode ? <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">Scanned successfully: <span className="font-mono">{lastScannedBarcode}</span></div> : null}
               </div>
 
               <div className="flow-section-kicker"><span>Pricing</span></div>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">Cost Price</label>
-                  <input className="form-input" type="number" step="0.01" placeholder="Cost price" value={form.cost_price} onChange={e => setForm({ ...form, cost_price: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Selling Price *</label>
-                  <input className="form-input" type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
-                </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="form-group"><label className="form-label">Cost Price</label><input className="form-input" type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} /></div>
+                <div className="form-group"><label className="form-label">Selling Price *</label><input className="form-input" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required /></div>
               </div>
+              {form.cost_price && form.price && Number(form.cost_price) > 0 ? <div className="mb-4 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">Margin: {(((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%<span className="ml-2 text-emerald-600">• ₹{(Number(form.price) - Number(form.cost_price)).toFixed(2)} per unit</span></div> : null}
 
-              {/* Live margin preview */}
-              {form.cost_price && form.price && Number(form.cost_price) > 0 && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#dcfce7', border: '1px solid #86efac', borderRadius: 999, padding: '8px 12px', marginBottom: 12, fontSize: 13, color: '#166534', fontWeight: 700 }}>
-                  <span>
-                    Margin: {(((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1)}%
-                  </span>
-                  <span style={{ color: '#15803d' }}>• ₹{(Number(form.price) - Number(form.cost_price)).toFixed(2)} per unit</span>
-                </div>
-              )}
               <div className="flow-section-kicker"><span>Tax & Stock</span></div>
-              <div className="grid-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="form-group">
-                  <label className="form-label">
-                    {editProduct ? 'Quantity' : 'Opening Stock *'}
-                  </label>
-                  <input className="form-input" type="number" min="0"
-                    value={form.quantity}
-                    onChange={e => setForm({ ...form, quantity: e.target.value })}
-                    required={!editProduct} />
-                    {editProduct && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Use the Stock action to adjust inventory.</div>}
+                  <label className="form-label">{editProduct ? 'Quantity' : 'Opening Stock *'}</label>
+                  <input className="form-input" type="number" min="0" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} required={!editProduct} />
+                  {editProduct ? <div className="mt-2 text-xs text-slate-400">Use the Stock action to adjust inventory.</div> : null}
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Unit</label>
-                  <input className="form-input" placeholder="kg, pcs, box, litre..." value={form.unit || 'pcs'} onChange={e => setForm({ ...form, unit: e.target.value })} />
-                </div>
+                <div className="form-group"><label className="form-label">Unit</label><input className="form-input" value={form.unit || 'pcs'} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
               </div>
 
-              <div className="grid-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="form-group">
                   <label className="form-label">HSN/SAC Code</label>
-                  <input
-                    className="form-input"
-                    placeholder="e.g. 8471"
-                    value={form.hsn_code}
-                    onChange={e => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 8);
-                      const prefix = parseInt(value.slice(0, 2), 10);
-                      const nextSuggestedRate = HSN_GST_HINTS[prefix];
-                      setForm(current => ({
-                        ...current,
-                        hsn_code: value,
-                        gst_rate: nextSuggestedRate ?? current.gst_rate,
-                      }));
-                    }}
-                  />
-                  {suggestedGstRate !== undefined && (
-                    <div style={{ fontSize: 11, color: '#2563eb', marginTop: 4 }}>
-                      Suggested GST: {suggestedGstRate}% based on HSN
-                    </div>
-                  )}
+                  <input className="form-input" placeholder="e.g. 8471" value={form.hsn_code} onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+                    const prefix = parseInt(value.slice(0, 2), 10);
+                    const nextSuggestedRate = HSN_GST_HINTS[prefix];
+                    setForm((current) => ({ ...current, hsn_code: value, gst_rate: nextSuggestedRate ?? current.gst_rate }));
+                  }} />
+                  {suggestedGstRate !== undefined ? <div className="mt-2 text-xs text-indigo-600">Suggested GST: {suggestedGstRate}% based on HSN</div> : null}
                 </div>
                 <div className="form-group">
                   <label className="form-label">GST Rate</label>
-                  <select className="form-input" value={form.gst_rate} onChange={e => setForm({ ...form, gst_rate: parseInt(e.target.value) })}>
-                    <option value={0}>0% - No GST</option>
-                    <option value={5}>5% GST</option>
-                    <option value={12}>12% GST</option>
-                    <option value={18}>18% GST</option>
-                    <option value={28}>28% GST</option>
-                  </select>
-                  {suggestedGstRate !== undefined && form.gst_rate !== suggestedGstRate && (
-                    <button type="button" className="btn-ghost" style={{ marginTop: 8, width: '100%' }} onClick={() => setForm(current => ({ ...current, gst_rate: suggestedGstRate }))}>
-                      Apply suggested {suggestedGstRate}% GST
-                    </button>
-                  )}
+                  <div className="premium-select-wrap">
+                    <select className="form-input" value={form.gst_rate} onChange={(e) => setForm({ ...form, gst_rate: parseInt(e.target.value) })}>
+                      <option value={0}>0% - No GST</option><option value={5}>5% GST</option><option value={12}>12% GST</option><option value={18}>18% GST</option><option value={28}>28% GST</option>
+                    </select>
+                    <span className="premium-select-chevron"><ChevronGlyph /></span>
+                  </div>
+                  {suggestedGstRate !== undefined && form.gst_rate !== suggestedGstRate ? <button type="button" className="premium-secondary-btn mt-3 w-full" onClick={() => setForm((current) => ({ ...current, gst_rate: suggestedGstRate }))}>Apply suggested {suggestedGstRate}% GST</button> : null}
                 </div>
               </div>
 
-              {/* Low stock threshold */}
               <div className="form-group">
                 <label className="form-label">Low Stock Alert Threshold</label>
-                <input className="form-input" type="number" min="0"
-                  placeholder="e.g. 5 (alert when stock <= this)"
-                  value={form.low_stock_threshold}
-                  onChange={e => setForm({ ...form, low_stock_threshold: e.target.value })} />
-                <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-                  Default: 5 - you will see an alert when stock falls below this.
-                </div>
+                <input className="form-input" type="number" min="0" value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })} />
+                <div className="mt-2 text-xs text-slate-400">Default: 5 - you will see an alert when stock falls below this.</div>
               </div>
+              {form.price && form.gst_rate > 0 ? <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4 text-sm text-violet-700"><div className="font-semibold">GST Preview</div><div className="mt-1">₹{parseFloat(form.price || 0).toFixed(2)} + {form.gst_rate}% GST =<strong> ₹{(parseFloat(form.price || 0) * (1 + form.gst_rate / 100)).toFixed(2)}</strong></div></div> : null}
 
-              {form.price && form.gst_rate > 0 && (
-                <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: 2 }}>GST Preview</div>
-                  <div style={{ color: '#7c3aed' }}>
-                    ₹{parseFloat(form.price || 0).toFixed(2)} + {form.gst_rate}% GST = <strong>₹{(parseFloat(form.price || 0) * (1 + form.gst_rate / 100)).toFixed(2)}</strong>
-                  </div>
-                </div>
-              )}
-
-              <div className="flow-actions">
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  {editProduct ? 'Update Product' : 'Add Product'}
-                </button>
-                <button type="button" onClick={() => setShowModal(false)}
-                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Cancel
-                </button>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button type="submit" className="premium-primary-btn flex-1">{editProduct ? 'Update Product' : 'Add Product'}</button>
+                <button type="button" onClick={() => setShowModal(false)} className="premium-secondary-btn flex-1">Cancel</button>
               </div>
             </form>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Stock Adjust Modal */}
-      {showStockModal && stockProduct && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
-              Stock Adjust - {stockProduct.name}
-            </h3>
-            <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 14 }}>
-              Current Stock: <strong style={{ color: '#0f172a' }}>{stockProduct.quantity} {stockProduct.unit || 'pcs'}</strong>
-            </div>
-            {error && <div style={{ background: 'rgba(239,68,68,0.14)', color: '#fecaca', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12, border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
-            <form onSubmit={handleStockAdjust}>
+      {showStockModal && stockProduct ? (
+        <div className="modal-overlay premium-modal-shell">
+          <div className="modal" style={{ maxWidth: 560 }}>
+            <div className="premium-kicker">Inventory movement</div>
+            <h3 className="premium-modal-title mt-2">Stock Adjust - {stockProduct.name}</h3>
+            <div className="mt-3 text-sm text-slate-400">Current Stock: <strong className="text-slate-900">{stockProduct.quantity} {stockProduct.unit || 'pcs'}</strong></div>
+            {error ? <div className="alert-error mt-4">{error}</div> : null}
+            <form onSubmit={handleStockAdjust} className="mt-6">
               <div className="form-group">
                 <label className="form-label">Type *</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {[
-                    { val: 'manual_add', label: 'Add Stock', color: '#10b981' },
-                    { val: 'manual_remove', label: 'Remove Stock', color: '#ef4444' },
-                    { val: 'adjustment', label: 'Correction', color: '#6366f1' },
-                  ].map(opt => (
-                    <button key={opt.val} type="button"
-                      onClick={() => setStockForm({ ...stockForm, type: opt.val })}
-                      style={{
-                        flex: 1, padding: '8px 4px', borderRadius: 8, border: '2px solid',
-                        borderColor: stockForm.type === opt.val ? opt.color : '#e5e7eb',
-                        background: stockForm.type === opt.val ? opt.color : '#f9fafb',
-                        color: stockForm.type === opt.val ? '#fff' : '#374151',
-                        cursor: 'pointer', fontWeight: 700, fontSize: 11,
-                      }}>
-                      {opt.label}
-                    </button>
+                <div className="premium-choice-group">
+                  {[{ val: 'manual_add', label: 'Add Stock', color: '#0CAF60' }, { val: 'manual_remove', label: 'Remove Stock', color: '#F43F5E' }, { val: 'adjustment', label: 'Correction', color: '#6366F1' }].map((opt) => (
+                    <button key={opt.val} type="button" onClick={() => setStockForm({ ...stockForm, type: opt.val })} className={`premium-choice-chip${stockForm.type === opt.val ? ' is-active' : ''}`} style={stockForm.type === opt.val ? { background: opt.color } : undefined}>{opt.label}</button>
                   ))}
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Quantity *</label>
-                <input className="form-input" type="number" min="1"
-                  placeholder="How many units?"
-                  value={stockForm.quantity}
-                  onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })}
-                  required />
-                {stockForm.quantity && (
-                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                    New stock will be: <strong>
-                      {stockForm.type === 'manual_remove'
-                        ? Math.max(0, stockProduct.quantity - Number(stockForm.quantity))
-                        : stockProduct.quantity + Number(stockForm.quantity)
-                      } {stockProduct.unit || 'pcs'}
-                    </strong>
-                  </div>
-                )}
+                <input className="form-input" type="number" min="1" value={stockForm.quantity} onChange={(e) => setStockForm({ ...stockForm, quantity: e.target.value })} required />
+                {stockForm.quantity ? <div className="mt-2 text-xs text-slate-400">New stock will be:<strong className="ml-1 text-slate-900">{stockForm.type === 'manual_remove' ? Math.max(0, stockProduct.quantity - Number(stockForm.quantity)) : stockProduct.quantity + Number(stockForm.quantity)} {stockProduct.unit || 'pcs'}</strong></div> : null}
               </div>
-              <div className="form-group">
-                <label className="form-label">Note</label>
-                <input className="form-input" placeholder="Reason for adjustment..."
-                  value={stockForm.note}
-                  onChange={e => setStockForm({ ...stockForm, note: e.target.value })} />
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" disabled={stockSubmitting}
-                  style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#04150b', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  {stockSubmitting ? 'Saving...' : 'Update Stock'}
-                </button>
-                <button type="button" onClick={() => { setShowStockModal(false); setError(''); }}
-                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Cancel
-                </button>
+              <div className="form-group"><label className="form-label">Note</label><input className="form-input" value={stockForm.note} onChange={(e) => setStockForm({ ...stockForm, note: e.target.value })} /></div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button type="submit" disabled={stockSubmitting} className="premium-primary-btn flex-1">{stockSubmitting ? 'Saving...' : 'Update Stock'}</button>
+                <button type="button" onClick={() => { setShowStockModal(false); setError(''); }} className="premium-secondary-btn flex-1">Cancel</button>
               </div>
             </form>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Stock History Modal */}
-      {showHistory && historyProduct && (
-        <div className="modal-overlay">
-          <div className="modal" style={{ maxHeight: '85vh', overflowY: 'auto', maxWidth: 520 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      {showHistory && historyProduct ? (
+        <div className="modal-overlay premium-modal-shell">
+          <div className="modal" style={{ maxWidth: 620, maxHeight: '85vh', overflowY: 'auto' }}>
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', marginBottom: 2 }}>
-                  Stock History - {historyProduct.name}
-                </h3>
-                <div style={{ fontSize: 12, color: '#9ca3af' }}>
-                  Current: <strong>{historyProduct.quantity} {historyProduct.unit || 'pcs'}</strong>
-                </div>
+                <div className="premium-kicker">Activity log</div>
+                <h3 className="premium-modal-title mt-2">Stock History - {historyProduct.name}</h3>
+                <div className="mt-2 text-sm text-slate-400">Current: <strong className="text-slate-900">{historyProduct.quantity} {historyProduct.unit || 'pcs'}</strong></div>
               </div>
-              <button onClick={() => setShowHistory(false)}
-                style={{ padding: '6px 12px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
-                Close
-              </button>
+              <button type="button" onClick={() => setShowHistory(false)} className="premium-secondary-btn">Close</button>
             </div>
-
-            {historyLoading ? (
-              <div style={{ textAlign: 'center', color: '#9ca3af', padding: 30 }}>Loading stock history...</div>
-            ) : historyData.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#9ca3af', padding: 30 }}>No stock history found</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {historyData.map((h, i) => (
-                  <div key={i} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 12px', background: '#f8fafc', borderRadius: 8,
-                    borderLeft: `3px solid ${h.quantity_change > 0 ? '#10b981' : '#ef4444'}`,
-                  }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
-                        {historyTypeLabel(h.type)}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        {new Date(h.date).toLocaleDateString('en-IN')} • {h.note || '-'}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 800, fontSize: 14, color: h.quantity_change > 0 ? '#10b981' : '#ef4444' }}>
-                        {h.quantity_change > 0 ? '+' : ''}{h.quantity_change}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                        {'->'} {h.quantity_after} {historyProduct.unit || 'pcs'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {historyLoading ? <div className="py-10 text-center text-slate-400">Loading stock history...</div> : historyData.length === 0 ? <div className="py-10 text-center text-slate-400">No stock history found</div> : <div className="mt-6 grid gap-3">{historyData.map((item, index) => <div key={index} className="premium-history-row"><div><div className="font-semibold text-slate-900">{historyTypeLabel(item.type)}</div><div className="mt-1 text-sm text-slate-400">{new Date(item.date).toLocaleDateString('en-IN')} • {item.note || '-'}</div></div><div className="text-right"><div className="text-base font-bold" style={{ color: item.quantity_change > 0 ? '#0CAF60' : '#F43F5E' }}>{item.quantity_change > 0 ? '+' : ''}{item.quantity_change}</div><div className="mt-1 text-sm text-slate-400">→ {item.quantity_after} {historyProduct.unit || 'pcs'}</div></div></div>)}</div>}
           </div>
         </div>
-      )}
+      ) : null}
 
-      <CameraBarcodeScanner
-        open={showBarcodeScanner}
-        title="Scan product barcode"
-        description="Camera scan se barcode field auto-fill ho jayegi."
-        onClose={() => setShowBarcodeScanner(false)}
-        onDetected={handleBarcodeDetected}
-      />
+      <CameraBarcodeScanner open={showBarcodeScanner} title="Scan product barcode" description="Camera scan se barcode field auto-fill ho jayegi." onClose={() => setShowBarcodeScanner(false)} onDetected={handleBarcodeDetected} />
     </Layout>
   );
 }
-
