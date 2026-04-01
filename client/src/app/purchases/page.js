@@ -41,6 +41,16 @@ const getMonthFilterValue = (value) => {
   if (Number.isNaN(date.getTime())) return '';
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
+const monthInputWrapStyle = { position: 'relative', minWidth: 180 };
+const monthInputHintStyle = {
+  position: 'absolute',
+  left: 16,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: '#9ca3af',
+  fontSize: 14,
+  pointerEvents: 'none',
+};
 const getPurchaseSearchText = (purchase) => {
   const itemNames = Array.isArray(purchase.items) ? purchase.items.map((item) => item.product_name || '').join(' ') : '';
   return [
@@ -866,13 +876,16 @@ export default function PurchasesPage() {
               value={billSearch}
               onChange={(e) => setBillSearch(e.target.value)}
             />
-            <input
-              className="form-input"
-              style={{ minWidth: 180 }}
-              type="month"
-              value={billMonth}
-              onChange={(e) => setBillMonth(e.target.value)}
-            />
+            <div style={monthInputWrapStyle}>
+              {!billMonth ? <span style={monthInputHintStyle}>Select month and year</span> : null}
+              <input
+                className="form-input"
+                style={{ minWidth: 180, position: 'relative', background: 'transparent' }}
+                type="month"
+                value={billMonth}
+                onChange={(e) => setBillMonth(e.target.value)}
+              />
+            </div>
             {hasBillFilters ? (
               <button type="button" className="btn-ghost" style={{ width: 'auto' }} onClick={() => { setBillSearch(''); setBillMonth(''); }}>
                 Clear

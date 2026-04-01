@@ -14,6 +14,16 @@ const getMonthFilterValue = (value) => {
   if (Number.isNaN(date.getTime())) return '';
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
+const monthInputWrapStyle = { position: 'relative', minWidth: 180 };
+const monthInputHintStyle = {
+  position: 'absolute',
+  left: 16,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: '#9ca3af',
+  fontSize: 14,
+  pointerEvents: 'none',
+};
 const getLedgerEntryText = (entry) => [
   entry.note,
   entry.reference_id,
@@ -412,13 +422,16 @@ export default function UdhaarPage() {
                               value={ledgerSearch}
                               onChange={(e) => setLedgerSearch(e.target.value)}
                             />
-                            <input
-                              className="form-input"
-                              style={{ minWidth: 180 }}
-                              type="month"
-                              value={ledgerMonth}
-                              onChange={(e) => setLedgerMonth(e.target.value)}
-                            />
+                            <div style={monthInputWrapStyle}>
+                              {!ledgerMonth ? <span style={monthInputHintStyle}>Select month and year</span> : null}
+                              <input
+                                className="form-input"
+                                style={{ minWidth: 180, position: 'relative', background: 'transparent' }}
+                                type="month"
+                                value={ledgerMonth}
+                                onChange={(e) => setLedgerMonth(e.target.value)}
+                              />
+                            </div>
                             {hasLedgerFilters ? (
                               <button type="button" className="btn-ghost" style={{ width: 'auto' }} onClick={() => { setLedgerSearch(''); setLedgerMonth(''); }}>
                                 Clear
