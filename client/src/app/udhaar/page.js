@@ -217,7 +217,7 @@ export default function UdhaarPage() {
           <div className="page-toolbar ledger-hero-toolbar">
             <div>
               <div className="page-title" style={{ color: '#1a1a1a', marginBottom: 0 }}>Credit Ledger</div>
-              <div className="ledger-hero-subtitle">Track customer and supplier credits</div>
+              <div className="ledger-hero-subtitle">Track credits efficiently</div>
             </div>
           </div>
         </section>
@@ -296,7 +296,7 @@ export default function UdhaarPage() {
                     <div
                       className={`ui-list-card ledger-person-card ${selected?._id === item._id ? 'is-active' : ''}`}
                       onClick={() => openLedger(item)}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: 'pointer', borderLeftColor: isCustomer ? '#ef4444' : '#f59e0b' }}
                     >
                       <div className="ledger-person-main">
                         <div className="ledger-person-avatar">{initials(item.name)}</div>
@@ -315,10 +315,10 @@ export default function UdhaarPage() {
                       <div className="ledger-person-side">
                         {isCustomer && item.phone && item.totalUdhaar > 0 ? (
                           <button
-                            variant="whatsapp"
                             type="button"
                             className="ledger-wa-button"
                             onClick={(event) => { event.stopPropagation(); sendReminder(item); }}
+                            aria-label={`Send WhatsApp reminder to ${item.name}`}
                           >
                             <LedgerActionIcon kind="whatsapp" />
                           </button>
@@ -338,35 +338,25 @@ export default function UdhaarPage() {
                       <Card
                         className="ledger-detail-card"
                         title={
-                          <div className="ledger-detail-header-title-wrap">
-                            <div className="ledger-detail-header-title">{selected.name}</div>
-                            {selected.phone ? (
-                              <div className="ledger-detail-header-phone">
-                                <LedgerPhoneIcon />
-                                <span>{selected.phone}</span>
-                              </div>
-                            ) : null}
-                          </div>
+                          <div className="ledger-detail-header-title">{selected.name}</div>
                         }
-                        subtitle={isCustomer ? 'Customer transaction history' : 'Supplier transaction history'}
+                        subtitle={selected.phone || (isCustomer ? 'Customer transaction history' : 'Supplier transaction history')}
                         actions={
-                          <>
+                          <div className="ledger-detail-top-actions">
                             {isCustomer && selected.phone && selected.totalUdhaar > 0 ? (
-                              <ActionButton variant="whatsapp" className="ledger-detail-top-action" onClick={() => sendReminder(selected, ledger)}>
+                              <button type="button" className="ledger-detail-icon-btn is-whatsapp" onClick={() => sendReminder(selected, ledger)} aria-label="WhatsApp reminder">
                                 <LedgerActionIcon kind="whatsapp" />
-                                WhatsApp Reminder
-                              </ActionButton>
+                              </button>
                             ) : null}
                             {selected.totalUdhaar > 0 ? (
-                              <ActionButton variant="primary" className="ledger-detail-top-action" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
+                              <button type="button" className="ledger-detail-icon-btn is-primary" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }} aria-label={isCustomer ? 'Receive payment' : 'Make payment'}>
                                 <LedgerActionIcon kind="payment" />
-                                {isCustomer ? 'Receive Payment' : 'Make Payment'}
-                              </ActionButton>
+                              </button>
                             ) : null}
-                            <ActionButton variant="dark" className="ledger-detail-top-action" onClick={() => { setSelected(null); setLedger([]); }}>
-                              Close
-                            </ActionButton>
-                          </>
+                            <button type="button" className="ledger-detail-icon-btn is-dark" onClick={() => { setSelected(null); setLedger([]); }} aria-label="Close detail">
+                              <LedgerActionIcon kind="close" />
+                            </button>
+                          </div>
                         }
                       >
                         <div className="ledger-detail-summary">
@@ -378,7 +368,7 @@ export default function UdhaarPage() {
                           </div>
                         </div>
 
-                        <div className="metric-grid ledger-breakdown-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 16 }}>
+                        <div className="metric-grid ledger-breakdown-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', marginBottom: 10 }}>
                           {isCustomer ? (
                             <>
                               <BalanceTile label="Total Sales" value={`₹${fmt(selected.totalSales)}`} />
@@ -440,23 +430,6 @@ export default function UdhaarPage() {
                           </div>
                         )}
 
-                        <div className="ledger-detail-actions">
-                          {isCustomer && selected.phone && selected.totalUdhaar > 0 ? (
-                            <ActionButton variant="whatsapp" className="ledger-detail-action-btn" onClick={() => sendReminder(selected, ledger)}>
-                              <LedgerActionIcon kind="whatsapp" />
-                              WhatsApp Reminder
-                            </ActionButton>
-                          ) : null}
-                          {selected.totalUdhaar > 0 ? (
-                            <ActionButton variant="primary" className="ledger-detail-action-btn" onClick={() => { setShowSettle(true); setError(''); setSuccess(''); }}>
-                              <LedgerActionIcon kind="payment" />
-                              {isCustomer ? 'Receive Payment' : 'Make Payment'}
-                            </ActionButton>
-                          ) : null}
-                          <ActionButton variant="dark" className="ledger-detail-action-btn" onClick={() => { setSelected(null); setLedger([]); }}>
-                            Close
-                          </ActionButton>
-                        </div>
                       </Card>
                     ) : null}
                   </div>
@@ -617,6 +590,15 @@ function LedgerActionIcon({ kind }) {
         <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
         <rect x="3" y="7" width="18" height="14" rx="2" />
         <path d="M16 14h.01" />
+      </svg>
+    );
+  }
+
+  if (kind === 'close') {
+    return (
+      <svg {...commonProps}>
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
       </svg>
     );
   }

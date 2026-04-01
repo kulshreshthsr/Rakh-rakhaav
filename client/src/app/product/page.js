@@ -74,9 +74,6 @@ export default function ProductsPage() {
 
   // Filters
   const [search, setSearch]           = useState('');
-  const [sortBy, setSortBy]           = useState('name');
-  const [filterStock, setFilterStock] = useState('all');
-
   // Add/Edit modal
   const [showModal, setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -139,16 +136,9 @@ export default function ProductsPage() {
       (p.description && p.description.toLowerCase().includes(search.toLowerCase())) ||
       (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase()))
     );
-    if (filterStock === 'low')     result = result.filter(p => p.quantity > 0 && p.is_low_stock);
-    if (filterStock === 'out')     result = result.filter(p => p.quantity === 0);
-    if (filterStock === 'instock') result = result.filter(p => p.quantity > 0 && !p.is_low_stock);
-    if (sortBy === 'name')         result.sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === 'price_asc')    result.sort((a, b) => a.price - b.price);
-    if (sortBy === 'price_desc')   result.sort((a, b) => b.price - a.price);
-    if (sortBy === 'quantity')     result.sort((a, b) => a.quantity - b.quantity);
-    if (sortBy === 'margin')       result.sort((a, b) => (b.margin || 0) - (a.margin || 0));
+    result.sort((a, b) => a.name.localeCompare(b.name));
     setFiltered(result);
-  }, [search, sortBy, filterStock, products]);
+  }, [search, products]);
 
   const fetchProducts = async () => {
     try {
@@ -302,7 +292,7 @@ export default function ProductsPage() {
     : null;
   const formatMoney = (value) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(value || 0));
   const getStatusTone = (p) => (p.quantity === 0 ? 'out' : p.is_low_stock ? 'low' : 'ok');
-  const getStatusLabel = (p) => (p.quantity === 0 ? 'Out (0)' : p.is_low_stock ? `Low (${p.quantity})` : `In (${p.quantity})`);
+  const getStatusLabel = (p) => (p.quantity === 0 ? 'Out' : p.is_low_stock ? 'Low stock' : 'In stock');
   // â”€â”€ Badge helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const StockBadge = ({ p }) => {
     if (p.quantity === 0) return <span className="product-status-badge is-out">Out (0)</span>;
@@ -334,19 +324,13 @@ export default function ProductsPage() {
       <div className="page-shell product-shell">
         <section className="card product-hero">
           <div className="page-toolbar product-hero-toolbar">
-            <div>
+            <div className="product-hero-copy">
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
               <div className="product-hero-subtitle">
-                {refreshing
-                  ? 'Refreshing latest inventory...'
-                  : !isOnline
-                    ? `Offline inventory snapshot${cacheLabel ? ` • last updated ${cacheLabel}` : ''}`
-                    : cacheLabel
-                      ? `Manage your catalog with precision • last synced ${cacheLabel}`
-                      : 'Manage your catalog with precision'}
+                Manage catalog with precision
               </div>
             </div>
-            <button onClick={openAdd} className="btn-primary product-add-button" style={{ width: 'auto' }} disabled={!isOnline}>
+            <button onClick={openAdd} className="btn-primary product-add-button" disabled={!isOnline}>
               <ProductGlyph name="plus" size={18} /> Add Product
             </button>
           </div>
@@ -368,6 +352,7 @@ export default function ProductsPage() {
               <div className="product-stat-icon"><ProductGlyph name="box" /></div>
             </div>
             <div className="product-stat-value">{products.length}</div>
+            <div className="product-stat-note">Catalog items</div>
           </div>
           <div className="product-stat-card product-stat-low">
             <div className="product-stat-top">
@@ -375,6 +360,7 @@ export default function ProductsPage() {
               <div className="product-stat-icon"><ProductGlyph name="warning" /></div>
             </div>
             <div className="product-stat-value">{lowStockCount}</div>
+            <div className="product-stat-note">Needs reorder</div>
           </div>
           <div className="product-stat-card product-stat-out">
             <div className="product-stat-top">
@@ -382,6 +368,7 @@ export default function ProductsPage() {
               <div className="product-stat-icon"><ProductGlyph name="out" /></div>
             </div>
             <div className="product-stat-value">{outOfStockCount}</div>
+            <div className="product-stat-note">Unavailable now</div>
           </div>
           <div className="product-stat-card product-stat-value-card">
             <div className="product-stat-top">
@@ -389,33 +376,20 @@ export default function ProductsPage() {
               <div className="product-stat-icon"><ProductGlyph name="value" /></div>
             </div>
             <div className="product-stat-value">₹{formatMoney(totalValue)}</div>
+            <div className="product-stat-note">At cost value</div>
           </div>
         </section>
 
         <div className="toolbar-card product-filters-card">
-          <div className="toolbar product-filters-toolbar">
+          <div className="product-filters-toolbar">
             <div className="product-search-wrap">
               <span className="product-search-icon"><ProductGlyph name="search" /></span>
               <input className="form-input product-search-input"
-                style={{ flex: 1, minWidth: 180 }}
-                placeholder="Search products by name, SKU..."
+                placeholder="Search products by name, barcode, or description"
                 value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <select className="form-input product-filter-select" style={{ minWidth: 140 }} value={filterStock} onChange={e => setFilterStock(e.target.value)}>
-              <option value="all">All</option>
-              <option value="instock">In Stock</option>
-              <option value="low">Low Stock</option>
-              <option value="out">Out of Stock</option>
-            </select>
-            <select className="form-input product-filter-select" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-              <option value="name">Name</option>
-              <option value="price_asc">Price Low to High</option>
-              <option value="price_desc">Price High to Low</option>
-              <option value="quantity">Qty Low to High</option>
-              <option value="margin">Margin High to Low</option>
-            </select>
-            {(search || filterStock !== 'all') && (
-              <button onClick={() => { setSearch(''); setFilterStock('all'); }} className="btn-ghost" style={{ width: 'auto' }}>
+            {search && (
+              <button onClick={() => setSearch('')} className="btn-ghost product-search-clear" style={{ width: 'auto' }}>
                 Clear
               </button>
             )}
@@ -431,13 +405,13 @@ export default function ProductsPage() {
         {loading ? (
           <div className="card" style={{ display: 'grid', gap: 12 }}>
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="skeleton" style={{ height: 72 }} />
+              <div key={index} className="skeleton" style={{ height: 110 }} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">PK</div>
-            <div>{search || filterStock !== 'all' ? 'No products found' : 'No products yet. Add your first product.'}</div>
+            <div>{search ? 'No products found' : 'No products yet. Add your first product.'}</div>
           </div>
         ) : (
           <div className="product-list">
@@ -445,16 +419,8 @@ export default function ProductsPage() {
               <article key={p._id} className={`product-card product-card-${getStatusTone(p)}`}>
                 <div className="product-card-top">
                   <div className="product-card-main">
-                    <div className="product-card-avatar">
-                      <ProductGlyph name="box" size={20} />
-                    </div>
                     <div className="product-card-copy">
                       <div className="product-card-title">{p.name}</div>
-                      <div className="product-card-subtitle">
-                        {p.barcode ? `Barcode: ${p.barcode}` : p.description || 'No description'}
-                        {p.hsn_code ? ` • HSN ${p.hsn_code}` : ''}
-                        {p.unit ? ` • ${p.unit}` : ''}
-                      </div>
                     </div>
                   </div>
                   <div className={`product-status-badge ${getStatusTone(p) === 'out' ? 'is-out' : getStatusTone(p) === 'low' ? 'is-low' : 'is-in'}`}>
@@ -463,29 +429,17 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="product-metrics-row">
-                  <div className="product-metric-cell">
-                    <div className="product-metric-label">COST</div>
-                    <div className="product-metric-value">{p.cost_price ? `₹${formatMoney(p.cost_price)}` : '-'}</div>
-                  </div>
-                  <div className="product-metric-cell">
-                    <div className="product-metric-label">PRICE</div>
-                    <div className="product-metric-value">₹{formatMoney(p.price)}</div>
-                  </div>
-                  <div className="product-metric-cell">
-                    <div className="product-metric-label">MARGIN</div>
-                    <div className="product-metric-value"><MarginBadge margin={p.margin} /></div>
-                  </div>
-                  <div className="product-metric-cell">
-                    <div className="product-metric-label">QTY</div>
-                    <div className={`product-metric-value product-qty-value is-${getStatusTone(p)}`}>{p.quantity}</div>
-                  </div>
-                  <div className="product-metric-cell">
-                    <div className="product-metric-label">GST</div>
-                    <div className="product-metric-value"><GSTBadge rate={p.gst_rate} /></div>
-                  </div>
+                  <span className="product-metric-inline">Cost <strong>{p.cost_price ? `₹${formatMoney(p.cost_price)}` : '-'}</strong></span>
+                  <span className="product-metric-inline">Price <strong>₹{formatMoney(p.price)}</strong></span>
+                  <span className={`product-metric-inline product-metric-inline-margin ${p.margin > 50 ? 'is-high' : p.margin >= 30 ? 'is-mid' : 'is-low'}`}>Margin <strong>{p.margin ?? '-'}%</strong></span>
+                  <span className={`product-metric-inline product-metric-inline-qty is-${getStatusTone(p)}`}>Qty <strong>{p.quantity}</strong></span>
                 </div>
 
-                <div className="product-card-actions">
+                <div className="product-card-footer">
+                  <div className="product-card-taxline">
+                    <GSTBadge rate={p.gst_rate} />
+                  </div>
+                  <div className="product-card-actions">
                   <button onClick={() => openStockAdjust(p)}
                     className="product-icon-button stock"
                     aria-label={`Adjust stock for ${p.name}`}>
@@ -506,6 +460,7 @@ export default function ProductsPage() {
                     aria-label={`Delete ${p.name}`}>
                     <ProductGlyph name="delete" size={16} />
                   </button>
+                  </div>
                 </div>
               </article>
             ))}

@@ -43,6 +43,11 @@ const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   hour: '2-digit',
   minute: '2-digit',
 });
+const formatPurchaseDateShort = (value) => new Date(value).toLocaleDateString('en-IN', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
 const GST_STATE_CODE_MAP = {
   '01': 'Jammu & Kashmir',
   '02': 'Himachal Pradesh',
@@ -160,7 +165,6 @@ export default function PurchasesPage() {
   const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('date');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -776,7 +780,7 @@ export default function PurchasesPage() {
     };
     const s = map[type] || map.cash;
     return (
-      <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+      <span className="purchase-payment-badge" style={{ background: s.bg, color: s.color }}>
         {s.label}
       </span>
     );
@@ -900,18 +904,11 @@ export default function PurchasesPage() {
         })
       : [...purchases];
 
-    nextPurchases.sort((a, b) => {
-      if (sortBy === 'amount') return Number(b.total_amount || 0) - Number(a.total_amount || 0);
-      if (sortBy === 'product') {
-        const aName = String((a.items && a.items.length > 1 ? a.items.map((item) => item.product_name).join(', ') : a.product_name) || '');
-        const bName = String((b.items && b.items.length > 1 ? b.items.map((item) => item.product_name).join(', ') : b.product_name) || '');
-        return aName.localeCompare(bName);
-      }
-      return new Date(b.createdAt || b.purchased_at || 0) - new Date(a.createdAt || a.purchased_at || 0);
-    });
+    nextPurchases.sort((a, b) => new Date(b.createdAt || b.purchased_at || 0) - new Date(a.createdAt || a.purchased_at || 0));
 
     return nextPurchases;
-  }, [purchases, searchTerm, sortBy]);
+  }, [purchases, searchTerm]);
+  const recentPurchases = visiblePurchases.slice(0, 4);
 
   return (
     <Layout>
@@ -920,10 +917,9 @@ export default function PurchasesPage() {
           <div className="page-toolbar purchases-hero-toolbar">
             <div className="purchases-hero-copy">
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Purchases</div>
-              <div className="purchases-hero-subtitle">Manage supplier transactions efficiently</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
+              <div className="purchases-hero-subtitle">Manage supplier transactions</div>
             </div>
-            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary purchases-record-button" style={{ width: 'auto' }}>
+            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary purchases-record-button">
               <span aria-hidden="true">+</span>
               <span>Record Purchase</span>
             </button>
@@ -933,19 +929,19 @@ export default function PurchasesPage() {
         <section className="purchase-metric-grid">
           <PurchaseMetricCard
             kind="spend"
-            title="Total Spend"
+            title="Spend"
             value={`₹${totalSpendDisplay.toFixed(2)}`}
             note="Purchase outflow"
           />
           <PurchaseMetricCard
             kind="itc"
-            title="Input GST"
+            title="ITC"
             value={`₹${totalItcDisplay.toFixed(2)}`}
             note="ITC available"
           />
           <PurchaseMetricCard
             kind="due"
-            title="Balance Due"
+            title="Due"
             value={`₹${totalDueDisplay.toFixed(2)}`}
             note="Supplier credit outstanding"
             action={totalDueDisplay > 0 ? (
@@ -976,18 +972,11 @@ export default function PurchasesPage() {
                 className="form-input purchase-search-input"
               />
             </div>
-            <div className="purchase-sort-wrap">
-              <span className="purchase-sort-label">Sort by</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="form-input purchase-sort-select"
-              >
-                <option value="date">Date</option>
-                <option value="amount">Amount</option>
-                <option value="product">Product</option>
-              </select>
-            </div>
+            {searchTerm ? (
+              <button type="button" className="btn-ghost purchase-search-clear" onClick={() => setSearchTerm('')}>
+                Clear
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -1020,8 +1009,8 @@ export default function PurchasesPage() {
         ) : (
           <>
           <section className="purchase-list">
-            {visiblePurchases.map((p) => {
-              const accentColor = p.payment_type === 'credit' ? '#ef4444' : '#f59e0b';
+            {recentPurchases.map((p) => {
+              const accentColor = '#f59e0b';
               const title = p.items && p.items.length > 1
                 ? p.items.map((item) => item.product_name).join(', ')
                 : p.product_name;
@@ -1038,50 +1027,35 @@ export default function PurchasesPage() {
                     <div className="purchase-entry-copy">
                       <div className="purchase-entry-title-row">
                         <div className="purchase-entry-title">{title}</div>
-                        {offlineBadge ? (
-                          <span
-                            className="purchase-offline-badge"
-                            style={{ background: offlineBadge.background, color: offlineBadge.color }}
-                          >
-                            {offlineBadge.label}
-                          </span>
-                        ) : null}
                       </div>
-                      <div className="purchase-entry-reference">{p.invoice_number}</div>
-                      {p._isOffline && p._queueError ? (
-                        <div className="purchase-entry-error">{p._queueError}</div>
-                      ) : null}
+                      <div className="purchase-entry-meta-line">
+                        <span className="purchase-entry-reference">Reference: {p.invoice_number}</span>
+                        <span className="purchase-entry-date">Date: {formatPurchaseDateShort(p.createdAt || p.purchased_at)}</span>
+                      </div>
                     </div>
                     <div className="purchase-entry-amount-wrap">
                       <div className="purchase-entry-amount">₹{(p.total_amount || 0).toFixed(2)}</div>
-                      <PurchaseBadge purchase={p} />
+                      {offlineBadge ? (
+                        <span
+                          className="purchase-offline-badge"
+                          style={{ background: offlineBadge.background, color: offlineBadge.color }}
+                        >
+                          {offlineBadge.label}
+                        </span>
+                      ) : (
+                        <PurchaseBadge purchase={p} />
+                      )}
                     </div>
                   </div>
-
-                  <div className="purchase-entry-date">{formatFullDateTime(p.createdAt)}</div>
 
                   <div className="purchase-entry-meta-row">
-                    <div className="purchase-entry-metric">
-                      <div className="purchase-entry-metric-label">Taxable</div>
-                      <div className="purchase-entry-metric-value">₹{(p.taxable_amount || 0).toFixed(2)}</div>
-                    </div>
-                    <div className="purchase-entry-metric">
-                      <div className="purchase-entry-metric-label">ITC</div>
-                      <div className="purchase-entry-metric-value purchase-entry-metric-itc">₹{(p.total_gst || 0).toFixed(2)}</div>
-                    </div>
-                    <div className="purchase-entry-metric">
-                      <div className="purchase-entry-metric-label">Paid</div>
-                      <div className="purchase-entry-metric-value purchase-entry-metric-paid">₹{(p.amount_paid || 0).toFixed(2)}</div>
-                    </div>
+                    <span>Taxable <strong>₹{(p.taxable_amount || 0).toFixed(2)}</strong></span>
+                    <span>ITC <strong>₹{(p.total_gst || 0).toFixed(2)}</strong></span>
+                    <span>Paid <strong>₹{(p.amount_paid || 0).toFixed(2)}</strong></span>
                   </div>
 
-                  {p.supplier_name ? (
-                    <div className="purchase-supplier-block">
-                      <div className="purchase-supplier-name">{p.supplier_name}</div>
-                      {p.supplier_phone ? (
-                        <div className="purchase-supplier-phone">{p.supplier_phone}</div>
-                      ) : null}
-                    </div>
+                  {p._isOffline && p._queueError ? (
+                    <div className="purchase-entry-error">{p._queueError}</div>
                   ) : null}
 
                   <div className="purchase-entry-actions">
@@ -1089,16 +1063,16 @@ export default function PurchasesPage() {
                       onClick={() => startEditPurchase(p)}
                       disabled={Boolean(p._isOffline)}
                       className="purchase-action-button purchase-action-edit"
+                      title="Edit"
                     >
                       <PurchaseActionIcon kind="edit" />
-                      <span>Edit</span>
                     </button>
                     <button
                       onClick={() => handleDelete(p)}
                       className="purchase-action-button purchase-action-delete"
+                      title={p._isOffline ? 'Remove' : 'Delete'}
                     >
                       <PurchaseActionIcon kind="delete" />
-                      <span>{p._isOffline ? 'Remove' : 'Delete'}</span>
                     </button>
                   </div>
                 </article>

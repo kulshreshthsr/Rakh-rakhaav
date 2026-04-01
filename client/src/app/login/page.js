@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -71,69 +72,56 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="trust-auth-root">
-      <div className="trust-auth-shell">
-        <section className="trust-auth-showcase trust-auth-showcase-login">
+    <div className="trust-auth-root trust-auth-root-login">
+      <div className="trust-auth-shell trust-auth-shell-login">
+        <section className="trust-auth-showcase trust-auth-showcase-login trust-auth-showcase-compact">
           <div className="trust-auth-kicker">Premium retail operating system</div>
           <div className="trust-auth-brand-row">
             <div className="trust-auth-logo">R</div>
             <div>
-              <div className="trust-auth-brand-name">रख-रखाव</div>
-              <div className="trust-auth-brand-subtitle">Confident Indian shop owners ke liye</div>
+              <div className="trust-auth-brand-name">रखरखाव</div>
+              <div className="trust-auth-brand-subtitle">Focused retail control for Indian businesses</div>
             </div>
           </div>
 
-          <div className="trust-auth-copy">
+          <div className="trust-auth-copy trust-auth-copy-compact">
             <h1>Run your business with clarity.</h1>
             <p>GST billing, inventory, purchases, and udhaar in one focused workspace.</p>
-          </div>
-
-          <div className="trust-auth-pill-row">
-            <div className="trust-auth-feature-pill">
-              <span className="trust-auth-feature-icon">₹</span>
-              <span>Fast GST billing</span>
-            </div>
-            <div className="trust-auth-feature-pill">
-              <span className="trust-auth-feature-icon">□</span>
-              <span>Live inventory</span>
-            </div>
-            <div className="trust-auth-feature-pill">
-              <span className="trust-auth-feature-icon">◎</span>
-              <span>Udhaar control</span>
-            </div>
           </div>
         </section>
 
         <section className="trust-auth-card-wrap">
-          <div className="trust-auth-card">
+          <div className="trust-auth-card trust-auth-card-login">
             <div className="trust-form-topline">Secure sign in</div>
             <div className="auth-title">Welcome back</div>
             <div className="auth-subtitle">Sign in to continue running your business with confidence.</div>
 
             {error && <div className="alert-error">{error}</div>}
 
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label className="form-label">Username</label>
+            <form onSubmit={handleSubmit} className="trust-auth-form">
+              <div className="form-group trust-auth-form-group">
+                <label className="form-label">Username or Email</label>
                 <input
                   type="text"
-                  className="form-input"
-                  placeholder="your_username"
+                  className="form-input trust-auth-input"
+                  placeholder="you@business.com"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
                   required
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group trust-auth-form-group">
                 <label className="form-label">Password</label>
                 <div className="trust-password-wrap">
                   <input
                     type={showPass ? 'text' : 'password'}
-                    className="form-input trust-password-input"
+                    className="form-input trust-password-input trust-auth-input"
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                     required
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)} className="trust-password-toggle">
@@ -142,11 +130,26 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              <div className="trust-auth-support-row">
+                <label className="trust-auth-check">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <span>Remember me</span>
+                </label>
+                <a href="/register" className="trust-auth-link">
+                  Forgot password?
+                </a>
+              </div>
+
               <button type="submit" disabled={loading} className="btn-primary trust-submit-btn">
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
 
+            <div className="trust-auth-divider" />
             <div className="auth-note">
               Don&apos;t have an account?{' '}
               <a href="/register" className="cta-link">

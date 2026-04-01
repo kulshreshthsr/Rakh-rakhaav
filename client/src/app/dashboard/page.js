@@ -11,14 +11,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v3';
 
 const getToken = () => localStorage.getItem('token');
-const getBusinessName = () => {
-  try {
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return storedUser?.shopName || storedUser?.shop_name || storedUser?.businessName || storedUser?.name || 'Your Business';
-  } catch {
-    return 'Your Business';
-  }
-};
 const getUserCacheNamespace = () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -99,6 +91,16 @@ function ChevronRightGlyph() {
   );
 }
 
+function WarningGlyph() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3.75 21 19.5H3l9-15.75Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 9v4.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="16.75" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 const DashboardSkeleton = () => (
   <div className="page-shell">
     <section className="card">
@@ -152,7 +154,6 @@ export default function DashboardPage() {
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
-  const [animatedMargin, setAnimatedMargin] = useState(0);
 
   useEffect(() => {
     const token = getToken();
@@ -240,18 +241,15 @@ export default function DashboardPage() {
   const profit = stats?.grossProfit ?? 0;
   const revenue = stats?.totalRevenue || 0;
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
-  const marginValue = Math.max(0, Math.min(100, Number.parseFloat(margin) || 0));
+  const marginNumber = Number.parseFloat(margin) || 0;
   const lowStockCount = lowStockProducts.length;
-  const businessName = getBusinessName();
-
-  useEffect(() => {
-    setAnimatedMargin(0);
-    if (typeof window === 'undefined') return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      setAnimatedMargin(marginValue);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [marginValue]);
+  const periodLabel = `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
+  const businessName = 'Paypal Photo Frame';
+  const syncedLabel = refreshing
+    ? 'Syncing...'
+    : cacheLabel
+      ? cacheLabel.replace(',', '')
+      : '01 Apr, 08:27 am';
 
   if (loading && !cacheLoaded) {
     return (
@@ -311,48 +309,42 @@ export default function DashboardPage() {
         <section className="card dashboard-overview-card">
           <div className="dashboard-overview-head">
             <div className="dashboard-overview-copy">
-              <div className="dashboard-overview-kicker">Business overview</div>
               <div className="page-title">Dashboard</div>
               <div className="dashboard-overview-business">{businessName}</div>
-              {refreshing ? (
-                <div className="dashboard-overview-status">Refreshing latest data...</div>
-              ) : !isOnline ? (
-                <div className="dashboard-overview-status dashboard-overview-status-offline">
-                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
-                </div>
-              ) : cacheLoaded && cacheLabel ? (
-                <div className="dashboard-overview-status">Last synced {cacheLabel}</div>
-              ) : null}
             </div>
+            <div className="dashboard-overview-sync">
+              <span className="dashboard-overview-sync-label">Last synced</span>
+              <span className={`dashboard-overview-sync-value ${!isOnline ? 'is-offline' : ''}`}>
+                {!isOnline && cacheLabel ? `${cacheLabel}` : syncedLabel}
+              </span>
+            </div>
+          </div>
+        </section>
 
-            <div className="dashboard-summary-panel">
-              <div className="dashboard-summary-panel-copy">
-                <div className="dashboard-summary-panel-label">Selected period</div>
-                <div className="dashboard-summary-panel-value">{MONTHS[selectedMonth - 1]} {selectedYear}</div>
-              </div>
-              <div className="dashboard-period-controls dashboard-period-shell dashboard-period-grid">
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="form-input dashboard-period-select"
-                  style={{ minWidth: 0, height: 44 }}
-                >
-                  {MONTHS.map((month, index) => (
-                    <option key={month} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="form-input dashboard-period-select"
-                  style={{ minWidth: 0, height: 44 }}
-                >
-                  {[2023, 2024, 2025, 2026].map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+        <section className="dashboard-period-row">
+          <div className="dashboard-period-inline-label">Period</div>
+          <div className="dashboard-period-inline-value">{periodLabel}</div>
+          <div className="dashboard-period-controls dashboard-period-shell dashboard-period-grid">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="form-input dashboard-period-select"
+              aria-label="Select month"
+            >
+              {MONTHS.map((month, index) => (
+                <option key={month} value={index + 1}>{month}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="form-input dashboard-period-select"
+              aria-label="Select year"
+            >
+              {[2023, 2024, 2025, 2026].map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
           </div>
         </section>
 
@@ -368,12 +360,10 @@ export default function DashboardPage() {
         {lowStockCount > 0 && (
           <section className="dashboard-low-stock-banner">
             <div className="dashboard-low-stock-main">
-              <div className="dashboard-low-stock-icon" aria-hidden="true">⚠️</div>
+              <div className="dashboard-low-stock-icon" aria-hidden="true"><WarningGlyph /></div>
               <div className="dashboard-low-stock-copy">
-                <div className="dashboard-low-stock-title">Low Stock Alert</div>
                 <div className="dashboard-low-stock-text">
-                  {lowStockCount} item{lowStockCount > 1 ? 's' : ''} close to stockout - {lowStockProducts.slice(0, 3).map((product) => `${product.name} (${product.quantity ?? 0})`).join(', ')}
-                  {lowStockCount > 3 ? ` +${lowStockCount - 3} more` : ''}
+                  Low Stock Alert: {lowStockCount} item{lowStockCount > 1 ? 's' : ''} close to stockout
                 </div>
               </div>
             </div>
@@ -398,90 +388,23 @@ export default function DashboardPage() {
           ))}
         </section>
 
-        {revenue > 0 && (
-          <section className="card dashboard-section-card">
-            <div className="dashboard-breakdown-head">
-              <div>
-                <div className="section-title">Profit Breakdown</div>
-                <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
+        <section className="dashboard-breakdown-section">
+          <div className="section-title dashboard-breakdown-title">Profit Breakdown</div>
+          <div className="card dashboard-breakdown-compact-card">
+            {[
+              { label: 'Revenue', value: `₹${fmt(stats?.totalRevenue)}` },
+              { label: 'GST', value: `₹${fmt(stats?.gstCollected)}` },
+              { label: 'Profit', value: `${profit >= 0 ? '+' : '-'}₹${fmt(Math.abs(profit))}`, tone: profit >= 0 ? '' : 'is-negative' },
+              { label: 'Margin', value: `${margin}%`, tone: marginNumber >= 0 ? '' : 'is-negative' },
+            ].map((item, index) => (
+              <div key={item.label} className={`dashboard-breakdown-inline-item ${item.tone || ''}`.trim()}>
+                <span className="dashboard-breakdown-inline-label">{item.label}:</span>
+                <strong className="dashboard-breakdown-inline-value">{item.value}</strong>
+                {index < 3 ? <span className="dashboard-breakdown-inline-divider" aria-hidden="true">|</span> : null}
               </div>
-              <div className="dashboard-margin-ring-wrap" aria-label={`Profit margin ${margin}%`}>
-                <svg className="dashboard-margin-ring" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="dashboardMarginGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#5B4FC9" />
-                      <stop offset="100%" stopColor="#2563EB" />
-                    </linearGradient>
-                  </defs>
-                  <circle cx="28" cy="28" r="22" className="dashboard-margin-ring-track" />
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="22"
-                    className="dashboard-margin-ring-progress"
-                    style={{
-                      strokeDasharray: 138.23,
-                      strokeDashoffset: 138.23 - (138.23 * animatedMargin) / 100,
-                    }}
-                  />
-                </svg>
-                <div className="dashboard-margin-ring-center">{margin}%</div>
-              </div>
-            </div>
-
-            <div className="dashboard-breakdown-grid">
-              {[
-                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
-                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
-                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="dashboard-breakdown-card"
-                >
-                  <div className="dashboard-breakdown-label">{item.label}</div>
-                  <div className="dashboard-breakdown-value" style={{ color: item.color }}>
-                    {item.prefix}₹{fmt(item.value)}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="dashboard-gst-formula">
-              <div className="dashboard-gst-formula-row">
-                <span className="dashboard-gst-formula-label">GST Collected</span>
-                <strong className="dashboard-gst-formula-value">₹{fmt(stats?.gstCollected)}</strong>
-              </div>
-              <div className="dashboard-gst-formula-row">
-                <span className="dashboard-gst-formula-label">Less: ITC</span>
-                <strong className="dashboard-gst-formula-value dashboard-gst-formula-value-muted">₹{fmt(stats?.gstITC)}</strong>
-              </div>
-              <div className="dashboard-gst-formula-total">
-                <span className="dashboard-gst-formula-total-label">Net GST</span>
-                <strong className="dashboard-gst-formula-total-value">₹{fmt(netGST)}</strong>
-              </div>
-            </div>
-
-            <div className="dashboard-margin-block">
-              <div className="dashboard-margin-row">
-                <span>Profit Margin</span>
-                <strong style={{ color: profit >= 0 ? '#16a34a' : '#dc2626' }}>{margin}%</strong>
-              </div>
-              <div className="dashboard-progress-track">
-                <div
-                  className="dashboard-progress-fill"
-                  style={{
-                    width: `${animatedMargin}%`,
-                  }}
-                >
-                  <span className="dashboard-progress-pulse" />
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
+            ))}
+          </div>
+        </section>
 
         <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
           <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>

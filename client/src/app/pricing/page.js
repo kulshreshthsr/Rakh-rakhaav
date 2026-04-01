@@ -2,15 +2,41 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import PlanCard from '../../components/subscription/PlanCard';
 import UpgradeModal from '../../components/subscription/UpgradeModal';
 import { API, FALLBACK_PLANS, formatCurrency, getToken, readStoredSubscription, writeStoredSubscription } from '../../lib/subscription';
+
+const PLAN_STYLES = {
+  monthly: {
+    toneClass: 'pricing-plan-card-starter',
+    badge: null,
+  },
+  six_month: {
+    toneClass: 'pricing-plan-card-growth',
+    badge: 'Most Chosen',
+  },
+  yearly: {
+    toneClass: 'pricing-plan-card-business',
+    badge: 'Best Savings',
+  },
+};
+
+const COMPARISON_ROWS = [
+  ['Premium billing', true, true, true],
+  ['GST reports', true, true, true],
+  ['Inventory & purchases', true, true, true],
+  ['Lower effective monthly cost', false, true, true],
+];
+
+const getEffectiveMonthly = (plan) => {
+  const months = plan.id === 'yearly' ? 12 : plan.id === 'six_month' ? 6 : 1;
+  return Math.round((plan.amount || 0) / months);
+};
 
 export default function PricingPage() {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('six_month');
+  const [selectedPlan, setSelectedPlan] = useState('monthly');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isLoggedIn] = useState(() => Boolean(getToken()));
 
@@ -29,7 +55,7 @@ export default function PricingPage() {
         writeStoredSubscription(data.subscription || null);
         setRazorpayKeyId(data.razorpayKeyId || '');
         setSelectedPlan((currentPlan) => (
-          nextPlans.some((plan) => plan.id === currentPlan) ? currentPlan : (nextPlans[0]?.id || 'six_month')
+          nextPlans.some((plan) => plan.id === currentPlan) ? currentPlan : (nextPlans[0]?.id || 'monthly')
         ));
       })
       .catch(() => {});
@@ -40,92 +66,97 @@ export default function PricingPage() {
     [plans, selectedPlan]
   );
 
-  const membershipHeadline = subscription?.isPro
-    ? 'Premium active'
-    : subscription?.isReadOnly
-      ? 'Reactivate premium'
-      : 'Choose your plan';
-
-  const membershipSubline = subscription?.isPro
-    ? 'You can switch to a longer plan anytime.'
-    : subscription?.isReadOnly
-      ? 'Upgrade to unlock billing and reports again.'
-      : subscription?.trialDaysLeft
-        ? `${subscription.trialDaysLeft} trial day${subscription.trialDaysLeft === 1 ? '' : 's'} left.`
-        : 'Simple plans. Secure payment.';
-
   return (
-    <div className="pricing-page-shell membership-page-shell">
-      <section className="card" style={{ display: 'grid', gap: 18 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div>
-            <div className="subscription-pill" style={{ background: 'rgba(8,17,31,0.06)', color: '#163654', borderColor: 'rgba(15,23,42,0.08)' }}>Premium access</div>
-            <h1 className="page-title" style={{ marginTop: 14, marginBottom: 8 }}>{membershipHeadline}</h1>
-            <p className="page-subtitle">{membershipSubline}</p>
-          </div>
+    <div className="pricing-page-shell pricing-compact-shell">
+      <section className="pricing-hero-card">
+        <div className="pricing-hero-tag">Choose your plan</div>
+        <h1 className="pricing-hero-title">Select the perfect plan for your business</h1>
+        <p className="pricing-hero-subtitle">Flexible billing options designed for growing Indian retailers</p>
+      </section>
 
-          <div className="soft-panel" style={{ padding: 16, minWidth: 240, maxWidth: 320 }}>
-            <div className="membership-summary-label">Selected plan</div>
-            <div className="membership-summary-plan" style={{ marginTop: 6 }}>{selected?.label || 'Choose a plan'}</div>
-            <div className="membership-summary-price" style={{ marginTop: 10 }}>{formatCurrency(selected?.amount || 0)}</div>
-            {selected?.savingsLabel && <div className="membership-summary-saving" style={{ marginTop: 10 }}>{selected.savingsLabel}</div>}
-          </div>
-        </div>
+      <section className="pricing-plan-stack">
+        {plans.map((plan, index) => {
+          const planStyle = PLAN_STYLES[plan.id] || PLAN_STYLES.monthly;
+          const effective = getEffectiveMonthly(plan);
+          const isSelected = selectedPlan === plan.id;
+          const badge = plan.badge || planStyle.badge;
 
-        <div className="subscription-plan-grid membership-plan-grid" style={{ marginTop: 0 }}>
-          {plans.map((plan) => (
-            <PlanCard
+          return (
+            <article
               key={plan.id}
-              plan={plan}
-              selected={selectedPlan === plan.id}
-              onSelect={setSelectedPlan}
-            />
+              className={`pricing-plan-card ${planStyle.toneClass}${isSelected ? ' is-selected' : ''}`}
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              {badge ? (
+                <div className={`pricing-plan-badge${plan.id === 'yearly' ? ' is-dark' : ''}`}>
+                  {badge}
+                </div>
+              ) : null}
+
+              <div className="pricing-plan-name">{plan.label}</div>
+              <div className="pricing-plan-price">{formatCurrency(plan.amount)}</div>
+              <div className="pricing-plan-effective">{formatCurrency(effective)}/month effective</div>
+              <div className="pricing-plan-description">{plan.description}</div>
+              {plan.savingsLabel ? <div className="pricing-plan-saving">{plan.savingsLabel}</div> : <div className="pricing-plan-saving is-empty" />}
+
+              {isSelected ? (
+                <div className="pricing-plan-selected">Selected for checkout</div>
+              ) : (
+                <button type="button" className="pricing-select-button" onClick={() => setSelectedPlan(plan.id)}>
+                  Select plan
+                </button>
+              )}
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="pricing-compare-card">
+        <div className="pricing-compare-title">Plan comparison</div>
+        <div className="pricing-compare-grid">
+          {COMPARISON_ROWS.map(([label, monthly, sixMonth, yearly]) => (
+            <div key={label} className="pricing-compare-row">
+              <span>{label}</span>
+              <span>{monthly ? '✓' : '-'}</span>
+              <span>{sixMonth ? '✓' : '-'}</span>
+              <span>{yearly ? '✓' : '-'}</span>
+            </div>
           ))}
-        </div>
-
-        <div className="soft-panel" style={{ padding: 18, display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div>
-            <div className="membership-summary-label">Payment</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 6 }}>{selected?.label || 'Premium membership'}</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Secure Razorpay checkout. No extra steps.</div>
-          </div>
-          <div className="pricing-trust-strip membership-trust-strip" style={{ margin: 0 }}>
-            <span>Secure payment</span>
-            <span>No hidden charges</span>
-            <span>Cancel anytime</span>
-          </div>
-        </div>
-
-        <div className="membership-bottom-actions">
-          {isLoggedIn ? (
-            <button type="button" className="btn-primary membership-upgrade-button" onClick={() => setShowUpgradeModal(true)}>
-              Unlock {selected?.label || 'Premium'}
-            </button>
-          ) : (
-            <>
-              <Link href="/register" className="btn-primary" style={{ textDecoration: 'none', width: 'auto' }}>
-                Start free trial
-              </Link>
-              <Link href="/login" className="btn-ghost" style={{ textDecoration: 'none', width: 'auto' }}>
-                Sign in
-              </Link>
-            </>
-          )}
         </div>
       </section>
 
-      <div className="membership-mobile-bar">
+      <section className="pricing-payment-card">
+        <div className="pricing-payment-label">Payment</div>
+        <div className="pricing-payment-name">{selected?.label || 'Premium membership'}</div>
+        <div className="pricing-payment-price">{formatCurrency(selected?.amount || 0)}</div>
+        <div className="pricing-payment-note">
+          <span aria-hidden="true">i</span>
+          <span>Billed once</span>
+        </div>
+
+        {isLoggedIn ? (
+          <button type="button" className="pricing-payment-button" onClick={() => setShowUpgradeModal(true)}>
+            Proceed to checkout
+          </button>
+        ) : (
+          <Link href="/register" className="pricing-payment-button pricing-payment-link">
+            Unlock now
+          </Link>
+        )}
+      </section>
+
+      <div className="membership-mobile-bar pricing-mobile-bar">
         <div className="membership-mobile-bar-copy">
           <strong>{selected?.label || 'Premium membership'}</strong>
           <span>{formatCurrency(selected?.amount || 0)}</span>
         </div>
         {isLoggedIn ? (
           <button type="button" className="btn-primary membership-mobile-button" onClick={() => setShowUpgradeModal(true)}>
-            Unlock now
+            Proceed to checkout
           </button>
         ) : (
           <Link href="/register" className="btn-primary membership-mobile-button" style={{ textDecoration: 'none' }}>
-            Start trial
+            Unlock now
           </Link>
         )}
       </div>

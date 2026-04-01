@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
+import { Card } from '../../components/ui/AppUI';
 import { apiUrl } from '../../lib/api';
 
 const getToken = () => localStorage.getItem('token');
@@ -64,14 +64,6 @@ const ReportMetricIcon = ({ kind }) => {
   );
 };
 
-const CsvIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 3v12" />
-    <path d="m7 10 5 5 5-5" />
-    <path d="M5 21h14" />
-  </svg>
-);
-
 function ReportMetricCard({ kind, label, value, note }) {
   return (
     <div className={`reports-metric-card reports-metric-card-${kind}`}>
@@ -86,6 +78,14 @@ function ReportMetricCard({ kind, label, value, note }) {
     </div>
   );
 }
+
+const CompactActionIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3v12" />
+    <path d="m7 10 5 5 5-5" />
+    <path d="M5 21h14" />
+  </svg>
+);
 
 const getRange = (filter) => {
   const now = new Date();
@@ -319,7 +319,6 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const { label } = getRange(filter);
   const marginColor = summary.margin >= 20 ? '#22c55e' : summary.margin >= 10 ? '#f59e0b' : '#ef4444';
   const reportFilters = [
     { val: 'today', label: 'Today' },
@@ -327,6 +326,9 @@ export default function ReportsPage() {
     { val: 'month', label: 'Month' },
   ];
   const maxProductRevenue = topProducts.reduce((max, product) => Math.max(max, product.revenue || 0), 0);
+  const topProduct = topProducts[0] || null;
+  const leadCustomer = topCustomers[0] || null;
+  const leadDay = dailySales[0] || null;
 
   return (
     <Layout>
@@ -336,9 +338,6 @@ export default function ReportsPage() {
             <div className="reports-hero-copy">
               <div className="page-title" style={{ marginBottom: 4, color: '#1a1a1a' }}>Reports</div>
               <div className="reports-hero-badge">Business Analytics</div>
-              <div className="reports-hero-description">
-                Revenue, profit, GST and customer trends for this month in one clean view.
-              </div>
             </div>
             <div className="reports-toggle-group">
               {reportFilters.map((option) => (
@@ -373,41 +372,31 @@ export default function ReportsPage() {
             <Card
               className="reports-profit-card"
               title="Profit Breakdown"
-              subtitle="Revenue, GST and profit in one clear stack"
-              actions={<ActionButton className="reports-action-btn" variant="primary" onClick={() => exportCSV('profit')}><CsvIcon />CSV Download</ActionButton>}
+              actions={
+                <button type="button" className="reports-icon-action" onClick={() => exportCSV('profit')} aria-label="Download profit CSV">
+                  <CompactActionIcon />
+                </button>
+              }
             >
-              <div className="reports-breakdown-stack">
-                <div className="reports-breakdown-row reports-breakdown-row-revenue">
-                  <span>Total Revenue</span>
-                  <strong>₹{fmtN(summary.totalRevenue)}</strong>
+              <div className="reports-breakdown-inline">
+                <div className="reports-breakdown-line">
+                  <span>Revenue <strong>₹{fmtN(summary.totalRevenue)}</strong></span>
+                  <span>- GST <strong>₹{fmtN(summary.totalGST)}</strong></span>
+                  <span>= Taxable <strong>₹{fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}</strong></span>
                 </div>
-                <div className="reports-breakdown-row reports-breakdown-row-subtract">
-                  <span>- GST Collected</span>
-                  <strong>₹{fmtN(summary.totalGST)}</strong>
-                </div>
-                <div className="reports-breakdown-divider" />
-                <div className="reports-breakdown-row reports-breakdown-row-taxable">
-                  <span>= Taxable Revenue</span>
-                  <strong>₹{fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}</strong>
-                </div>
-                <div className="reports-breakdown-profit-box">
-                  <div className="reports-breakdown-row">
-                    <span>- Profit</span>
-                    <strong>₹{fmtN(summary.grossProfit)}</strong>
-                  </div>
-                  <div className="reports-breakdown-divider" />
-                  <div className="reports-breakdown-row reports-breakdown-row-margin">
-                    <span>Profit Margin</span>
-                    <strong style={{ color: marginColor }}>{fmt(summary.margin)}%</strong>
-                  </div>
+                <div className="reports-breakdown-line">
+                  <span>Profit <strong>₹{fmtN(summary.grossProfit)}</strong></span>
+                  <span>|</span>
+                  <span>Margin <strong style={{ color: marginColor }}>{fmt(summary.margin)}%</strong></span>
                 </div>
               </div>
             </Card>
 
-            {dailySales.length > 0 && (
+            {leadDay && (
               <Card
+                className="reports-daily-card"
                 title="Daily Sales"
-                actions={<ActionButton className="reports-action-btn" variant="primary" onClick={() => exportCSV('sales')}><CsvIcon />Sales CSV</ActionButton>}
+                actions={<button type="button" className="reports-icon-action" onClick={() => exportCSV('sales')} aria-label="Download sales CSV"><CompactActionIcon /></button>}
               >
                 <div className="ui-table-wrap reports-table-wrap">
                   <table className="ui-table reports-table">
@@ -421,78 +410,52 @@ export default function ReportsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dailySales.map((day, index) => {
-                        const currentMargin = day.revenue > 0 ? (day.profit / day.revenue) * 100 : 0;
+                      {(() => {
+                        const currentMargin = leadDay.revenue > 0 ? (leadDay.profit / leadDay.revenue) * 100 : 0;
                         return (
-                          <tr key={index}>
-                            <td className="reports-date-cell">{day.date}</td>
-                            <td style={{ textAlign: 'center' }}>{day.count}</td>
-                            <td className="ui-value-money" style={{ textAlign: 'right' }}>₹{fmtN(day.revenue)}</td>
-                            <td className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'} style={{ textAlign: 'right' }}>₹{fmtN(day.profit)}</td>
-                            <td>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <StatusBadge tone={currentMargin >= 20 ? 'success' : currentMargin >= 10 ? 'warning' : 'danger'}>
-                                  {Math.round(currentMargin)}%
-                                </StatusBadge>
-                              </div>
-                            </td>
+                          <tr>
+                            <td className="reports-date-cell">{leadDay.date}</td>
+                            <td style={{ textAlign: 'center' }}>{leadDay.count}</td>
+                            <td className="ui-value-money" style={{ textAlign: 'right' }}>₹{fmtN(leadDay.revenue)}</td>
+                            <td className={leadDay.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'} style={{ textAlign: 'right' }}>₹{fmtN(leadDay.profit)}</td>
+                            <td style={{ textAlign: 'right' }}>{fmt(currentMargin)}%</td>
                           </tr>
                         );
-                      })}
+                      })()}
                     </tbody>
                   </table>
                 </div>
               </Card>
             )}
 
-            <div className="split-grid reports-split-grid" style={{ marginBottom: 20 }}>
-              <Card title="Top Products" actions={<ActionButton className="reports-action-btn" variant="primary" onClick={() => exportCSV('products')}><CsvIcon />CSV Export</ActionButton>}>
-                {topProducts.length === 0 ? (
+            <div className="split-grid reports-split-grid" style={{ marginBottom: 12 }}>
+              <Card className="reports-topline-card" title="Top Products" actions={<button type="button" className="reports-icon-action" onClick={() => exportCSV('products')} aria-label="Download products CSV"><CompactActionIcon /></button>}>
+                {!topProduct ? (
                   <div className="ui-empty">No data</div>
                 ) : (
-                  <div className="reports-product-list">
-                    {topProducts.map((product, index) => {
-                      const width = maxProductRevenue > 0 ? `${Math.max(8, (product.revenue / maxProductRevenue) * 100)}%` : '8%';
-                      return (
-                        <div key={index} className="reports-product-row">
-                          <div className="reports-product-copy">
-                            <div className="reports-product-title">{product.name}</div>
-                            <div className="reports-product-bar-track">
-                              <div className="reports-product-bar-fill" style={{ width }} />
-                            </div>
-                            <div className="reports-product-meta">{product.qty} units • {product.count} orders</div>
-                          </div>
-                          <div className="reports-product-side">
-                            <div className="ui-value-money" style={{ fontSize: 14 }}>₹{fmtN(product.revenue)}</div>
-                            <div style={{ fontSize: 12, color: '#6b7280' }}>₹{fmtN(product.profit)} profit</div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="reports-topline">
+                    <div className="reports-topline-text">{topProduct.name} ({topProduct.qty} units, {topProduct.count} orders) <strong>₹{fmtN(topProduct.revenue)}</strong> sales <span>|</span> <strong>₹{fmtN(topProduct.profit)}</strong> profit</div>
+                    <div className="reports-product-bar-track reports-topline-bar">
+                      <div className="reports-product-bar-fill" style={{ width: maxProductRevenue > 0 ? `${Math.max(12, (topProduct.revenue / maxProductRevenue) * 100)}%` : '12%' }} />
+                    </div>
                   </div>
                 )}
               </Card>
 
-              <Card title="Top Customers" actions={<ActionButton className="reports-action-btn" variant="primary" onClick={() => exportCSV('customers')}><CsvIcon />CSV Export</ActionButton>}>
-                {topCustomers.length === 0 ? (
+              <Card className="reports-topline-card" title="Top Customers" actions={<button type="button" className="reports-icon-action" onClick={() => exportCSV('customers')} aria-label="Download customers CSV"><CompactActionIcon /></button>}>
+                {!leadCustomer ? (
                   <div className="ui-empty">No data</div>
                 ) : (
-                  <div className="stack-list">
-                    {topCustomers.map((customer, index) => (
-                      <div key={index} className="stack-row reports-customer-row">
-                        <div className="stack-row-rank" style={{ background: ['#ef4444', '#f59e0b', '#22c55e', '#06b6d4', '#8b5cf6'][index % 5] }}>
-                          {customer.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="stack-row-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.name}</div>
-                          <div style={{ fontSize: 11, color: '#9ca3af' }}>{customer.count} orders{customer.phone ? ` • ${customer.phone}` : ''}</div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div className="ui-value-money" style={{ fontSize: 13 }}>₹{fmtN(customer.revenue)}</div>
-                          {customer.udhaar > 0 ? <div className="ui-value-danger" style={{ fontSize: 11 }}>₹{fmtN(customer.udhaar)} due</div> : null}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="reports-customer-inline">
+                    <div className="reports-customer-avatar">{leadCustomer.name.charAt(0).toUpperCase()}</div>
+                    <div className="reports-customer-inline-copy">
+                      <div className="reports-customer-inline-name">{leadCustomer.name}</div>
+                      <div className="reports-customer-inline-meta">{leadCustomer.count} orders{leadCustomer.phone ? ` • ${leadCustomer.phone}` : ''}</div>
+                    </div>
+                    <div className="reports-customer-inline-value">
+                      <div className="ui-value-money">₹{fmtN(leadCustomer.revenue)}</div>
+                      {leadCustomer.udhaar > 0 ? <div className="ui-value-danger">₹{fmtN(leadCustomer.udhaar)} due</div> : null}
+                    </div>
                   </div>
                 )}
               </Card>

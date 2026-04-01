@@ -935,7 +935,7 @@ export default function SalesPage() {
     };
     const s = map[type] || map.cash;
     return (
-      <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+      <span className="sales-payment-badge" style={{ background: s.bg, color: s.color }}>
         {s.label}
       </span>
     );
@@ -1050,6 +1050,7 @@ export default function SalesPage() {
   );
 
   const pendingOfflineSales = sales.filter((sale) => sale?._isOffline);
+  const recentSales = sales.slice(0, 4);
   const offlineRevenue = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0);
   const offlineGst = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0);
   const revenueDisplay = Number(summary.totalRevenue || 0) + offlineRevenue;
@@ -1062,10 +1063,9 @@ export default function SalesPage() {
           <div className="page-toolbar sales-hero-toolbar">
             <div className="sales-hero-copy">
               <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
-              <div className="sales-hero-subtitle">Track revenue and collections with precision</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing sales data...</div>}
+              <div className="sales-hero-subtitle">Track revenue precisely</div>
             </div>
-            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary sales-record-button" style={{ width: 'auto' }}>
+            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary sales-record-button">
               <span aria-hidden="true">+</span>
               <span>Record Sale</span>
             </button>
@@ -1121,9 +1121,8 @@ export default function SalesPage() {
           </div>
         ) : (
           <section className="sales-list">
-            {sales.map((s) => {
+            {recentSales.map((s) => {
               const accentColor = s.payment_type === 'credit' ? '#ef4444' : '#10b981';
-              const hasBuyer = s.buyer_name && s.buyer_name !== 'Walk-in Customer';
               const offlineBadge = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
               const saleTitle = s.items && s.items.length > 1 ? `${s.items.length} products` : s.product_name;
               const hasPhone = Boolean(s.buyer_phone);
@@ -1138,48 +1137,34 @@ export default function SalesPage() {
                     <div className="sales-entry-copy">
                       <div className="sales-entry-title-row">
                         <div className="sales-entry-title">{saleTitle}</div>
-                        {offlineBadge ? (
-                          <span
-                            className="sales-offline-badge"
-                            style={{ background: offlineBadge.background, color: offlineBadge.color }}
-                          >
-                            {offlineBadge.label}
-                          </span>
-                        ) : null}
                       </div>
-                      <div className="sales-entry-invoice">{s.invoice_number}</div>
-                      {s._isOffline && s._queueError ? (
-                        <div className="sales-entry-error">{s._queueError}</div>
-                      ) : null}
+                      <div className="sales-entry-meta-line">
+                        <span className="sales-entry-invoice">Invoice: {s.invoice_number}</span>
+                        <span className="sales-entry-date">Date: {formatFullDateTime(s.createdAt || s.sold_at)}</span>
+                      </div>
                     </div>
                     <div className="sales-entry-amount-wrap">
                       <div className="sales-entry-amount">₹{fmt(s.total_amount)}</div>
-                      <PayBadge type={s.payment_type} />
+                      {offlineBadge ? (
+                        <span
+                          className="sales-offline-badge"
+                          style={{ background: offlineBadge.background, color: offlineBadge.color }}
+                        >
+                          {offlineBadge.label}
+                        </span>
+                      ) : (
+                        <PayBadge type={s.payment_type} />
+                      )}
                     </div>
                   </div>
 
-                  <div className="sales-entry-meta-row">
-                    <div className="sales-entry-metric">
-                      <div className="sales-entry-metric-label">Taxable</div>
-                      <div className="sales-entry-metric-value">₹{fmt(s.taxable_amount)}</div>
-                    </div>
-                    <div className="sales-entry-metric">
-                      <div className="sales-entry-metric-label">GST</div>
-                      <div className="sales-entry-metric-value sales-entry-metric-gst">₹{fmt(s.total_gst)}</div>
-                    </div>
-                    <div className="sales-entry-metric sales-entry-metric-date">
-                      <div className="sales-entry-metric-label">Date</div>
-                      <div className="sales-entry-metric-value">{formatFullDateTime(s.createdAt || s.sold_at)}</div>
-                    </div>
+                  <div className="sales-entry-summary-row">
+                    <span>Taxable <strong>₹{fmt(s.taxable_amount)}</strong></span>
+                    <span>GST <strong>₹{fmt(s.total_gst)}</strong></span>
                   </div>
 
-                  {hasBuyer ? (
-                    <div className="sales-buyer-block">
-                      <div className="sales-buyer-name">{s.buyer_name}</div>
-                      {s.buyer_phone ? (
-                        <div className="sales-buyer-phone">{s.buyer_phone}</div>
-                      ) : null}
-                    </div>
+                  {s._isOffline && s._queueError ? (
+                    <div className="sales-entry-error">{s._queueError}</div>
                   ) : null}
 
                   <div className="sales-entry-actions">
@@ -1187,9 +1172,9 @@ export default function SalesPage() {
                       onClick={() => startEditSale(s)}
                       disabled={Boolean(s._isOffline)}
                       className="sales-action-button sales-action-edit"
+                      title="Edit"
                     >
                       <SalesActionIcon kind="edit" />
-                      <span>Edit</span>
                     </button>
                     <button
                       onClick={() => printInvoice(s)}
@@ -1198,7 +1183,6 @@ export default function SalesPage() {
                       className="sales-action-button sales-action-print"
                     >
                       <SalesActionIcon kind="print" />
-                      <span>Print</span>
                     </button>
                     <button
                       onClick={() => shareWhatsApp(s)}
@@ -1207,14 +1191,13 @@ export default function SalesPage() {
                       className={`sales-action-button sales-action-whatsapp${hasPhone ? ' has-phone' : ''}`}
                     >
                       <SalesActionIcon kind="whatsapp" />
-                      <span>WhatsApp</span>
                     </button>
                     <button
                       onClick={() => handleDelete(s)}
                       className="sales-action-button sales-action-delete"
+                      title={s._isOffline ? 'Remove' : 'Delete'}
                     >
                       <SalesActionIcon kind="delete" />
-                      <span>{s._isOffline ? 'Remove' : 'Delete'}</span>
                     </button>
                   </div>
                 </article>
