@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import { StatCard, StatusBadge } from '../../components/ui/AppUI';
+import { StatusBadge } from '../../components/ui/AppUI';
 import { apiUrl } from '../../lib/api';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
@@ -64,37 +64,93 @@ function QuickActionGlyph({ name }) {
   }
 }
 
+function CountUpNumber({ value, prefix = '', suffix = '', decimals = 0, className = '' }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const target = Number(value) || 0;
+    const duration = 900;
+    const start = performance.now();
+    let frameId = 0;
+
+    const tick = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - ((1 - progress) * (1 - progress) * (1 - progress));
+      setDisplayValue(target * eased);
+      if (progress < 1) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [value]);
+
+  const formatted = new Intl.NumberFormat('en-IN', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(displayValue);
+
+  return <span className={className}>{prefix}{formatted}{suffix}</span>;
+}
+
+function SparklineBars({ seed = 0 }) {
+  const heights = Array.from({ length: 9 }, (_, index) => {
+    const wave = Math.abs(Math.sin((seed + 1) * (index + 1) * 0.67));
+    return 18 + Math.round(wave * 28);
+  });
+
+  return (
+    <div className="dashboard-sparkline" aria-hidden="true">
+      {heights.map((height, index) => (
+        <span
+          key={`${seed}-${index}`}
+          className="dashboard-sparkline-bar"
+          style={{ height, animationDelay: `${index * 70}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 const DashboardSkeleton = () => (
-  <div className="page-shell">
-    <section className="card">
-      <div className="page-toolbar">
+  <div className="page-shell dashboard-shell">
+    <section className="card dashboard-hero-card dashboard-skeleton-card">
+      <div className="dashboard-header-glow" aria-hidden="true" />
+      <div className="page-toolbar dashboard-toolbar dashboard-hero-header">
         <div>
-          <div className="skeleton" style={{ height: 16, width: 110, marginBottom: 8 }} />
-          <div className="skeleton" style={{ height: 28, width: 180 }} />
+          <div className="skeleton dashboard-skeleton-line dashboard-skeleton-line-sm" />
+          <div className="skeleton dashboard-skeleton-line dashboard-skeleton-line-lg" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, maxWidth: 260, width: '100%' }}>
-          <div className="skeleton" style={{ height: 44 }} />
-          <div className="skeleton" style={{ height: 44 }} />
+        <div className="dashboard-period-controls dashboard-period-shell dashboard-period-skeleton">
+          <div className="skeleton dashboard-skeleton-select" />
+          <div className="skeleton dashboard-skeleton-select" />
         </div>
       </div>
     </section>
 
     <section className="metric-grid">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="card" style={{ minHeight: 138 }}>
-          <div className="skeleton" style={{ height: 12, width: 96, marginBottom: 16 }} />
-          <div className="skeleton" style={{ height: 34, width: 120, marginBottom: 12 }} />
-          <div className="skeleton" style={{ height: 12, width: 140 }} />
+        <div key={index} className="dashboard-metric-card dashboard-fade-up" style={{ animationDelay: `${index * 100}ms` }}>
+          <div className="skeleton dashboard-skeleton-dot-label" />
+          <div className="skeleton dashboard-skeleton-value" />
+          <div className="skeleton dashboard-skeleton-note" />
+          <div className="dashboard-skeleton-bars">
+            {Array.from({ length: 9 }).map((__, barIndex) => (
+              <span key={barIndex} className="skeleton dashboard-skeleton-bar" />
+            ))}
+          </div>
         </div>
       ))}
     </section>
 
-    <section className="card">
-      <div className="skeleton" style={{ height: 16, width: 180, marginBottom: 10 }} />
-      <div className="skeleton" style={{ height: 12, width: 240, marginBottom: 18 }} />
-      <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-        <div className="skeleton" style={{ height: 44 }} />
-        <div className="skeleton" style={{ height: 44 }} />
+    <section className="dashboard-section-card">
+      <div className="skeleton dashboard-skeleton-line dashboard-skeleton-line-md" />
+      <div className="skeleton dashboard-skeleton-line dashboard-skeleton-line-sm-wide" />
+      <div className="quick-actions-row dashboard-quick-grid">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="skeleton dashboard-skeleton-quick-card" />
+        ))}
       </div>
     </section>
   </div>
@@ -190,7 +246,6 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const fmt = (n) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
   const cacheLabel = cacheUpdatedAt
     ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
         day: '2-digit',
@@ -218,35 +273,43 @@ export default function DashboardPage() {
   const statCards = [
     {
       label: 'Sales',
-      value: `₹${fmt(stats?.totalRevenue)}`,
+      amount: stats?.totalRevenue || 0,
       note: `${stats?.salesCount || 0} invoices this month`,
-      tone: 'money',
       href: '/sales',
       icon: 'Sales',
+      colorClass: 'is-emerald',
+      accent: '#10b981',
+      prefix: '₹',
     },
     {
       label: 'Profit',
-      value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
+      amount: Math.abs(profit),
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
-      tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
       icon: 'Profit',
+      colorClass: profit >= 0 ? 'is-emerald' : 'is-rose',
+      accent: profit >= 0 ? '#10b981' : '#fb7185',
+      prefix: profit >= 0 ? '+₹' : '-₹',
     },
     {
       label: 'Credit',
-      value: `₹${fmt(totalCustomerUdhaar)}`,
+      amount: totalCustomerUdhaar,
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
-      tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
       href: '/udhaar',
       icon: 'Credit',
+      colorClass: 'is-gold',
+      accent: '#f59e0b',
+      prefix: '₹',
     },
     {
       label: 'GST Payable',
-      value: `₹${fmt(Math.abs(netGST))}`,
+      amount: Math.abs(netGST),
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
-      tone: 'warning',
       href: '/gst',
       icon: 'GST',
+      colorClass: 'is-amber',
+      accent: '#fb923c',
+      prefix: '₹',
     },
   ];
 
@@ -262,119 +325,130 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
-        <section className="card">
-          <div className="page-toolbar dashboard-toolbar">
+        <section className="card dashboard-hero-card dashboard-fade-up" style={{ animationDelay: '0ms' }}>
+          <div className="dashboard-header-glow" aria-hidden="true" />
+          <div className="page-toolbar dashboard-toolbar dashboard-hero-header">
             <div style={{ minWidth: 0 }}>
-              <div className="page-subtitle">Business overview</div>
-              <div className="page-title">Dashboard</div>
+              <div className="page-subtitle dashboard-page-kicker">Business overview</div>
+              <div className="page-title dashboard-page-title">{businessName}</div>
+              <div className="dashboard-page-copy">A premium operating view for revenue, liquidity, GST and stock health.</div>
               {refreshing ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
+                <div className="dashboard-sync-copy">Refreshing latest data...</div>
               ) : !isOnline ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#92400e' }}>
+                <div className="dashboard-sync-copy is-warning">
                   Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
                 </div>
               ) : cacheLoaded && cacheLabel ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+                <div className="dashboard-sync-copy">Last synced {cacheLabel}</div>
               ) : null}
             </div>
 
-            <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
-                {MONTHS.map((month, index) => (
-                  <option key={month} value={index + 1}>{month}</option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
-              >
-                {[2023, 2024, 2025, 2026].map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+            <div className="dashboard-period-controls dashboard-period-shell">
+              <label className="dashboard-select-wrap">
+                <span className="dashboard-select-label">Month</span>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="form-input dashboard-select"
+                  style={{ minWidth: 0, height: 52 }}
+                >
+                  {MONTHS.map((month, index) => (
+                    <option key={month} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="dashboard-select-wrap">
+                <span className="dashboard-select-label">Year</span>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="form-input dashboard-select"
+                  style={{ minWidth: 0, height: 52 }}
+                >
+                  {[2023, 2024, 2025, 2026].map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
         </section>
 
         {!isOnline ? (
-          <section className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+          <section className="dashboard-section-card dashboard-offline-banner dashboard-fade-up" style={{ animationDelay: '80ms' }}>
             <strong>Dashboard offline mode</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
+            <div className="dashboard-offline-copy">
               Abhi cached business snapshot dikh raha hai. Sales, GST, low stock aur credit numbers live nahi hain jab tak internet wapas na aaye.
             </div>
           </section>
         ) : null}
 
         <section className="metric-grid">
-          {statCards.map((card) => (
-            <StatCard
+          {statCards.map((card, index) => (
+            <button
               key={card.label}
-              className="dashboard-stat-card"
-              tone={card.tone}
-              label={card.label}
-              value={card.value}
-              note={card.note}
-              icon={card.icon}
+              type="button"
+              className={`dashboard-metric-card dashboard-fade-up ${card.colorClass}`}
+              style={{ animationDelay: `${index * 100}ms` }}
               onClick={() => router.push(card.href)}
-            />
+            >
+              <div className="dashboard-metric-top">
+                <div className="dashboard-metric-label-row">
+                  <span className="dashboard-metric-dot" style={{ backgroundColor: card.accent }} />
+                  <span className="dashboard-metric-label">{card.label}</span>
+                </div>
+                <div className="dashboard-metric-icon">{card.icon}</div>
+              </div>
+              <div className={`dashboard-metric-value ${card.colorClass}`}>
+                <CountUpNumber value={card.amount} prefix={card.prefix} />
+              </div>
+              <div className="dashboard-metric-note">{card.note}</div>
+              <SparklineBars seed={card.amount + index + 1} />
+            </button>
           ))}
         </section>
 
         {revenue > 0 && (
-          <section className="card dashboard-section-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
+          <section className="dashboard-section-card dashboard-fade-up" style={{ animationDelay: '120ms' }}>
+            <div className="dashboard-section-head">
               <div>
                 <div className="section-title">Profit Breakdown</div>
                 <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
               </div>
-              <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
+              <StatusBadge tone="secondary" className="dashboard-section-badge">Margin {margin}%</StatusBadge>
             </div>
 
-            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+            <div className="metric-grid dashboard-breakdown-grid">
               {[
                 { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
                 { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
                 { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
                 { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
                 { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
-              ].map((item) => (
+              ].map((item, index) => (
                 <div
                   key={item.label}
                   className="dashboard-breakdown-card"
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                  }}
+                  style={{ animationDelay: `${120 + (index * 90)}ms` }}
                 >
-                    <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {item.label}
-                    </div>
-                  <div style={{ fontSize: 24, color: item.color, fontWeight: 800, letterSpacing: '-0.05em', marginTop: 8 }}>
-                    {item.prefix}₹{fmt(item.value)}
+                  <div className="dashboard-breakdown-label">{item.label}</div>
+                  <div className="dashboard-breakdown-value" style={{ color: item.color }}>
+                    <CountUpNumber value={Math.abs(item.value)} prefix={`${item.prefix}₹`} />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginTop: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#475569', marginBottom: 6 }}>
+            <div className="dashboard-progress-shell">
+              <div className="dashboard-progress-copy">
                 <span>Profit Margin</span>
-                <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
+                <strong style={{ color: profit >= 0 ? '#8b5cf6' : '#dc2626' }}>{margin}%</strong>
               </div>
-              <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
+              <div className="dashboard-progress-track">
                 <div
                   className="dashboard-progress-fill"
                   style={{
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
-                    height: '100%',
-                    borderRadius: 999,
                     background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #3730a3)' : 'linear-gradient(90deg, #dc2626, #f97316)',
                   }}
                 />
@@ -385,22 +459,21 @@ export default function DashboardPage() {
 
         {lowStockCount > 0 && (
           <section
-            className="card dashboard-section-card dashboard-warning-card"
+            className="dashboard-section-card dashboard-warning-card dashboard-fade-up"
             onClick={() => router.push('/product')}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'pointer', animationDelay: '200ms' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="dashboard-warning-layout">
               <div>
-                <div className="section-title" style={{ color: '#b45309' }}>Low Stock</div>
-                <div className="section-subtitle" style={{ color: '#d97706' }}>
+                <div className="section-title dashboard-warning-title">Low Stock</div>
+                <div className="section-subtitle dashboard-warning-copy">
                   {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+                <div className="dashboard-warning-chips">
                   {lowStockProducts.slice(0, 5).map((product) => (
                     <span
                       key={product._id}
                       className="dashboard-chip-warning"
-                      style={{ padding: '7px 11px' }}
                     >
                       {product.name} ({product.quantity ?? 0})
                     </span>
@@ -408,38 +481,35 @@ export default function DashboardPage() {
                   {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
                 </div>
               </div>
-              <div className="btn-warning" style={{ width: 'auto' }}>Open Products</div>
+              <div className="btn-warning dashboard-warning-button" style={{ width: 'auto' }}>Open Products</div>
             </div>
           </section>
         )}
 
-        <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
-          <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <section className="dashboard-section-card dashboard-fade-up" style={{ animationDelay: '240ms' }}>
+          <div className="dashboard-section-head">
             <div>
               <div className="section-title">Quick Actions</div>
               <div className="section-subtitle">Fast access to your most-used screens</div>
             </div>
-            <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
+            <StatusBadge tone="neutral" className="dashboard-section-badge">{quickActions.length} shortcuts</StatusBadge>
           </div>
           <div className="quick-actions-carousel">
-            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-              {quickActions.map((action) => (
+            <div className="quick-actions-row dashboard-quick-grid">
+              {quickActions.map((action, index) => (
                 <a
                   key={action.href}
                   href={action.href}
-                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: 18,
-                    padding: '14px 12px',
-                    minHeight: 94,
-                  }}
+                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic} dashboard-fade-up`}
+                  style={{ animationDelay: `${280 + (index * 80)}ms` }}
                 >
-                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
-                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
+                  <div className="dashboard-quick-inner">
+                    <div className={`dashboard-quick-icon dashboard-quick-icon-${action.semantic}`} style={{ color: action.color }}>
+                      <QuickActionGlyph name={action.icon} />
+                    </div>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
+                      <div className="dashboard-quick-title">{action.hi}</div>
+                      <div className="dashboard-quick-subtitle">{action.sub}</div>
                     </div>
                   </div>
                 </a>
@@ -454,8 +524,8 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="card dashboard-section-card">
-          <div style={{ marginBottom: 16 }}>
+        <section className="dashboard-section-card dashboard-fade-up" style={{ animationDelay: '320ms' }}>
+          <div className="dashboard-section-head-simple">
             <div className="section-title">Top Products</div>
             <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
           </div>
@@ -465,25 +535,16 @@ export default function DashboardPage() {
               <div>No top products yet for this period.</div>
             </div>
           ) : (
-            <div className="top-products-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+            <div className="top-products-row dashboard-top-grid">
               {topProducts.map((product, index) => (
                 <div
                   key={product.name}
-                  className="dashboard-top-card"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: 14,
-                    borderRadius: 18,
-                    minWidth: 0,
-                  }}
+                  className="dashboard-top-card dashboard-fade-up"
+                  style={{ animationDelay: `${360 + (index * 80)}ms` }}
                 >
                   <div
+                    className="dashboard-top-rank"
                     style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 14,
                       background: [
                         'linear-gradient(135deg, #10b981, #34d399)',
                         'linear-gradient(135deg, #4f46e5, #818cf8)',
@@ -491,21 +552,17 @@ export default function DashboardPage() {
                         'linear-gradient(135deg, #ef4444, #fb7185)',
                         'linear-gradient(135deg, #2563eb, #38bdf8)',
                       ][index],
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      flexShrink: 0,
                     }}
                   >
                     {index + 1}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                    <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
+                  <div className="dashboard-top-copy">
+                    <div className="dashboard-top-name">{product.name}</div>
+                    <div className="dashboard-top-units">{product.qty} units sold</div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
+                  <div className="dashboard-top-value">
+                    <CountUpNumber value={product.revenue} prefix="₹" />
+                  </div>
                 </div>
               ))}
             </div>
