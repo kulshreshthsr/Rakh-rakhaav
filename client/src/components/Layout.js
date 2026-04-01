@@ -326,9 +326,11 @@ function LayoutInner({ children }) {
             {translatedNav.map(item => (
               <a key={item.href} href={item.href}
                 className={`mobile-nav-link mobile-nav-tone-${item.tone}${pathname === item.href ? ' is-active' : ''}`}>
-                <span className="mobile-nav-glow" />
-                <Glyph name={item.key} size={18} />
-                <span>{item.shortLabel}</span>
+                <span className="mobile-nav-icon-wrap">
+                  <span className="mobile-nav-glow" />
+                  <Glyph name={item.key} size={18} />
+                </span>
+                <span className="mobile-nav-label">{item.shortLabel}</span>
               </a>
             ))}
           </div>
