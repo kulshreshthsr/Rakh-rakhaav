@@ -1686,8 +1686,10 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '.invoice{max-width:820px;margin:0 auto;padding:18px;border:2px solid #111827}'
     + '.header{display:grid;grid-template-columns:1.45fr .95fr;border:1.5px solid #111827}'
     + '.header-left,.header-right{padding:14px 16px;min-height:120px}.header-left{border-right:1.5px solid #111827}'
+    + '.brand-tag{display:inline-block;padding:4px 10px;border:1px solid #111827;font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#111827;background:#f8fafc;margin-bottom:10px}'
     + '.brand{font-size:28px;font-weight:900;letter-spacing:.02em;color:#0f172a;text-transform:uppercase}.brand span{color:#1f2937}'
     + '.brand-sub{font-size:10px;font-weight:700;letter-spacing:.18em;color:#6b7280;text-transform:uppercase;margin-top:4px}'
+    + '.seller-name{font-size:17px;font-weight:800;color:#111827;margin-top:10px}'
     + '.shop-line{font-size:11px;line-height:1.55;color:#374151;margin-top:8px}'
     + '.invoice-title{font-size:22px;font-weight:900;letter-spacing:.16em;text-align:center;color:#111827;text-transform:uppercase;margin-top:4px}'
     + '.invoice-copy{font-size:10px;letter-spacing:.12em;text-align:center;color:#6b7280;text-transform:uppercase;margin-top:6px}'
@@ -1722,8 +1724,10 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '<div class="invoice">'
     + '<div class="header">'
     + '<div class="header-left">'
-    + '<div class="brand">' + (shop.name || 'RakhRakhaav') + '</div>'
-    + '<div class="brand-sub">Tax Invoice</div>'
+    + '<div class="brand-tag">Rakhrakhaav</div>'
+    + '<div class="brand">Rakh<span>Rakhaav</span></div>'
+    + '<div class="brand-sub">Business Manager</div>'
+    + '<div class="seller-name">' + (shop.name || 'My Shop') + '</div>'
     + (shop.address ? '<div class="shop-line">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
     + ((shop.phone || shop.email) ? '<div class="shop-line">' + (shop.phone ? 'Phone: ' + shop.phone : '') + (shop.phone && shop.email ? ' | ' : '') + (shop.email ? 'Email: ' + shop.email : '') + '</div>' : '')
     + (shop.gstin ? '<div class="shop-line"><strong>GSTIN:</strong> ' + shop.gstin + '</div>' : '')
