@@ -39,6 +39,16 @@ export const FALLBACK_PLANS = [
   },
 ];
 
+export function mergePlansWithFallback(plans) {
+  const incomingPlans = Array.isArray(plans) ? plans : [];
+  const incomingById = new Map(incomingPlans.map((plan) => [plan.id, plan]));
+
+  return FALLBACK_PLANS.map((fallbackPlan) => ({
+    ...fallbackPlan,
+    ...(incomingById.get(fallbackPlan.id) || {}),
+  }));
+}
+
 export const formatCurrency = (value) =>
   new Intl.NumberFormat('en-IN', {
     style: 'currency',

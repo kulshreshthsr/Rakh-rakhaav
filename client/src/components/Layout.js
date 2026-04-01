@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
 import SyncStatusBar from './SyncStatusBar';
-import { API, FALLBACK_PLANS, hasTrialGateSeen, hasWelcomePending, readStoredSubscription, writeStoredSubscription } from '../lib/subscription';
+import { API, FALLBACK_PLANS, hasTrialGateSeen, hasWelcomePending, mergePlansWithFallback, readStoredSubscription, writeStoredSubscription } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
 
 const NAV_ITEMS = [
@@ -136,7 +136,7 @@ function LayoutInner({ children }) {
       if (data.user) { setUser(data.user); localStorage.setItem('user', JSON.stringify(data.user)); }
       setSubscription(data.subscription || null);
       writeStoredSubscription(data.subscription || null);
-      setPlans(data.plans?.length ? data.plans : FALLBACK_PLANS);
+      setPlans(mergePlansWithFallback(data.plans));
       setRazorpayKeyId(data.razorpayKeyId || '');
       markSubscriptionRefreshNow();
       return true;

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import UpgradeModal from '../../components/subscription/UpgradeModal';
-import { API, FALLBACK_PLANS, formatCurrency, getToken, readStoredSubscription, writeStoredSubscription } from '../../lib/subscription';
+import { API, FALLBACK_PLANS, formatCurrency, getToken, mergePlansWithFallback, readStoredSubscription, writeStoredSubscription } from '../../lib/subscription';
 
 const PLAN_STYLES = {
   weekly: {
@@ -56,7 +56,7 @@ export default function PricingPage() {
     })
       .then((res) => res.json())
       .then((data) => {
-        const nextPlans = data.plans?.length ? data.plans : FALLBACK_PLANS;
+        const nextPlans = mergePlansWithFallback(data.plans);
         setPlans(nextPlans);
         setSubscription(data.subscription || null);
         writeStoredSubscription(data.subscription || null);
