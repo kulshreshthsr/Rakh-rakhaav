@@ -100,17 +100,23 @@ export function hasWelcomePending() {
 
 export function markTrialGateSeen() {
   if (typeof window === 'undefined') return;
-  sessionStorage.setItem(TRIAL_GATE_SEEN_KEY, '1');
+  localStorage.setItem(TRIAL_GATE_SEEN_KEY, '1');
 }
 
 export function clearTrialGateSeen() {
   if (typeof window === 'undefined') return;
-  sessionStorage.removeItem(TRIAL_GATE_SEEN_KEY);
+  localStorage.removeItem(TRIAL_GATE_SEEN_KEY);
 }
 
 export function hasTrialGateSeen() {
   if (typeof window === 'undefined') return false;
-  return sessionStorage.getItem(TRIAL_GATE_SEEN_KEY) === '1';
+  return localStorage.getItem(TRIAL_GATE_SEEN_KEY) === '1';
+}
+
+export function getPostAuthRoute(subscription) {
+  if (hasWelcomePending()) return '/welcome';
+  if (subscription && !subscription.isPro && !hasTrialGateSeen()) return '/trial-status';
+  return '/dashboard';
 }
 
 export function getTrialWarningKey() {

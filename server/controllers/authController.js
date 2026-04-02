@@ -10,6 +10,8 @@ const {
   syncSubscriptionState,
 } = require('../services/subscriptionService');
 
+const AUTH_TOKEN_TTL = '365d';
+
 const getOrCreateShop = async (userId) => {
   let shop = await Shop.findOne({ owner: userId });
   if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
@@ -42,7 +44,7 @@ const register = async (req, res) => {
     });
     await Shop.create({ name: 'My Shop', owner: user._id });
 
-    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.status(201).json({ user: serializeAuthUser(user), token });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -63,7 +65,7 @@ const login = async (req, res) => {
       await user.save();
     }
 
-    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.json({ user: serializeAuthUser(user), token });
   } catch (err) {
     res.status(500).json({ message: err.message });

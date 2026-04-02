@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { clearTrialGateSeen, setWelcomePending, writeStoredSubscription } from '../../lib/subscription';
+import { clearTrialGateSeen, getPostAuthRoute, readStoredSubscription, setWelcomePending, writeStoredSubscription } from '../../lib/subscription';
 import { apiUrl } from '../../lib/api';
 
 const FEATURES = [
@@ -52,6 +53,13 @@ export default function RegisterPage() {
   const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
   const strengthColor = ['#cbd5e1', '#ef4444', '#f59e0b', '#10b981'][strength];
   const strengthLabel = ['', 'Weak', 'Fair', 'Strong'][strength];
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      router.replace(getPostAuthRoute(readStoredSubscription()));
+    }
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -218,12 +226,12 @@ export default function RegisterPage() {
             <div className="trust-auth-divider" />
             <div className="auth-note">
               Already have an account?{' '}
-              <a href="/login" className="cta-link">
+              <Link href="/login" className="cta-link">
                 Sign in
-              </a>
+              </Link>
             </div>
             <div className="trust-auth-legal-note">
-              By creating an account, you agree to our Terms of Service and Privacy Policy.
+              <Link href="/" className="trust-auth-link">Back to home</Link>
             </div>
           </div>
         </section>

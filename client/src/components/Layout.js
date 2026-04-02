@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
 import SyncStatusBar from './SyncStatusBar';
-import { API, FALLBACK_PLANS, hasTrialGateSeen, hasWelcomePending, mergePlansWithFallback, readStoredSubscription, writeStoredSubscription } from '../lib/subscription';
+import { API, FALLBACK_PLANS, clearTrialGateSeen, hasTrialGateSeen, hasWelcomePending, mergePlansWithFallback, readStoredSubscription, setWelcomePending, writeStoredSubscription } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
 
 const NAV_ITEMS = [
@@ -128,6 +128,8 @@ function LayoutInner({ children }) {
       if (res.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        clearTrialGateSeen();
+        setWelcomePending(false);
         router.push('/login');
         return false;
       }
@@ -188,6 +190,8 @@ function LayoutInner({ children }) {
   const logout = () => {
     setDropdownOpen(false); setMobileDropOpen(false);
     localStorage.removeItem('token'); localStorage.removeItem('user');
+    clearTrialGateSeen();
+    setWelcomePending(false);
     router.push('/login');
   };
 

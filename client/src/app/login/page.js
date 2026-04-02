@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   clearTrialGateSeen,
-  hasWelcomePending,
+  getPostAuthRoute,
   markTrialGateSeen,
   readStoredSubscription,
   setWelcomePending,
@@ -23,18 +24,7 @@ export default function LoginPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      if (hasWelcomePending()) {
-        router.replace('/welcome');
-        return;
-      }
-
-      const subscription = readStoredSubscription();
-      if (subscription && !subscription.isPro) {
-        router.replace('/trial-status');
-        return;
-      }
-
-      router.replace('/dashboard');
+      router.replace(getPostAuthRoute(readStoredSubscription()));
     }
   }, [router]);
 
@@ -139,9 +129,9 @@ export default function LoginPage() {
                   />
                   <span>Remember me</span>
                 </label>
-                <a href="/register" className="trust-auth-link">
+                <Link href="/forgot-password" className="trust-auth-link">
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <button type="submit" disabled={loading} className="btn-primary trust-submit-btn">
@@ -152,9 +142,12 @@ export default function LoginPage() {
             <div className="trust-auth-divider" />
             <div className="auth-note">
               Don&apos;t have an account?{' '}
-              <a href="/register" className="cta-link">
+              <Link href="/register" className="cta-link">
                 Create one free
-              </a>
+              </Link>
+            </div>
+            <div className="trust-auth-legal-note">
+              <Link href="/" className="trust-auth-link">Back to home</Link>
             </div>
           </div>
         </section>
