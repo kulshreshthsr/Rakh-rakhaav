@@ -966,7 +966,7 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="page-shell sales-shell">
-        <section className="card page-head-card">
+        <section className="card">
           <div className="page-toolbar">
             <div>
               <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>

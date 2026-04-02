@@ -13,8 +13,8 @@ const NAV_ITEMS = [
   { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    tone: 'home'     },
   { href: '/product',   key: 'products',  shortLabel: 'Stock',   tone: 'stock'    },
   { href: '/sales',     key: 'sales',     shortLabel: 'Sales',   tone: 'sales'    },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase' },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit'   },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',     tone: 'purchase' },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Ledger',  tone: 'credit'   },
   { href: '/gst',       key: 'gst',       shortLabel: 'GST',     tone: 'gst'      },
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports', tone: 'reports'  },
 ];

@@ -457,7 +457,7 @@ export default function GSTPage() {
   return (
     <Layout>
       <div className="page-shell gst-shell">
-        <section className="card page-head-card">
+        <section className="card">
           <div style={{ display: 'grid', gap: 14 }}>
             <div style={{ minWidth: 0 }}>
               <div className="page-title">GST Summary</div>

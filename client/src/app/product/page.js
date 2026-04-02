@@ -289,7 +289,7 @@ export default function ProductsPage() {
   return (
     <Layout>
       <div className="page-shell product-shell">
-        <section className="card page-head-card">
+        <section className="card">
           <div className="page-toolbar">
             <div>
               <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
