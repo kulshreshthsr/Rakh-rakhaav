@@ -11,14 +11,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v3';
 
 const getToken = () => localStorage.getItem('token');
-const getBusinessName = () => {
-  try {
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return storedUser?.shopName || storedUser?.shop_name || storedUser?.businessName || storedUser?.name || 'Your Business';
-  } catch {
-    return 'Your Business';
-  }
-};
 const getUserCacheNamespace = () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -213,8 +205,6 @@ export default function DashboardPage() {
   const revenue = stats?.totalRevenue || 0;
   const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
   const lowStockCount = lowStockProducts.length;
-  const businessName = getBusinessName();
-
   const statCards = [
     {
       label: 'Sales',
@@ -251,44 +241,34 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#0f766e', semantic: 'sales' },
-    { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#b45309', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#be123c', semantic: 'credit' },
-    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(14,165,233,0.12)', color: '#0369a1', semantic: 'stock' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(15,118,110,0.12)', color: '#0f766e', semantic: 'gst' },
-    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(15,23,42,0.08)', color: '#0f172a', semantic: 'premium' },
+    { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#10b981', semantic: 'sales' },
+    { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#f59e0b', semantic: 'purchase' },
+    { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#f43f5e', semantic: 'credit' },
+    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'stock' },
+    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'gst' },
+    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
   ];
 
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
-        <section className="hero-panel dashboard-hero-panel">
-          <div className="page-toolbar dashboard-toolbar dashboard-hero-header">
+        <section className="card">
+          <div className="page-toolbar dashboard-toolbar">
             <div style={{ minWidth: 0 }}>
-              <div className="page-subtitle dashboard-kicker">Business overview</div>
+              <div className="page-subtitle">Business overview</div>
               <div className="page-title">Dashboard</div>
-              <div className="dashboard-hero-copy">
-                Clean snapshot for <strong>{businessName}</strong> with sales, profit, tax and stock signals in one place.
-              </div>
-              <div className="dashboard-meta-row">
-                <span className="dashboard-meta-pill">{MONTHS[selectedMonth - 1]} {selectedYear}</span>
-                <span className="dashboard-meta-pill">Business workspace</span>
-                <span className={`dashboard-meta-pill ${isOnline ? 'is-live' : 'is-offline'}`}>
-                  {isOnline ? 'Live sync' : 'Offline snapshot'}
-                </span>
-              </div>
               {refreshing ? (
-                <div className="dashboard-sync-note">Refreshing latest data...</div>
+                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
               ) : !isOnline ? (
-                <div className="dashboard-sync-note is-offline">
+                <div style={{ marginTop: 6, fontSize: 12, color: '#92400e' }}>
                   Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
                 </div>
               ) : cacheLoaded && cacheLabel ? (
-                <div className="dashboard-sync-note">Last synced {cacheLabel}</div>
+                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
               ) : null}
             </div>
 
-            <div className="dashboard-period-controls dashboard-period-shell dashboard-filter-card" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
+            <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -349,11 +329,11 @@ export default function DashboardPage() {
 
             <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
               {[
-                { label: 'Revenue', value: stats?.totalRevenue, color: '#0f766e', prefix: '' },
-                { label: 'Profit', value: profit, color: profit >= 0 ? '#0369a1' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Collected', value: stats?.gstCollected, color: '#b45309', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#334155', prefix: '-' },
-                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#b45309' : '#0f766e', prefix: '' },
+                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
+                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
+                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
+                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
+                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -376,7 +356,7 @@ export default function DashboardPage() {
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#475569', marginBottom: 6 }}>
                 <span>Profit Margin</span>
-                <strong style={{ color: profit >= 0 ? '#0369a1' : '#dc2626' }}>{margin}%</strong>
+                <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
               </div>
               <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
                 <div
@@ -385,7 +365,7 @@ export default function DashboardPage() {
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
                     height: '100%',
                     borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #0f766e, #0ea5e9)' : 'linear-gradient(90deg, #dc2626, #f97316)',
+                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #3730a3)' : 'linear-gradient(90deg, #dc2626, #f97316)',
                   }}
                 />
               </div>
@@ -495,11 +475,11 @@ export default function DashboardPage() {
                       height: 38,
                       borderRadius: 14,
                       background: [
-                        'linear-gradient(135deg, #0f766e, #14b8a6)',
-                        'linear-gradient(135deg, #0369a1, #38bdf8)',
-                        'linear-gradient(135deg, #b45309, #f59e0b)',
-                        'linear-gradient(135deg, #be123c, #fb7185)',
-                        'linear-gradient(135deg, #334155, #64748b)',
+                        'linear-gradient(135deg, #10b981, #34d399)',
+                        'linear-gradient(135deg, #4f46e5, #818cf8)',
+                        'linear-gradient(135deg, #f59e0b, #fbbf24)',
+                        'linear-gradient(135deg, #ef4444, #fb7185)',
+                        'linear-gradient(135deg, #2563eb, #38bdf8)',
                       ][index],
                       color: '#fff',
                       display: 'flex',
