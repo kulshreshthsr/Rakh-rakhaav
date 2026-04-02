@@ -655,9 +655,9 @@ export default function ProductsPage() {
               </div>
 
               {form.price && form.gst_rate > 0 && (
-                <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 600, color: '#6d28d9', marginBottom: 2 }}>GST Preview</div>
-                  <div style={{ color: '#7c3aed' }}>
+                <div style={{ background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
+                  <div style={{ fontWeight: 600, color: '#0f766e', marginBottom: 2 }}>GST Preview</div>
+                  <div style={{ color: '#0891b2' }}>
                     ₹{parseFloat(form.price || 0).toFixed(2)} + {form.gst_rate}% GST = <strong>₹{(parseFloat(form.price || 0) * (1 + form.gst_rate / 100)).toFixed(2)}</strong>
                   </div>
                 </div>
@@ -695,7 +695,7 @@ export default function ProductsPage() {
                   {[
                     { val: 'manual_add', label: 'Add Stock', color: '#10b981' },
                     { val: 'manual_remove', label: 'Remove Stock', color: '#ef4444' },
-                    { val: 'adjustment', label: 'Correction', color: '#6366f1' },
+                    { val: 'adjustment', label: 'Correction', color: '#0891b2' },
                   ].map(opt => (
                     <button key={opt.val} type="button"
                       onClick={() => setStockForm({ ...stockForm, type: opt.val })}

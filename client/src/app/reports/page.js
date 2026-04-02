@@ -473,7 +473,7 @@ export default function ReportsPage() {
                   <div className="stack-list">
                     {topCustomers.map((customer, index) => (
                       <div key={index} className="stack-row">
-                        <div className="stack-row-rank" style={{ background: ['#ef4444', '#f59e0b', '#22c55e', '#06b6d4', '#8b5cf6'][index % 5] }}>
+                        <div className="stack-row-rank" style={{ background: ['#ef4444', '#f59e0b', '#22c55e', '#06b6d4', '#0891b2'][index % 5] }}>
                           {customer.name.charAt(0).toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>

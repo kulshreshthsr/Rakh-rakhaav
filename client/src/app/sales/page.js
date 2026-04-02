@@ -939,7 +939,7 @@ export default function SalesPage() {
     const map = {
       cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
       credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
-      upi:    { bg: '#ede9fe', color: '#5b21b6', label: 'UPI' },
+      upi:    { bg: '#ecfeff', color: '#0f766e', label: 'UPI' },
       bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
     };
     const s = map[type] || map.cash;
@@ -1061,7 +1061,7 @@ export default function SalesPage() {
               <tbody>
                 {filteredSales.map(s => (
                   <tr key={s._id}>
-                    <td style={{ color: '#6366f1', fontWeight: 600, fontSize: 12 }}>
+                    <td style={{ color: '#0891b2', fontWeight: 600, fontSize: 12 }}>
                       {s.invoice_number}
                       {s._isOffline && (
                         (() => {
@@ -1099,7 +1099,7 @@ export default function SalesPage() {
                     <td>₹{fmt(s.taxable_amount)}</td>
                     <td>
                       {(s.total_gst || 0) > 0
-                        ? <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{fmt(s.total_gst)}</span>
+                        ? <span style={{ background: '#ecfeff', color: '#0f766e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{fmt(s.total_gst)}</span>
                         : <span style={{ color: '#9ca3af' }}>-</span>}
                     </td>
                     <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(s.total_amount)}</td>
@@ -1155,7 +1155,7 @@ export default function SalesPage() {
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
                       {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
                     </div>
-                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 600 }}>{s.invoice_number}</div>
+                    <div style={{ fontSize: 11, color: '#0891b2', fontWeight: 600 }}>{s.invoice_number}</div>
                     {s._isOffline && (
                       (() => {
                         const badge = getOfflineBadgeMeta(s._queueStatus);
@@ -1191,7 +1191,7 @@ export default function SalesPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600 }}>₹{fmt(s.taxable_amount)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#6366f1' }}>₹{fmt(s.total_gst)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#0891b2' }}>₹{fmt(s.total_gst)}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
                 </div>
                 <div
@@ -1345,7 +1345,7 @@ export default function SalesPage() {
                         </div>
                       </div>
                       {g && (
-                        <div className="fast-item-summary" style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ede9fe' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        <div className="fast-item-summary" style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ecfeff' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                           <span>Taxable: <strong>₹{fmt(g.taxable)}</strong></span>
                           {g.gst_rate > 0 && (
                             <span>
@@ -1651,8 +1651,8 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
 
   const amountGSTRows = buildTaxSummaryRows(saleItems, isIGST);
 
-  const payBg    = sale.payment_type === 'cash' ? '#dcfce7' : sale.payment_type === 'upi' ? '#ede9fe' : '#fee2e2';
-  const payColor = sale.payment_type === 'cash' ? '#166534' : sale.payment_type === 'upi' ? '#5b21b6' : '#991b1b';
+  const payBg    = sale.payment_type === 'cash' ? '#dcfce7' : sale.payment_type === 'upi' ? '#ecfeff' : '#fee2e2';
+  const payColor = sale.payment_type === 'cash' ? '#166534' : sale.payment_type === 'upi' ? '#0f766e' : '#991b1b';
   const payLabel = sale.payment_type === 'cash' ? 'CASH' : sale.payment_type === 'upi' ? 'UPI' : sale.payment_type === 'bank' ? 'BANK' : 'CREDIT';
 
   const bankHTML = shop.bank_name

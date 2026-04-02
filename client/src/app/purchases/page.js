@@ -790,7 +790,7 @@ export default function PurchasesPage() {
     const map = {
       cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
       credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
-      upi:    { bg: '#ede9fe', color: '#5b21b6', label: 'UPI' },
+      upi:    { bg: '#ecfeff', color: '#0f766e', label: 'UPI' },
       bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
     };
     const s = map[type] || map.cash;
@@ -850,7 +850,7 @@ export default function PurchasesPage() {
               <button
                 type="button"
                 onClick={focusPendingPurchase}
-                style={{ marginTop: 10, padding: 0, border: 'none', background: 'none', color: '#3730a3', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                style={{ marginTop: 10, padding: 0, border: 'none', background: 'none', color: '#0891b2', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
               >
                 Pay Now
               </button>
@@ -1031,7 +1031,7 @@ export default function PurchasesPage() {
                 data-purchase-anchor={p._id}
                 style={{
                   borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#f59e0b'}`,
-                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(55, 48, 163, 0.22), 0 18px 32px rgba(55, 48, 163, 0.12)' : undefined,
+                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(8, 145, 178, 0.22), 0 18px 32px rgba(8, 145, 178, 0.12)' : undefined,
                   transition: 'box-shadow 0.2s ease',
                 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -1078,7 +1078,7 @@ export default function PurchasesPage() {
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{(p.taxable_amount || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#6366f1' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#0891b2' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>₹{(p.amount_paid || 0).toFixed(2)}</div></div>
                   {(p.balance_due || 0) > 0 && (
                     <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>₹{p.balance_due.toFixed(2)}</div></div>
@@ -1405,7 +1405,7 @@ export default function PurchasesPage() {
                     {[
                       { val: 'cash', label: 'Cash', color: '#10b981' },
                       { val: 'credit', label: 'Credit', color: '#ef4444' },
-                      { val: 'upi', label: 'UPI', color: '#8b5cf6' },
+                      { val: 'upi', label: 'UPI', color: '#0891b2' },
                       { val: 'bank', label: 'Bank', color: '#3b82f6' },
                     ].map(opt => (
                       <button

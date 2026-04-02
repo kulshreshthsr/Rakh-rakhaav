@@ -245,9 +245,9 @@ export default function DashboardPage() {
     { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#10b981', semantic: 'sales' },
     { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#f59e0b', semantic: 'purchase' },
     { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#f43f5e', semantic: 'credit' },
-    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'stock' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'gst' },
-    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(79,70,229,0.12)', color: '#4f46e5', semantic: 'premium' },
+    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(8,145,178,0.12)', color: '#0891b2', semantic: 'stock' },
+    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,145,178,0.12)', color: '#0891b2', semantic: 'gst' },
+    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(8,145,178,0.12)', color: '#0891b2', semantic: 'premium' },
   ];
 
   return (
@@ -333,7 +333,7 @@ export default function DashboardPage() {
                 { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
                 { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
                 { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#7c3aed', prefix: '-' },
+                { label: 'ITC', value: stats?.gstITC, color: '#0891b2', prefix: '-' },
                 { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
               ].map((item) => (
                 <div
@@ -366,7 +366,7 @@ export default function DashboardPage() {
                     width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
                     height: '100%',
                     borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #3730a3)' : 'linear-gradient(90deg, #dc2626, #f97316)',
+                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #0891b2)' : 'linear-gradient(90deg, #dc2626, #f97316)',
                   }}
                 />
               </div>
@@ -477,7 +477,7 @@ export default function DashboardPage() {
                       borderRadius: 14,
                       background: [
                         'linear-gradient(135deg, #10b981, #34d399)',
-                        'linear-gradient(135deg, #4f46e5, #818cf8)',
+                        'linear-gradient(135deg, #0891b2, #22d3ee)',
                         'linear-gradient(135deg, #f59e0b, #fbbf24)',
                         'linear-gradient(135deg, #ef4444, #fb7185)',
                         'linear-gradient(135deg, #2563eb, #38bdf8)',
