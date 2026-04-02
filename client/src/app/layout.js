@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AppLocaleProvider } from "../components/AppLocale";
+import AppSplash from "../components/AppSplash";
 import PWAInstall from "../components/PWAInstall";
 
 export const metadata = {
@@ -11,7 +12,7 @@ export const metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Rakh-Rakhaav",
-    startupImage: ["/splash.png"],
+    startupImage: ["/splash-v2.png"],
   },
   icons: {
     icon: [
@@ -39,11 +40,12 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#08111f" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-v2.png" />
-        <link rel="apple-touch-startup-image" href="/splash.png" />
-        <link rel="preload" as="image" href="/splash.png" />
+        <link rel="apple-touch-startup-image" href="/splash-v2.png" />
+        <link rel="preload" as="image" href="/splash-v2.png" />
       </head>
       <body>
         <AppLocaleProvider>
+          <AppSplash />
           {children}
           <PWAInstall />
         </AppLocaleProvider>

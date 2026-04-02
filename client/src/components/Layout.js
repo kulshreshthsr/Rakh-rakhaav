@@ -298,10 +298,8 @@ function LayoutInner({ children }) {
         {/* ── Mobile top bar ────────────────────── */}
         <div className={`mobile-topbar premium-topbar${scrolled ? ' is-scrolled' : ''}`}>
           <div className="mobile-topbar-brand">
-            <div>
-              <div className="mobile-brand-title brand-title-hindi">रखरखाव</div>
-              <div className="mobile-brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand-header.png" alt="Rakhrakhaav" className="mobile-brand-image" />
           </div>
 
           <div className="mobile-topbar-actions">
