@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -414,7 +415,7 @@ export default function DashboardPage() {
           <div className="quick-actions-carousel">
             <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
               {quickActions.map((action) => (
-                <a
+                <Link
                   key={action.href}
                   href={action.href}
                   className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
@@ -432,7 +433,7 @@ export default function DashboardPage() {
                       <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
                     </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
             <div className="quick-actions-fade" aria-hidden="true" />

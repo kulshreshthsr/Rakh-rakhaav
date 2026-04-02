@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { ActionButton, Card, StatCard } from '../../components/ui/AppUI';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 
 const getToken = () => localStorage.getItem('token');
+const LEDGER_CACHE_KEY = 'udhaar-page-v1';
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'NA';
 const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
@@ -29,6 +31,7 @@ const getLedgerEntryText = (entry) => [
   entry.reference_id,
   entry.type,
 ].join(' ').toLowerCase();
+const getLedgerDetailCacheKey = (kind, id) => `${LEDGER_CACHE_KEY}:${kind}:${id}`;
 
 function BalanceTile({ label, value, tone = 'neutral' }) {
   return (
@@ -57,11 +60,35 @@ export default function UdhaarPage() {
   const [partySearch, setPartySearch] = useState('');
   const [ledgerSearch, setLedgerSearch] = useState('');
   const [ledgerMonth, setLedgerMonth] = useState('');
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  const [cacheLoaded, setCacheLoaded] = useState(false);
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
+
+  const applyCachedSnapshot = (cached) => {
+    setCustomers(cached?.customers || []);
+    setSuppliers(cached?.suppliers || []);
+    setCacheUpdatedAt(cached?.cachedAt || null);
+    setCacheLoaded(Boolean(cached));
+  };
 
   async function fetchAll() {
-    setLoading(true);
-    await Promise.all([fetchCustomers(), fetchSuppliers()]);
-    setLoading(false);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const [nextCustomers, nextSuppliers] = await Promise.all([fetchCustomers(), fetchSuppliers()]);
+      writePageCache(LEDGER_CACHE_KEY, {
+        customers: nextCustomers,
+        suppliers: nextSuppliers,
+      });
+      setCacheUpdatedAt(new Date().toISOString());
+      setCacheLoaded(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function fetchCustomers() {
@@ -71,9 +98,12 @@ export default function UdhaarPage() {
       });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
-      setCustomers(Array.isArray(data) ? data : []);
+      const nextCustomers = Array.isArray(data) ? data : [];
+      setCustomers(nextCustomers);
+      return nextCustomers;
     } catch {
       setError('Customers load nahi hue');
+      return [];
     }
   }
 
@@ -83,8 +113,12 @@ export default function UdhaarPage() {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
-      setSuppliers(Array.isArray(data) ? data : []);
-    } catch {}
+      const nextSuppliers = Array.isArray(data) ? data : [];
+      setSuppliers(nextSuppliers);
+      return nextSuppliers;
+    } catch {
+      return [];
+    }
   }
 
   const switchTab = (nextTab) => {
@@ -111,6 +145,10 @@ export default function UdhaarPage() {
   };
 
   const sendReminder = async (customer, entries = []) => {
+    if (!isOnline) {
+      setError('Offline mode me WhatsApp reminder open nahi hoga.');
+      return;
+    }
     const phone = cleanPhone(customer.phone || '');
     if (!phone) {
       setError('Is customer ka phone number nahi hai');
@@ -151,12 +189,34 @@ export default function UdhaarPage() {
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
+    const cached = readPageCache(LEDGER_CACHE_KEY);
+    if (cached) {
+      applyCachedSnapshot(cached);
+      setLoading(false);
+    } else {
+      setCacheLoaded(false);
+      setLoading(true);
+    }
+
+    const deferredId = scheduleDeferred(() => fetchAll());
+    return () => cancelDeferred(deferredId);
   }, [router]);
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-enable react-hooks/exhaustive-deps */
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const openLedger = async (item) => {
     if (selected?._id === item._id) {
@@ -172,13 +232,25 @@ export default function UdhaarPage() {
     setLedgerLoading(true);
     setError('');
 
+    const ledgerKind = activeTab === 'customers' ? 'customers' : 'suppliers';
+
+    if (!isOnline) {
+      const cachedLedger = readPageCache(getLedgerDetailCacheKey(ledgerKind, item._id));
+      setLedger(cachedLedger?.ledger || []);
+      setLedgerLoading(false);
+      return;
+    }
+
     try {
-      const base = activeTab === 'customers' ? 'customers' : 'suppliers';
-      const res = await fetch(apiUrl(`/api/${base}/${item._id}/udhaar`), {
+      const res = await fetch(apiUrl(`/api/${ledgerKind}/${item._id}/udhaar`), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
-      setLedger(data.entries || data.ledger || (Array.isArray(data) ? data : []));
+      const nextLedger = data.entries || data.ledger || (Array.isArray(data) ? data : []);
+      setLedger(nextLedger);
+      writePageCache(getLedgerDetailCacheKey(ledgerKind, item._id), {
+        ledger: nextLedger,
+      });
     } catch {
       setError('Ledger could not be loaded');
     }
@@ -189,6 +261,10 @@ export default function UdhaarPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    if (!isOnline) {
+      setError('Offline mode me payment record nahi hoga. Internet on karke try karein.');
+      return;
+    }
     if (!settleAmount || Number(settleAmount) <= 0) {
       setError('Valid amount enter karo');
       return;
@@ -234,6 +310,14 @@ export default function UdhaarPage() {
 
   const totalCustomerUdhaar = customers.reduce((sum, customer) => sum + (customer.totalUdhaar || 0), 0);
   const totalSupplierUdhaar = suppliers.reduce((sum, supplier) => sum + (supplier.totalUdhaar || 0), 0);
+  const cacheLabel = cacheUpdatedAt
+    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
   const list = activeTab === 'customers' ? customers : suppliers;
   const isCustomer = activeTab === 'customers';
   const normalizedPartySearch = partySearch.trim().toLowerCase();
@@ -256,9 +340,24 @@ export default function UdhaarPage() {
       <div className="page-shell ledger-shell">
         <section className="card">
           <div className="page-toolbar">
-            <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
+            <div>
+              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
+              {!isOnline ? (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#92400e' }}>
+                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
+                </div>
+              ) : cacheLoaded && cacheLabel ? (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+              ) : null}
+            </div>
           </div>
         </section>
+
+        {!isOnline ? (
+          <div className="ui-empty" style={{ borderStyle: 'solid', borderColor: '#fcd34d', background: '#fffbeb', color: '#92400e' }}>
+            Udhaar page offline snapshot dikha rahi hai. New payments aur fresh ledger updates internet ke saath sync hongi.
+          </div>
+        ) : null}
 
         <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           <StatCard

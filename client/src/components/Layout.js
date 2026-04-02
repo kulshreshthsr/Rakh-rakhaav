@@ -20,6 +20,7 @@ const NAV_ITEMS = [
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
+const PREFETCH_ROUTES = [...new Set([...NAV_ITEMS.map((item) => item.href), '/pricing', '/reports', '/profile'])];
 
 function readStoredUser() {
   if (typeof window === 'undefined') return null;
@@ -159,6 +160,12 @@ function LayoutInner({ children }) {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    PREFETCH_ROUTES.forEach((href) => {
+      router.prefetch(href);
+    });
+  }, [router]);
 
   /* ── Click-outside dropdowns ─────────── */
   useEffect(() => {

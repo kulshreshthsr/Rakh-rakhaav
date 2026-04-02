@@ -3,15 +3,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 
 const getToken = () => localStorage.getItem('token');
+const REPORTS_CACHE_PREFIX = 'reports-page-v1';
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const fmtN = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
 const formatShortReportDate = (value) => new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
   month: 'short',
 }).format(new Date(value));
+const getReportsCacheKey = (filter) => `${REPORTS_CACHE_PREFIX}:${filter}`;
 
 const getRange = (filter) => {
   const now = new Date();
@@ -48,9 +51,23 @@ export default function ReportsPage() {
   const [purchases, setPurchases] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [summary, setSummary] = useState({});
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  const [cacheLoaded, setCacheLoaded] = useState(false);
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
-  const fetchAll = async () => {
-    setLoading(true);
+  const applyCachedSnapshot = (cached) => {
+    setSales(cached?.sales || []);
+    setPurchases(cached?.purchases || []);
+    setCustomers(cached?.customers || []);
+    setSummary(cached?.summary || {});
+    setCacheUpdatedAt(cached?.cachedAt || null);
+    setCacheLoaded(Boolean(cached));
+  };
+
+  const fetchAll = async (hasCachedSnapshot = false) => {
+    setLoading(!hasCachedSnapshot);
     const { from, to } = getRange(filter);
     const headers = { Authorization: `Bearer ${getToken()}` };
     const params = from ? `?from=${from}&to=${to}` : '';
@@ -90,7 +107,7 @@ export default function ReportsPage() {
       const taxableRev = profitData.totalTaxable ?? (totalRevenue - totalGST);
       const margin = taxableRev > 0 ? ((grossProfit / taxableRev) * 100) : 0;
 
-      setSummary({
+      const nextSummary = {
         totalRevenue,
         totalGST,
         grossProfit,
@@ -100,9 +117,25 @@ export default function ReportsPage() {
         margin,
         salesCount: profitData.salesCount ?? salesList.length,
         netGST: profitData.netGSTPayable ?? (totalGST - totalITC),
+      };
+
+      setSummary(nextSummary);
+      writePageCache(getReportsCacheKey(filter), {
+        sales: salesList,
+        purchases: purchasesList,
+        customers: customersList,
+        summary: nextSummary,
       });
+      setCacheUpdatedAt(new Date().toISOString());
+      setCacheLoaded(true);
     } catch (err) {
       console.error(err);
+      if (!hasCachedSnapshot) {
+        setSales([]);
+        setPurchases([]);
+        setCustomers([]);
+        setSummary({});
+      }
     }
     setLoading(false);
   };
@@ -110,9 +143,31 @@ export default function ReportsPage() {
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchAll();
+    const cached = readPageCache(getReportsCacheKey(filter));
+    if (cached) {
+      applyCachedSnapshot(cached);
+      setLoading(false);
+    } else {
+      setCacheLoaded(false);
+      setLoading(true);
+    }
+
+    const deferredId = scheduleDeferred(() => fetchAll(Boolean(cached)));
+    return () => cancelDeferred(deferredId);
   }, [filter, router]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const topProducts = (() => {
     const map = {};
@@ -247,6 +302,14 @@ export default function ReportsPage() {
 
   const { label } = getRange(filter);
   const marginColor = summary.margin >= 20 ? '#22c55e' : summary.margin >= 10 ? '#f59e0b' : '#ef4444';
+  const cacheLabel = cacheUpdatedAt
+    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
   const reportFilters = [
     { val: 'today', label: 'Today' },
     { val: 'week', label: 'Week' },
@@ -264,6 +327,13 @@ export default function ReportsPage() {
               <div style={{ fontSize: 13, color: '#5b6b82', maxWidth: 420 }}>
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
               </div>
+              {!isOnline ? (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#92400e' }}>
+                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
+                </div>
+              ) : cacheLoaded && cacheLabel ? (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+              ) : null}
             </div>
             <div className="filter-pills reports-filter-pills">
               {reportFilters.map((option) => (
@@ -278,6 +348,12 @@ export default function ReportsPage() {
             </div>
           </div>
         </section>
+
+        {!isOnline ? (
+          <div className="ui-empty" style={{ borderStyle: 'solid', borderColor: '#fcd34d', background: '#fffbeb', color: '#92400e' }}>
+            Reports offline snapshot dikh raha hai. Fresh server data internet aane par update hoga.
+          </div>
+        ) : null}
 
         {!loading ? (
           <section className="metric-grid reports-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>

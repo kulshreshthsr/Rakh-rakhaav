@@ -3,14 +3,17 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTHS_HI = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const getToken = () => localStorage.getItem('token');
+const GST_CACHE_PREFIX = 'gst-page-v1';
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
+const getGSTCacheKey = (month, year) => `${GST_CACHE_PREFIX}:${year}:${month}`;
 const getRecordGstRate = (record = {}) => {
   if (record?.items?.length) {
     const itemRate = Number(record.items.find((item) => Number(item?.gst_rate || 0) > 0)?.gst_rate || 0);
@@ -221,14 +224,30 @@ export default function GSTPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [summary, setSummary] = useState(null);
+  const [recordsCache, setRecordsCache] = useState({ sales: [], purchases: [] });
   const [loading, setLoading] = useState(false);
   const [zipping, setZipping] = useState(false);
   const [drillType, setDrillType] = useState(null);
   const [drillData, setDrillData] = useState([]);
   const [drillLoading, setDrillLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  const [cacheLoaded, setCacheLoaded] = useState(false);
+  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
-  const fetchSummary = async () => {
-    setLoading(true);
+  const applyCachedSnapshot = (cached) => {
+    setSummary(cached?.summary || null);
+    setRecordsCache({
+      sales: cached?.sales || [],
+      purchases: cached?.purchases || [],
+    });
+    setCacheUpdatedAt(cached?.cachedAt || null);
+    setCacheLoaded(Boolean(cached));
+  };
+
+  const fetchSummary = async (hasCachedSnapshot = false) => {
+    setLoading(!hasCachedSnapshot);
     setDrillType(null);
     try {
       const from = new Date(year, month - 1, 1).toISOString();
@@ -248,10 +267,22 @@ export default function GSTPage() {
       const purchasesPayload = purchasesRes.ok ? await purchasesRes.json() : { purchases: [] };
       const sales = Array.isArray(salesPayload?.sales) ? salesPayload.sales : [];
       const purchases = Array.isArray(purchasesPayload?.purchases) ? purchasesPayload.purchases : [];
+      const nextSummary = buildLocalGSTSummary(sales, purchases, month, year);
 
-      setSummary(buildLocalGSTSummary(sales, purchases, month, year));
+      setSummary(nextSummary);
+      setRecordsCache({ sales, purchases });
+      writePageCache(getGSTCacheKey(month, year), {
+        summary: nextSummary,
+        sales,
+        purchases,
+      });
+      setCacheUpdatedAt(new Date().toISOString());
+      setCacheLoaded(true);
     } catch {
-      setSummary(null);
+      if (!hasCachedSnapshot) {
+        setSummary(null);
+        setRecordsCache({ sales: [], purchases: [] });
+      }
     }
     setLoading(false);
   };
@@ -259,14 +290,42 @@ export default function GSTPage() {
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    fetchSummary();
+    const cached = readPageCache(getGSTCacheKey(month, year));
+    if (cached) {
+      applyCachedSnapshot(cached);
+      setLoading(false);
+    } else {
+      setCacheLoaded(false);
+      setLoading(true);
+    }
+
+    const deferredId = scheduleDeferred(() => fetchSummary(Boolean(cached)));
+    return () => cancelDeferred(deferredId);
   }, [month, year, router]);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const openDrill = async (type) => {
     if (drillType === type) { setDrillType(null); return; }
     setDrillType(type);
     setDrillLoading(true);
+
+    if (!isOnline) {
+      setDrillData(type === 'sales' ? recordsCache.sales : recordsCache.purchases);
+      setDrillLoading(false);
+      return;
+    }
 
     const from = new Date(year, month - 1, 1).toISOString();
     const to = new Date(year, month, 0, 23, 59, 59).toISOString();
@@ -353,8 +412,21 @@ export default function GSTPage() {
     URL.revokeObjectURL(url);
   };
 
+  const cacheLabel = cacheUpdatedAt
+    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
+
   const exportZIP = async () => {
     if (!summary) return;
+    if (!isOnline && !window.JSZip) {
+      alert('Offline mode me ZIP export abhi available nahi hai. CSV/JSON export use karein.');
+      return;
+    }
     setZipping(true);
 
     try {
@@ -464,6 +536,13 @@ export default function GSTPage() {
               <div className="page-subtitle">
                 Track collected GST, ITC and filing-ready exports for the selected period.
               </div>
+              {!isOnline ? (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#92400e' }}>
+                  Offline GST snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
+                </div>
+              ) : cacheLoaded && cacheLabel ? (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+              ) : null}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, width: 'min(320px, 100%)' }}>
               <select className="form-input" value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
@@ -477,6 +556,12 @@ export default function GSTPage() {
             </div>
           </div>
         </section>
+
+        {!isOnline ? (
+          <div className="ui-empty" style={{ borderStyle: 'solid', borderColor: '#fcd34d', background: '#fffbeb', color: '#92400e' }}>
+            GST page cached data dikha rahi hai. ZIP export aur fresh server figures internet ke saath best kaam karenge.
+          </div>
+        ) : null}
 
         {!summary ? (
           <div className="ui-empty">
