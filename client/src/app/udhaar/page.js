@@ -254,7 +254,7 @@ export default function UdhaarPage() {
   return (
     <Layout>
       <div className="page-shell ledger-shell">
-        <section className="card">
+        <section className="card page-head-card">
           <div className="page-toolbar">
             <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
           </div>
