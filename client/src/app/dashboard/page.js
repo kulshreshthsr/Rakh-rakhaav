@@ -272,7 +272,7 @@ export default function DashboardPage() {
               </div>
               <div className="dashboard-meta-row">
                 <span className="dashboard-meta-pill">{MONTHS[selectedMonth - 1]} {selectedYear}</span>
-                <span className="dashboard-meta-pill">{subscription?.isPro ? 'Pro workspace' : 'Starter workspace'}</span>
+                <span className="dashboard-meta-pill">Business workspace</span>
                 <span className={`dashboard-meta-pill ${isOnline ? 'is-live' : 'is-offline'}`}>
                   {isOnline ? 'Live sync' : 'Offline snapshot'}
                 </span>
