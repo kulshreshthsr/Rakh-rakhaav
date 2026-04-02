@@ -288,11 +288,7 @@ function LayoutInner({ children }) {
         {/* ── Mobile top bar ────────────────────── */}
         <div className={`mobile-topbar premium-topbar${scrolled ? ' is-scrolled' : ''}`}>
           <div className="mobile-topbar-brand">
-            <Logo size="sm" />
-            <div>
-              <div className="mobile-brand-title brand-title-hindi">रखरखाव</div>
-              <div className="mobile-brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
-            </div>
+            <div className="mobile-brand-wordmark brand-title-hindi">रखरखाव</div>
           </div>
 
           <div className="mobile-topbar-actions">
