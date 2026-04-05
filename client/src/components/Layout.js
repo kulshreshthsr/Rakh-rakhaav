@@ -219,7 +219,7 @@ function LayoutInner({ children }) {
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
 
         {/* ── Desktop sidebar ───────────────────── */}
-        <aside className="desktop-sidebar premium-sidebar">
+        <aside className={`desktop-sidebar premium-sidebar${locale === 'hi' ? ' sidebar-locale-hi' : ''}`}>
           <div className="sidebar-panel">
             <div className="sidebar-orb sidebar-orb-top" />
             <div className="sidebar-orb sidebar-orb-bottom" />
