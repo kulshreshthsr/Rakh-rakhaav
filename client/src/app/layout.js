@@ -28,7 +28,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#08111f",
+  themeColor: "#0c1222",
 };
 
 export default function RootLayout({ children }) {
@@ -37,13 +37,13 @@ export default function RootLayout({ children }) {
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#08111f" />
+        <meta name="theme-color" content="#0c1222" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-v2.png" />
         <link rel="apple-touch-startup-image" href="/splash-v2.png" />
         <link rel="preload" as="image" href="/splash-v2.png" />
       </head>
-      <body>
+      <body className="rr-enterprise-surface">
         <AppLocaleProvider>
           <AppSplash />
           {children}

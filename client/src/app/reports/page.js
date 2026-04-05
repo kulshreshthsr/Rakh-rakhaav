@@ -320,25 +320,26 @@ export default function ReportsPage() {
     <Layout>
       <div className="page-shell reports-shell">
         <section className="hero-panel reports-hero">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <div className="page-title" style={{ marginBottom: 4, color: '#0f172a' }}>Reports</div>
-              <div className="kicker" style={{ marginBottom: 10 }}>Business analytics</div>
-              <div style={{ fontSize: 13, color: '#5b6b82', maxWidth: 420 }}>
+          <div className="mb-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="rr-page-eyebrow">Business analytics</p>
+              <div className="page-title">Reports</div>
+              <p className="mt-2 max-w-md text-[13px] leading-relaxed text-slate-600">
                 Revenue, profit, GST and customer trends for {label.toLowerCase()} in one clean view.
-              </div>
+              </p>
               {!isOnline ? (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#92400e' }}>
-                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
-                </div>
+                <p className="rr-meta-line is-warn mt-2">
+                  Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
+                </p>
               ) : cacheLoaded && cacheLabel ? (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+                <p className="rr-meta-line mt-2">Last synced {cacheLabel}</p>
               ) : null}
             </div>
-            <div className="filter-pills reports-filter-pills">
+            <div className="filter-pills reports-filter-pills shrink-0">
               {reportFilters.map((option) => (
                 <button
                   key={option.val}
+                  type="button"
                   onClick={() => setFilter(option.val)}
                   className={`filter-pill${filter === option.val ? ' is-active' : ''}`}
                 >
@@ -350,8 +351,11 @@ export default function ReportsPage() {
         </section>
 
         {!isOnline ? (
-          <div className="ui-empty" style={{ borderStyle: 'solid', borderColor: '#fcd34d', background: '#fffbeb', color: '#92400e' }}>
-            Reports offline snapshot dikh raha hai. Fresh server data internet aane par update hoga.
+          <div className="rr-banner-warn" role="status">
+            <strong>Offline reports view</strong>
+            <div>
+              Reports offline snapshot dikh raha hai. Fresh server data internet aane par update hoga.
+            </div>
           </div>
         ) : null}
 

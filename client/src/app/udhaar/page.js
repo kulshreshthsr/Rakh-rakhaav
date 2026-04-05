@@ -338,24 +338,28 @@ export default function UdhaarPage() {
   return (
     <Layout>
       <div className="page-shell ledger-shell">
-        <section className="card">
+        <section className="hero-panel ledger-hero">
           <div className="page-toolbar">
-            <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Credit Ledger</div>
+            <div className="min-w-0">
+              <p className="rr-page-eyebrow">Parties &amp; credit</p>
+              <div className="page-title">Credit Ledger</div>
               {!isOnline ? (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#92400e' }}>
-                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
-                </div>
+                <p className="rr-meta-line is-warn">
+                  Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
+                </p>
               ) : cacheLoaded && cacheLabel ? (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+                <p className="rr-meta-line">Last synced {cacheLabel}</p>
               ) : null}
             </div>
           </div>
         </section>
 
         {!isOnline ? (
-          <div className="ui-empty" style={{ borderStyle: 'solid', borderColor: '#fcd34d', background: '#fffbeb', color: '#92400e' }}>
-            Udhaar page offline snapshot dikha rahi hai. New payments aur fresh ledger updates internet ke saath sync hongi.
+          <div className="rr-banner-warn" role="status">
+            <strong>Offline ledger view</strong>
+            <div>
+              Udhaar page offline snapshot dikha rahi hai. New payments aur fresh ledger updates internet ke saath sync hongi.
+            </div>
           </div>
         ) : null}
 

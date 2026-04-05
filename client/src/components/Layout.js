@@ -215,7 +215,7 @@ function LayoutInner({ children }) {
   const upgradeLabel  = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
 
   return (
-    <div className="app-shell-root">
+    <div className="app-shell-root rr-workspace-premium">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
 
         {/* ── Desktop sidebar ───────────────────── */}

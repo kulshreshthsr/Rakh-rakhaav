@@ -289,30 +289,31 @@ export default function ProductsPage() {
   return (
     <Layout>
       <div className="page-shell product-shell">
-        <section className="card">
+        <section className="hero-panel product-hero">
           <div className="page-toolbar">
-            <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Products</div>
-              <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+            <div className="min-w-0">
+              <p className="rr-page-eyebrow">Catalog &amp; inventory</p>
+              <div className="page-title">Products</div>
+              <p className={`rr-meta-line${!isOnline ? ' is-warn' : ''}`}>
                 {refreshing
-                  ? 'Refreshing latest inventory...'
+                  ? 'Refreshing latest inventory…'
                   : !isOnline
-                    ? `Offline inventory snapshot${cacheLabel ? ` • last updated ${cacheLabel}` : ''}`
+                    ? `Offline inventory snapshot${cacheLabel ? ` · last updated ${cacheLabel}` : ''}`
                     : cacheLabel
-                      ? `Inventory ready • last synced ${cacheLabel}`
+                      ? `Inventory ready · last synced ${cacheLabel}`
                       : 'Your complete product catalog'}
-              </div>
+              </p>
             </div>
-            <button onClick={openAdd} className="btn-primary" style={{ width: 'auto' }} disabled={!isOnline}>
+            <button type="button" onClick={openAdd} className="btn-primary w-auto shrink-0" disabled={!isOnline}>
               + Add Product
             </button>
           </div>
         </section>
 
         {!isOnline ? (
-          <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+          <div className="rr-banner-warn" role="status">
             <strong>Offline inventory mode</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
+            <div>
               Products list cached snapshot se dikh rahi hai. Add, edit, delete aur stock actions internet wapas aane par hi chalenge.
             </div>
           </div>

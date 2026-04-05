@@ -253,23 +253,23 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
-        <section className="card">
+        <section className="hero-panel dashboard-hero">
           <div className="page-toolbar dashboard-toolbar">
-            <div style={{ minWidth: 0 }}>
-              <div className="page-subtitle">Business overview</div>
+            <div className="min-w-0">
+              <p className="rr-page-eyebrow">Business overview</p>
               <div className="page-title">Dashboard</div>
               {refreshing ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Refreshing latest data...</div>
+                <p className="rr-meta-line">Refreshing latest data…</p>
               ) : !isOnline ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#92400e' }}>
-                  Offline snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
-                </div>
+                <p className="rr-meta-line is-warn">
+                  Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
+                </p>
               ) : cacheLoaded && cacheLabel ? (
-                <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+                <p className="rr-meta-line">Last synced {cacheLabel}</p>
               ) : null}
             </div>
 
-            <div className="dashboard-period-controls dashboard-period-shell" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, minWidth: 236 }}>
+            <div className="dashboard-period-controls dashboard-period-shell grid min-w-[236px] grid-cols-2 gap-2">
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -295,9 +295,9 @@ export default function DashboardPage() {
         </section>
 
         {!isOnline ? (
-          <section className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
+          <section className="rr-banner-warn" role="status">
             <strong>Dashboard offline mode</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
+            <div>
               Abhi cached business snapshot dikh raha hai. Sales, GST, low stock aur credit numbers live nahi hain jab tak internet wapas na aaye.
             </div>
           </section>

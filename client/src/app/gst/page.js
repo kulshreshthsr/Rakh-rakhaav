@@ -529,22 +529,23 @@ export default function GSTPage() {
   return (
     <Layout>
       <div className="page-shell gst-shell">
-        <section className="card">
-          <div style={{ display: 'grid', gap: 14 }}>
-            <div style={{ minWidth: 0 }}>
+        <section className="hero-panel gst-hero">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="rr-page-eyebrow">Compliance</p>
               <div className="page-title">GST Summary</div>
-              <div className="page-subtitle">
+              <p className="page-subtitle mt-1 max-w-xl">
                 Track collected GST, ITC and filing-ready exports for the selected period.
-              </div>
+              </p>
               {!isOnline ? (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#92400e' }}>
-                  Offline GST snapshot active{cacheLabel ? ` • last updated ${cacheLabel}` : ''}
-                </div>
+                <p className="rr-meta-line is-warn mt-2">
+                  Offline GST snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
+                </p>
               ) : cacheLoaded && cacheLabel ? (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Last synced {cacheLabel}</div>
+                <p className="rr-meta-line mt-2">Last synced {cacheLabel}</p>
               ) : null}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, width: 'min(320px, 100%)' }}>
+            <div className="grid w-full max-w-[320px] shrink-0 grid-cols-2 gap-2">
               <select className="form-input" value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
                 {MONTHS.map((item, index) => (
                   <option key={item} value={index + 1}>{MONTHS_HI[index]} / {item}</option>
@@ -558,8 +559,11 @@ export default function GSTPage() {
         </section>
 
         {!isOnline ? (
-          <div className="ui-empty" style={{ borderStyle: 'solid', borderColor: '#fcd34d', background: '#fffbeb', color: '#92400e' }}>
-            GST page cached data dikha rahi hai. ZIP export aur fresh server figures internet ke saath best kaam karenge.
+          <div className="rr-banner-warn" role="status">
+            <strong>Offline GST view</strong>
+            <div>
+              GST page cached data dikha rahi hai. ZIP export aur fresh server figures internet ke saath best kaam karenge.
+            </div>
           </div>
         ) : null}
 

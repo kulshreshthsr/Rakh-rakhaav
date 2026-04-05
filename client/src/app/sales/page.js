@@ -966,13 +966,16 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="page-shell sales-shell">
-        <section className="card">
+        <section className="hero-panel sales-hero">
           <div className="page-toolbar">
-            <div>
-              <div className="page-title" style={{ color: '#111111', marginBottom: 0 }}>Sales</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing sales data...</div>}
+            <div className="min-w-0">
+              <p className="rr-page-eyebrow">Billing &amp; invoices</p>
+              <div className="page-title">Sales</div>
+              {refreshing ? <p className="rr-meta-line">Refreshing sales data…</p> : null}
             </div>
-            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>+ Record Sale</button>
+            <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary w-auto shrink-0">
+              + Record Sale
+            </button>
           </div>
         </section>
 
@@ -1022,9 +1025,9 @@ export default function SalesPage() {
         </div>
 
         {pendingOfflineSales.length > 0 ? (
-          <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
-            <strong>{pendingOfflineSales.length} offline sale pending</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
+          <div className="rr-banner-warn" role="status">
+            <strong>{pendingOfflineSales.length} offline sale{pendingOfflineSales.length > 1 ? 's' : ''} pending</strong>
+            <div>
               Ye entries local queue me saved hain. Internet aate hi sync ho jayengi, aur tab invoice actions fully available honge.
             </div>
           </div>

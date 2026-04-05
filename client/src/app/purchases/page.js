@@ -819,13 +819,14 @@ export default function PurchasesPage() {
   return (
     <Layout>
       <div className="page-shell purchases-shell">
-        <section className="card">
+        <section className="hero-panel purchases-hero">
           <div className="page-toolbar">
-            <div>
-              <div className="page-title" style={{ color: '#0f172a', marginBottom: 0 }}>Purchases</div>
-              {refreshing && <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Refreshing purchase data...</div>}
+            <div className="min-w-0">
+              <p className="rr-page-eyebrow">Stock inward</p>
+              <div className="page-title">Purchases</div>
+              {refreshing ? <p className="rr-meta-line">Refreshing purchase data…</p> : null}
             </div>
-            <button onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary" style={{ width: 'auto' }}>
+            <button type="button" onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary w-auto shrink-0">
               + Record Purchase
             </button>
           </div>
@@ -859,9 +860,9 @@ export default function PurchasesPage() {
         </section>
 
         {pendingOfflinePurchases.length > 0 ? (
-          <div className="card" style={{ border: '1px solid #fcd34d', background: '#fffbeb', color: '#92400e' }}>
-            <strong>{pendingOfflinePurchases.length} offline purchase pending</strong>
-            <div style={{ marginTop: 6, fontSize: 13 }}>
+          <div className="rr-banner-warn" role="status">
+            <strong>{pendingOfflinePurchases.length} offline purchase{pendingOfflinePurchases.length > 1 ? 's' : ''} pending</strong>
+            <div>
               Ye purchase entries local queue me saved hain. Internet aate hi sync ho jayengi. Pending entries ko ab remove bhi kar sakte ho.
             </div>
           </div>
