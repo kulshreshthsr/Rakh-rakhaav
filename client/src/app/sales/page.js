@@ -507,6 +507,19 @@ export default function SalesPage() {
   }, []);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const className = 'sales-modal-open';
+    if (showModal) {
+      document.body.classList.add(className);
+    } else {
+      document.body.classList.remove(className);
+    }
+    return () => {
+      document.body.classList.remove(className);
+    };
+  }, [showModal]);
+
+  useEffect(() => {
     if (typeof window === 'undefined' || !localStorage.getItem('token')) {
       return undefined;
     }
@@ -1071,7 +1084,7 @@ export default function SalesPage() {
           </div>
         </div>
       </div>
-      <div className={`fixed inset-0 z-40 transition-opacity duration-300 ${showModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+      <div className={`fixed inset-0 z-[70] transition-opacity duration-300 ${showModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
         <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
         <aside className={`absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100vh-56px)] flex-col rounded-t-2xl bg-white shadow-xl transition-transform duration-300 md:inset-y-0 md:right-0 md:left-auto md:top-0 md:w-[420px] md:max-h-screen md:rounded-none ${showModal ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'}`}>
           <div className="sticky top-0 z-20 border-b border-gray-200 bg-white px-4 py-3 md:px-6"><div className="flex items-start justify-between"><div><h3 className="text-lg font-bold">{editingSaleId ? 'Edit Sale' : 'New Sale'}</h3><span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${form.payment_type === 'credit' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>{form.payment_type === 'credit' ? 'Credit Sale' : 'Cash Sale'}</span></div><button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="h-9 w-9 rounded-full border border-gray-200 text-xl text-slate-500">×</button></div></div>
