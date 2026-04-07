@@ -232,13 +232,6 @@ function LayoutInner({ children }) {
                   <div className="brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
                 </div>
               </div>
-              <div className="brand-status-card">
-                <div>
-                  <div className="brand-status-label">{t('workspace')}</div>
-                  <div className="brand-status-copy">{t('workspaceCopy')}</div>
-                </div>
-                <div className="badge badge-blue brand-live-pill">{t('live')}</div>
-              </div>
             </div>
 
             {/* User card */}
@@ -251,7 +244,13 @@ function LayoutInner({ children }) {
                 </div>
                 <div className={`sidebar-chevron${dropdownOpen ? ' is-open' : ''}`}>⌄</div>
               </button>
-              {dropdownOpen && <UserDropdown onProfile={goToProfile} onLogout={logout} />}
+              {dropdownOpen && (
+                <UserDropdown
+                  onProfile={goToProfile}
+                  onLogout={logout}
+                  extraItems={<Link href="/pricing"><Glyph name="pricing" size={16} /> Rakhrakhaav Pro</Link>}
+                />
+              )}
             </div>
 
             <div className="sidebar-section-label">{t('mainMenu')}</div>
@@ -289,6 +288,7 @@ function LayoutInner({ children }) {
               {mobileDropOpen && (
                 <UserDropdown onProfile={goToProfile} onLogout={logout}
                   extraItems={<>
+                    <Link href="/pricing"><Glyph name="pricing" size={16} /> Rakhrakhaav Pro</Link>
                     <Link href="/reports"><Glyph name="reports" size={16} /> Reports</Link>
                     <Link href="/pricing"><Glyph name="pricing" size={16} /> Pricing</Link>
                   </>}
