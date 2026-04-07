@@ -16,6 +16,35 @@ const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   hour: '2-digit',
   minute: '2-digit',
 });
+const buildPurchaseWhatsAppMessage = (purchase) => {
+  const purchaseDate = new Date(purchase.createdAt || purchase.purchased_at).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  const itemLines = purchase.items && purchase.items.length > 0
+    ? purchase.items.map((item, index) =>
+        `  ${index + 1}. ${item.product_name} x ${item.quantity} @ ₹${Number(item.price_per_unit || 0).toFixed(2)} = ₹${Number(item.total_amount || 0).toFixed(2)}`
+      ).join('\n')
+    : `  1. ${purchase.product_name} x ${purchase.quantity || 1} @ ₹${Number(purchase.price_per_unit || 0).toFixed(2)} = ₹${Number(purchase.total_amount || 0).toFixed(2)}`;
+
+  return [
+    purchase.supplier_name ? `Namaste ${purchase.supplier_name} ji,` : 'Namaste,',
+    '',
+    'Purchase confirmation',
+    `Bill No: ${purchase.invoice_number || '-'}`,
+    `Date: ${purchaseDate}`,
+    'Items:',
+    itemLines,
+    `Taxable Amount: ₹${Number(purchase.taxable_amount || 0).toFixed(2)}`,
+    `GST / ITC: ₹${Number(purchase.total_gst || 0).toFixed(2)}`,
+    `Total Amount: ₹${Number(purchase.total_amount || 0).toFixed(2)}`,
+    `Paid: ₹${Number(purchase.amount_paid || 0).toFixed(2)}`,
+    ...(Number(purchase.balance_due || 0) > 0 ? [`Balance Due: ₹${Number(purchase.balance_due || 0).toFixed(2)}`] : []),
+    '',
+    'Please review and confirm the purchase details.',
+  ].join('\n');
+};
 
 export default function SupplierDirectoryPage() {
   const router = useRouter();
@@ -106,6 +135,7 @@ export default function SupplierDirectoryPage() {
   const selectedSupplier = suppliers.find((supplier) => supplier.key === selectedSupplierKey)
     || suppliers[0]
     || null;
+  const selectedLatestPurchase = selectedSupplier?.purchases?.[0] || null;
 
   useEffect(() => {
     if (selectedSupplierKey || suppliers.length === 0) return;
@@ -213,7 +243,11 @@ export default function SupplierDirectoryPage() {
                         Call Now
                       </a>
                       <a
-                        href={selectedSupplier.phone ? `https://wa.me/91${selectedSupplier.phone}` : undefined}
+                        href={selectedSupplier.phone
+                          ? `https://wa.me/91${selectedSupplier.phone}?text=${encodeURIComponent(
+                              selectedLatestPurchase ? buildPurchaseWhatsAppMessage(selectedLatestPurchase) : 'Namaste'
+                            )}`
+                          : undefined}
                         target="_blank"
                         rel="noreferrer"
                         className="btn-ghost"

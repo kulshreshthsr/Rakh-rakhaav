@@ -14,6 +14,11 @@ const GST_CACHE_PREFIX = 'gst-page-v1';
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
 const getGSTCacheKey = (month, year) => `${GST_CACHE_PREFIX}:${year}:${month}`;
+const safeText = (value = '') => String(value || '')
+  .replace(/â€”|â€“/g, '-')
+  .replace(/â€™/g, "'")
+  .replace(/â€œ|â€�/g, '"')
+  .replace(/â€¦/g, '...');
 const getRecordGstRate = (record = {}) => {
   if (record?.items?.length) {
     const itemRate = Number(record.items.find((item) => Number(item?.gst_rate || 0) > 0)?.gst_rate || 0);
@@ -512,9 +517,9 @@ export default function GSTPage() {
           <tbody>
             {drillData.map((item, index) => (
               <tr key={index}>
-                <td>{item.invoice_number}</td>
-                <td>{item.product_name || (item.items?.length > 1 ? `${item.items.length} items` : item.items?.[0]?.product_name)}</td>
-                <td>{item.buyer_name || item.supplier_name || '-'}</td>
+                <td>{safeText(item.invoice_number)}</td>
+                <td>{safeText(item.product_name || (item.items?.length > 1 ? `${item.items.length} items` : item.items?.[0]?.product_name))}</td>
+                <td>{safeText(item.buyer_name || item.supplier_name || '-')}</td>
                 <td>₹{fmt(item.taxable_amount)}</td>
                 <td className={type === 'sales' ? 'ui-value-money' : 'ui-value-secondary'}>₹{fmt(item.total_gst)}</td>
                 <td>₹{fmt(item.total_amount)}</td>
@@ -701,9 +706,9 @@ export default function GSTPage() {
                     <tbody>
                       {summary.gstr1.b2b_invoices.map((invoice, index) => (
                         <tr key={index}>
-                          <td>{invoice.invoice_number}</td>
-                          <td>{invoice.buyer_name || '-'}</td>
-                          <td>{invoice.buyer_gstin}</td>
+                          <td>{safeText(invoice.invoice_number)}</td>
+                          <td>{safeText(invoice.buyer_name || '-')}</td>
+                          <td>{safeText(invoice.buyer_gstin)}</td>
                           <td>₹{fmt(invoice.taxable_amount)}</td>
                           <td>{invoice.gst_rate}%</td>
                           <td className="ui-value-money">₹{fmt(invoice.total)}</td>
@@ -719,11 +724,11 @@ export default function GSTPage() {
                     <div key={index} className="ui-list-card" style={{ alignItems: 'stretch' }}>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                          <strong style={{ color: '#67e8f9' }}>{invoice.invoice_number}</strong>
+                          <strong style={{ color: '#67e8f9' }}>{safeText(invoice.invoice_number)}</strong>
                           <span className="ui-value-money">₹{fmt(invoice.total)}</span>
                         </div>
-                        <div style={{ color: '#0f172a', fontWeight: 700 }}>{invoice.buyer_name}</div>
-                        <div style={{ color: '#9ca3af', fontSize: 11 }}>GSTIN: {invoice.buyer_gstin} • GST {invoice.gst_rate}%</div>
+                        <div style={{ color: '#0f172a', fontWeight: 700 }}>{safeText(invoice.buyer_name)}</div>
+                        <div style={{ color: '#9ca3af', fontSize: 11 }}>GSTIN: {safeText(invoice.buyer_gstin)} • GST {invoice.gst_rate}%</div>
                       </div>
                     </div>
                   ))}
