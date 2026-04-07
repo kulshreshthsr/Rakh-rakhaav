@@ -1006,7 +1006,8 @@
   .sale-entry-modal { max-height: calc(100dvh - 28px); }
   .sale-entry-form { max-height: calc(100dvh - 170px); padding-bottom: 12px; }
   .fast-billing-actions { padding-bottom: env(safe-area-inset-bottom); }
-.supplier-page-grid { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(360px, 2fr); gap: 14px; }
+  .supplier-page-grid { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(360px, 2fr); gap: 14px; }
+  .customer-page .card { border-radius: 18px; }
 .reports-profit-card .ui-data-row-value { @apply text-[16px]; }
   .profile-hero-header { align-items: flex-start !important; }
   .profile-hero-tiles { width: 100%; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px !important; }

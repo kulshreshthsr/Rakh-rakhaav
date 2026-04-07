@@ -1,5 +1,6 @@
 ﻿'use client';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
@@ -1034,6 +1035,7 @@ export default function SalesPage() {
                 <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-9 rounded-full px-4 text-sm font-semibold ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>Cash</button>
                 <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-9 rounded-full px-4 text-sm font-semibold ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>Credit</button>
               </div>
+              <Link href="/sales/customers" className="inline-flex h-11 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-slate-600">Customers</Link>
               <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-11 items-center gap-2 rounded-full bg-teal-600 px-5 text-sm font-semibold text-white">✚ New Sale</button>
             </div>
           </header>
