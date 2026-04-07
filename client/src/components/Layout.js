@@ -224,41 +224,6 @@ function LayoutInner({ children }) {
             <div className="sidebar-orb sidebar-orb-top" />
             <div className="sidebar-orb sidebar-orb-bottom" />
 
-            {/* Brand */}
-            <div className="brand-lockup">
-              <div className="brand-row">
-                <div>
-                  <div className="brand-title brand-title-hindi">रखरखाव</div>
-                  <div className="brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
-                </div>
-              </div>
-              <div className="brand-status-card">
-                <div>
-                  <div className="brand-status-label">{t('workspace')}</div>
-                  <div className="brand-status-copy">{t('workspaceCopy')}</div>
-                </div>
-                <div className="badge badge-blue brand-live-pill">{t('live')}</div>
-              </div>
-            </div>
-
-            {/* Quick shortcuts */}
-            <div className="sidebar-quick-grid">
-              <Link href="/pricing" className="sidebar-shortcut">
-                <div className="sidebar-shortcut-icon"><Glyph name="pricing" size={18} /></div>
-                <div>
-                  <div className="sidebar-shortcut-title">{t('pricing')}</div>
-                  <div className="sidebar-shortcut-copy">{t('plans')}</div>
-                </div>
-              </Link>
-              <Link href="/reports" className="sidebar-shortcut is-secondary">
-                <div className="sidebar-shortcut-icon"><Glyph name="reports" size={18} /></div>
-                <div>
-                  <div className="sidebar-shortcut-title">{t('reports')}</div>
-                  <div className="sidebar-shortcut-copy">{t('reportsShortcut')}</div>
-                </div>
-              </Link>
-            </div>
-
             {/* User card */}
             <div ref={dropdownRef} style={{ position: 'relative' }}>
               <button type="button" className="sidebar-user-card" onClick={() => setDropdownOpen(v => !v)}>
@@ -288,10 +253,6 @@ function LayoutInner({ children }) {
                 </Link>
               ))}
             </nav>
-
-            <button type="button" onClick={logout} className="sidebar-logout">
-              <Glyph name="logout" size={16} /> Logout
-            </button>
           </div>
         </aside>
 
