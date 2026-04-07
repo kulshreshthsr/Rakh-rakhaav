@@ -224,6 +224,23 @@ function LayoutInner({ children }) {
             <div className="sidebar-orb sidebar-orb-top" />
             <div className="sidebar-orb sidebar-orb-bottom" />
 
+            {/* Brand */}
+            <div className="brand-lockup">
+              <div className="brand-row">
+                <div>
+                  <div className="brand-title brand-title-hindi">रखरखाव</div>
+                  <div className="brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
+                </div>
+              </div>
+              <div className="brand-status-card">
+                <div>
+                  <div className="brand-status-label">{t('workspace')}</div>
+                  <div className="brand-status-copy">{t('workspaceCopy')}</div>
+                </div>
+                <div className="badge badge-blue brand-live-pill">{t('live')}</div>
+              </div>
+            </div>
+
             {/* User card */}
             <div ref={dropdownRef} style={{ position: 'relative' }}>
               <button type="button" className="sidebar-user-card" onClick={() => setDropdownOpen(v => !v)}>
