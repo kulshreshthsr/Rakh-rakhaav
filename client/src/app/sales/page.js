@@ -1005,7 +1005,7 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50 text-slate-900">
-        <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6">
+        <div className="mx-auto w-full max-w-7xl px-4 pb-4 pt-14 sm:px-6">
           <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold">Sales</h1>
