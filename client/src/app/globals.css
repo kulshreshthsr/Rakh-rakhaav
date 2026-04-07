@@ -921,6 +921,10 @@
   .mobile-nav-glow { inset: 5px; }
   .quick-actions-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .top-products-row { grid-template-columns: repeat(3, minmax(220px, 1fr)) !important; }
+  .supplier-page-grid { grid-template-columns: 1fr !important; }
+  .supplier-list-panel { border-radius: 16px; }
+  .supplier-detail-panel { border-radius: 16px; max-height: calc(100dvh - 360px); overflow-y: auto; }
+  .supplier-list-scroll { max-height: min(240px, 40vh) !important; }
 }
 
 @media (max-width: 640px) {
@@ -970,6 +974,8 @@
   .scanner-modal { @apply p-[18px]; }
   .scanner-modal-top { @apply flex-col; }
   .scanner-close-button { @apply w-full; }
+  .supplier-list-scroll { max-height: min(220px, 38vh) !important; }
+  .supplier-detail-panel { max-height: calc(100dvh - 340px); }
   .admin-auth-shell, .admin-stats-grid, .admin-mobile-grid { grid-template-columns: 1fr; }
   .admin-auth-panel, .admin-auth-card, .admin-header, .admin-table-card, .admin-toolbar { @apply px-[22px] py-7; }
   .admin-header { @apply flex-col; }
@@ -1000,6 +1006,7 @@
   .sale-entry-modal { max-height: calc(100dvh - 28px); }
   .sale-entry-form { max-height: calc(100dvh - 170px); padding-bottom: 12px; }
   .fast-billing-actions { padding-bottom: env(safe-area-inset-bottom); }
+.supplier-page-grid { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(360px, 2fr); gap: 14px; }
 .reports-profit-card .ui-data-row-value { @apply text-[16px]; }
   .profile-hero-header { align-items: flex-start !important; }
   .profile-hero-tiles { width: 100%; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px !important; }

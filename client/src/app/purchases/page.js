@@ -1,5 +1,6 @@
 ﻿'use client';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
@@ -188,7 +189,6 @@ export default function PurchasesPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingPurchaseId, setEditingPurchaseId] = useState('');
   const [error, setError] = useState('');
@@ -222,8 +222,6 @@ export default function PurchasesPage() {
   const [purchaseStep, setPurchaseStep] = useState(0);
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth] = useState('');
-  const [selectedSupplierKey, setSelectedSupplierKey] = useState('');
-  const [supplierSearch, setSupplierSearch] = useState('');
   const hasBootstrappedRef = useRef(false);
 
   const loadPendingOfflinePurchases = useCallback(async () => {
@@ -819,67 +817,6 @@ export default function PurchasesPage() {
   });
   const hasBillFilters = Boolean(normalizedBillSearch || billMonth);
 
-  const suppliers = useMemo(() => {
-    const map = new Map();
-    purchases.forEach((purchase) => {
-      const name = String(purchase.supplier_name || '').trim();
-      const phone = cleanPhone(purchase.supplier_phone || '');
-      if (!name && !phone) return;
-      const key = `${name.toLowerCase()}|${phone}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          name: name || 'Unknown Supplier',
-          phone,
-          purchases: [],
-        });
-      }
-      map.get(key).purchases.push(purchase);
-    });
-
-    const list = Array.from(map.values()).map((supplier) => {
-      const sortedPurchases = supplier.purchases
-        .slice()
-        .sort((a, b) => new Date(b.createdAt || b.purchased_at || 0) - new Date(a.createdAt || a.purchased_at || 0));
-      const totalSpend = sortedPurchases.reduce((sum, purchase) => sum + Number(purchase.total_amount || 0), 0);
-      const totalDue = sortedPurchases.reduce((sum, purchase) => sum + Number(purchase.balance_due || 0), 0);
-      const lastDate = sortedPurchases[0]?.createdAt || sortedPurchases[0]?.purchased_at || '';
-      return {
-        ...supplier,
-        purchases: sortedPurchases,
-        totalSpend,
-        totalDue,
-        lastDate,
-      };
-    });
-
-    return list.sort((a, b) => new Date(b.lastDate || 0) - new Date(a.lastDate || 0));
-  }, [purchases]);
-
-  const normalizedSupplierSearch = supplierSearch.trim().toLowerCase();
-  const filteredSuppliers = suppliers.filter((supplier) => {
-    if (!normalizedSupplierSearch) return true;
-    return supplier.name.toLowerCase().includes(normalizedSupplierSearch)
-      || supplier.phone.includes(cleanPhone(normalizedSupplierSearch));
-  });
-
-  const selectedSupplier = suppliers.find((supplier) => supplier.key === selectedSupplierKey) || suppliers[0] || null;
-
-  useEffect(() => {
-    if (!showSupplierModal) return;
-    if (selectedSupplierKey || suppliers.length === 0) return;
-    setSelectedSupplierKey(suppliers[0].key);
-  }, [showSupplierModal, selectedSupplierKey, suppliers]);
-
-  useEffect(() => {
-    if (!showSupplierModal) return;
-    if (!selectedSupplierKey) return;
-    const stillExists = suppliers.some((supplier) => supplier.key === selectedSupplierKey);
-    if (!stillExists) {
-      setSelectedSupplierKey(suppliers[0]?.key || '');
-    }
-  }, [showSupplierModal, selectedSupplierKey, suppliers]);
-
   return (
     <Layout>
       <div className="page-shell purchases-shell">
@@ -891,9 +828,9 @@ export default function PurchasesPage() {
               {refreshing ? <p className="rr-meta-line">Refreshing purchase data…</p> : null}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setShowSupplierModal(true)} className="btn-ghost w-auto shrink-0">
+              <Link href="/purchases/suppliers" className="btn-ghost w-auto shrink-0">
                 Suppliers
-              </button>
+              </Link>
               <button type="button" onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary w-auto shrink-0">
                 + Record Purchase
               </button>
@@ -1629,146 +1566,6 @@ export default function PurchasesPage() {
         </div>
       )}
 
-      {showSupplierModal && (
-        <div className="modal-overlay" onClick={() => setShowSupplierModal(false)}>
-          <div className="modal" style={{ maxWidth: 820 }} onClick={(event) => event.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.4, color: '#94a3b8', fontWeight: 700 }}>
-                  Suppliers
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Supplier Directory</div>
-              </div>
-              <button type="button" className="modal-close-btn" onClick={() => setShowSupplierModal(false)} aria-label="Close supplier list">×</button>
-            </div>
-
-            {suppliers.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">SP</div>
-                <div>No suppliers found yet.</div>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) minmax(320px, 2fr)', gap: 14 }}>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden', background: '#f8fafc' }}>
-                  <div style={{ padding: '10px 12px', borderBottom: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>
-                      All Suppliers ({filteredSuppliers.length})
-                    </div>
-                    <input
-                      className="form-input"
-                      placeholder="Search supplier name or phone..."
-                      value={supplierSearch}
-                      onChange={(event) => setSupplierSearch(event.target.value)}
-                      style={{ fontSize: 12, height: 36 }}
-                    />
-                  </div>
-                  <div style={{ maxHeight: 420, overflowY: 'auto' }}>
-                    {filteredSuppliers.length === 0 ? (
-                      <div style={{ padding: 12, fontSize: 12, color: '#94a3b8' }}>No suppliers found.</div>
-                    ) : filteredSuppliers.map((supplier) => (
-                      <button
-                        type="button"
-                        key={supplier.key}
-                        onClick={() => setSelectedSupplierKey(supplier.key)}
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '10px 12px',
-                          border: 'none',
-                          borderBottom: '1px solid #e2e8f0',
-                          background: supplier.key === selectedSupplier?.key ? '#e0f2fe' : '#ffffff',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13 }}>{supplier.name}</div>
-                        <div style={{ fontSize: 11, color: '#64748b' }}>
-                          {supplier.phone ? `+91 ${supplier.phone}` : 'Phone missing'} • {supplier.purchases.length} deals
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#ffffff' }}>
-                  {selectedSupplier ? (
-                    <>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                        <div>
-                          <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{selectedSupplier.name}</div>
-                          <div style={{ fontSize: 12, color: '#64748b' }}>
-                            {selectedSupplier.phone ? `+91 ${selectedSupplier.phone}` : 'Phone number not available'}
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <a
-                            href={selectedSupplier.phone ? `tel:+91${selectedSupplier.phone}` : undefined}
-                            className="btn-ghost"
-                            style={{ pointerEvents: selectedSupplier.phone ? 'auto' : 'none', opacity: selectedSupplier.phone ? 1 : 0.5 }}
-                          >
-                            Call Now
-                          </a>
-                          <a
-                            href={selectedSupplier.phone ? `https://wa.me/91${selectedSupplier.phone}` : undefined}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn-ghost"
-                            style={{ pointerEvents: selectedSupplier.phone ? 'auto' : 'none', opacity: selectedSupplier.phone ? 1 : 0.5 }}
-                          >
-                            WhatsApp
-                          </a>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
-                        <div style={{ background: '#f8fafc', borderRadius: 12, padding: '8px 10px', fontSize: 12, color: '#475569' }}>
-                          Total Spend <strong style={{ color: '#0f172a' }}>₹{selectedSupplier.totalSpend.toFixed(2)}</strong>
-                        </div>
-                        <div style={{ background: '#fef2f2', borderRadius: 12, padding: '8px 10px', fontSize: 12, color: '#991b1b' }}>
-                          Balance Due <strong>₹{selectedSupplier.totalDue.toFixed(2)}</strong>
-                        </div>
-                        <div style={{ background: '#ecfeff', borderRadius: 12, padding: '8px 10px', fontSize: 12, color: '#0f766e' }}>
-                          Last Deal <strong>{selectedSupplier.lastDate ? formatFullDateTime(selectedSupplier.lastDate) : '—'}</strong>
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: '#64748b' }}>Past Deals</div>
-                      <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
-                        {selectedSupplier.purchases.map((purchase) => (
-                          <div key={purchase._id} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 10 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                              <div>
-                                <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13 }}>{purchase.invoice_number || '—'}</div>
-                                <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                                  {formatFullDateTime(purchase.createdAt || purchase.purchased_at)}
-                                </div>
-                              </div>
-                              <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: 700, color: '#f59e0b' }}>₹{Number(purchase.total_amount || 0).toFixed(2)}</div>
-                                {(purchase.balance_due || 0) > 0 ? (
-                                  <div style={{ fontSize: 11, color: '#ef4444', fontWeight: 700 }}>Due ₹{Number(purchase.balance_due || 0).toFixed(2)}</div>
-                                ) : (
-                                  <div style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>Paid</div>
-                                )}
-                              </div>
-                            </div>
-                            <div style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>
-                              {purchase.items && purchase.items.length > 1
-                                ? `${purchase.items.length} items`
-                                : purchase.product_name || 'Items'}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ color: '#94a3b8', fontSize: 13 }}>Select a supplier to see details.</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }
