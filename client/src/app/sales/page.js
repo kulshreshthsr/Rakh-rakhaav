@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
@@ -44,16 +44,6 @@ const getMonthFilterValue = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-};
-const monthInputWrapStyle = { position: 'relative', minWidth: 180 };
-const monthInputHintStyle = {
-  position: 'absolute',
-  left: 16,
-  top: '50%',
-  transform: 'translateY(-50%)',
-  color: '#9ca3af',
-  fontSize: 14,
-  pointerEvents: 'none',
 };
 const getSaleSearchText = (sale) => {
   const itemNames = Array.isArray(sale.items) ? sale.items.map((item) => item.product_name || '').join(' ') : '';
@@ -343,12 +333,16 @@ export default function SalesPage() {
   const [items, setItems]           = useState([emptyItem()]);
   const [gstinTouched, setGstinTouched] = useState(false);
   const [form, setForm]             = useState(buildInitialForm());
-  const [saleStep, setSaleStep] = useState(0);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth] = useState('');
+  const [showMoreCustomerDetails, setShowMoreCustomerDetails] = useState(false);
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const amountPaidInputRef = useRef(null);
   const buyerNameInputRef = useRef(null);
+  const customerComboRef = useRef(null);
+  const saleDateInputRef = useRef(null);
   const hasBootstrappedRef = useRef(false);
 
   const loadPendingOfflineSales = useCallback(async () => {
@@ -536,7 +530,6 @@ export default function SalesPage() {
     setForm(buildInitialForm({
       payment_type: 'credit',
     }));
-    setSaleStep(0);
     setGstinTouched(false);
     setError('');
     setShowModal(true);
@@ -657,31 +650,17 @@ export default function SalesPage() {
     });
     setGstinTouched(Boolean(normalized));
   };
-  const wizardSteps = [
-    { title: locale === 'hi' ? 'Items & Payment' : 'Items & Payment', copy: locale === 'hi' ? 'Products, quantity and payment method' : 'Products, quantity and payment method' },
-    { title: locale === 'hi' ? 'Buyer & Bill' : 'Buyer & Bill', copy: locale === 'hi' ? 'Buyer details and bill summary' : 'Buyer details and bill summary' },
-  ];
-
   const selectedItemsCount = items.filter((item) => item.product_id).length;
-  const currentStep = wizardSteps[saleStep];
 
   function resetForm() {
     setEditingSaleId('');
     setItems([emptyItem()]);
     setForm(buildInitialForm());
-    setSaleStep(0);
     setGstinTouched(false);
     setError('');
-  }
-
-  function handleContinueToBuyer() {
-    setError('');
-    const validItems = items.filter((item) => item.product_id && item.quantity && item.price_per_unit);
-    if (validItems.length === 0 || billTotals.total <= 0) {
-      setError('Select at least one product to continue.');
-      return;
-    }
-    setSaleStep(1);
+    setCustomerQuery('');
+    setShowCustomerSuggestions(false);
+    setShowMoreCustomerDetails(false);
   }
 
   async function handleSubmit(e) {
@@ -806,25 +785,31 @@ export default function SalesPage() {
 
   useEffect(() => {
     if (!showModal) return undefined;
+    const timeoutId = window.setTimeout(() => buyerNameInputRef.current?.focus(), 80);
+    return () => window.clearTimeout(timeoutId);
+  }, [showModal]);
 
-    if (saleStep === 1) {
-      const timeoutId = window.setTimeout(() => buyerNameInputRef.current?.focus(), 80);
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    return undefined;
-  }, [saleStep, showModal]);
+  useEffect(() => {
+    if (!showModal) return undefined;
+    const onPointerDown = (event) => {
+      if (customerComboRef.current && !customerComboRef.current.contains(event.target)) {
+        setShowCustomerSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [showModal]);
 
   useEffect(() => {
     if (!showModal) return undefined;
 
     const onKeyDown = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter' && saleStep === 1) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter') {
         event.preventDefault();
         handleShortcutSubmit();
       }
 
-      if (event.altKey && event.key.toLowerCase() === 'a' && saleStep === 0) {
+      if (event.altKey && event.key.toLowerCase() === 'a') {
         event.preventDefault();
         handleShortcutAddItem();
       }
@@ -832,7 +817,18 @@ export default function SalesPage() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [saleStep, showModal]);
+  }, [showModal]);
+
+  useEffect(() => {
+    if (!showModal) return undefined;
+    const onPointerDown = (event) => {
+      if (customerComboRef.current && !customerComboRef.current.contains(event.target)) {
+        setShowCustomerSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [showModal]);
 
   async function handleSubmitLegacy(e) {
     return handleSubmit(e);
@@ -842,7 +838,6 @@ export default function SalesPage() {
     setEditingSaleId('');
     setItems([emptyItem()]);
     setForm(buildInitialForm());
-    setSaleStep(0);
     setGstinTouched(false);
     setError('');
   }
@@ -878,9 +873,10 @@ export default function SalesPage() {
       notes: sale.notes || '',
       sale_date: formatDateInputValue(sale.createdAt || sale.sold_at) || getDefaultSaleDateValue(),
     }));
-    setSaleStep(0);
     setGstinTouched(false);
     setError('');
+    setCustomerQuery(sale.buyer_name || '');
+    setShowMoreCustomerDetails(Boolean(sale.buyer_gstin || sale.buyer_address || sale.buyer_state));
     setShowModal(true);
   };
 
@@ -962,611 +958,141 @@ export default function SalesPage() {
     return matchesSearch && matchesMonth;
   });
   const hasBillFilters = Boolean(normalizedBillSearch || billMonth);
+  const pastCustomers = useMemo(() => {
+    const seen = new Set();
+    return sales
+      .filter((s) => s.buyer_name && s.buyer_name !== 'Walk-in Customer' && s.buyer_phone)
+      .filter((s) => {
+        const key = s.buyer_phone;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map((s) => ({
+        name: s.buyer_name,
+        phone: s.buyer_phone,
+        state: s.buyer_state || '',
+        address: s.buyer_address || '',
+        gstin: s.buyer_gstin || '',
+      }));
+  }, [sales]);
+  const filteredPastCustomers = useMemo(() => {
+    const query = customerQuery.trim().toLowerCase();
+    if (!query) return pastCustomers.slice(0, 5);
+    return pastCustomers
+      .filter((customer) => (
+        customer.name.toLowerCase().includes(query) || customer.phone.toLowerCase().includes(query)
+      ))
+      .slice(0, 5);
+  }, [customerQuery, pastCustomers]);
+  const invoicePreview = editingSaleId
+    ? (sales.find((sale) => sale._id === editingSaleId)?.invoice_number || 'Editing invoice')
+    : `INV/${new Date().getFullYear().toString().slice(-2)}-${String(new Date().getFullYear() + 1).slice(-2)}/${String(sales.length + 1).padStart(4, '0')}`;
+
+  const selectPastCustomer = (customer) => {
+    updateForm({
+      buyer_name: customer.name,
+      buyer_phone: customer.phone,
+      buyer_state: customer.state,
+      buyer_address: customer.address,
+      buyer_gstin: customer.gstin,
+    });
+    setCustomerQuery(customer.name);
+    setShowCustomerSuggestions(false);
+    setShowMoreCustomerDetails(Boolean(customer.gstin || customer.address || customer.state));
+  };
 
   return (
     <Layout>
-      <div className="page-shell sales-shell">
-        <section className="hero-panel sales-hero">
-          <div className="page-toolbar">
-            <div className="min-w-0">
-              <p className="rr-page-eyebrow">Billing &amp; invoices</p>
-              <div className="page-title">Sales</div>
-              {refreshing ? <p className="rr-meta-line">Refreshing sales data…</p> : null}
-            </div>
-            <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary w-auto shrink-0">
-              + Record Sale
-            </button>
-          </div>
-        </section>
-
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Revenue</div>
-            <div className="metric-value" style={{ color: '#0f766e' }}>₹{fmt(revenueDisplay)}</div>
-            <div className="metric-note">Total billed amount</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{fmt(gstDisplay)}</div>
-            <div className="metric-note">Collected in sales</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Invoices</div>
-            <div className="metric-value" style={{ color: '#2563eb' }}>{filteredSales.length}</div>
-            <div className="metric-note">Recorded sales entries</div>
-          </div>
-        </section>
-
-        <div className="toolbar-card">
-          <div className="toolbar">
-            <input
-              className="form-input"
-              style={{ flex: 1, minWidth: 220 }}
-              placeholder="Search invoice, buyer, phone or product..."
-              value={billSearch}
-              onChange={(e) => setBillSearch(e.target.value)}
-            />
-            <div style={monthInputWrapStyle}>
-              {!billMonth ? <span style={monthInputHintStyle}>Select month and year</span> : null}
-              <input
-                className="form-input"
-                style={{ minWidth: 180, position: 'relative', background: 'transparent' }}
-                type="month"
-                value={billMonth}
-                onChange={(e) => setBillMonth(e.target.value)}
-              />
-            </div>
-            {hasBillFilters ? (
-              <button type="button" className="btn-ghost" style={{ width: 'auto' }} onClick={() => { setBillSearch(''); setBillMonth(''); }}>
-                Clear
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        {pendingOfflineSales.length > 0 ? (
-          <div className="rr-banner-warn" role="status">
-            <strong>{pendingOfflineSales.length} offline sale{pendingOfflineSales.length > 1 ? 's' : ''} pending</strong>
+      <div className="min-h-screen bg-gray-50 text-slate-900">
+        <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6">
+          <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              Ye entries local queue me saved hain. Internet aate hi sync ho jayengi, aur tab invoice actions fully available honge.
+              <h1 className="text-2xl font-bold">Sales</h1>
+              <p className="text-xs text-slate-400">Billing &amp; Invoices</p>
             </div>
-          </div>
-        ) : null}
-
-        {error && !showModal && (
-          <div className="alert-error">
-          {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="card" style={{ display: 'grid', gap: 12 }}>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="skeleton" style={{ height: 72 }} />
-            ))}
-          </div>
-        ) : filteredSales.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">Sales</div>
-            <div>{hasBillFilters ? 'No sales found for this search/filter.' : 'No sales yet.'}</div>
-          </div>
-        ) : (
-          <>
-          {/* Desktop table */}
-          <div className="table-container hidden min-[641px]:block">
-            <table>
-              <thead>
-                <tr>
-                  <th>Invoice</th><th>Items</th><th>Taxable</th><th>GST</th>
-                  <th>Total</th><th>Payment</th><th>Date</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSales.map(s => (
-                  <tr key={s._id}>
-                    <td style={{ color: '#0891b2', fontWeight: 600, fontSize: 12 }}>
-                      {s.invoice_number}
-                      {s._isOffline && (
-                        (() => {
-                          const badge = getOfflineBadgeMeta(s._queueStatus);
-                          return (
-                        <span style={{
-                          display: 'block',
-                          fontSize: 9,
-                          background: badge.background,
-                          color: badge.color,
-                          padding: '1px 6px',
-                          borderRadius: 20,
-                          fontWeight: 700,
-                          marginTop: 2,
-                        }}>
-                          {badge.label}
-                        </span>
-                          );
-                        })()
-                      )}
-                      {s._isOffline && s._queueError ? (
-                        <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 160 }}>
-                          {s._queueError}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
-                        {s.items && s.items.length > 1 ? s.items.length + ' items' : s.product_name}
-                      </div>
-                      {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
-                      )}
-                    </td>
-                    <td>₹{fmt(s.taxable_amount)}</td>
-                    <td>
-                      {(s.total_gst || 0) > 0
-                        ? <span style={{ background: '#ecfeff', color: '#0f766e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{fmt(s.total_gst)}</span>
-                        : <span style={{ color: '#9ca3af' }}>-</span>}
-                    </td>
-                    <td style={{ fontWeight: 700, color: '#10b981' }}>₹{fmt(s.total_amount)}</td>
-                    <td><PayBadge type={s.payment_type} /></td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
-                      {formatFullDateTime(s.createdAt || s.sold_at)}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => printInvoice(s)}
-                          title="Print Invoice"
-                          className="action-soft print"
-                          disabled={Boolean(s._isOffline)}
-                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                          Print
-                        </button>
-                        <button
-                          onClick={() => shareWhatsApp(s)}
-                          title="Share on WhatsApp"
-                          className="action-soft whatsapp"
-                          disabled={Boolean(s._isOffline)}
-                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                          WA
-                        </button>
-                        <button
-                          onClick={() => startEditSale(s)}
-                          className="action-soft edit"
-                          disabled={Boolean(s._isOffline)}
-                          style={{ borderRadius: 999, padding: '6px 10px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(s)}
-                          className="action-soft delete"
-                          style={{ borderRadius: 999, padding: '6px 10px' }}>
-                          {s._isOffline ? 'Remove' : 'Del'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="flex flex-col gap-3 min-[641px]:hidden">
-            {filteredSales.map(s => (
-              <div key={s._id} className="card" style={{ borderLeft: '3px solid ' + (s.payment_type === 'credit' ? '#ef4444' : '#10b981') }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
-                      {s.items && s.items.length > 1 ? s.items.length + ' products' : s.product_name}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#0891b2', fontWeight: 600 }}>{s.invoice_number}</div>
-                    {s._isOffline && (
-                      (() => {
-                        const badge = getOfflineBadgeMeta(s._queueStatus);
-                        return (
-                      <span style={{
-                        display: 'block',
-                        fontSize: 9,
-                        background: badge.background,
-                        color: badge.color,
-                        padding: '1px 6px',
-                        borderRadius: 20,
-                        fontWeight: 700,
-                        marginTop: 2,
-                      }}>
-                        {badge.label}
-                      </span>
-                        );
-                      })()
-                    )}
-                    {s._isOffline && s._queueError ? (
-                      <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 180 }}>
-                        {s._queueError}
-                      </div>
-                    ) : null}
-                    {s.buyer_name && s.buyer_name !== 'Walk-in Customer' && (
-                      <div style={{ fontSize: 11, color: '#9ca3af' }}>Buyer: {s.buyer_name}</div>
-                    )}
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: 16 }}>₹{fmt(s.total_amount)}</div>
-                    <PayBadge type={s.payment_type} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600 }}>₹{fmt(s.taxable_amount)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>GST</div><div style={{ fontWeight: 600, color: '#0891b2' }}>₹{fmt(s.total_gst)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600 }}>{formatFullDateTime(s.createdAt || s.sold_at)}</div></div>
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                    gap: 8,
-                  }}
-                >
-                  <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="action-soft edit" style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                    Edit
-                  </button>
-                  <button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)} className="action-soft print" style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                    Print
-                  </button>
-                  <button
-                    onClick={() => shareWhatsApp(s)}
-                    title="Share on WhatsApp"
-                    className="action-soft whatsapp"
-                    disabled={Boolean(s._isOffline)}
-                    style={{ flex: 1, padding: '9px', opacity: s._isOffline ? 0.55 : 1, cursor: s._isOffline ? 'not-allowed' : 'pointer' }}>
-                    WhatsApp
-                  </button>
-                  <button onClick={() => handleDelete(s)} className="action-soft delete" style={{ flex: 1, padding: '9px' }}>
-                    {s._isOffline ? 'Remove' : 'Delete'}
-                  </button>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className={`inline-flex h-11 items-center rounded-full border px-1 ${form.payment_type === 'credit' ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50'}`}>
+                <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-9 rounded-full px-4 text-sm font-semibold ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>Cash</button>
+                <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-9 rounded-full px-4 text-sm font-semibold ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>Credit</button>
               </div>
-            ))}
-          </div>
-        </>
-        )}
-      </div>
-
-      {/*  Modal  */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal flow-modal sale-entry-modal" style={{ maxWidth: 500 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 0, color: '#0f172a' }}>Record Sale</h3>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => { setShowModal(false); resetForm(); }}
-                aria-label="Close record sale modal"
-              >
-                ×
-              </button>
+              <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-11 items-center gap-2 rounded-full bg-teal-600 px-5 text-sm font-semibold text-white">✚ New Sale</button>
             </div>
-            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 700, marginBottom: 12 }}>
-              Step {saleStep + 1} of 2
-              <span style={{ margin: '0 8px', color: '#cbd5e1' }}>•</span>
-              {wizardSteps.map((step, index) => (
-                <span key={step.title} style={{ color: saleStep === index ? '#3730a3' : '#94a3b8', marginRight: index === wizardSteps.length - 1 ? 0 : 8 }}>
-                  {step.title}
-                </span>
-              ))}
+          </header>
+          <section className="-mx-1 mb-4 flex gap-3 overflow-x-auto px-1 pb-1">
+            <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-teal-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Revenue</p><p className="text-2xl font-bold">₹{fmt(revenueDisplay)}</p></div>
+            <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-cyan-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">GST Collected</p><p className="text-2xl font-bold">₹{fmt(gstDisplay)}</p></div>
+            <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-indigo-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Total Invoices</p><p className="text-2xl font-bold">{filteredSales.length}</p></div>
+          </section>
+
+          <section className="mb-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-teal-500" placeholder="Search invoice, customer, phone, product..." value={billSearch} onChange={(e) => setBillSearch(e.target.value)} />
+              <input className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-teal-500 sm:w-52" type="month" value={billMonth} onChange={(e) => setBillMonth(e.target.value)} />
+              {hasBillFilters ? <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); }} className="h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-slate-600">Clear</button> : null}
             </div>
-            {editingSaleId ? (
-              <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing invoice</div>
-            ) : null}
-            {!editingSaleId && <div className="flow-muted-chip" style={{ marginBottom: 10 }}>Ready to bill</div>}
-            {error && (
-              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{error}</div>
-            )}
-              <form onSubmit={(e) => e.preventDefault()} className="sale-entry-form">
+          </section>
 
-              {/* Items */}
-              <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Items + Payment</div>
-                <div className="fast-billing-toolbar">
-                  <div>
-                    <div className="fast-billing-title">Fast Billing</div>
-                    <div className="fast-billing-subtitle">Quick item entry for mobile and laptop both.</div>
-                  </div>
-                  <div className="fast-billing-toolbar-actions">
-                    <button
-                      type="button"
-                      className="fast-billing-chip fast-billing-scan-chip"
-                      onClick={() => setShowBarcodeScanner(true)}
-                      style={{ cursor: 'pointer', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1d4ed8' }}
-                    >
-                      Scan Barcode
-                    </button>
-                    <span className="fast-billing-chip">{selectedItemsCount} selected</span>
-                    <span className="fast-billing-chip">₹{fmt(billTotals.total)}</span>
-                  </div>
-                </div>
-                {items.map((item, index) => {
-                  const g    = rowGST(item);
-                  const prod = products.find(p => p._id === item.product_id);
-                  return (
-                    <div key={index} className="fast-item-card" style={{ background: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => duplicateItem(index)}
-                          style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 12, fontWeight: 700, marginLeft: 'auto', marginRight: 4 }}
-                        >
-                          Duplicate
-                        </button>
-                        {items.length > 1 && (
-                          <button type="button" onClick={() => removeItem(index)}
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18 }}>×</button>
-                        )}
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">Product *</label>
-                        <SearchableProductSelect
-                          products={products}
-                          value={item.product_id}
-                          onChange={(id) => updateItem(index, 'product_id', id)}
-                          onSelectProduct={(product) => handleProductSelect(index, product)}
-                          placeholder="Tap to pick product"
-                          searchPlaceholder="Search name, barcode or HSN"
-                        />
-                      </div>
-
-                      <div className="grid-2">
-                        <div className="form-group">
-                          <label className="form-label">Quantity *</label>
-                          <div className="fast-qty-control">
-                            <button type="button" className="fast-qty-button" onClick={() => updateItemQuantityBy(index, -1)}>-</button>
-                            <input className="form-input fast-qty-input" type="number" min="1"
-                              max={prod ? prod.quantity : undefined}
-                              value={item.quantity}
-                              onChange={e => updateItem(index, 'quantity', e.target.value)} required />
-                            <button type="button" className="fast-qty-button" onClick={() => updateItemQuantityBy(index, 1)}>+</button>
-                          </div>
-                          <div className="fast-qty-pills">
-                            {QUICK_QUANTITY_OPTIONS.map((quantity) => (
-                              <button
-                                key={quantity}
-                                type="button"
-                                className={`fast-qty-pill ${Number(item.quantity) === quantity ? 'is-active' : ''}`}
-                                onClick={() => applyQuickQuantity(index, quantity)}
-                              >
-                                {quantity}
-                              </button>
-                            ))}
-                          </div>
-                          {prod && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Available: {prod.quantity}</div>}
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Price/Unit ₹ *</label>
-                          <input className="form-input" type="number" step="0.01"
-                            value={item.price_per_unit}
-                            onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
-                        </div>
-                      </div>
-                      {g && (
-                        <div className="fast-item-summary" style={{ fontSize: 12, color: '#6b7280', background: g.gst_rate > 0 ? '#ecfeff' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                          <span>Taxable: <strong>₹{fmt(g.taxable)}</strong></span>
-                          {g.gst_rate > 0 && (
-                            <span>
-                              {g.isIGST
-                                ? `IGST ${g.gst_rate}%: ₹${fmt(g.gst)}`
-                                : `CGST ${(g.gst_rate / 2).toFixed(1)}% + SGST ${(g.gst_rate / 2).toFixed(1)}%: ₹${fmt(g.gst)}`}
-                            </span>
-                          )}
-                          <span>Total: <strong>₹{fmt(g.total)}</strong></span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="fast-item-footer">
-                  <button type="button" onClick={addItem} className="fast-add-row-button">
-                    + Add Another Product
-                  </button>
-                  <div className="fast-footer-hint">Alt + A adds a new line on laptop. Compact controls stay easy to tap on mobile.</div>
-                </div>
-              </div>
-
-              <div className="fast-bill-sticky-summary">
-                <div>
-                  <div className="fast-summary-kicker">{currentStep?.title || 'Step'}</div>
-                  <div className="fast-summary-value">₹{fmt(billTotals.total)}</div>
-                  <div className="fast-summary-copy">
-                    {selectedItemsCount} item(s) • Rounded ₹{fmt(roundedBill.roundedTotal)}
-                  </div>
-                </div>
-                <div className="fast-summary-side">
-                  <span>{form.payment_type.toUpperCase()}</span>
-                  {form.payment_type === 'credit' && <strong>Due ₹{fmt(balanceDue)}</strong>}
-                </div>
-              </div>
-
-              <div className="flow-step-panel" style={{ display: saleStep === 0 ? 'block' : 'none', marginTop: 14 }}>
-                  <div className="flow-section-kicker"><span>Payment</span><span>Method + partial payment</span></div>
-                  <div className="form-group">
-                    <label className="form-label">Record Date</label>
-                    <input
-                      className="form-input"
-                      type="date"
-                      max={getDefaultSaleDateValue()}
-                      value={form.sale_date}
-                      onChange={e => updateForm({ sale_date: e.target.value })}
-                    />
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
-                      Invoice, reports and saved sale date will use this selected date.
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Payment Type *</label>
-                    <div className="flow-choice-grid">
-                      {[
-                        { val: 'cash', label: 'Cash' },
-                        { val: 'credit', label: 'Credit' },
-                        { val: 'upi', label: 'UPI' },
-                        { val: 'bank', label: 'Bank' },
-                      ].map((opt) => (
-                        <button key={opt.val} type="button"
-                          onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
-                          style={{
-                            padding: '11px 10px', borderRadius: 14, border: '1px solid',
-                            borderColor: form.payment_type === opt.val ? '#3730a3' : '#d1d5db',
-                            background: form.payment_type === opt.val ? '#3730a3' : '#ffffff',
-                            color: form.payment_type === opt.val ? '#fff' : '#334155',
-                            cursor: 'pointer', fontWeight: 700, fontSize: 12,
-                          }}
-                          className={`flow-choice-pill ${form.payment_type === opt.val ? 'is-active' : ''}`}>
-                          {opt.label}
-                        </button>
+          <div className="grid gap-3">
+            {loading ? Array.from({ length: 4 }).map((_, idx) => <div key={idx} className="h-16 animate-pulse rounded-2xl bg-white shadow-sm" />) : null}
+            {!loading && filteredSales.length === 0 ? <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-slate-500">{hasBillFilters ? 'No sales found for this filter.' : 'No sales yet.'}</div> : null}
+            {!loading && filteredSales.length > 0 ? (
+              <>
+                <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm md:block">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-xs uppercase tracking-wider text-slate-400">
+                      <tr><th className="px-3 py-3 text-left">Invoice No</th><th className="px-3 py-3 text-left">Customer</th><th className="px-3 py-3 text-left">Items</th><th className="px-3 py-3 text-left">Taxable</th><th className="px-3 py-3 text-left">GST</th><th className="px-3 py-3 text-left">Total</th><th className="px-3 py-3 text-left">Payment</th><th className="px-3 py-3 text-left">Date</th><th className="px-3 py-3 text-left">Actions</th></tr>
+                    </thead>
+                    <tbody>
+                      {filteredSales.map((s) => (
+                        <tr key={s._id} className="border-t border-gray-100">
+                          <td className="px-3 py-3 align-top"><div className="font-mono text-xs font-semibold text-cyan-600">{s.invoice_number}</div>{s._isOffline ? <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />Pending Sync</div> : null}{s._isOffline && s._queueError ? <div className="mt-1 text-xs text-red-600">{s._queueError}</div> : null}</td>
+                          <td className="px-3 py-3 align-top">{s.buyer_name || 'Walk-in Customer'}</td>
+                          <td className="px-3 py-3 align-top">{s.items && s.items.length > 1 ? `${s.items.length} items` : s.product_name}</td>
+                          <td className="px-3 py-3 align-top">₹{fmt(s.taxable_amount)}</td><td className="px-3 py-3 align-top">₹{fmt(s.total_gst)}</td><td className="px-3 py-3 align-top font-semibold text-teal-600">₹{fmt(s.total_amount)}</td><td className="px-3 py-3 align-top"><PayBadge type={s.payment_type} /></td><td className="px-3 py-3 align-top text-xs text-slate-500">{formatFullDateTime(s.createdAt || s.sold_at)}</td>
+                          <td className="px-3 py-3 align-top"><div className="flex flex-wrap gap-1.5"><button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="rounded-full border border-gray-200 px-2 py-1 text-xs disabled:opacity-50">Edit</button><button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)} className="rounded-full border border-gray-200 px-2 py-1 text-xs disabled:opacity-50">Print</button><button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)} className="rounded-full border border-gray-200 px-2 py-1 text-xs disabled:opacity-50">WhatsApp</button><button onClick={() => handleDelete(s)} className="rounded-full border border-red-200 px-2 py-1 text-xs text-red-600">{s._isOffline ? 'Remove' : 'Delete'}</button></div></td>
+                        </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="grid gap-3 md:hidden">
+                  {filteredSales.map((s) => (
+                    <div key={s._id} className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+                      <div className="mb-2 flex items-start justify-between"><div><p className="text-sm font-semibold">{s.items && s.items.length > 1 ? `${s.items.length} items` : s.product_name}</p><p className="font-mono text-xs text-cyan-600">{s.invoice_number}</p></div><div className="text-right"><p className="text-base font-bold text-teal-600">₹{fmt(s.total_amount)}</p><PayBadge type={s.payment_type} /></div></div>
+                      <p className="mb-2 text-xs text-slate-500">{formatFullDateTime(s.createdAt || s.sold_at)}</p>
+                      <div className="mb-2 flex gap-2"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">Taxable ₹{fmt(s.taxable_amount)}</span><span className="rounded-full bg-cyan-50 px-2 py-0.5 text-xs text-cyan-700">GST ₹{fmt(s.total_gst)}</span></div>
+                      <div className="grid grid-cols-2 gap-2"><button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="rounded-xl border border-gray-200 py-2 text-xs disabled:opacity-50">Edit</button><button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)} className="rounded-xl border border-gray-200 py-2 text-xs disabled:opacity-50">Print</button><button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)} className="rounded-xl border border-gray-200 py-2 text-xs disabled:opacity-50">WhatsApp</button><button onClick={() => handleDelete(s)} className="rounded-xl border border-red-200 py-2 text-xs text-red-600">{s._isOffline ? 'Remove' : 'Delete'}</button></div>
                     </div>
-                    {form.payment_type === 'credit' && (
-                      <div style={{ marginTop: 10 }}>
-                        <label className="form-label">Advance Payment (optional)</label>
-                        <input ref={amountPaidInputRef} className="form-input" type="number" step="0.01" min="0"
-                          placeholder={`Max ₹${fmt(billTotals.total)}`}
-                          value={form.amount_paid}
-                          onChange={e => updateForm({ amount_paid: e.target.value })} />
-                        <div className="fast-qty-pills" style={{ marginTop: 8 }}>
-                          <button type="button" className={`fast-qty-pill ${amountPaidNum === 0 ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: '0' })}>0</button>
-                          <button type="button" className="fast-qty-pill" onClick={() => updateForm({ amount_paid: String((billTotals.total / 2).toFixed(2)) })}>50%</button>
-                          <button type="button" className={`fast-qty-pill ${amountPaidNum === billTotals.total ? 'is-active' : ''}`} onClick={() => updateForm({ amount_paid: String(billTotals.total.toFixed(2)) })}>Full</button>
-                        </div>
-                        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#b45309' }}>
-                          Balance ₹{fmt(balanceDue)} will be added to the customer ledger automatically.
-                        </div>
-                      </div>
-                    )}
-                  </div>
-              </div>
-
-              {/* Bill Summary */}
-              {billTotals.total > 0 && saleStep === 1 && (
-                <div style={{ background: '#ecfeff', border: '1px solid #99f6e4', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: '#0f766e', marginBottom: 6 }}>Bill Summary</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, color: '#134e4a' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Taxable:</span><strong>₹{fmt(billTotals.taxable)}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>GST:</span><strong>₹{fmt(billTotals.gst)}</strong></div>
-                    {form.buyer_state && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Tax split:</span>
-                        <strong>{normalizeState(shopState) !== normalizeState(form.buyer_state) ? 'IGST' : 'CGST + SGST'}</strong>
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 4, marginTop: 2 }}>
-                      <span>Total:</span><span>₹{fmt(billTotals.total)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
-                      <span>Rounded Total:</span><span>₹{fmt(roundedBill.roundedTotal)}</span>
-                    </div>
-                    {form.payment_type === 'credit' && amountPaidNum > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
-                        <span>Balance Due:</span><span>₹{fmt(balanceDue)}</span>
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              )}
-
-              <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: saleStep === 1 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-                  {form.payment_type === 'credit' ? 'Customer Details' : 'Buyer Details'}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}</label>
-                  <input className="form-input" placeholder="Enter buyer name"
-                    ref={buyerNameInputRef}
-                    value={form.buyer_name} onChange={e => updateForm({ buyer_name: e.target.value })}
-                    required={form.payment_type === 'credit'} />
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Phone</label>
-                    <input className="form-input" placeholder="Mobile" value={form.buyer_phone} onChange={e => updateForm({ buyer_phone: e.target.value })} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">GSTIN</label>
-                    <input
-                      className="form-input"
-                      placeholder="GSTIN for B2B"
-                      value={form.buyer_gstin}
-                      maxLength={GSTIN_LENGTH}
-                      onChange={e => handleBuyerGstinChange(e.target.value)}
-                      onBlur={() => setGstinTouched(true)}
-                    />
-                    {showGstinLengthHint && (
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>GSTIN should be 15 characters</div>
-                    )}
-                    {showGstinError && (
-                      <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
-                    )}
-                  </div>
-                </div>
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">State</label>
-                    <select className="form-input" value={form.buyer_state} onChange={e => updateForm({ buyer_state: e.target.value })}>
-                      <option value="">Select State/UT</option>
-                      <optgroup label=" States ">{STATES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
-                      <optgroup label=" Union Territories ">{UTS.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
-                    </select>
-                    {gstinValid && gstinValue.length >= 2 && form.buyer_state && (
-                      <div style={{ fontSize: 11, color: '#059669', marginTop: 4 }}>State auto-detected from GSTIN</div>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Address</label>
-                    <input className="form-input" placeholder="Address" value={form.buyer_address} onChange={e => updateForm({ buyer_address: e.target.value })} />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Notes</label>
-                  <input className="form-input" placeholder="Any notes..." value={form.notes} onChange={e => updateForm({ notes: e.target.value })} />
-                </div>
-              </div>
-
-              <div className="flow-actions fast-billing-actions">
-                {saleStep > 0 && (
-                  <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setSaleStep((current) => current - 1)}>
-                    Back
-                  </button>
-                )}
-                {saleStep < 1 ? (
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    style={{ flex: 1 }}
-                    onClick={handleContinueToBuyer}
-                  >
-                    Continue
-                  </button>
-                ) : (
-                <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting
-                    ? '⏳ दर्ज हो रहा है...'
-                    : !isOnline
-                      ? '📥 Offline Save करें'
-                      : form.payment_type === 'credit'
-                        ? '📒 Credit Sale'
-                        : '💵 बिक्री दर्ज'}
-                </button>
-                )}
-                <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
-                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </>
+            ) : null}
           </div>
         </div>
-      )}
-
+      </div>
+      <div className={`fixed inset-0 z-40 transition-opacity duration-300 ${showModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+        <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+        <aside className={`absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100vh-56px)] flex-col rounded-t-2xl bg-white shadow-xl transition-transform duration-300 md:inset-y-0 md:right-0 md:left-auto md:top-0 md:w-[420px] md:max-h-screen md:rounded-none ${showModal ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'}`}>
+          <div className="sticky top-0 z-20 border-b border-gray-200 bg-white px-4 py-3 md:px-6"><div className="flex items-start justify-between"><div><h3 className="text-lg font-bold">{editingSaleId ? 'Edit Sale' : 'New Sale'}</h3><span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${form.payment_type === 'credit' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>{form.payment_type === 'credit' ? 'Credit Sale' : 'Cash Sale'}</span></div><button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="h-9 w-9 rounded-full border border-gray-200 text-xl text-slate-500">×</button></div></div>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div><p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Invoice No.</p><div className="flex h-11 items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3 font-mono text-xs text-cyan-600"><span>{invoicePreview}</span><button type="button" onClick={() => navigator?.clipboard?.writeText(invoicePreview)}>📋</button></div></div>
+              <div><p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Date</p><input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm" type="date" value={form.sale_date} onChange={(e) => updateForm({ sale_date: e.target.value })} /></div>
+            </div>
+            <section className={`rounded-2xl border p-3 ${form.payment_type === 'credit' ? 'border-red-200 bg-red-50/60' : 'border-gray-200 bg-white'}`}>
+              <div className="mb-2 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Customer</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${form.payment_type === 'credit' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>{form.payment_type === 'credit' ? 'Required' : 'Optional'}</span></div>
+              <div ref={customerComboRef} className="grid gap-2 md:grid-cols-2"><div className="relative"><input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm" placeholder="Customer name" ref={buyerNameInputRef} value={customerQuery} onChange={(e) => { setCustomerQuery(e.target.value); updateForm({ buyer_name: e.target.value }); setShowCustomerSuggestions(true); }} onFocus={() => setShowCustomerSuggestions(true)} required={form.payment_type === 'credit'} />{showCustomerSuggestions && filteredPastCustomers.length > 0 ? <div className="absolute z-20 mt-1 max-h-44 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg">{filteredPastCustomers.map((customer) => <button key={`${customer.phone}-${customer.name}`} type="button" onClick={() => selectPastCustomer(customer)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"><span>{customer.name}</span><span className="text-xs text-slate-400">{customer.phone}</span></button>)}</div> : null}</div><input className="h-11 rounded-xl border border-gray-200 px-3 text-sm" placeholder="Phone number" value={form.buyer_phone} onChange={(e) => updateForm({ buyer_phone: e.target.value })} /></div>
+              <button type="button" onClick={() => setShowMoreCustomerDetails((v) => !v)} className="mt-2 text-xs font-semibold text-slate-500">More Details {showMoreCustomerDetails ? '▴' : '▾'}</button>
+              {showMoreCustomerDetails ? <div className="mt-2 space-y-2"><input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm" placeholder="GSTIN" value={form.buyer_gstin} maxLength={GSTIN_LENGTH} onChange={(e) => handleBuyerGstinChange(e.target.value)} onBlur={() => setGstinTouched(true)} />{showGstinError ? <p className="text-xs text-red-600">Invalid GSTIN format</p> : null}<select className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm" value={form.buyer_state} onChange={(e) => updateForm({ buyer_state: e.target.value })}><option value="">Select State/UT</option><optgroup label=" States ">{STATES.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup><optgroup label=" Union Territories ">{UTS.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup></select><input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm" placeholder="Address" value={form.buyer_address} onChange={(e) => updateForm({ buyer_address: e.target.value })} /></div> : null}
+            </section>
+            <section className="rounded-2xl border border-gray-200 bg-white p-3"><div className="mb-2 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Items</p><button type="button" onClick={() => setShowBarcodeScanner(true)} className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Scan Barcode</button></div><div className="space-y-2">{items.map((item, index) => { const g = rowGST(item); const prod = products.find((p) => p._id === item.product_id); return <div key={index} className="rounded-xl border border-gray-200 p-2"><div className="mb-2 flex justify-end gap-1"><button type="button" className="rounded-full border border-gray-200 px-2 py-0.5 text-xs" onClick={() => duplicateItem(index)}>⧉</button>{items.length > 1 ? <button type="button" className="rounded-full border border-red-200 px-2 py-0.5 text-xs text-red-600" onClick={() => removeItem(index)}>×</button> : null}</div><SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} onSelectProduct={(product) => handleProductSelect(index, product)} placeholder="Select product" searchPlaceholder="Search name, barcode or HSN" />{prod ? <span className="mt-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Stock: {prod.quantity || 0}</span> : null}<div className="mt-2 grid gap-2 sm:grid-cols-2"><div><div className="flex h-8 items-center rounded-lg border border-gray-200"><button type="button" className="h-8 w-8 text-sm" onClick={() => updateItemQuantityBy(index, -1)}>-</button><input className="h-8 w-full border-x border-gray-200 text-center text-sm outline-none" type="number" min="1" max={prod ? prod.quantity : undefined} value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} /><button type="button" className="h-8 w-8 text-sm" onClick={() => updateItemQuantityBy(index, 1)}>+</button></div><div className="mt-1 flex gap-1">{QUICK_QUANTITY_OPTIONS.map((quantity) => <button key={quantity} type="button" className={`rounded-full border px-2 py-0.5 text-[10px] ${Number(item.quantity) === quantity ? 'border-teal-600 bg-teal-600 text-white' : 'border-gray-200 text-slate-500'}`} onClick={() => applyQuickQuantity(index, quantity)}>{quantity}</button>)}</div></div><input className="h-8 rounded-lg border border-gray-200 px-2 text-sm" type="number" step="0.01" value={item.price_per_unit} onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)} placeholder="Price" /></div>{g ? <p className="mt-1 text-xs text-slate-400">₹{fmt(g.taxable)} + ₹{fmt(g.gst)} GST = ₹{fmt(g.total)}</p> : null}</div>; })}<button type="button" onClick={addItem} className="w-full rounded-xl border border-dashed border-gray-300 py-2 text-sm font-semibold text-slate-600">+ Add Item</button><p className="text-[10px] text-slate-400">Alt+A on keyboard</p></div></section>
+            <section className="rounded-2xl border border-gray-200 bg-white p-3"><p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Payment</p><div className="grid grid-cols-4 gap-1.5">{['cash', 'credit', 'upi', 'bank'].map((opt) => <button key={opt} type="button" onClick={() => updateForm({ payment_type: opt, amount_paid: opt === 'credit' ? form.amount_paid : '' })} className={`h-9 rounded-full text-xs font-semibold capitalize ${form.payment_type === opt ? 'bg-teal-600 text-white' : 'border border-gray-200 text-slate-600'}`}>{opt}</button>)}</div>{form.payment_type === 'credit' ? <div className="mt-2"><input ref={amountPaidInputRef} className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm" type="number" step="0.01" min="0" placeholder={`Advance payment (max ₹${fmt(billTotals.total)})`} value={form.amount_paid} onChange={(e) => updateForm({ amount_paid: e.target.value })} /><div className="mt-2 flex gap-1"><button type="button" className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px]" onClick={() => updateForm({ amount_paid: '0' })}>0</button><button type="button" className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px]" onClick={() => updateForm({ amount_paid: String((billTotals.total / 2).toFixed(2)) })}>50%</button><button type="button" className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px]" onClick={() => updateForm({ amount_paid: String(billTotals.total.toFixed(2)) })}>Full</button></div><div className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">Balance Due: ₹{fmt(balanceDue)}</div></div> : null}</section>
+            <div className="sticky bottom-0 rounded-2xl border border-teal-100 bg-teal-50 px-3 py-2"><p className="text-xs text-slate-600">Taxable: ₹{fmt(billTotals.taxable)} | GST: ₹{fmt(billTotals.gst)}</p><p className="text-lg font-bold">Total: ₹{fmt(billTotals.total)}</p><p className="text-xs text-slate-500">Round Off: {roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</p>{form.payment_type === 'credit' ? <p className="text-xs font-semibold text-red-600">Balance Due: ₹{fmt(balanceDue)}</p> : null}</div>
+          </div>
+          <div className="sticky bottom-0 border-t border-gray-200 bg-white px-4 py-3 md:px-6"><div className="flex gap-2"><button type="button" onClick={handleSubmit} className="h-11 flex-1 rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={submitting}>{submitting ? 'Saving...' : !isOnline ? '📥 Save Offline' : form.payment_type === 'credit' ? '📒 Credit Sale' : '💵 Save Sale'}</button><button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-slate-600">Cancel</button></div></div>
+        </aside>
+      </div>
       <CameraBarcodeScanner
         open={showBarcodeScanner}
         title="Scan product barcode"
