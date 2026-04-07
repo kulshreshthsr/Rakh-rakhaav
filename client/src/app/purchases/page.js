@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
