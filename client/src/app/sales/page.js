@@ -1023,9 +1023,9 @@ export default function SalesPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-50 text-slate-900">
-        <div className="mx-auto w-full max-w-7xl px-4 pb-4 pt-4 sm:px-6 sm:pt-6">
-          <header className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="page-shell sales-shell sales-page-shell">
+        <div className="sales-content-wrap mx-auto w-full max-w-7xl px-2 pb-2 pt-1 sm:px-3 sm:pt-2">
+          <header className="hero-panel sales-hero sales-header-shell mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold">Sales</h1>
               <p className="text-xs text-slate-400">Billing &amp; Invoices</p>
@@ -1039,13 +1039,13 @@ export default function SalesPage() {
               <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-teal-600 px-4 text-xs font-semibold text-white sm:h-11 sm:px-5 sm:text-sm">✚ Sale</button>
             </div>
           </header>
-          <section className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
+          <section className="sales-kpi-strip -mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-teal-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Revenue</p><p className="text-2xl font-bold">₹{fmt(revenueDisplay)}</p></div>
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-cyan-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">GST Collected</p><p className="text-2xl font-bold">₹{fmt(gstDisplay)}</p></div>
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-indigo-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Total Invoices</p><p className="text-2xl font-bold">{filteredSales.length}</p></div>
           </section>
 
-          <section className="mb-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+          <section className="sales-filter-card mb-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row">
               <input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-teal-500" placeholder="Search invoice, customer, phone, product..." value={billSearch} onChange={(e) => setBillSearch(e.target.value)} />
               <input className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-teal-500 sm:w-52" type="month" value={billMonth} onChange={(e) => setBillMonth(e.target.value)} />
@@ -1058,7 +1058,7 @@ export default function SalesPage() {
             {!loading && filteredSales.length === 0 ? <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-slate-500">{hasBillFilters ? 'No sales found for this filter.' : 'No sales yet.'}</div> : null}
             {!loading && filteredSales.length > 0 ? (
               <>
-                <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm md:block">
+                <div className="sales-table-shell hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm md:block">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-xs uppercase tracking-wider text-slate-400">
                       <tr><th className="px-3 py-3 text-left">Invoice No</th><th className="px-3 py-3 text-left">Customer</th><th className="px-3 py-3 text-left">Items</th><th className="px-3 py-3 text-left">Taxable</th><th className="px-3 py-3 text-left">GST</th><th className="px-3 py-3 text-left">Total</th><th className="px-3 py-3 text-left">Payment</th><th className="px-3 py-3 text-left">Date</th><th className="px-3 py-3 text-left">Actions</th></tr>
@@ -1076,9 +1076,9 @@ export default function SalesPage() {
                     </tbody>
                   </table>
                 </div>
-                <div className="grid gap-3 md:hidden">
+                <div className="sales-mobile-list grid gap-3 md:hidden">
                   {filteredSales.map((s) => (
-                    <div key={s._id} className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+                    <div key={s._id} className="sales-mobile-card rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
                       <div className="mb-2 flex items-start justify-between"><div><p className="text-sm font-semibold">{s.items && s.items.length > 1 ? `${s.items.length} items` : s.product_name}</p><p className="font-mono text-xs text-cyan-600">{s.invoice_number}</p></div><div className="text-right"><p className="text-base font-bold text-teal-600">₹{fmt(s.total_amount)}</p><PayBadge type={s.payment_type} /></div></div>
                       <p className="mb-2 text-xs text-slate-500">{formatFullDateTime(s.createdAt || s.sold_at)}</p>
                       <div className="mb-2 flex gap-2"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">Taxable ₹{fmt(s.taxable_amount)}</span><span className="rounded-full bg-cyan-50 px-2 py-0.5 text-xs text-cyan-700">GST ₹{fmt(s.total_gst)}</span></div>
@@ -1093,7 +1093,7 @@ export default function SalesPage() {
       </div>
       <div className={`fixed inset-0 z-[70] transition-opacity duration-300 ${showModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
         <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-        <aside className={`absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100vh-56px)] flex-col rounded-t-2xl bg-white shadow-xl transition-transform duration-300 md:inset-y-0 md:right-0 md:left-auto md:top-0 md:w-[420px] md:max-h-screen md:rounded-none ${showModal ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'}`}>
+        <aside className={`sales-entry-modal absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100vh-56px)] flex-col rounded-t-2xl bg-white shadow-xl transition-transform duration-300 md:inset-y-0 md:right-0 md:left-auto md:top-0 md:w-[420px] md:max-h-screen md:rounded-none ${showModal ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'}`}>
           <div className="sticky top-0 z-20 border-b border-gray-200 bg-white px-4 py-3 md:px-6"><div className="flex items-start justify-between"><div><h3 className="text-lg font-bold">{editingSaleId ? 'Edit Sale' : 'New Sale'}</h3><span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${form.payment_type === 'credit' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>{form.payment_type === 'credit' ? 'Credit Sale' : 'Cash Sale'}</span></div><button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="h-9 w-9 rounded-full border border-gray-200 text-xl text-slate-500">×</button></div></div>
           <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
             <div className="grid grid-cols-2 gap-3">

@@ -81,7 +81,7 @@ export default function CustomersDirectoryPage() {
   return (
     <Layout>
       <div className="page-shell sales-shell customer-page">
-        <section className="hero-panel sales-hero">
+        <section className="hero-panel sales-hero customer-hero">
           <div className="page-toolbar">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Customers</p>
@@ -94,7 +94,7 @@ export default function CustomersDirectoryPage() {
           </div>
         </section>
 
-        <div className="toolbar-card">
+        <div className="toolbar-card customer-toolbar-card">
           <div className="toolbar">
             <input
               className="form-input min-w-[220px] flex-1"
@@ -121,9 +121,9 @@ export default function CustomersDirectoryPage() {
             <div>No customers found.</div>
           </div>
         ) : (
-          <div className="card grid gap-2.5">
+          <div className="card customer-list-card grid gap-2.5">
             {filteredCustomers.map((customer) => (
-              <div key={customer.key} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+              <div key={customer.key} className="customer-row-card flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
                 <div>
                   <div className="font-bold text-slate-900">{customer.name}</div>
                   <div className="text-[12px] text-slate-500">+91 {customer.phone}</div>

@@ -166,7 +166,7 @@ export default function SupplierDirectoryPage() {
           </div>
         </section>
 
-        <div className="toolbar-card">
+        <div className="toolbar-card supplier-toolbar-card">
           <div className="toolbar">
             <input
               className="form-input min-w-[220px] flex-1"
@@ -204,7 +204,7 @@ export default function SupplierDirectoryPage() {
                     type="button"
                     key={supplier.key}
                     onClick={() => setSelectedSupplierKey(supplier.key)}
-                    className={`w-full cursor-pointer border-0 border-b border-slate-200 px-3 py-2.5 text-left ${supplier.key === selectedSupplier?.key ? 'bg-sky-100' : 'bg-white'}`}
+                    className={`supplier-list-item w-full cursor-pointer border-0 border-b border-slate-200 px-3 py-2.5 text-left ${supplier.key === selectedSupplier?.key ? 'bg-sky-100' : 'bg-white'}`}
                   >
                     <div className="text-[13px] font-bold text-slate-900">{supplier.name}</div>
                     <div className="text-[11px] text-slate-500">
@@ -262,7 +262,7 @@ export default function SupplierDirectoryPage() {
                   <div className="mt-[14px] text-[12px] font-bold text-slate-500">Past Deals</div>
                   <div className="mt-2 grid gap-2">
                     {selectedSupplier.purchases.map((purchase) => (
-                      <div key={purchase._id} className="rounded-xl border border-slate-200 p-2.5">
+                      <div key={purchase._id} className="supplier-deal-card rounded-xl border border-slate-200 p-2.5">
                         <div className="flex justify-between gap-2">
                           <div>
                             <div className="text-[13px] font-bold text-slate-900">{purchase.invoice_number || '—'}</div>
