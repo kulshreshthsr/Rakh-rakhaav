@@ -270,44 +270,41 @@ export default function DashboardPage() {
     <Layout>
       <div className="page-shell dashboard-shell">
         <section className="hero-panel dashboard-hero">
-          <div className="page-toolbar dashboard-toolbar gap-2 sm:gap-4">
-            <div className="flex w-full items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 pr-1">
-                <p className="rr-page-eyebrow">Business overview</p>
-                <div className="page-title leading-tight">Dashboard</div>
-              </div>
-
-              <div className="dashboard-period-controls dashboard-period-shell flex shrink-0 flex-wrap justify-end gap-2">
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="form-input h-9 w-[94px] min-w-0 px-2 text-[12px] sm:w-[108px] sm:px-2.5 sm:text-[12px]"
-                >
-                  {MONTHS.map((month, index) => (
-                    <option key={month} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="form-input h-9 w-[104px] min-w-0 px-2 text-[12px] sm:w-[118px] sm:px-2.5 sm:text-[12px]"
-                >
-                  {[2023, 2024, 2025, 2026].map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="page-toolbar dashboard-toolbar items-start gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="rr-page-eyebrow">Business overview</p>
+              <div className="page-title leading-tight">Dashboard</div>
+              {refreshing ? (
+                <p className="rr-meta-line">Refreshing latest data…</p>
+              ) : !isOnline ? (
+                <p className="rr-meta-line is-warn">
+                  Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
+                </p>
+              ) : cacheLoaded && cacheLabel ? (
+                <p className="rr-meta-line">Last synced {cacheLabel}</p>
+              ) : null}
             </div>
 
-            {refreshing ? (
-              <p className="rr-meta-line w-full">Refreshing latest data…</p>
-            ) : !isOnline ? (
-              <p className="rr-meta-line is-warn w-full">
-                Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
-              </p>
-            ) : cacheLoaded && cacheLabel ? (
-              <p className="rr-meta-line w-full">Last synced {cacheLabel}</p>
-            ) : null}
+            <div className="dashboard-period-controls dashboard-period-shell flex w-[108px] shrink-0 flex-col gap-1.5 sm:w-[118px]">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="form-input h-9 min-w-0 px-2 text-[12px]"
+              >
+                {MONTHS.map((month, index) => (
+                  <option key={month} value={index + 1}>{month}</option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="form-input h-9 min-w-0 px-2 text-[12px]"
+              >
+                {[2023, 2024, 2025, 2026].map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </section>
 
