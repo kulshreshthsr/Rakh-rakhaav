@@ -856,6 +856,7 @@
   .dashboard-top-card { background: linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(244,247,252,0.94) 100%) !important; box-shadow: var(--surface-shadow) !important; }
   .dashboard-breakdown-card { box-shadow: var(--surface-shadow) !important; }
   .dashboard-quick-card:hover, .dashboard-top-card:hover, .dashboard-stat-card:hover, .dashboard-breakdown-card:hover, .dashboard-warning-card:hover { transform: translateY(-2px); border-color: rgba(203,213,225,0.96) !important; box-shadow: var(--surface-shadow-hover) !important; }
+  .dashboard-stat-card .ui-stat-label { color: #334155 !important; }
   .dashboard-quick-card div[style*='color: #64748b'], .dashboard-top-card div[style*='color: #64748b'], .dashboard-breakdown-card div[style*='color: #64748b'], .dashboard-warning-card .section-subtitle { color: #6b7280 !important; }
   .dashboard-quick-icon, .dashboard-stat-icon { box-shadow: 0 12px 24px rgba(15,23,42,0.08) !important; }
   .dashboard-progress-track { background: #f3f4f6; border: 1px solid #e5e7eb; }

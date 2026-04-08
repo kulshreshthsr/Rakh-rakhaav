@@ -213,7 +213,6 @@ export default function DashboardPage() {
       note: `${stats?.salesCount || 0} invoices this month`,
       tone: 'money',
       href: '/sales',
-      icon: 'Sales',
     },
     {
       label: 'Profit',
@@ -221,7 +220,6 @@ export default function DashboardPage() {
       note: revenue > 0 ? `Margin ${margin}%` : 'See reports',
       tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
-      icon: 'Profit',
     },
     {
       label: 'Credit',
@@ -229,7 +227,6 @@ export default function DashboardPage() {
       note: totalCustomerUdhaar > 0 ? 'Collection pending' : 'All settled',
       tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
       href: '/udhaar',
-      icon: 'Credit',
     },
     {
       label: 'GST Payable',
@@ -237,7 +234,6 @@ export default function DashboardPage() {
       note: netGST >= 0 ? 'Tax to pay' : 'Refund side',
       tone: 'warning',
       href: '/gst',
-      icon: 'GST',
     },
   ];
 
@@ -312,7 +308,6 @@ export default function DashboardPage() {
               label={card.label}
               value={card.value}
               note={card.note}
-              icon={card.icon}
               onClick={() => router.push(card.href)}
             />
           ))}
