@@ -277,11 +277,11 @@ export default function DashboardPage() {
                 <div className="page-title leading-tight">Dashboard</div>
               </div>
 
-              <div className="dashboard-period-controls dashboard-period-shell flex w-[118px] shrink-0 flex-col gap-1.5 sm:w-[132px]">
+              <div className="dashboard-period-controls dashboard-period-shell flex shrink-0 flex-wrap justify-end gap-2">
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="form-input h-8 min-w-0 px-2 text-[12px] sm:h-9 sm:px-2.5 sm:text-[12px]"
+                  className="form-input h-9 w-[94px] min-w-0 px-2 text-[12px] sm:w-[108px] sm:px-2.5 sm:text-[12px]"
                 >
                   {MONTHS.map((month, index) => (
                     <option key={month} value={index + 1}>{month}</option>
@@ -290,7 +290,7 @@ export default function DashboardPage() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="form-input h-8 min-w-0 px-2 text-[12px] sm:h-9 sm:px-2.5 sm:text-[12px]"
+                  className="form-input h-9 w-[104px] min-w-0 px-2 text-[12px] sm:w-[118px] sm:px-2.5 sm:text-[12px]"
                 >
                   {[2023, 2024, 2025, 2026].map((year) => (
                     <option key={year} value={year}>{year}</option>
