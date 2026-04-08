@@ -290,7 +290,7 @@ export default function ProductsPage() {
     <Layout>
       <div className="page-shell product-shell">
         <section className="hero-panel product-hero">
-          <div className="page-toolbar">
+          <div className="page-toolbar items-center gap-2 sm:gap-4">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Catalog &amp; inventory</p>
               <div className="page-title">Products</div>
@@ -304,8 +304,8 @@ export default function ProductsPage() {
                       : 'Your complete product catalog'}
               </p>
             </div>
-            <button type="button" onClick={openAdd} className="btn-primary w-auto shrink-0" disabled={!isOnline}>
-              + Add Product
+            <button type="button" onClick={openAdd} className="btn-primary w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]" disabled={!isOnline}>
+              + Add
             </button>
           </div>
         </section>

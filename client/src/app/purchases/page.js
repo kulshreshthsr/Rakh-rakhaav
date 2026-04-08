@@ -821,18 +821,18 @@ export default function PurchasesPage() {
     <Layout>
       <div className="page-shell purchases-shell">
         <section className="hero-panel purchases-hero">
-          <div className="page-toolbar">
+          <div className="page-toolbar items-center gap-2 sm:gap-4">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Stock inward</p>
               <div className="page-title">Purchases</div>
               {refreshing ? <p className="rr-meta-line">Refreshing purchase data…</p> : null}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <Link href="/purchases/suppliers" className="btn-ghost w-auto shrink-0">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Link href="/purchases/suppliers" className="btn-ghost w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
                 Suppliers
               </Link>
-              <button type="button" onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary w-auto shrink-0">
-                + Record Purchase
+              <button type="button" onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
+                + Purchase
               </button>
             </div>
           </div>

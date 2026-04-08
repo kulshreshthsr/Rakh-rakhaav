@@ -1024,22 +1024,22 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50 text-slate-900">
-        <div className="mx-auto w-full max-w-7xl px-4 pb-4 pt-14 sm:px-6">
-          <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mx-auto w-full max-w-7xl px-4 pb-4 pt-10 sm:px-6 sm:pt-12">
+          <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold">Sales</h1>
               <p className="text-xs text-slate-400">Billing &amp; Invoices</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={`inline-flex h-11 items-center rounded-full border px-1 ${form.payment_type === 'credit' ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50'}`}>
-                <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-9 rounded-full px-4 text-sm font-semibold ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>Cash</button>
-                <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-9 rounded-full px-4 text-sm font-semibold ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>Credit</button>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <div className={`inline-flex h-10 items-center rounded-full border px-1 ${form.payment_type === 'credit' ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50'}`}>
+                <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>Cash</button>
+                <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>Credit</button>
               </div>
-              <Link href="/sales/customers" className="inline-flex h-11 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-slate-600">Customers</Link>
-              <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-11 items-center gap-2 rounded-full bg-teal-600 px-5 text-sm font-semibold text-white">✚ New Sale</button>
+              <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-slate-600 sm:h-11 sm:px-4 sm:text-sm">Customers</Link>
+              <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-teal-600 px-4 text-xs font-semibold text-white sm:h-11 sm:px-5 sm:text-sm">✚ Sale</button>
             </div>
           </header>
-          <section className="-mx-1 mb-4 flex gap-3 overflow-x-auto px-1 pb-1">
+          <section className="-mx-1 mb-3 flex gap-2.5 overflow-x-auto px-1 pb-1">
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-teal-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Revenue</p><p className="text-2xl font-bold">₹{fmt(revenueDisplay)}</p></div>
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-cyan-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">GST Collected</p><p className="text-2xl font-bold">₹{fmt(gstDisplay)}</p></div>
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-indigo-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Total Invoices</p><p className="text-2xl font-bold">{filteredSales.length}</p></div>
