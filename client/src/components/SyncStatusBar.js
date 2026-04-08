@@ -3,31 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import useOfflineSync from '../hooks/useOfflineSync';
 
-const bannerBaseStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  zIndex: 9999,
-  padding: '10px 16px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  fontSize: 13,
-  fontWeight: 600,
-  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-};
-
-const actionButtonStyle = {
-  background: '#000',
-  color: '#fff',
-  border: 'none',
-  padding: '4px 12px',
-  borderRadius: 20,
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: 'pointer',
-};
+const bannerBaseClass = 'fixed left-0 right-0 top-0 z-[9999] flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.3)]';
+const actionButtonClass = 'cursor-pointer rounded-full border-0 bg-black px-3 py-1 text-[12px] font-bold text-white';
 
 export default function SyncStatusBar() {
   const { isOnline, isSyncing, pendingCount, lastSyncResult, syncNow, syncError } =
@@ -86,55 +63,27 @@ export default function SyncStatusBar() {
 
   if (isSyncing) {
     topBanner = (
-      <div
-        style={{
-          ...bannerBaseStyle,
-          background: '#1d4ed8',
-          color: '#fff',
-        }}
-      >
+      <div className={`${bannerBaseClass} bg-blue-700 text-white`}>
         <span>{`Sync ho raha hai${dots}`}</span>
       </div>
     );
   } else if (syncError) {
     topBanner = (
-      <div
-        style={{
-          ...bannerBaseStyle,
-          background: '#dc2626',
-          color: '#fff',
-          justifyContent: 'space-between',
-        }}
-      >
+      <div className={`${bannerBaseClass} justify-between bg-red-600 text-white`}>
         <span>{`Sync failed: ${syncError}`}</span>
-        <button type="button" onClick={() => syncNow()} style={actionButtonStyle}>
+        <button type="button" onClick={() => syncNow()} className={actionButtonClass}>
           Retry
         </button>
       </div>
     );
   } else if (!isOnline) {
     topBanner = (
-      <div
-        style={{
-          ...bannerBaseStyle,
-          background: '#1e293b',
-          color: '#f8fafc',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div className={`${bannerBaseClass} flex-wrap bg-slate-800 text-slate-50`}>
         <span>Offline mode active - network available nahi hai</span>
         {pendingCount > 0 ? (
           <>
             <span>{`${pendingCount} entries locally saved hain, internet aate hi sync ho jayengi`}</span>
-            <span
-              style={{
-                background: '#f59e0b',
-                color: '#000',
-                padding: '2px 8px',
-                borderRadius: 20,
-                fontSize: 11,
-              }}
-            >
+            <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[11px] text-black">
               {pendingCount}
             </span>
           </>
@@ -143,16 +92,9 @@ export default function SyncStatusBar() {
     );
   } else if (pendingCount > 0) {
     topBanner = (
-      <div
-        style={{
-          ...bannerBaseStyle,
-          background: '#f59e0b',
-          color: '#000',
-          justifyContent: 'space-between',
-        }}
-      >
+      <div className={`${bannerBaseClass} justify-between bg-amber-500 text-black`}>
         <span>{`${pendingCount} entries sync pending`}</span>
-        <button type="button" onClick={() => syncNow()} style={actionButtonStyle}>
+        <button type="button" onClick={() => syncNow()} className={actionButtonClass}>
           Sync Now
         </button>
       </div>
@@ -169,34 +111,14 @@ export default function SyncStatusBar() {
     <>
       {topBanner}
       {shouldShowToast ? (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '90px',
-            right: '16px',
-            background: '#059669',
-            color: '#fff',
-            padding: '10px 16px',
-            borderRadius: 12,
-            fontSize: 13,
-            fontWeight: 600,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-            zIndex: 9999,
-            transform: 'translateY(0)',
-            opacity: 1,
-            transition: 'transform 220ms ease, opacity 220ms ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
+        <div className="fixed bottom-[90px] right-4 z-[9999] flex items-center gap-2.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-all duration-200 ease-out">
           <span>
             {lastSyncResult.failed === 0
               ? `${lastSyncResult.synced} entries synced successfully`
               : `${lastSyncResult.synced} synced, ${lastSyncResult.failed} failed - retry karein?`}
           </span>
           {lastSyncResult.failed > 0 ? (
-            <button type="button" onClick={() => syncNow()} style={actionButtonStyle}>
+            <button type="button" onClick={() => syncNow()} className={actionButtonClass}>
               Retry
             </button>
           ) : null}

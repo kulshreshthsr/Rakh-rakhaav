@@ -37,17 +37,17 @@ export default function ForgotPasswordPage() {
               <div className="auth-logo">र</div>
               <div>
                 <div className="auth-brand-name">
-                  रख<span style={{ color: '#a5b4fc' }}>रखाव</span>
+                  रख<span className="text-indigo-300">रखाव</span>
                 </div>
                 <div className="auth-brand-sub">Account Recovery</div>
               </div>
             </div>
 
-            <div style={{ marginTop: 18, maxWidth: 420 }}>
-              <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: '-0.04em', fontWeight: 800 }}>
+            <div className="mt-[18px] max-w-[420px]">
+              <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.04em]">
                 Recover access without losing your business flow.
               </h1>
-              <p style={{ marginTop: 12, color: 'rgba(255,255,255,0.68)', fontSize: 14, lineHeight: 1.6 }}>
+              <p className="mt-3 text-[14px] leading-[1.6] text-white/70">
                 We will send a secure reset link so you can get back to billing, stock and reports quickly.
               </p>
             </div>
@@ -73,15 +73,15 @@ export default function ForgotPasswordPage() {
         </section>
 
         <section className="auth-card-wrap">
-          <div className="auth-card" style={{ maxWidth: 420, padding: '24px 22px' }}>
+          <div className="auth-card max-w-[420px] px-[22px] py-6">
             {success ? (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 46, marginBottom: 14 }}>📩</div>
-                <div className="auth-title" style={{ marginBottom: 8 }}>Check your email</div>
-                <div className="auth-subtitle" style={{ marginBottom: 20 }}>
+              <div className="text-center">
+                <div className="mb-[14px] text-[46px]">📩</div>
+                <div className="auth-title mb-2">Check your email</div>
+                <div className="auth-subtitle mb-5">
                   We sent a reset link to <strong>{email}</strong>. The link expires in 1 hour.
                 </div>
-                <a href="/login" className="btn-primary" style={{ width: '100%', textDecoration: 'none' }}>
+                <a href="/login" className="btn-primary w-full no-underline">
                   Back to login
                 </a>
               </div>
@@ -105,7 +105,7 @@ export default function ForgotPasswordPage() {
                     />
                   </div>
 
-                  <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', marginTop: 6 }}>
+                  <button type="submit" disabled={loading} className="btn-primary mt-1.5 w-full">
                     {loading ? 'Sending...' : 'Send reset link'}
                   </button>
                 </form>

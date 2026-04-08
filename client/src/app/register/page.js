@@ -51,7 +51,8 @@ export default function RegisterPage() {
       : 'Use lowercase letters, numbers, and underscore only.';
 
   const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
-  const strengthColor = ['#cbd5e1', '#ef4444', '#f59e0b', '#10b981'][strength];
+  const strengthFillClass = ['w-0 bg-slate-300', 'w-[33%] bg-rose-500', 'w-[66%] bg-amber-500', 'w-full bg-emerald-500'][strength];
+  const strengthLabelClass = ['text-slate-300', 'text-rose-500', 'text-amber-500', 'text-emerald-500'][strength];
   const strengthLabel = ['', 'Weak', 'Fair', 'Strong'][strength];
 
   useEffect(() => {
@@ -194,15 +195,9 @@ export default function RegisterPage() {
                 {password.length > 0 && (
                   <div className="trust-strength-wrap">
                     <div className="trust-strength-bar">
-                      <div
-                        className="trust-strength-fill"
-                        style={{
-                          width: `${[0, 33, 66, 100][strength]}%`,
-                          background: strengthColor,
-                        }}
-                      />
+                      <div className={`trust-strength-fill ${strengthFillClass}`} />
                     </div>
-                    <div className="trust-strength-label" style={{ color: strengthColor }}>{strengthLabel}</div>
+                    <div className={`trust-strength-label ${strengthLabelClass}`}>{strengthLabel}</div>
                   </div>
                 )}
               </div>

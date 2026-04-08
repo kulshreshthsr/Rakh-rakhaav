@@ -160,7 +160,7 @@ export default function SupplierDirectoryPage() {
               <div className="page-title">Supplier Directory</div>
               {refreshing ? <p className="rr-meta-line">Refreshing suppliers…</p> : null}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <div className="flex flex-wrap justify-end gap-2">
               <Link href="/purchases" className="btn-ghost w-auto shrink-0">Back to Purchases</Link>
             </div>
           </div>
@@ -169,8 +169,7 @@ export default function SupplierDirectoryPage() {
         <div className="toolbar-card">
           <div className="toolbar">
             <input
-              className="form-input"
-              style={{ flex: 1, minWidth: 220 }}
+              className="form-input min-w-[220px] flex-1"
               placeholder="Search supplier name or phone..."
               value={supplierSearch}
               onChange={(event) => setSupplierSearch(event.target.value)}
@@ -183,9 +182,9 @@ export default function SupplierDirectoryPage() {
         ) : null}
 
         {loading ? (
-          <div className="card" style={{ display: 'grid', gap: 12 }}>
+          <div className="card grid gap-3">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="skeleton" style={{ height: 72 }} />
+              <div key={index} className="skeleton h-[72px]" />
             ))}
           </div>
         ) : filteredSuppliers.length === 0 ? (
@@ -194,29 +193,21 @@ export default function SupplierDirectoryPage() {
             <div>No suppliers found.</div>
           </div>
         ) : (
-          <div className="supplier-page-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 1fr) minmax(360px, 2fr)', gap: 14 }}>
-            <div className="supplier-list-panel" style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden', background: '#f8fafc' }}>
-              <div style={{ padding: '10px 12px', borderBottom: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700, color: '#64748b' }}>
+          <div className="supplier-page-grid grid grid-cols-[minmax(240px,1fr)_minmax(360px,2fr)] gap-[14px]">
+            <div className="supplier-list-panel overflow-hidden rounded-[14px] border border-slate-200 bg-slate-50">
+              <div className="border-b border-slate-200 px-3 py-2.5 text-[12px] font-bold text-slate-500">
                 All Suppliers ({filteredSuppliers.length})
               </div>
-              <div className="supplier-list-scroll" style={{ maxHeight: 520, overflowY: 'auto' }}>
+              <div className="supplier-list-scroll max-h-[520px] overflow-y-auto">
                 {filteredSuppliers.map((supplier) => (
                   <button
                     type="button"
                     key={supplier.key}
                     onClick={() => setSelectedSupplierKey(supplier.key)}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 12px',
-                      border: 'none',
-                      borderBottom: '1px solid #e2e8f0',
-                      background: supplier.key === selectedSupplier?.key ? '#e0f2fe' : '#ffffff',
-                      cursor: 'pointer',
-                    }}
+                    className={`w-full cursor-pointer border-0 border-b border-slate-200 px-3 py-2.5 text-left ${supplier.key === selectedSupplier?.key ? 'bg-sky-100' : 'bg-white'}`}
                   >
-                    <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13 }}>{supplier.name}</div>
-                    <div style={{ fontSize: 11, color: '#64748b' }}>
+                    <div className="text-[13px] font-bold text-slate-900">{supplier.name}</div>
+                    <div className="text-[11px] text-slate-500">
                       {supplier.phone ? `+91 ${supplier.phone}` : 'Phone missing'} • {supplier.purchases.length} deals
                     </div>
                   </button>
@@ -224,21 +215,20 @@ export default function SupplierDirectoryPage() {
               </div>
             </div>
 
-            <div className="supplier-detail-panel" style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#ffffff' }}>
+            <div className="supplier-detail-panel rounded-[14px] border border-slate-200 bg-white p-[14px]">
               {selectedSupplier ? (
                 <>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{selectedSupplier.name}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>
+                      <div className="text-[18px] font-bold text-slate-900">{selectedSupplier.name}</div>
+                      <div className="text-[12px] text-slate-500">
                         {selectedSupplier.phone ? `+91 ${selectedSupplier.phone}` : 'Phone number not available'}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div className="flex flex-wrap gap-2">
                       <a
                         href={selectedSupplier.phone ? `tel:+91${selectedSupplier.phone}` : undefined}
-                        className="btn-ghost"
-                        style={{ pointerEvents: selectedSupplier.phone ? 'auto' : 'none', opacity: selectedSupplier.phone ? 1 : 0.5 }}
+                        className={`btn-ghost ${selectedSupplier.phone ? '' : 'pointer-events-none opacity-50'}`}
                       >
                         Call Now
                       </a>
@@ -250,47 +240,46 @@ export default function SupplierDirectoryPage() {
                           : undefined}
                         target="_blank"
                         rel="noreferrer"
-                        className="btn-ghost"
-                        style={{ pointerEvents: selectedSupplier.phone ? 'auto' : 'none', opacity: selectedSupplier.phone ? 1 : 0.5 }}
+                        className={`btn-ghost ${selectedSupplier.phone ? '' : 'pointer-events-none opacity-50'}`}
                       >
                         WhatsApp
                       </a>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
-                    <div style={{ background: '#f8fafc', borderRadius: 12, padding: '8px 10px', fontSize: 12, color: '#475569' }}>
-                      Total Spend <strong style={{ color: '#0f172a' }}>₹{selectedSupplier.totalSpend.toFixed(2)}</strong>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <div className="rounded-xl bg-slate-50 px-2.5 py-2 text-[12px] text-slate-600">
+                      Total Spend <strong className="text-slate-900">₹{selectedSupplier.totalSpend.toFixed(2)}</strong>
                     </div>
-                    <div style={{ background: '#fef2f2', borderRadius: 12, padding: '8px 10px', fontSize: 12, color: '#991b1b' }}>
+                    <div className="rounded-xl bg-rose-50 px-2.5 py-2 text-[12px] text-rose-800">
                       Balance Due <strong>₹{selectedSupplier.totalDue.toFixed(2)}</strong>
                     </div>
-                    <div style={{ background: '#ecfeff', borderRadius: 12, padding: '8px 10px', fontSize: 12, color: '#0f766e' }}>
+                    <div className="rounded-xl bg-cyan-50 px-2.5 py-2 text-[12px] text-teal-700">
                       Last Deal <strong>{selectedSupplier.lastDate ? formatFullDateTime(selectedSupplier.lastDate) : '—'}</strong>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: '#64748b' }}>Past Deals</div>
-                  <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+                  <div className="mt-[14px] text-[12px] font-bold text-slate-500">Past Deals</div>
+                  <div className="mt-2 grid gap-2">
                     {selectedSupplier.purchases.map((purchase) => (
-                      <div key={purchase._id} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 10 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                      <div key={purchase._id} className="rounded-xl border border-slate-200 p-2.5">
+                        <div className="flex justify-between gap-2">
                           <div>
-                            <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13 }}>{purchase.invoice_number || '—'}</div>
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                            <div className="text-[13px] font-bold text-slate-900">{purchase.invoice_number || '—'}</div>
+                            <div className="text-[11px] text-slate-400">
                               {formatFullDateTime(purchase.createdAt || purchase.purchased_at)}
                             </div>
                           </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: 700, color: '#f59e0b' }}>₹{Number(purchase.total_amount || 0).toFixed(2)}</div>
+                          <div className="text-right">
+                            <div className="font-bold text-amber-500">₹{Number(purchase.total_amount || 0).toFixed(2)}</div>
                             {(purchase.balance_due || 0) > 0 ? (
-                              <div style={{ fontSize: 11, color: '#ef4444', fontWeight: 700 }}>Due ₹{Number(purchase.balance_due || 0).toFixed(2)}</div>
+                              <div className="text-[11px] font-bold text-rose-500">Due ₹{Number(purchase.balance_due || 0).toFixed(2)}</div>
                             ) : (
-                              <div style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>Paid</div>
+                              <div className="text-[11px] font-bold text-emerald-500">Paid</div>
                             )}
                           </div>
                         </div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>
+                        <div className="mt-1.5 text-[11px] text-slate-500">
                           {purchase.items && purchase.items.length > 1
                             ? `${purchase.items.length} items`
                             : purchase.product_name || 'Items'}
@@ -300,7 +289,7 @@ export default function SupplierDirectoryPage() {
                   </div>
                 </>
               ) : (
-                <div style={{ color: '#94a3b8', fontSize: 13 }}>Select a supplier to see details.</div>
+                <div className="text-[13px] text-slate-400">Select a supplier to see details.</div>
               )}
             </div>
           </div>

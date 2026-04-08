@@ -88,7 +88,7 @@ export default function CustomersDirectoryPage() {
               <div className="page-title">Customer Directory</div>
               {refreshing ? <p className="rr-meta-line">Refreshing customers…</p> : null}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <div className="flex flex-wrap justify-end gap-2">
               <Link href="/sales" className="btn-ghost w-auto shrink-0">Back to Sales</Link>
             </div>
           </div>
@@ -97,8 +97,7 @@ export default function CustomersDirectoryPage() {
         <div className="toolbar-card">
           <div className="toolbar">
             <input
-              className="form-input"
-              style={{ flex: 1, minWidth: 220 }}
+              className="form-input min-w-[220px] flex-1"
               placeholder="Search customer name or phone..."
               value={customerSearch}
               onChange={(event) => setCustomerSearch(event.target.value)}
@@ -111,9 +110,9 @@ export default function CustomersDirectoryPage() {
         ) : null}
 
         {loading ? (
-          <div className="card" style={{ display: 'grid', gap: 12 }}>
+          <div className="card grid gap-3">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="skeleton" style={{ height: 72 }} />
+              <div key={index} className="skeleton h-[72px]" />
             ))}
           </div>
         ) : filteredCustomers.length === 0 ? (
@@ -122,14 +121,14 @@ export default function CustomersDirectoryPage() {
             <div>No customers found.</div>
           </div>
         ) : (
-          <div className="card" style={{ display: 'grid', gap: 10 }}>
+          <div className="card grid gap-2.5">
             {filteredCustomers.map((customer) => (
-              <div key={customer.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 12, borderRadius: 12, border: '1px solid #e2e8f0', background: '#ffffff' }}>
+              <div key={customer.key} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
                 <div>
-                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{customer.name}</div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>+91 {customer.phone}</div>
+                  <div className="font-bold text-slate-900">{customer.name}</div>
+                  <div className="text-[12px] text-slate-500">+91 {customer.phone}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div className="flex gap-2">
                   <a href={`tel:+91${customer.phone}`} className="btn-ghost">Call Now</a>
                   <a href={`https://wa.me/91${customer.phone}`} className="btn-ghost" target="_blank" rel="noreferrer">WhatsApp</a>
                 </div>

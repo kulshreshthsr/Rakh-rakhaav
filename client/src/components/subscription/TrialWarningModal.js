@@ -13,7 +13,7 @@ export default function TrialWarningModal({ open, daysLeft, onClose, onUpgrade }
           {typeof daysLeft === 'number' ? ` ${daysLeft} day${daysLeft === 1 ? '' : 's'} left.` : ''}
         </p>
 
-        <div className="subscription-trust-row" style={{ marginTop: 16 }}>
+        <div className="subscription-trust-row mt-4">
           <span>Secure payment via Razorpay</span>
           <span>No hidden charges</span>
           <span>Cancel anytime</span>

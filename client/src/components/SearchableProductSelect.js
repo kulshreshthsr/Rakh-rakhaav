@@ -88,59 +88,30 @@ export default function SearchableProductSelect({
     }
   };
 
-  const stockColor = (quantity) => {
-    if (quantity === 0) return '#dc2626';
-    if (quantity <= 5) return '#b45309';
-    return '#059669';
-  };
-
-  const stockBackground = (quantity) => {
-    if (quantity === 0) return '#fff1f2';
-    if (quantity <= 5) return '#fff8eb';
-    return '#ecfdf5';
+  const stockToneClass = (quantity) => {
+    if (quantity === 0) return 'border-rose-200 bg-rose-50 text-rose-600';
+    if (quantity <= 5) return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-600';
   };
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+    <div ref={wrapperRef} className="relative w-full">
       <button
         type="button"
         onClick={handleOpen}
         disabled={disabled}
-        style={{
-          width: '100%',
-          padding: '12px 14px',
-          border: `1.5px solid ${open ? 'rgba(16,185,129,0.52)' : 'rgba(148,163,184,0.24)'}`,
-          borderRadius: 16,
-          fontSize: 13.5,
-          color: selected ? 'var(--text, #0f172a)' : 'var(--text-4, #94a3b8)',
-          background: open
-            ? 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,253,250,0.84))'
-            : 'linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,251,255,0.8))',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-          boxShadow: open ? '0 0 0 4px rgba(16,185,129,0.12)' : '0 10px 24px rgba(15,23,42,0.04)',
-          transition: 'all 0.18s ease',
-          userSelect: 'none',
-          opacity: disabled ? 0.6 : 1,
-          textAlign: 'left',
-        }}
+        className={`flex w-full select-none items-center justify-between gap-2.5 rounded-2xl border-[1.5px] px-[14px] py-3 text-left text-[13.5px] transition-all duration-150 ease-out ${
+          open
+            ? 'border-emerald-500/50 bg-gradient-to-b from-white to-emerald-50/80 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]'
+            : 'border-slate-400/25 bg-gradient-to-b from-white/95 to-slate-50/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)]'
+        } ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${selected ? 'text-slate-900' : 'text-slate-400'}`}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              fontWeight: selected ? 700 : 500,
-            }}
-          >
+        <div className="min-w-0 flex-1">
+          <div className={`truncate ${selected ? 'font-bold' : 'font-medium'}`}>
             {selected ? `${selected.name}${selected.gst_rate > 0 ? ` · GST ${selected.gst_rate}%` : ''}` : placeholder}
           </div>
           {selected && (
-            <div style={{ fontSize: 11, color: 'var(--text-3, #64748b)', marginTop: 3 }}>
+            <div className="mt-[3px] text-[11px] text-slate-500">
               {selected.hsn_code ? `HSN ${selected.hsn_code}` : 'Ready to bill'}
               {selected.unit ? ` · ${selected.unit}` : ''}
             </div>
@@ -148,18 +119,7 @@ export default function SearchableProductSelect({
         </div>
 
         {selected && (
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              color: stockColor(selected.quantity || selected.stock || 0),
-              flexShrink: 0,
-              background: stockBackground(selected.quantity || selected.stock || 0),
-              padding: '5px 10px',
-              borderRadius: 999,
-              border: '1px solid rgba(148,163,184,0.12)',
-            }}
-          >
+          <span className={`shrink-0 rounded-full border px-2.5 py-[5px] text-[11px] font-extrabold ${stockToneClass(selected.quantity || selected.stock || 0)}`}>
             Stock {selected.quantity ?? selected.stock ?? 0}
           </span>
         )}
@@ -168,44 +128,16 @@ export default function SearchableProductSelect({
           width="12"
           height="12"
           viewBox="0 0 10 10"
-          style={{
-            flexShrink: 0,
-            transition: 'transform 0.18s ease',
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            color: '#94a3b8',
-          }}
+          className={`shrink-0 text-slate-400 transition-transform duration-150 ${open ? 'rotate-180' : 'rotate-0'}`}
         >
           <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </svg>
       </button>
 
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            right: 0,
-            zIndex: 999,
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,250,255,0.96))',
-            border: '1px solid rgba(16,185,129,0.22)',
-            borderRadius: 20,
-            boxShadow: '0 24px 48px rgba(15,23,42,0.16)',
-            overflow: 'hidden',
-            animation: 'dropFadeIn 0.16s ease',
-          }}
-        >
-          <div
-            style={{
-              padding: '10px 12px',
-              borderBottom: '1px solid rgba(226,232,240,0.85)',
-              background: 'linear-gradient(180deg, rgba(248,250,252,0.96), rgba(240,253,250,0.82))',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ color: '#94a3b8', flexShrink: 0 }}>
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[999] overflow-hidden rounded-[20px] border border-emerald-500/20 bg-gradient-to-b from-white/95 to-slate-50/95 shadow-[0_24px_48px_rgba(15,23,42,0.16)] animate-[dropFadeIn_0.16s_ease]">
+          <div className="flex items-center gap-2 border-b border-slate-200/80 bg-gradient-to-b from-slate-50/95 to-emerald-50/80 px-3 py-2.5">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0 text-slate-400">
               <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.5" />
               <path d="M9 9L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -216,15 +148,7 @@ export default function SearchableProductSelect({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={handleSearchKeyDown}
-              style={{
-                flex: 1,
-                border: 'none',
-                outline: 'none',
-                fontSize: 13,
-                background: 'transparent',
-                color: 'var(--text, #0f172a)',
-                fontFamily: 'Inter, sans-serif',
-              }}
+              className="flex-1 border-none bg-transparent text-[13px] text-slate-900 outline-none"
             />
             {query && (
               <button
@@ -233,23 +157,16 @@ export default function SearchableProductSelect({
                   setQuery('');
                   setActiveIndex(0);
                 }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: 15,
-                  color: '#94a3b8',
-                  lineHeight: 1,
-                }}
+                className="cursor-pointer border-none bg-transparent text-[15px] leading-none text-slate-400"
               >
                 ×
               </button>
             )}
           </div>
 
-          <div style={{ maxHeight: 248, overflowY: 'auto', padding: 6 }}>
+          <div className="max-h-[248px] overflow-y-auto p-1.5">
             {filtered.length === 0 ? (
-              <div style={{ padding: '18px 14px', textAlign: 'center', color: 'var(--text-4, #94a3b8)', fontSize: 13 }}>
+              <div className="px-[14px] py-[18px] text-center text-[13px] text-slate-400">
                 No products found
               </div>
             ) : (
@@ -266,51 +183,19 @@ export default function SearchableProductSelect({
                     type="button"
                     onClick={() => !isOut && handleSelect(product)}
                     disabled={isOut}
-                    style={{
-                      width: '100%',
-                      padding: '12px 12px',
-                      cursor: isOut ? 'not-allowed' : 'pointer',
-                      background: isSelected
-                        ? 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(37,99,235,0.08))'
+                    className={`mb-1 flex w-full items-center justify-between gap-2.5 rounded-2xl border border-b-slate-100 px-3 py-3 text-left transition-colors duration-150 ${
+                      isSelected
+                        ? 'border-transparent bg-gradient-to-br from-emerald-500/10 to-blue-600/10'
                         : isActive
-                          ? 'rgba(240,253,250,0.96)'
-                          : 'transparent',
-                      border: `1px solid ${isActive ? 'rgba(16,185,129,0.24)' : 'transparent'}`,
-                      borderBottom: '1px solid rgba(241,245,249,0.9)',
-                      borderRadius: 16,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 10,
-                      opacity: isOut ? 0.5 : 1,
-                      transition: 'background 0.14s ease, border-color 0.14s ease',
-                      textAlign: 'left',
-                      marginBottom: 4,
-                    }}
+                          ? 'border-emerald-500/25 bg-emerald-50/95'
+                          : 'border-transparent bg-transparent'
+                    } ${isOut ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 13.5,
-                          fontWeight: 700,
-                          color: isSelected ? '#059669' : 'var(--text, #0f172a)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
+                    <div className="min-w-0 flex-1">
+                      <div className={`truncate text-[13.5px] font-bold ${isSelected ? 'text-emerald-600' : 'text-slate-900'}`}>
                         {product.name}
                       </div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: 'var(--text-4, #94a3b8)',
-                          display: 'flex',
-                          gap: 8,
-                          marginTop: 3,
-                          flexWrap: 'wrap',
-                        }}
-                      >
+                      <div className="mt-[3px] flex flex-wrap gap-2 text-[11px] text-slate-400">
                         {product.barcode && <span>Barcode: {product.barcode}</span>}
                         {product.hsn_code && <span>HSN: {product.hsn_code}</span>}
                         {product.gst_rate > 0 && <span>GST {product.gst_rate}%</span>}
@@ -318,21 +203,11 @@ export default function SearchableProductSelect({
                       </div>
                     </div>
 
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 800,
-                          color: stockColor(stock),
-                          background: stockBackground(stock),
-                          padding: '5px 9px',
-                          borderRadius: 999,
-                          border: '1px solid rgba(148,163,184,0.12)',
-                        }}
-                      >
+                    <div className="shrink-0 text-right">
+                      <div className={`rounded-full border px-[9px] py-[5px] text-[11.5px] font-extrabold ${stockToneClass(stock)}`}>
                         {isOut ? 'Out' : `${stock} left`}
                       </div>
-                      {product.price && <div style={{ fontSize: 11, color: 'var(--text-4, #94a3b8)', marginTop: 4 }}>₹{product.price}</div>}
+                      {product.price && <div className="mt-1 text-[11px] text-slate-400">₹{product.price}</div>}
                     </div>
                   </button>
                 );
@@ -340,15 +215,7 @@ export default function SearchableProductSelect({
             )}
           </div>
 
-          <div
-            style={{
-              borderTop: '1px solid rgba(226,232,240,0.85)',
-              padding: '8px 12px',
-              fontSize: 11,
-              color: 'var(--text-3, #64748b)',
-              background: 'rgba(248,250,252,0.8)',
-            }}
-          >
+          <div className="border-t border-slate-200/80 bg-slate-50/80 px-3 py-2 text-[11px] text-slate-500">
             Enter to select, arrow keys for laptop, tap-friendly list for mobile.
           </div>
         </div>

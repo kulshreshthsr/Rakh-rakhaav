@@ -31,6 +31,8 @@ const COMPARISON_ROWS = [
   ['Lower effective monthly cost', false, false, true, true],
 ];
 
+const PLAN_ANIMATION_DELAY_CLASSES = ['delay-[0ms]', 'delay-[100ms]', 'delay-[200ms]', 'delay-[300ms]'];
+
 const getEffectiveMonthly = (plan) => {
   if (plan.id === 'weekly') {
     return Math.round((plan.amount || 0) * (30 / 7));
@@ -91,8 +93,7 @@ export default function PricingPage() {
           return (
             <article
               key={plan.id}
-              className={`pricing-plan-card ${planStyle.toneClass}${isSelected ? ' is-selected' : ''}`}
-              style={{ animationDelay: `${index * 100}ms` }}
+              className={`pricing-plan-card ${planStyle.toneClass}${isSelected ? ' is-selected' : ''} ${PLAN_ANIMATION_DELAY_CLASSES[index] || 'delay-[0ms]'}`}
             >
               {badge ? (
                 <div className={`pricing-plan-badge${plan.id === 'yearly' ? ' is-dark' : ''}`}>
@@ -163,7 +164,7 @@ export default function PricingPage() {
             Proceed to checkout
           </button>
         ) : (
-          <Link href="/register" className="btn-primary membership-mobile-button" style={{ textDecoration: 'none' }}>
+          <Link href="/register" className="btn-primary membership-mobile-button no-underline">
             Unlock now
           </Link>
         )}

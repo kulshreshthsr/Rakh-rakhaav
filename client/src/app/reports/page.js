@@ -301,7 +301,21 @@ export default function ReportsPage() {
   };
 
   const { label } = getRange(filter);
-  const marginColor = summary.margin >= 20 ? '#22c55e' : summary.margin >= 10 ? '#f59e0b' : '#ef4444';
+  const marginTextClass = summary.margin >= 20 ? 'text-green-500' : summary.margin >= 10 ? 'text-amber-500' : 'text-red-500';
+  const marginBarClass = summary.margin >= 20 ? 'bg-green-500' : summary.margin >= 10 ? 'bg-amber-500' : 'bg-red-500';
+  const summaryMarginPct = Math.min(100, Math.abs(summary.margin || 0));
+  const summaryMarginWidthClass = summaryMarginPct >= 100 ? 'w-full'
+    : summaryMarginPct >= 90 ? 'w-[90%]'
+      : summaryMarginPct >= 80 ? 'w-[80%]'
+        : summaryMarginPct >= 70 ? 'w-[70%]'
+          : summaryMarginPct >= 60 ? 'w-[60%]'
+            : summaryMarginPct >= 50 ? 'w-1/2'
+              : summaryMarginPct >= 40 ? 'w-[40%]'
+                : summaryMarginPct >= 30 ? 'w-[30%]'
+                  : summaryMarginPct >= 20 ? 'w-1/5'
+                    : summaryMarginPct >= 10 ? 'w-[10%]'
+                      : summaryMarginPct > 0 ? 'w-[5%]'
+                        : 'w-0';
   const cacheLabel = cacheUpdatedAt
     ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
         day: '2-digit',
@@ -360,7 +374,7 @@ export default function ReportsPage() {
         ) : null}
 
         {!loading ? (
-          <section className="metric-grid reports-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+          <section className="metric-grid reports-stats-grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
             <StatCard label="Revenue" value={`₹${fmtN(summary.totalRevenue)}`} note={`${summary.salesCount || 0} invoices`} tone="money" />
             <StatCard label="Profit" value={`₹${fmtN(summary.grossProfit)}`} note={`Margin ${fmt(summary.margin)}%`} tone={summary.grossProfit >= 0 ? 'secondary' : 'danger'} />
             <StatCard label="GST Payable" value={`₹${fmtN(summary.netGST)}`} note={`ITC ₹${fmtN(summary.totalITC)}`} tone="warning" />
@@ -370,7 +384,7 @@ export default function ReportsPage() {
 
         {loading ? (
           <div className="ui-empty">
-            <div style={{ fontSize: 32, marginBottom: 12 }}>Loading</div>
+            <div className="mb-3 text-[32px]">Loading</div>
             <div>Reports are loading...</div>
           </div>
         ) : (
@@ -387,20 +401,13 @@ export default function ReportsPage() {
               <DataRow label="Profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
 
               {(summary.totalRevenue || 0) > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#64748b', marginBottom: 8 }}>
+                <div className="mt-4">
+                  <div className="mb-2 flex justify-between gap-3 text-[12px] text-slate-500">
                     <span>Profit Margin</span>
-                    <strong style={{ color: marginColor }}>{fmt(summary.margin)}%</strong>
+                    <strong className={marginTextClass}>{fmt(summary.margin)}%</strong>
                   </div>
-                  <div style={{ height: 10, background: 'rgba(148,163,184,0.12)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${Math.min(100, Math.abs(summary.margin || 0))}%`,
-                        background: `linear-gradient(90deg, ${marginColor}, ${marginColor}cc)`,
-                        borderRadius: 999,
-                      }}
-                    />
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-400/15">
+                    <div className={`h-full rounded-full ${summaryMarginWidthClass} ${marginBarClass}`} />
                   </div>
                 </div>
               )}
@@ -445,7 +452,7 @@ export default function ReportsPage() {
               </Card>
             )}
 
-            <div className="split-grid reports-split-grid" style={{ marginBottom: 20 }}>
+            <div className="split-grid reports-split-grid mb-5">
               <Card title="Top Products" actions={<ActionButton variant="secondary" onClick={() => exportCSV('products')}>CSV</ActionButton>}>
                 {topProducts.length === 0 ? (
                   <div className="ui-empty">No data</div>
@@ -453,16 +460,16 @@ export default function ReportsPage() {
                   <div className="stack-list">
                     {topProducts.map((product, index) => (
                       <div key={index} className="stack-row">
-                        <div className="stack-row-rank" style={{ background: ['#22c55e', '#06b6d4', '#f59e0b', '#ef4444', '#3b82f6'][index % 5] }}>
+                        <div className={`stack-row-rank ${['bg-green-500', 'bg-cyan-500', 'bg-amber-500', 'bg-red-500', 'bg-blue-500'][index % 5]}`}>
                           {index + 1}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="stack-row-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</div>
-                          <div style={{ fontSize: 11, color: '#9ca3af' }}>{product.qty} units • {product.count} orders</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="stack-row-title truncate whitespace-nowrap">{product.name}</div>
+                          <div className="text-[11px] text-slate-400">{product.qty} units • {product.count} orders</div>
                         </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div className="ui-value-money" style={{ fontSize: 13 }}>₹{fmtN(product.revenue)}</div>
-                          <div className="ui-value-secondary" style={{ fontSize: 11 }}>₹{fmtN(product.profit)} profit</div>
+                        <div className="shrink-0 text-right">
+                          <div className="ui-value-money text-[13px]">₹{fmtN(product.revenue)}</div>
+                          <div className="ui-value-secondary text-[11px]">₹{fmtN(product.profit)} profit</div>
                         </div>
                       </div>
                     ))}
@@ -477,16 +484,16 @@ export default function ReportsPage() {
                   <div className="stack-list">
                     {topCustomers.map((customer, index) => (
                       <div key={index} className="stack-row">
-                        <div className="stack-row-rank" style={{ background: ['#ef4444', '#f59e0b', '#22c55e', '#06b6d4', '#0891b2'][index % 5] }}>
+                        <div className={`stack-row-rank ${['bg-red-500', 'bg-amber-500', 'bg-green-500', 'bg-cyan-500', 'bg-cyan-600'][index % 5]}`}>
                           {customer.name.charAt(0).toUpperCase()}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="stack-row-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.name}</div>
-                          <div style={{ fontSize: 11, color: '#9ca3af' }}>{customer.count} orders{customer.phone ? ` • ${customer.phone}` : ''}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="stack-row-title truncate whitespace-nowrap">{customer.name}</div>
+                          <div className="text-[11px] text-slate-400">{customer.count} orders{customer.phone ? ` • ${customer.phone}` : ''}</div>
                         </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div className="ui-value-money" style={{ fontSize: 13 }}>₹{fmtN(customer.revenue)}</div>
-                          {customer.udhaar > 0 ? <div className="ui-value-danger" style={{ fontSize: 11 }}>₹{fmtN(customer.udhaar)} due</div> : null}
+                        <div className="shrink-0 text-right">
+                          <div className="ui-value-money text-[13px]">₹{fmtN(customer.revenue)}</div>
+                          {customer.udhaar > 0 ? <div className="ui-value-danger text-[11px]">₹{fmtN(customer.udhaar)} due</div> : null}
                         </div>
                       </div>
                     ))}
@@ -497,9 +504,9 @@ export default function ReportsPage() {
 
             {sales.length === 0 && purchases.length === 0 && (
               <div className="ui-empty">
-                <div style={{ fontSize: 40, marginBottom: 12 }}>Chart</div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>No data</div>
-                <div style={{ fontSize: 13 }}>No sales or purchases found for this period.</div>
+                <div className="mb-3 text-[40px]">Chart</div>
+                <div className="mb-1 text-[15px] font-bold">No data</div>
+                <div className="text-[13px]">No sales or purchases found for this period.</div>
               </div>
             )}
           </>

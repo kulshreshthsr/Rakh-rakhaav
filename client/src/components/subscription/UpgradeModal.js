@@ -173,7 +173,7 @@ export default function UpgradeModal({
             </div>
           )}
 
-          {error && <div className="alert-error" style={{ marginBottom: 0 }}>{error}</div>}
+          {error && <div className="alert-error mb-0">{error}</div>}
         </div>
 
         <div className="subscription-modal-footer">

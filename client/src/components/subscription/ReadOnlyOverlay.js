@@ -35,7 +35,7 @@ export default function ReadOnlyOverlay({
           ))}
         </div>
 
-        <div className="subscription-trust-row" style={{ marginTop: 18 }}>
+        <div className="subscription-trust-row mt-[18px]">
           <span>Secure payment via Razorpay</span>
           <span>Cancel anytime</span>
         </div>

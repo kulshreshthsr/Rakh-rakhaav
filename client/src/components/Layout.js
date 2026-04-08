@@ -66,24 +66,28 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
 /* ─── Logo ───────────────────────────────── */
 function Logo({ size = 'md' }) {
   const [err, setErr] = useState(false);
-  const dim    = size === 'sm' ? 34 : size === 'lg' ? 58 : 46;
-  const radius = size === 'sm' ? 12 : size === 'lg' ? 20 : 16;
-  const style  = { width: dim, height: dim, borderRadius: radius };
+  const dim = size === 'sm' ? 34 : size === 'lg' ? 58 : 46;
+  const frameClass = size === 'sm'
+    ? 'h-[34px] w-[34px] rounded-[12px]'
+    : size === 'lg'
+      ? 'h-[58px] w-[58px] rounded-[20px]'
+      : 'h-[46px] w-[46px] rounded-[16px]';
+  const fallbackTextClass = size === 'sm' ? 'text-[14px] font-black' : 'text-[20px] font-black';
 
   if (!err) {
     return (
-      <div className="brand-logo-frame" style={style}>
+      <div className={`brand-logo-frame ${frameClass}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="Rakh-Rakhaav logo" width={dim} height={dim}
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          className="h-full w-full object-contain"
           onError={() => setErr(true)} />
       </div>
     );
   }
 
   return (
-    <div className="brand-logo-fallback" style={style}>
-      <span style={{ fontSize: size === 'sm' ? 14 : 20, fontWeight: 900 }}>R</span>
+    <div className={`brand-logo-fallback ${frameClass}`}>
+      <span className={fallbackTextClass}>R</span>
     </div>
   );
 }
@@ -235,7 +239,7 @@ function LayoutInner({ children }) {
             </div>
 
             {/* User card */}
-            <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <div ref={dropdownRef} className="relative">
               <button type="button" className="sidebar-user-card" onClick={() => setDropdownOpen(v => !v)}>
                 <div className="sidebar-avatar">{initial}</div>
                 <div className="sidebar-user-copy">
@@ -280,7 +284,7 @@ function LayoutInner({ children }) {
           </div>
 
           <div className="mobile-topbar-actions">
-            <div ref={mobileDropRef} style={{ position: 'relative' }}>
+            <div ref={mobileDropRef} className="relative">
               <button type="button" className="mobile-user-chip" onClick={() => setMobileDropOpen(v => !v)}>
                 <div className="mobile-avatar">{initial}</div>
                 <span>{firstName}</span>

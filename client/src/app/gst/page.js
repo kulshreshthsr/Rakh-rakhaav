@@ -574,8 +574,8 @@ export default function GSTPage() {
 
         {!summary ? (
           <div className="ui-empty">
-            <div style={{ fontSize: 40, marginBottom: 12 }}>Tax</div>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>{loading ? 'Loading summary...' : 'Summary unavailable'}</div>
+            <div className="mb-3 text-[40px]">Tax</div>
+            <div className="mb-1 font-bold">{loading ? 'Loading summary...' : 'Summary unavailable'}</div>
           </div>
         ) : (
           <>
@@ -585,7 +585,7 @@ export default function GSTPage() {
               subtitle={`${monthEn} ${year} GST position after ITC set-off`}
               actions={returnStatus ? <StatusBadge tone={returnStatus.ok ? 'success' : 'warning'}>{returnStatus.msg}</StatusBadge> : null}
             >
-              <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+              <div className="metric-grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
                 <StatCard label="Output GST" value={`₹${fmt(gstCollected)}`} note="Collected from sales" tone="money" />
                 <StatCard label="Input GST / ITC" value={`₹${fmt(gstITC)}`} note="Claimed from purchases" tone="secondary" />
                 <StatCard label="Net Position" value={`₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`} note={isPayable ? 'Payable after ITC' : excessCreditTotal > 0 ? 'Unused ITC left' : 'Balanced'} tone={isPayable ? 'danger' : excessCreditTotal > 0 ? 'money' : 'warning'} />
@@ -599,14 +599,14 @@ export default function GSTPage() {
                 value={`₹${fmt(gstCollected)}`}
                 valueTone="ui-value-money"
               />
-              <div style={{ marginTop: 10, marginBottom: 12 }}>
+              <div className="mb-3 mt-2.5">
                 <ActionButton variant="secondary" onClick={() => openDrill('sales')}>
                   {drillType === 'sales' ? 'Hide Sales' : 'View Sales'}
                 </ActionButton>
               </div>
               {drillType === 'sales' ? renderDrillRows('sales') : null}
 
-              <div style={{ height: 1, background: 'rgba(148,163,184,0.14)', margin: '16px 0' }} />
+              <div className="my-4 h-px bg-slate-400/20" />
 
               <DataRow
                 label="GST Input Credit (ITC)"
@@ -614,7 +614,7 @@ export default function GSTPage() {
                 value={`₹${fmt(gstITC)}`}
                 valueTone="ui-value-secondary"
               />
-              <div style={{ marginTop: 10, marginBottom: 12 }}>
+              <div className="mb-3 mt-2.5">
                 <ActionButton variant="secondary" onClick={() => openDrill('purchases')}>
                   {drillType === 'purchases' ? 'Hide Purchases' : 'View Purchases'}
                 </ActionButton>
@@ -622,12 +622,12 @@ export default function GSTPage() {
               {drillType === 'purchases' ? renderDrillRows('purchases') : null}
 
               {gstITC === 0 ? (
-                <div style={{ marginTop: 14 }}>
+                <div className="mt-[14px]">
                   <StatusBadge tone="warning">No ITC claimed - you may be overpaying tax</StatusBadge>
                 </div>
               ) : null}
 
-              <div style={{ marginTop: 16 }}>
+              <div className="mt-4">
                 <DataRow
                   label={isPayable ? 'Net GST Payable' : 'Excess ITC Available'}
                   note="Remaining position after ITC set-off"
@@ -677,16 +677,16 @@ export default function GSTPage() {
               </div>
             </Card>
 
-            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+            <div className="metric-grid grid-cols-2">
               <StatCard label="B2B Invoices" value={String(summary.sales.b2b_count)} note={`Taxable ₹${fmt(summary.sales.b2b_taxable)}`} tone="secondary" />
               <StatCard label="B2C Invoices" value={String(summary.sales.b2c_count)} note={`Taxable ₹${fmt(summary.sales.b2c_taxable)}`} tone="money" />
             </div>
 
             {summary.gstr1.b2b_invoices.length === 0 ? (
               <div className="ui-empty">
-                <div style={{ fontSize: 24, marginBottom: 8 }}>List</div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>No B2B Invoices</div>
-                <div style={{ fontSize: 12 }}>Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
+                <div className="mb-2 text-[24px]">List</div>
+                <div className="mb-1 font-bold">No B2B Invoices</div>
+                <div className="text-[12px]">Sales mein customer ka GSTIN add karo to B2B invoice banega</div>
               </div>
             ) : (
               <Card title="B2B Invoices" subtitle="GSTR-1 filing list">
@@ -719,16 +719,16 @@ export default function GSTPage() {
                   </table>
                 </div>
 
-                <div className="show-xs" style={{ flexDirection: 'column', gap: 10 }}>
+                <div className="show-xs flex-col gap-[10px]">
                   {summary.gstr1.b2b_invoices.map((invoice, index) => (
-                    <div key={index} className="ui-list-card" style={{ alignItems: 'stretch' }}>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                          <strong style={{ color: '#67e8f9' }}>{safeText(invoice.invoice_number)}</strong>
+                    <div key={index} className="ui-list-card items-stretch">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex justify-between gap-2">
+                          <strong className="text-cyan-300">{safeText(invoice.invoice_number)}</strong>
                           <span className="ui-value-money">₹{fmt(invoice.total)}</span>
                         </div>
-                        <div style={{ color: '#0f172a', fontWeight: 700 }}>{safeText(invoice.buyer_name)}</div>
-                        <div style={{ color: '#9ca3af', fontSize: 11 }}>GSTIN: {safeText(invoice.buyer_gstin)} • GST {invoice.gst_rate}%</div>
+                        <div className="font-bold text-slate-900">{safeText(invoice.buyer_name)}</div>
+                        <div className="text-[11px] text-slate-400">GSTIN: {safeText(invoice.buyer_gstin)} • GST {invoice.gst_rate}%</div>
                       </div>
                     </div>
                   ))}
@@ -737,7 +737,7 @@ export default function GSTPage() {
             )}
 
             <Card title="B2C Summary" subtitle="Regular customers without GSTIN">
-              <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+              <div className="metric-grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
                 <StatCard label="Invoices" value={String(summary.gstr1.b2c_summary.count)} note="B2C count" />
                 <StatCard label="Taxable" value={`₹${fmt(summary.gstr1.b2c_summary.taxable_amount)}`} />
                 <StatCard label="GST" value={`₹${fmt(summary.gstr1.b2c_summary.total_gst)}`} tone="secondary" />
@@ -750,13 +750,13 @@ export default function GSTPage() {
               subtitle="Share directly with your CA"
               actions={<StatusBadge tone="neutral">{MONTHS[month - 1]} {year}</StatusBadge>}
             >
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+              <div className="mb-[14px] flex flex-wrap gap-[10px]">
                 <ActionButton variant="primary" onClick={() => exportCSV('gstr1')}>GSTR-1 CSV</ActionButton>
                 <ActionButton variant="secondary" onClick={() => exportCSV('gstr3b')}>GSTR-3B CSV</ActionButton>
                 <ActionButton variant="dark" onClick={exportJSON}>JSON</ActionButton>
               </div>
-              <div style={{ borderTop: '1px solid rgba(148,163,184,0.14)', paddingTop: 14 }}>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 10 }}>
+              <div className="border-t border-slate-400/20 pt-[14px]">
+                <div className="mb-[10px] text-[12px] text-slate-400">
                   Download everything in one ZIP: GSTR1 + GSTR3B, CSV and JSON together.
                 </div>
                 <ActionButton variant="secondary" onClick={exportZIP} disabled={zipping}>

@@ -62,32 +62,32 @@ const DashboardSkeleton = () => (
     <section className="card">
       <div className="page-toolbar">
         <div>
-          <div className="skeleton" style={{ height: 16, width: 110, marginBottom: 8 }} />
-          <div className="skeleton" style={{ height: 28, width: 180 }} />
+          <div className="skeleton mb-2 h-4 w-[110px]" />
+          <div className="skeleton h-7 w-[180px]" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, maxWidth: 260, width: '100%' }}>
-          <div className="skeleton" style={{ height: 44 }} />
-          <div className="skeleton" style={{ height: 44 }} />
+        <div className="grid w-full max-w-[260px] grid-cols-2 gap-2">
+          <div className="skeleton h-11" />
+          <div className="skeleton h-11" />
         </div>
       </div>
     </section>
 
     <section className="metric-grid">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="card" style={{ minHeight: 138 }}>
-          <div className="skeleton" style={{ height: 12, width: 96, marginBottom: 16 }} />
-          <div className="skeleton" style={{ height: 34, width: 120, marginBottom: 12 }} />
-          <div className="skeleton" style={{ height: 12, width: 140 }} />
+        <div key={index} className="card min-h-[138px]">
+          <div className="skeleton mb-4 h-3 w-24" />
+          <div className="skeleton mb-3 h-[34px] w-[120px]" />
+          <div className="skeleton h-3 w-[140px]" />
         </div>
       ))}
     </section>
 
     <section className="card">
-      <div className="skeleton" style={{ height: 16, width: 180, marginBottom: 10 }} />
-      <div className="skeleton" style={{ height: 12, width: 240, marginBottom: 18 }} />
-      <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-        <div className="skeleton" style={{ height: 44 }} />
-        <div className="skeleton" style={{ height: 44 }} />
+      <div className="skeleton mb-2.5 h-4 w-[180px]" />
+      <div className="skeleton mb-[18px] h-3 w-[240px]" />
+      <div className="quick-actions-row grid grid-cols-3 gap-[10px]">
+        <div className="skeleton h-11" />
+        <div className="skeleton h-11" />
       </div>
     </section>
   </div>
@@ -238,12 +238,32 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', tone: 'rgba(16,185,129,0.12)', color: '#10b981', semantic: 'sales' },
-    { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', tone: 'rgba(245,158,11,0.12)', color: '#f59e0b', semantic: 'purchase' },
-    { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', tone: 'rgba(244,63,94,0.12)', color: '#f43f5e', semantic: 'credit' },
-    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', tone: 'rgba(8,145,178,0.12)', color: '#0891b2', semantic: 'stock' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', tone: 'rgba(8,145,178,0.12)', color: '#0891b2', semantic: 'gst' },
-    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', tone: 'rgba(8,145,178,0.12)', color: '#0891b2', semantic: 'premium' },
+    { href: '/sales', icon: 'sales', hi: 'Sales', en: 'Sale', sub: 'Record sale', semantic: 'sales', iconClass: 'bg-emerald-500/10 text-emerald-500' },
+    { href: '/purchases', icon: 'purchase', hi: 'Purchases', en: 'Purchase', sub: 'Record purchase', semantic: 'purchase', iconClass: 'bg-amber-500/10 text-amber-500' },
+    { href: '/udhaar', icon: 'credit', hi: 'Ledger', en: 'Credit', sub: 'Manage ledger', semantic: 'credit', iconClass: 'bg-rose-500/10 text-rose-500' },
+    { href: '/product', icon: 'stock', hi: 'Products', en: 'Product', sub: 'Update stock', semantic: 'stock', iconClass: 'bg-cyan-600/10 text-cyan-600' },
+    { href: '/gst', icon: 'gst', hi: 'GST', en: 'GST', sub: 'Tax summary', semantic: 'gst', iconClass: 'bg-cyan-600/10 text-cyan-600' },
+    { href: '/pricing', icon: 'premium', hi: 'Premium', en: 'Go Pro', sub: 'Unlock premium', semantic: 'premium', iconClass: 'bg-cyan-600/10 text-cyan-600' },
+  ];
+  const progressPct = Math.min(100, Math.abs((profit / (revenue || 1)) * 100));
+  const progressWidthClass = progressPct >= 100 ? 'w-full'
+    : progressPct >= 90 ? 'w-[90%]'
+      : progressPct >= 80 ? 'w-[80%]'
+        : progressPct >= 70 ? 'w-[70%]'
+          : progressPct >= 60 ? 'w-[60%]'
+            : progressPct >= 50 ? 'w-1/2'
+              : progressPct >= 40 ? 'w-[40%]'
+                : progressPct >= 30 ? 'w-[30%]'
+                  : progressPct >= 20 ? 'w-1/5'
+                    : progressPct >= 10 ? 'w-[10%]'
+                      : progressPct > 0 ? 'w-[5%]'
+                        : 'w-0';
+  const topProductRankClass = [
+    'bg-gradient-to-br from-emerald-500 to-emerald-400',
+    'bg-gradient-to-br from-cyan-600 to-cyan-400',
+    'bg-gradient-to-br from-amber-500 to-amber-300',
+    'bg-gradient-to-br from-rose-500 to-rose-400',
+    'bg-gradient-to-br from-blue-600 to-sky-400',
   ];
 
   return (
@@ -269,8 +289,7 @@ export default function DashboardPage() {
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
+                className="form-input h-11 min-w-0"
               >
                 {MONTHS.map((month, index) => (
                   <option key={month} value={index + 1}>{month}</option>
@@ -279,8 +298,7 @@ export default function DashboardPage() {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="form-input"
-                style={{ minWidth: 0, height: 44 }}
+                className="form-input h-11 min-w-0"
               >
                 {[2023, 2024, 2025, 2026].map((year) => (
                   <option key={year} value={year}>{year}</option>
@@ -315,7 +333,7 @@ export default function DashboardPage() {
 
         {revenue > 0 && (
           <section className="card dashboard-section-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginBottom: 18 }}>
+            <div className="mb-[18px] flex flex-wrap justify-between gap-[14px]">
               <div>
                 <div className="section-title">Profit Breakdown</div>
                 <div className="section-subtitle">Revenue, profit and GST health in one snapshot</div>
@@ -323,46 +341,33 @@ export default function DashboardPage() {
               <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
             </div>
 
-            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+            <div className="metric-grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
               {[
-                { label: 'Revenue', value: stats?.totalRevenue, color: '#10b981', prefix: '' },
-                { label: 'Profit', value: profit, color: profit >= 0 ? '#2563eb' : '#dc2626', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Collected', value: stats?.gstCollected, color: '#f59e0b', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, color: '#0891b2', prefix: '-' },
-                { label: 'Net GST', value: netGST, color: netGST >= 0 ? '#f59e0b' : '#10b981', prefix: '' },
+                { label: 'Revenue', value: stats?.totalRevenue, valueClass: 'text-emerald-500', prefix: '' },
+                { label: 'Profit', value: profit, valueClass: profit >= 0 ? 'text-blue-600' : 'text-red-600', prefix: profit >= 0 ? '+' : '' },
+                { label: 'GST Collected', value: stats?.gstCollected, valueClass: 'text-amber-500', prefix: '' },
+                { label: 'ITC', value: stats?.gstITC, valueClass: 'text-cyan-600', prefix: '-' },
+                { label: 'Net GST', value: netGST, valueClass: netGST >= 0 ? 'text-amber-500' : 'text-emerald-500', prefix: '' },
               ].map((item) => (
-                <div
-                  key={item.label}
-                  className="dashboard-breakdown-card"
-                  style={{
-                    padding: 14,
-                    borderRadius: 18,
-                  }}
-                >
-                    <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div key={item.label} className="dashboard-breakdown-card rounded-[18px] p-[14px]">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-600">
                       {item.label}
                     </div>
-                  <div style={{ fontSize: 24, color: item.color, fontWeight: 800, letterSpacing: '-0.05em', marginTop: 8 }}>
+                  <div className={`mt-2 text-[24px] font-extrabold tracking-[-0.05em] ${item.valueClass}`}>
                     {item.prefix}₹{fmt(item.value)}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ marginTop: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: '#475569', marginBottom: 6 }}>
+            <div className="mt-5">
+              <div className="mb-1.5 flex justify-between gap-3 text-[12px] text-slate-600">
                 <span>Profit Margin</span>
-                <strong style={{ color: profit >= 0 ? '#2563eb' : '#dc2626' }}>{margin}%</strong>
+                <strong className={profit >= 0 ? 'text-blue-600' : 'text-red-600'}>{margin}%</strong>
               </div>
-              <div className="dashboard-progress-track" style={{ height: 10, borderRadius: 999, overflow: 'hidden' }}>
+              <div className="dashboard-progress-track h-2.5 overflow-hidden rounded-full">
                 <div
-                  className="dashboard-progress-fill"
-                  style={{
-                    width: `${Math.min(100, Math.abs((profit / (revenue || 1)) * 100))}%`,
-                    height: '100%',
-                    borderRadius: 999,
-                    background: profit >= 0 ? 'linear-gradient(90deg, #16a34a, #0891b2)' : 'linear-gradient(90deg, #dc2626, #f97316)',
-                  }}
+                  className={`dashboard-progress-fill h-full rounded-full ${progressWidthClass} ${profit >= 0 ? 'bg-gradient-to-r from-green-600 to-cyan-600' : 'bg-gradient-to-r from-red-600 to-orange-500'}`}
                 />
               </div>
             </div>
@@ -371,22 +376,20 @@ export default function DashboardPage() {
 
         {lowStockCount > 0 && (
           <section
-            className="card dashboard-section-card dashboard-warning-card"
+            className="card dashboard-section-card dashboard-warning-card cursor-pointer"
             onClick={() => router.push('/product')}
-            style={{ cursor: 'pointer' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="section-title" style={{ color: '#b45309' }}>Low Stock</div>
-                <div className="section-subtitle" style={{ color: '#d97706' }}>
+                <div className="section-title text-amber-700">Low Stock</div>
+                <div className="section-subtitle text-amber-600">
                   {lowStockCount} item{lowStockCount > 1 ? 's are' : ' is'} close to stockout
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+                <div className="mt-[14px] flex flex-wrap gap-2">
                   {lowStockProducts.slice(0, 5).map((product) => (
                     <span
                       key={product._id}
-                      className="dashboard-chip-warning"
-                      style={{ padding: '7px 11px' }}
+                      className="dashboard-chip-warning px-[11px] py-[7px]"
                     >
                       {product.name} ({product.quantity ?? 0})
                     </span>
@@ -394,13 +397,13 @@ export default function DashboardPage() {
                   {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
                 </div>
               </div>
-              <div className="btn-warning" style={{ width: 'auto' }}>Open Products</div>
+              <div className="btn-warning w-auto">Open Products</div>
             </div>
           </section>
         )}
 
-        <section className="card dashboard-section-card" style={{ paddingBottom: 18 }}>
-          <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <section className="card dashboard-section-card pb-[18px]">
+          <div className="mb-[14px] flex flex-wrap items-center justify-between gap-[14px]">
             <div>
               <div className="section-title">Quick Actions</div>
               <div className="section-subtitle">Fast access to your most-used screens</div>
@@ -408,24 +411,18 @@ export default function DashboardPage() {
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
           <div className="quick-actions-carousel">
-            <div className="quick-actions-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+            <div className="quick-actions-row grid grid-cols-3 gap-[10px]">
               {quickActions.map((action) => (
                 <Link
                   key={action.href}
                   href={action.href}
-                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic}`}
-                  style={{
-                    textDecoration: 'none',
-                    borderRadius: 18,
-                    padding: '14px 12px',
-                    minHeight: 94,
-                  }}
+                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic} min-h-[94px] rounded-[18px] px-3 py-[14px] no-underline`}
                 >
-                  <div style={{ display: 'grid', gap: 10, justifyItems: 'start' }}>
-                    <div className="dashboard-quick-icon" style={{ minWidth: 40, height: 40, borderRadius: 10, background: action.tone, color: action.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><QuickActionGlyph name={action.icon} /></div>
+                  <div className="grid justify-items-start gap-[10px]">
+                    <div className={`dashboard-quick-icon flex h-10 min-w-10 shrink-0 items-center justify-center rounded-[10px] ${action.iconClass}`}><QuickActionGlyph name={action.icon} /></div>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.3, color: '#0f172a' }}>{action.hi}</div>
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 1.45 }}>{action.sub}</div>
+                      <div className="text-[13px] font-extrabold leading-[1.3] text-slate-900">{action.hi}</div>
+                      <div className="mt-0.5 text-[11px] leading-[1.45] text-slate-600">{action.sub}</div>
                     </div>
                   </div>
                 </Link>
@@ -441,7 +438,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="card dashboard-section-card">
-          <div style={{ marginBottom: 16 }}>
+          <div className="mb-4">
             <div className="section-title">Top Products</div>
             <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} best performers</div>
           </div>
@@ -451,47 +448,20 @@ export default function DashboardPage() {
               <div>No top products yet for this period.</div>
             </div>
           ) : (
-            <div className="top-products-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
+            <div className="top-products-row grid grid-cols-4 gap-[10px]">
               {topProducts.map((product, index) => (
                 <div
                   key={product.name}
-                  className="dashboard-top-card"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: 14,
-                    borderRadius: 18,
-                    minWidth: 0,
-                  }}
+                  className="dashboard-top-card flex min-w-0 items-center gap-[10px] rounded-[18px] p-[14px]"
                 >
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 14,
-                      background: [
-                        'linear-gradient(135deg, #10b981, #34d399)',
-                        'linear-gradient(135deg, #0891b2, #22d3ee)',
-                        'linear-gradient(135deg, #f59e0b, #fbbf24)',
-                        'linear-gradient(135deg, #ef4444, #fb7185)',
-                        'linear-gradient(135deg, #2563eb, #38bdf8)',
-                      ][index],
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[14px] font-extrabold text-white ${topProductRankClass[index] || topProductRankClass[0]}`}>
                     {index + 1}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                    <div style={{ fontSize: 12, color: '#475569' }}>{product.qty} units sold</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate whitespace-nowrap text-[14px] font-bold text-slate-900">{product.name}</div>
+                    <div className="text-[12px] text-slate-600">{product.qty} units sold</div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#059669', flexShrink: 0 }}>₹{fmt(product.revenue)}</div>
+                  <div className="shrink-0 text-[15px] font-extrabold text-emerald-600">₹{fmt(product.revenue)}</div>
                 </div>
               ))}
             </div>

@@ -181,7 +181,7 @@ export default function CameraBarcodeScanner({
         ) : null}
 
         {continuous && supported ? (
-          <div className="alert-info" style={{ marginBottom: 12 }}>
+          <div className="alert-info mb-3">
             Continuous scan is on. Keep scanning products and tap Close when you are done.
           </div>
         ) : null}
@@ -196,7 +196,7 @@ export default function CameraBarcodeScanner({
         </div>
 
         {lastScannedValue ? (
-          <div className="alert-success" style={{ marginTop: 12 }}>
+          <div className="alert-success mt-3">
             Last scanned: <strong>{lastScannedValue}</strong>
           </div>
         ) : null}

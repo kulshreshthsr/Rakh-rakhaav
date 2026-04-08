@@ -952,14 +952,14 @@ export default function SalesPage() {
 
   const PayBadge = ({ type }) => {
     const map = {
-      cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
-      credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
-      upi:    { bg: '#ecfeff', color: '#0f766e', label: 'UPI' },
-      bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
+      cash:   { cls: 'bg-emerald-100 text-emerald-800', label: 'Cash' },
+      credit: { cls: 'bg-rose-100 text-rose-800', label: 'Credit' },
+      upi:    { cls: 'bg-cyan-50 text-teal-700', label: 'UPI' },
+      bank:   { cls: 'bg-blue-100 text-blue-800', label: 'Bank' },
     };
     const s = map[type] || map.cash;
     return (
-      <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${s.cls}`}>
         {s.label}
       </span>
     );

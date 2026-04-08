@@ -47,7 +47,7 @@ export default function TrialStatusPage() {
 
   return (
     <div className="trial-gate-root">
-      <div className="trial-gate-shell" style={{ gridTemplateColumns: '1fr', maxWidth: 560 }}>
+      <div className="trial-gate-shell grid-cols-1 max-w-[560px]">
         <section className="ui-card trial-status-card">
           <div className="trial-countdown-badge">
             {subscription?.isReadOnly ? 'Trial ended' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
