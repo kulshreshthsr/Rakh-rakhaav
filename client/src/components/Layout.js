@@ -18,6 +18,11 @@ const NAV_ITEMS = [
   { href: '/gst',       key: 'gst',       shortLabel: 'GST',     tone: 'gst'      },
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports', tone: 'reports'  },
 ];
+const MOBILE_BOTTOM_NAV_ITEMS = [
+  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales'    },
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     tone: 'home'     },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase' },
+];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
 const PREFETCH_ROUTES = [...new Set([...NAV_ITEMS.map((item) => item.href), '/pricing', '/reports', '/profile'])];
@@ -59,6 +64,7 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
     logout:     <><path d="M10 7V5.5A2.5 2.5 0 0 1 12.5 3H18a2.5 2.5 0 0 1 2.5 2.5v13A2.5 2.5 0 0 1 18 21h-5.5A2.5 2.5 0 0 1 10 18.5V17" /><path d="M14 12H3.5" /><path d="m7.5 8-4 4 4 4" /></>,
     pricing:    <path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" />,
     language:   <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a15 15 0 0 1 0 18" /><path d="M12 3a15 15 0 0 0 0 18" /></>,
+    menu:       <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
   };
   return <svg {...p}>{icons[name] || <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />}</svg>;
 }
@@ -118,6 +124,7 @@ function LayoutInner({ children }) {
 
   const dropdownRef   = useRef(null);
   const mobileDropRef = useRef(null);
+  const mobileDrawerRef = useRef(null);
   const router   = useRouter();
   const pathname = usePathname();
 
@@ -177,11 +184,27 @@ function LayoutInner({ children }) {
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target))     setDropdownOpen(false);
-      if (mobileDropRef.current && !mobileDropRef.current.contains(e.target)) setMobileDropOpen(false);
+      if (
+        mobileDropRef.current &&
+        !mobileDropRef.current.contains(e.target) &&
+        mobileDrawerRef.current &&
+        !mobileDrawerRef.current.contains(e.target)
+      ) {
+        setMobileDropOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    if (!mobileDropOpen) return undefined;
+    const onEscape = (e) => {
+      if (e.key === 'Escape') setMobileDropOpen(false);
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [mobileDropOpen]);
 
   /* ── Route guards ────────────────────── */
   useEffect(() => {
@@ -213,10 +236,16 @@ function LayoutInner({ children }) {
 
   /* ── Derived ─────────────────────────── */
   const initial   = user?.name?.charAt(0)?.toUpperCase() || '?';
-  const firstName = user?.name?.split(' ')?.[0] || 'Profile';
-
   const translatedNav = useMemo(() => NAV_ITEMS.map(item => ({ ...item, label: t(item.key) })), [t]);
-  const upgradeLabel  = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
+  const mobileBottomNav = useMemo(() => MOBILE_BOTTOM_NAV_ITEMS.map(item => ({ ...item, label: item.shortLabel })), []);
+  const upgradeLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
+  const mobileMenuItems = useMemo(() => [
+    { href: '/profile', key: 'profile', label: 'Profile' },
+    { href: '/pricing', key: 'pricing', label: upgradeLabel },
+    { href: '/product', key: 'products', label: 'Stock' },
+    { href: '/gst', key: 'gst', label: 'GST' },
+    { href: '/reports', key: 'reports', label: 'Reports' },
+  ], [upgradeLabel]);
 
   return (
     <div className="app-shell-root rr-workspace-premium">
@@ -285,25 +314,55 @@ function LayoutInner({ children }) {
 
           <div className="mobile-topbar-actions">
             <div ref={mobileDropRef} className="relative">
-              <button type="button" className="mobile-user-chip" onClick={() => setMobileDropOpen(v => !v)}>
-                <div className="mobile-avatar">{initial}</div>
-                <span>{firstName}</span>
+              <button
+                type="button"
+                className={`mobile-hamburger-btn${mobileDropOpen ? ' is-open' : ''}`}
+                aria-label="Open app menu"
+                aria-expanded={mobileDropOpen}
+                onClick={() => setMobileDropOpen(v => !v)}>
+                <Glyph name="menu" size={20} />
               </button>
-              {mobileDropOpen && (
-                <UserDropdown onProfile={goToProfile} onLogout={logout}
-                  extraItems={<>
-                    <Link href="/pricing"><Glyph name="pricing" size={16} /> Rakhrakhaav Pro</Link>
-                    <Link href="/reports"><Glyph name="reports" size={16} /> Reports</Link>
-                    <Link href="/pricing"><Glyph name="pricing" size={16} /> Pricing</Link>
-                  </>}
-                />
-              )}
             </div>
-            <Link href="/pricing" className={`top-upgrade-chip${subscription?.isPro ? ' is-manage' : ' is-shining'}`}>
-              <Glyph name="pricing" size={14} /> {upgradeLabel}
-            </Link>
           </div>
         </div>
+
+        {mobileDropOpen && (
+          <div className="mobile-nav-drawer-shell" aria-hidden={!mobileDropOpen}>
+            <button
+              type="button"
+              className="mobile-nav-drawer-backdrop"
+              aria-label="Close menu"
+              onClick={() => setMobileDropOpen(false)}
+            />
+            <aside ref={mobileDrawerRef} className="mobile-nav-drawer" role="dialog" aria-label="App menu">
+              <div className="mobile-nav-drawer-header">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/brand-header.png" alt="Rakhrakhaav" className="mobile-brand-image" />
+                <button
+                  type="button"
+                  className="mobile-hamburger-btn"
+                  aria-label="Close app menu"
+                  onClick={() => setMobileDropOpen(false)}>
+                  <Glyph name="menu" size={20} />
+                </button>
+              </div>
+              <nav className="mobile-nav-drawer-menu">
+                {mobileMenuItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={pathname === item.href ? 'is-active' : ''}
+                    onClick={() => setMobileDropOpen(false)}>
+                    <Glyph name={item.key} size={17} /> {item.label}
+                  </Link>
+                ))}
+              </nav>
+              <button type="button" onClick={logout} className="mobile-nav-drawer-logout">
+                <Glyph name="logout" size={17} /> Logout
+              </button>
+            </aside>
+          </div>
+        )}
 
         <SyncStatusBar />
 
@@ -315,14 +374,14 @@ function LayoutInner({ children }) {
         {/* ── Mobile bottom nav ─────────────────── */}
         <nav className="mobile-bottom-nav premium-bottom-nav">
           <div className="mobile-bottom-nav-card">
-            {translatedNav.map(item => (
+            {mobileBottomNav.map(item => (
               <Link key={item.href} href={item.href}
                 className={`mobile-nav-link mobile-nav-tone-${item.tone}${pathname === item.href ? ' is-active' : ''}`}>
                 <span className="mobile-nav-icon-wrap">
                   <span className="mobile-nav-glow" />
                   <Glyph name={item.key} size={18} />
                 </span>
-                <span className="mobile-nav-label">{item.shortLabel}</span>
+                <span className="mobile-nav-label">{item.label}</span>
               </Link>
             ))}
           </div>
