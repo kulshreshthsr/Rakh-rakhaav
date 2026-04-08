@@ -243,6 +243,7 @@ function LayoutInner({ children }) {
     { href: '/profile', key: 'profile', label: 'Profile' },
     { href: '/pricing', key: 'pricing', label: upgradeLabel },
     { href: '/product', key: 'products', label: 'Stock' },
+    { href: '/udhaar', key: 'udhaar', label: 'Udhaar' },
     { href: '/gst', key: 'gst', label: 'GST' },
     { href: '/reports', key: 'reports', label: 'Reports' },
   ], [upgradeLabel]);
