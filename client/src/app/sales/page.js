@@ -1024,8 +1024,8 @@ export default function SalesPage() {
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50 text-slate-900">
-        <div className="mx-auto w-full max-w-7xl px-4 pb-4 pt-10 sm:px-6 sm:pt-12">
-          <header className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mx-auto w-full max-w-7xl px-4 pb-4 pt-4 sm:px-6 sm:pt-6">
+          <header className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold">Sales</h1>
               <p className="text-xs text-slate-400">Billing &amp; Invoices</p>
@@ -1039,7 +1039,7 @@ export default function SalesPage() {
               <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-teal-600 px-4 text-xs font-semibold text-white sm:h-11 sm:px-5 sm:text-sm">✚ Sale</button>
             </div>
           </header>
-          <section className="-mx-1 mb-3 flex gap-2.5 overflow-x-auto px-1 pb-1">
+          <section className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-teal-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Revenue</p><p className="text-2xl font-bold">₹{fmt(revenueDisplay)}</p></div>
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-cyan-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">GST Collected</p><p className="text-2xl font-bold">₹{fmt(gstDisplay)}</p></div>
             <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-indigo-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Total Invoices</p><p className="text-2xl font-bold">{filteredSales.length}</p></div>
