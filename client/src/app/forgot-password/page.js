@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
         setError(data.message || 'Request failed');
       }
     } catch {
-      setError('Server issue aaya. Thodi der baad phir try karein.');
+      setError('Server issue आया. थोड़ी देर बाद फिर try करें.');
     } finally {
       setLoading(false);
     }
@@ -49,10 +49,10 @@ export default function ForgotPasswordPage() {
 
             <div className="mt-[18px] max-w-[420px]">
               <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.04em]">
-                Password reset karke bina business flow lose kiye wapas aaiye.
+                Password reset करके बिना business flow lose किए वापस आइए.
               </h1>
               <p className="mt-3 text-[14px] leading-[1.6] text-white/70">
-                Hum secure reset link bhejenge taaki aap jaldi billing, stock aur reports par wapas aa sakein.
+                हम secure reset link भेजेंगे ताकि आप जल्दी billing, stock और reports पर वापस आ सकें.
               </p>
             </div>
 
@@ -61,14 +61,14 @@ export default function ForgotPasswordPage() {
                 <div className="auth-feature-icon">Lock</div>
                 <div>
                   <div className="auth-feature-title">Secure reset flow</div>
-                  <div className="auth-feature-text">Password reset links account safety ke liye time-limited hote hain.</div>
+                  <div className="auth-feature-text">Password reset links account safety के लिए time-limited होते हैं.</div>
                 </div>
               </div>
               <div className="auth-feature-item">
                 <div className="auth-feature-icon">Fast</div>
                 <div>
                   <div className="auth-feature-title">Quick return to work</div>
-                  <div className="auth-feature-text">Business data change kiye bina dashboard par wapas aayein.</div>
+                  <div className="auth-feature-text">Business data change किए बिना dashboard पर वापस आएं.</div>
                 </div>
               </div>
             </div>
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                 <div className="mb-[14px] text-[46px]">Mail Sent</div>
                 <div className="auth-title mb-2">Email check kariye</div>
                 <div className="auth-subtitle mb-5">
-                  Humne <strong>{email}</strong> par reset link bheja hai. Link 1 hour mein expire ho jayega.
+                  हमने <strong>{email}</strong> पर reset link भेजा है. Link 1 hour में expire हो जाएगा.
                 </div>
                 <a href="/login" className="btn-primary w-full no-underline">
                   Login par wapas
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
             ) : (
               <>
                 <div className="auth-title">Forgot password / Reset help</div>
-                <div className="auth-subtitle">Apna email dijiye aur hum reset link bhej denge.</div>
+                <div className="auth-subtitle">अपना email दीजिए और हम reset link भेज देंगे.</div>
 
                 {error && <div className="alert-error">{error}</div>}
 
@@ -110,13 +110,13 @@ export default function ForgotPasswordPage() {
                   </div>
 
                   <button type="submit" disabled={loading} className="btn-primary mt-1.5 w-full">
-                    {loading ? 'Sending...' : 'Reset link bhejein'}
+                    {loading ? 'Sending...' : 'Reset link भेजें'}
                   </button>
                 </form>
 
                 <div className="auth-note">
-                  Password yaad aa gaya?{' '}
-                  <a href="/login" className="cta-link">Login karein</a>
+                  Password याद आ गया?{' '}
+                  <a href="/login" className="cta-link">Login करें</a>
                 </div>
               </>
             )}

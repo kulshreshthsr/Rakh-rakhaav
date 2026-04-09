@@ -70,21 +70,21 @@ export default function LoginPage() {
             <div className="trust-auth-logo">R</div>
             <div>
               <div className="trust-auth-brand-name">Rakhrakhaav</div>
-              <div className="trust-auth-brand-subtitle">Simple dukaan control for Indian businesses</div>
+              <div className="trust-auth-brand-subtitle">Simple दुकान control for Indian businesses</div>
             </div>
           </div>
 
           <div className="trust-auth-copy trust-auth-copy-compact">
-            <h1>Apna business clear tareeke se chalao.</h1>
-            <p>GST billing, inventory, purchases aur udhaar ek simple blue workspace mein.</p>
+            <h1>अपना business clear तरीके से चलाओ.</h1>
+            <p>GST billing, inventory, purchases और उधार एक simple blue workspace में.</p>
           </div>
         </section>
 
         <section className="trust-auth-card-wrap">
           <div className="trust-auth-card trust-auth-card-login">
             <div className="trust-form-topline">Secure sign in</div>
-            <div className="auth-title">Welcome back / Dobara swagat hai</div>
-            <div className="auth-subtitle">Sign in karke apna business workspace kholiye.</div>
+            <div className="auth-title">Welcome back / दोबारा स्वागत है</div>
+            <div className="auth-subtitle">Sign in करके अपना business workspace खोलिए.</div>
 
             {error && <div className="alert-error">{error}</div>}
 
@@ -135,15 +135,15 @@ export default function LoginPage() {
               </div>
 
               <button type="submit" disabled={loading} className="btn-primary trust-submit-btn">
-                {loading ? 'Signing in...' : 'Login karein'}
+                {loading ? 'Signing in...' : 'Login करें'}
               </button>
             </form>
 
             <div className="trust-auth-divider" />
             <div className="auth-note">
-              Account nahi hai?{' '}
+              Account नहीं है?{' '}
               <Link href="/register" className="cta-link">
-                Free mein account banayein
+                Free में account बनाएं
               </Link>
             </div>
             <div className="trust-auth-legal-note">

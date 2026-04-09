@@ -337,7 +337,7 @@ export default function ReportsPage() {
           <div className="mb-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Business analytics</p>
-              <div className="page-title">Reports / Hisaab</div>
+              <div className="page-title">Reports / हिसाब</div>
               <p className="mt-2 max-w-md text-[13px] leading-relaxed text-slate-600">
                 {label.toLowerCase()} ke liye revenue, profit, GST aur customer trends ek clean view mein.
               </p>

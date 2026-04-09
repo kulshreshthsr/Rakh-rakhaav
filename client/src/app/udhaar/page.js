@@ -342,7 +342,7 @@ export default function UdhaarPage() {
           <div className="page-toolbar">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Parties &amp; payment follow-up</p>
-              <div className="page-title">Udhaar / Credit Ledger</div>
+              <div className="page-title">उधार / Credit Ledger</div>
               {!isOnline ? (
                 <p className="rr-meta-line is-warn">
                   Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
@@ -380,7 +380,7 @@ export default function UdhaarPage() {
 
         <div className="ui-segmented">
           <button type="button" onClick={() => switchTab('customers')} className={`ui-segment ${isCustomer ? 'is-active' : ''}`}>
-            Customers / Grahak ({customers.length})
+            Customers / ग्राहक ({customers.length})
           </button>
           <button type="button" onClick={() => switchTab('suppliers')} className={`ui-segment ${!isCustomer ? 'is-active' : ''}`}>
             Suppliers / Vendor ({suppliers.length})

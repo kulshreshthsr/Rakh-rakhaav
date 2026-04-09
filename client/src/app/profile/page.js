@@ -201,7 +201,7 @@ export default function ProfilePage() {
           <div className="profile-settings-header-line" />
           <div className="profile-settings-tag">Shop profile</div>
           <div className="profile-settings-title">Profile / Shop Settings</div>
-          <div className="profile-settings-subtitle">Shop identity, invoice details aur account setup ko ek jagah se manage karein.</div>
+          <div className="profile-settings-subtitle">Shop identity, invoice details और account setup को एक जगह से manage करें.</div>
         </section>
 
         <section className="profile-user-card profile-settings-stagger">

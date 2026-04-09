@@ -1027,15 +1027,15 @@ export default function SalesPage() {
         <div className="sales-content-wrap mx-auto w-full max-w-7xl px-2 pb-2 pt-1 sm:px-3 sm:pt-2">
           <header className="hero-panel sales-hero sales-header-shell mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Sales / Bechna</h1>
-              <p className="text-xs text-slate-400">Billing, invoice aur customer payment flow</p>
+              <h1 className="text-2xl font-bold">Sales / बेचना</h1>
+              <p className="text-xs text-slate-400">Billing, invoice और customer payment flow</p>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <div className={`inline-flex h-10 items-center rounded-full border px-1 ${form.payment_type === 'credit' ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50'}`}>
                 <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>Cash</button>
                 <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>Credit</button>
               </div>
-              <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-700 sm:h-11 sm:px-4 sm:text-sm">Customers / Grahak</Link>
+              <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-700 sm:h-11 sm:px-4 sm:text-sm">Customers / ग्राहक</Link>
               <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 text-xs font-semibold text-white shadow-lg shadow-blue-600/20 sm:h-11 sm:px-5 sm:text-sm">+ New Sale</button>
             </div>
           </header>

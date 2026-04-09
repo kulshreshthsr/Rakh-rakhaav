@@ -208,46 +208,46 @@ export default function DashboardPage() {
   const lowStockCount = lowStockProducts.length;
   const statCards = [
     {
-      label: 'Aaj ki Bikri',
+      label: 'आज की बिक्री',
       value: `₹${fmt(stats?.totalRevenue)}`,
-      note: `${stats?.salesCount || 0} bill is mahine`,
+      note: `${stats?.salesCount || 0} bill इस महीने`,
       tone: 'secondary',
       href: '/sales',
     },
     {
-      label: 'Munafa',
+      label: 'मुनाफा',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
-      note: revenue > 0 ? `Margin ${margin}%` : 'Report dekhein',
+      note: revenue > 0 ? `Margin ${margin}%` : 'रिपोर्ट देखें',
       tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
     },
     {
-      label: 'Udhaar',
+      label: 'उधार',
       value: `₹${fmt(totalCustomerUdhaar)}`,
-      note: totalCustomerUdhaar > 0 ? 'Collection baaki hai' : 'Sab clear hai',
+      note: totalCustomerUdhaar > 0 ? 'कलेक्शन बाकी है' : 'सब clear है',
       tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
       href: '/udhaar',
     },
     {
       label: 'GST Due',
       value: `₹${fmt(Math.abs(netGST))}`,
-      note: netGST >= 0 ? 'Tax jama karna hai' : 'Refund side',
+      note: netGST >= 0 ? 'Tax जमा करना है' : 'Refund side',
       tone: 'warning',
       href: '/gst',
     },
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'Bechna', en: 'Sale', sub: 'Naya bill banayein', semantic: 'sales', iconClass: 'bg-blue-600/10 text-blue-700' },
-    { href: '/purchases', icon: 'purchase', hi: 'Kharidna', en: 'Purchase', sub: 'Naya purchase likhein', semantic: 'purchase', iconClass: 'bg-sky-500/10 text-sky-700' },
-    { href: '/udhaar', icon: 'credit', hi: 'Udhaar', en: 'Credit', sub: 'Baaki hisaab dekhein', semantic: 'credit', iconClass: 'bg-rose-500/10 text-rose-600' },
-    { href: '/product', icon: 'stock', hi: 'Stock', en: 'Product', sub: 'Maal update karein', semantic: 'stock', iconClass: 'bg-indigo-500/10 text-indigo-700' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'Tax', sub: 'Tax summary kholhein', semantic: 'gst', iconClass: 'bg-cyan-600/10 text-cyan-700' },
-    { href: '/pricing', icon: 'premium', hi: 'Pro', en: 'Premium', sub: 'Aur tools unlock karein', semantic: 'premium', iconClass: 'bg-blue-500/10 text-blue-700' },
+    { href: '/sales', icon: 'sales', hi: 'बेचना', en: 'Sale', sub: 'नया bill बनाएं', semantic: 'sales', iconClass: 'bg-blue-600/10 text-blue-700' },
+    { href: '/purchases', icon: 'purchase', hi: 'खरीदना', en: 'Purchase', sub: 'नया purchase लिखें', semantic: 'purchase', iconClass: 'bg-sky-500/10 text-sky-700' },
+    { href: '/udhaar', icon: 'credit', hi: 'उधार', en: 'Credit', sub: 'बाकी हिसाब देखें', semantic: 'credit', iconClass: 'bg-rose-500/10 text-rose-600' },
+    { href: '/product', icon: 'stock', hi: 'स्टॉक', en: 'Product', sub: 'माल update करें', semantic: 'stock', iconClass: 'bg-indigo-500/10 text-indigo-700' },
+    { href: '/gst', icon: 'gst', hi: 'GST', en: 'Tax', sub: 'Tax summary खोलें', semantic: 'gst', iconClass: 'bg-cyan-600/10 text-cyan-700' },
+    { href: '/pricing', icon: 'premium', hi: 'प्रो', en: 'Premium', sub: 'और tools unlock करें', semantic: 'premium', iconClass: 'bg-blue-500/10 text-blue-700' },
   ];
   const focusPills = [
     `${stats?.salesCount || 0} bill`,
-    `₹${fmt(totalCustomerUdhaar)} udhaar`,
+    `₹${fmt(totalCustomerUdhaar)} उधार`,
     `${lowStockCount} low stock`,
     `${margin}% margin`,
   ];
@@ -279,15 +279,15 @@ export default function DashboardPage() {
           <div className="page-toolbar dashboard-toolbar items-start gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <p className="rr-page-eyebrow">Daily business snapshot</p>
-              <div className="page-title leading-tight">Namaste, aaj ka dukaan dashboard</div>
+              <div className="page-title leading-tight">नमस्ते, आज का दुकान dashboard</div>
               {refreshing ? (
-                <p className="rr-meta-line">Latest numbers refresh ho rahe hain...</p>
+                <p className="rr-meta-line">Latest numbers refresh हो रहे हैं...</p>
               ) : !isOnline ? (
                 <p className="rr-meta-line is-warn">
                   Offline snapshot active{cacheLabel ? ` · last sync ${cacheLabel}` : ''}
                 </p>
               ) : cacheLoaded && cacheLabel ? (
-                <p className="rr-meta-line">Last synced {cacheLabel} · sabse zaroori cheezein neeche ready hain</p>
+                <p className="rr-meta-line">Last synced {cacheLabel} · सबसे ज़रूरी चीजें नीचे ready हैं</p>
               ) : null}
             </div>
 
@@ -325,7 +325,7 @@ export default function DashboardPage() {
           <section className="rr-banner-warn" role="status">
             <strong>Offline mode on</strong>
             <div>
-              Abhi saved snapshot dikh raha hai. Internet aate hi live sales, GST, stock aur udhaar numbers phir se update ho jayenge.
+              अभी saved snapshot दिख रहा है. Internet आते ही live sales, GST, stock और उधार numbers फिर से update हो जाएंगे.
             </div>
           </section>
         ) : null}
@@ -348,8 +348,8 @@ export default function DashboardPage() {
           <section className="card dashboard-section-card">
             <div className="mb-[18px] flex flex-wrap justify-between gap-[14px]">
               <div>
-                <div className="section-title">Paise ka Hisaab</div>
-                <div className="section-subtitle">Bikri, munafa aur GST ek simple view mein</div>
+                <div className="section-title">पैसों का हिसाब</div>
+                <div className="section-subtitle">बिक्री, मुनाफा और GST एक simple view में</div>
               </div>
               <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
             </div>
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                   {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
                 </div>
               </div>
-              <div className="btn-primary w-auto">Stock kholo</div>
+              <div className="btn-primary w-auto">स्टॉक खोलो</div>
             </div>
           </section>
         )}
@@ -418,8 +418,8 @@ export default function DashboardPage() {
         <section className="card dashboard-section-card pb-[18px]">
           <div className="mb-[14px] flex flex-wrap items-center justify-between gap-[14px]">
             <div>
-              <div className="section-title">Jaldi Kaam</div>
-              <div className="section-subtitle">Roz ke sabse useful shortcuts</div>
+              <div className="section-title">जल्दी काम</div>
+              <div className="section-subtitle">रोज़ के सबसे useful shortcuts</div>
             </div>
             <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
           </div>
@@ -471,7 +471,7 @@ export default function DashboardPage() {
                     {index + 1}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate whitespace-nowrap text-[14px] font-bold text-slate-900">{product.name}</div>
+                    <div className="truncate whitespace-nowrap text-[14px] font-bold text-sl5te-900">{product.name}</div>
                     <div className="text-[12px] text-slate-600">{product.qty} units sold</div>
                   </div>
                   <div className="shrink-0 text-[15px] font-extrabold text-emerald-600">₹{fmt(product.revenue)}</div>

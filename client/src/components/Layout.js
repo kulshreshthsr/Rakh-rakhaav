@@ -237,13 +237,13 @@ function LayoutInner({ children }) {
   /* ── Derived ─────────────────────────── */
   const initial   = user?.name?.charAt(0)?.toUpperCase() || '?';
   const bilingualLabels = useMemo(() => ({
-    dashboard: 'Home / Dashboard',
-    products: 'Stock / Products',
-    sales: 'Bechna / Sales',
-    purchases: 'Kharidna / Purchases',
-    udhaar: 'Udhaar / Credit',
+    dashboard: 'होम / Dashboard',
+    products: 'स्टॉक / Products',
+    sales: 'बेचना / Sales',
+    purchases: 'खरीदना / Purchases',
+    udhaar: 'उधार / Credit',
     gst: 'GST / Tax',
-    reports: 'Reports / Hisaab',
+    reports: 'रिपोर्ट / Hisaab',
   }), []);
   const translatedNav = useMemo(
     () => NAV_ITEMS.map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
@@ -252,12 +252,12 @@ function LayoutInner({ children }) {
   const mobileBottomNav = useMemo(() => MOBILE_BOTTOM_NAV_ITEMS.map(item => ({ ...item, label: item.shortLabel })), []);
   const upgradeLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
   const mobileMenuItems = useMemo(() => [
-    { href: '/profile', key: 'profile', label: 'Profile / Dukaan' },
+    { href: '/profile', key: 'profile', label: 'Profile / दुकान' },
     { href: '/pricing', key: 'pricing', label: upgradeLabel },
-    { href: '/product', key: 'products', label: 'Stock / Products' },
-    { href: '/udhaar', key: 'udhaar', label: 'Udhaar / Credit' },
+    { href: '/product', key: 'products', label: 'स्टॉक / Products' },
+    { href: '/udhaar', key: 'udhaar', label: 'उधार / Credit' },
     { href: '/gst', key: 'gst', label: 'GST / Tax' },
-    { href: '/reports', key: 'reports', label: 'Reports / Hisaab' },
+    { href: '/reports', key: 'reports', label: 'रिपोर्ट / Hisaab' },
   ], [upgradeLabel]);
 
   return (
@@ -276,7 +276,7 @@ function LayoutInner({ children }) {
                 <Logo />
                 <div>
                   <div className="brand-title brand-title-hindi">रखरखाव</div>
-                  <div className="brand-subtitle">Blue business workspace for daily dukaan kaam</div>
+                  <div className="brand-subtitle">Blue business workspace for daily दुकान काम</div>
                 </div>
               </div>
             </div>

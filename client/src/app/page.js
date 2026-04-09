@@ -42,15 +42,15 @@ export default function HomePage() {
       <section className="landing-hero">
         <div className="landing-hero-copy">
           <div className="landing-kicker">Blue business workspace for modern Indian dukaan teams</div>
-          <h1>Rakhrakhaav ko use karke stock se invoice tak poora kaam simple aur professional dikhta hai.</h1>
+          <h1>Rakhrakhaav को use करके stock से invoice तक पूरा काम simple और professional दिखता है.</h1>
           <p>
-            Products, GST billing, purchases, udhaar aur reports ko ek mobile-friendly workspace mein manage kariye
+            Products, GST billing, purchases, उधार और reports को एक mobile-friendly workspace में manage करिए
             jo real market use ke liye bana hai.
           </p>
 
           <div className="landing-cta-row">
-            <Link href="/register" className="landing-btn landing-btn-primary">Free trial shuru karein</Link>
-            <Link href="/login" className="landing-btn landing-btn-secondary">Login karein</Link>
+            <Link href="/register" className="landing-btn landing-btn-primary">Free trial शुरू करें</Link>
+            <Link href="/login" className="landing-btn landing-btn-secondary">Login करें</Link>
           </div>
 
           <div className="landing-trust-row">
@@ -65,8 +65,8 @@ export default function HomePage() {
           <div className="landing-dashboard-card">
             <div className="landing-dashboard-top">
               <div>
-                <div className="landing-dashboard-badge">Aaj ka business pulse</div>
-                <div className="landing-dashboard-title">Live dukaan workspace</div>
+                <div className="landing-dashboard-badge">आज का business pulse</div>
+                <div className="landing-dashboard-title">Live दुकान workspace</div>
               </div>
               <div className="landing-live-pill">Live</div>
             </div>
@@ -88,7 +88,7 @@ export default function HomePage() {
                 <small>Reports and exports</small>
               </article>
               <article className="landing-metric-card">
-                <span>Udhaar follow-up</span>
+                <span>उधार follow-up</span>
                 <strong>24</strong>
                 <small>Customer dues visible</small>
               </article>
@@ -101,7 +101,7 @@ export default function HomePage() {
                 <span>Purchase</span>
                 <span>Sales</span>
                 <span>GST</span>
-                <span>Udhaar</span>
+                <span>उधार</span>
                 <span>Reports</span>
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function HomePage() {
         </div>
         <div>
           <strong>Stay logged in</strong>
-          <span>Register karne ke baad aap direct business workspace mein rehte hain, baar baar auth page par nahi jaate.</span>
+          <span>Register करने के बाद आप direct business workspace में रहते हैं, बार बार auth page पर नहीं जाते.</span>
         </div>
       </section>
     </div>

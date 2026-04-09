@@ -16,7 +16,7 @@ const FEATURES = [
   },
   {
     title: 'Free',
-    description: 'Trial-ready workspace ke saath start karein',
+    description: 'Trial-ready workspace के साथ start करें',
   },
   {
     title: 'GST',
@@ -120,9 +120,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="trust-auth-copy trust-auth-copy-register">
-            <h1>Ek baar setup karo. Pehle invoice se hi business professional lagega.</h1>
+            <h1>एक बार setup करो. पहले invoice से ही business professional लगेगा.</h1>
             <p>
-              Apna workspace banao aur billing, stock control, GST aur customer dues ke liye ek clean system use karo.
+              अपना workspace बनाओ और billing, stock control, GST और customer dues के लिए एक clean system use करो.
             </p>
           </div>
 
@@ -139,8 +139,8 @@ export default function RegisterPage() {
         <section className="trust-auth-card-wrap">
           <div className="trust-auth-card trust-auth-card-login trust-auth-card-register">
             <div className="trust-form-topline">Create secure workspace</div>
-            <div className="auth-title">Create account / Naya account banayein</div>
-            <div className="auth-subtitle">Aaj hi apna business workspace shuru karein.</div>
+            <div className="auth-title">Create account / नया account बनाएं</div>
+            <div className="auth-subtitle">आज ही अपना business workspace शुरू करें.</div>
 
             {error && <div className="alert-error">{error}</div>}
 
@@ -170,7 +170,7 @@ export default function RegisterPage() {
                   required
                 />
                 <div className={`trust-helper-text ${normalizedUsername.length > 0 ? (usernameIsValid ? 'is-success' : 'is-error') : ''}`}>
-                  {usernameFeedback || 'Sirf lowercase letters, numbers aur underscore use karein.'}
+                  {usernameFeedback || 'सिर्फ lowercase letters, numbers और underscore use करें.'}
                 </div>
               </div>
 
@@ -190,7 +190,7 @@ export default function RegisterPage() {
                     {showPass ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                <div className="trust-helper-text">Security ke liye kam se kam 6 characters</div>
+                <div className="trust-helper-text">Security के लिए कम से कम 6 characters</div>
                 {password.length > 0 && (
                   <div className="trust-strength-wrap">
                     <div className="trust-strength-bar">
@@ -208,20 +208,20 @@ export default function RegisterPage() {
                   onChange={(e) => setAcceptTerms(e.target.checked)}
                 />
                 <span>
-                  Main <a href="/terms" className="trust-auth-link">Terms</a> aur <a href="/privacy" className="trust-auth-link">Privacy Policy</a> se agree karta/karti hoon
+                  मैं <a href="/terms" className="trust-auth-link">Terms</a> और <a href="/privacy" className="trust-auth-link">Privacy Policy</a> से agree करता/करती हूँ
                 </span>
               </label>
 
               <button type="submit" className="btn-primary trust-submit-btn" disabled={loading}>
-                {loading ? 'Creating account...' : 'Account banayein'}
+                {loading ? 'Creating account...' : 'Account बनाएं'}
               </button>
             </form>
 
             <div className="trust-auth-divider" />
             <div className="auth-note">
-              Account pehle se hai?{' '}
+              Account पहले से है?{' '}
               <Link href="/login" className="cta-link">
-                Login karein
+                Login करें
               </Link>
             </div>
             <div className="trust-auth-legal-note">

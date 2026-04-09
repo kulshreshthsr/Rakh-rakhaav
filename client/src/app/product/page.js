@@ -293,7 +293,7 @@ export default function ProductsPage() {
           <div className="page-toolbar items-center gap-2 sm:gap-4">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Stock control</p>
-              <div className="page-title">Stock / Products</div>
+              <div className="page-title">स्टॉक / Products</div>
               <p className={`rr-meta-line${!isOnline ? ' is-warn' : ''}`}>
                 {refreshing
                   ? 'Latest stock refresh ho raha hai...'
