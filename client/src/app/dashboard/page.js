@@ -275,6 +275,11 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="page-shell dashboard-shell">
+        <Link href="/udhaar" className="dashboard-udhaar-float" aria-label="उधार page खोलें">
+          <span className="dashboard-udhaar-float-kicker">Quick Access</span>
+          <strong>उधार</strong>
+        </Link>
+
         <section className="hero-panel dashboard-hero">
           <div className="page-toolbar dashboard-toolbar items-start gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
