@@ -12,16 +12,16 @@ import { useAppLocale } from './AppLocale';
 const NAV_ITEMS = [
   { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    tone: 'home'     },
   { href: '/product',   key: 'products',  shortLabel: 'Stock',   tone: 'stock'    },
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sales',   tone: 'sales'    },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase' },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit'   },
+  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',    tone: 'sales'    },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',     tone: 'purchase' },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Credit',  tone: 'credit'   },
   { href: '/gst',       key: 'gst',       shortLabel: 'GST',     tone: 'gst'      },
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports', tone: 'reports'  },
 ];
 const MOBILE_BOTTOM_NAV_ITEMS = [
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales'    },
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     tone: 'home'     },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase' },
+  { href: '/sales',     key: 'sales',     shortLabel: 'Sale', tone: 'sales'    },
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home', tone: 'home'     },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',  tone: 'purchase' },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
@@ -236,16 +236,28 @@ function LayoutInner({ children }) {
 
   /* ── Derived ─────────────────────────── */
   const initial   = user?.name?.charAt(0)?.toUpperCase() || '?';
-  const translatedNav = useMemo(() => NAV_ITEMS.map(item => ({ ...item, label: t(item.key) })), [t]);
+  const bilingualLabels = useMemo(() => ({
+    dashboard: 'Home / Dashboard',
+    products: 'Stock / Products',
+    sales: 'Bechna / Sales',
+    purchases: 'Kharidna / Purchases',
+    udhaar: 'Udhaar / Credit',
+    gst: 'GST / Tax',
+    reports: 'Reports / Hisaab',
+  }), []);
+  const translatedNav = useMemo(
+    () => NAV_ITEMS.map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
+    [bilingualLabels, t]
+  );
   const mobileBottomNav = useMemo(() => MOBILE_BOTTOM_NAV_ITEMS.map(item => ({ ...item, label: item.shortLabel })), []);
   const upgradeLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
   const mobileMenuItems = useMemo(() => [
-    { href: '/profile', key: 'profile', label: 'Profile' },
+    { href: '/profile', key: 'profile', label: 'Profile / Dukaan' },
     { href: '/pricing', key: 'pricing', label: upgradeLabel },
-    { href: '/product', key: 'products', label: 'Stock' },
-    { href: '/udhaar', key: 'udhaar', label: 'Udhaar' },
-    { href: '/gst', key: 'gst', label: 'GST' },
-    { href: '/reports', key: 'reports', label: 'Reports' },
+    { href: '/product', key: 'products', label: 'Stock / Products' },
+    { href: '/udhaar', key: 'udhaar', label: 'Udhaar / Credit' },
+    { href: '/gst', key: 'gst', label: 'GST / Tax' },
+    { href: '/reports', key: 'reports', label: 'Reports / Hisaab' },
   ], [upgradeLabel]);
 
   return (
@@ -261,9 +273,10 @@ function LayoutInner({ children }) {
             {/* Brand */}
             <div className="brand-lockup">
               <div className="brand-row">
+                <Logo />
                 <div>
                   <div className="brand-title brand-title-hindi">रखरखाव</div>
-                  <div className="brand-subtitle">आपके व्यापार का भरोसेमंद साथी</div>
+                  <div className="brand-subtitle">Blue business workspace for daily dukaan kaam</div>
                 </div>
               </div>
             </div>
@@ -309,8 +322,11 @@ function LayoutInner({ children }) {
         {/* ── Mobile top bar ────────────────────── */}
         <div className={`mobile-topbar premium-topbar${scrolled ? ' is-scrolled' : ''}`}>
           <div className="mobile-topbar-brand">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand-header.png" alt="Rakhrakhaav" className="mobile-brand-image" />
+            <Logo size="sm" />
+            <div className="mobile-brand-copy">
+              <div className="mobile-brand-title">रखरखाव</div>
+              <div className="mobile-brand-subtitle">Simple business app</div>
+            </div>
           </div>
 
           <div className="mobile-topbar-actions">
@@ -337,8 +353,13 @@ function LayoutInner({ children }) {
             />
             <aside ref={mobileDrawerRef} className="mobile-nav-drawer" role="dialog" aria-label="App menu">
               <div className="mobile-nav-drawer-header">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/brand-header.png" alt="Rakhrakhaav" className="mobile-brand-image" />
+                <div className="mobile-topbar-brand">
+                  <Logo size="sm" />
+                  <div className="mobile-brand-copy">
+                    <div className="mobile-brand-title">रखरखाव</div>
+                    <div className="mobile-brand-subtitle">Simple business app</div>
+                  </div>
+                </div>
                 <button
                   type="button"
                   className="mobile-hamburger-btn"

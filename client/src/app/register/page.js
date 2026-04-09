@@ -8,27 +8,27 @@ import { apiUrl } from '../../lib/api';
 const FEATURES = [
   {
     title: 'Quick setup',
-    description: 'Open your account and move directly into real business actions without extra complexity.',
+    description: 'Account kholo aur seedha real business kaam par jao, extra complexity ke bina.',
   },
   {
     title: 'Made for Indian retail',
-    description: 'Inventory, purchases, dues, and tax workflows are framed for everyday shop operations.',
+    description: 'Inventory, purchases, dues aur tax workflows daily shop use ke hisaab se bane hain.',
   },
   {
     title: 'Free',
-    description: 'Start with a trial-ready workspace',
+    description: 'Trial-ready workspace ke saath start karein',
   },
   {
     title: 'GST',
-    description: 'Built around clean, dependable records',
+    description: 'Clean aur dependable records ke liye built',
   },
   {
     title: 'Mobile',
-    description: 'Designed to feel strong on small screens too',
+    description: 'Small screens par bhi easy use ke liye design kiya gaya hai',
   },
   {
     title: 'Premium support',
-    description: 'Get help when you need it, built for Indian business owners',
+    description: 'Indian business owners ke liye jab zarurat ho tab help',
   },
 ];
 
@@ -110,20 +110,19 @@ export default function RegisterPage() {
     <div className="trust-auth-root trust-auth-root-login trust-auth-root-register">
       <div className="trust-auth-shell trust-auth-shell-login">
         <section className="trust-auth-showcase trust-auth-showcase-register trust-auth-showcase-compact">
-          <div className="trust-auth-kicker">Premium onboarding experience</div>
+          <div className="trust-auth-kicker">Blue onboarding experience</div>
           <div className="trust-auth-brand-row">
             <div className="trust-auth-logo">R</div>
             <div>
-              <div className="trust-auth-brand-name">रखरखाव</div>
-              <div className="trust-auth-brand-subtitle">Launch a focused retail workspace</div>
+              <div className="trust-auth-brand-name">Rakhrakhaav</div>
+              <div className="trust-auth-brand-subtitle">Launch a simple retail workspace</div>
             </div>
           </div>
 
           <div className="trust-auth-copy trust-auth-copy-register">
-            <h1>Set up once. Look professional from the very first invoice.</h1>
+            <h1>Ek baar setup karo. Pehle invoice se hi business professional lagega.</h1>
             <p>
-              Create your workspace and step into a more premium business system for billing, stock control, GST, and
-              customer dues.
+              Apna workspace banao aur billing, stock control, GST aur customer dues ke liye ek clean system use karo.
             </p>
           </div>
 
@@ -140,8 +139,8 @@ export default function RegisterPage() {
         <section className="trust-auth-card-wrap">
           <div className="trust-auth-card trust-auth-card-login trust-auth-card-register">
             <div className="trust-form-topline">Create secure workspace</div>
-            <div className="auth-title">Create account</div>
-            <div className="auth-subtitle">Start managing your business today.</div>
+            <div className="auth-title">Create account / Naya account banayein</div>
+            <div className="auth-subtitle">Aaj hi apna business workspace shuru karein.</div>
 
             {error && <div className="alert-error">{error}</div>}
 
@@ -171,7 +170,7 @@ export default function RegisterPage() {
                   required
                 />
                 <div className={`trust-helper-text ${normalizedUsername.length > 0 ? (usernameIsValid ? 'is-success' : 'is-error') : ''}`}>
-                  {usernameFeedback || 'Use lowercase letters, numbers, and underscore only.'}
+                  {usernameFeedback || 'Sirf lowercase letters, numbers aur underscore use karein.'}
                 </div>
               </div>
 
@@ -191,7 +190,7 @@ export default function RegisterPage() {
                     {showPass ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                <div className="trust-helper-text">Minimum 6 characters for security</div>
+                <div className="trust-helper-text">Security ke liye kam se kam 6 characters</div>
                 {password.length > 0 && (
                   <div className="trust-strength-wrap">
                     <div className="trust-strength-bar">
@@ -209,20 +208,20 @@ export default function RegisterPage() {
                   onChange={(e) => setAcceptTerms(e.target.checked)}
                 />
                 <span>
-                  I agree to the <a href="/terms" className="trust-auth-link">Terms</a> and <a href="/privacy" className="trust-auth-link">Privacy Policy</a>
+                  Main <a href="/terms" className="trust-auth-link">Terms</a> aur <a href="/privacy" className="trust-auth-link">Privacy Policy</a> se agree karta/karti hoon
                 </span>
               </label>
 
               <button type="submit" className="btn-primary trust-submit-btn" disabled={loading}>
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading ? 'Creating account...' : 'Account banayein'}
               </button>
             </form>
 
             <div className="trust-auth-divider" />
             <div className="auth-note">
-              Already have an account?{' '}
+              Account pehle se hai?{' '}
               <Link href="/login" className="cta-link">
-                Sign in
+                Login karein
               </Link>
             </div>
             <div className="trust-auth-legal-note">

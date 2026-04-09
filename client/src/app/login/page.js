@@ -65,26 +65,26 @@ export default function LoginPage() {
     <div className="trust-auth-root trust-auth-root-login">
       <div className="trust-auth-shell trust-auth-shell-login">
         <section className="trust-auth-showcase trust-auth-showcase-login trust-auth-showcase-compact">
-          <div className="trust-auth-kicker">Premium retail operating system</div>
+          <div className="trust-auth-kicker">Blue business workspace</div>
           <div className="trust-auth-brand-row">
             <div className="trust-auth-logo">R</div>
             <div>
-              <div className="trust-auth-brand-name">रखरखाव</div>
-              <div className="trust-auth-brand-subtitle">Focused retail control for Indian businesses</div>
+              <div className="trust-auth-brand-name">Rakhrakhaav</div>
+              <div className="trust-auth-brand-subtitle">Simple dukaan control for Indian businesses</div>
             </div>
           </div>
 
           <div className="trust-auth-copy trust-auth-copy-compact">
-            <h1>Run your business with clarity.</h1>
-            <p>GST billing, inventory, purchases, and udhaar in one focused workspace.</p>
+            <h1>Apna business clear tareeke se chalao.</h1>
+            <p>GST billing, inventory, purchases aur udhaar ek simple blue workspace mein.</p>
           </div>
         </section>
 
         <section className="trust-auth-card-wrap">
           <div className="trust-auth-card trust-auth-card-login">
             <div className="trust-form-topline">Secure sign in</div>
-            <div className="auth-title">Welcome back</div>
-            <div className="auth-subtitle">Sign in to continue running your business with confidence.</div>
+            <div className="auth-title">Welcome back / Dobara swagat hai</div>
+            <div className="auth-subtitle">Sign in karke apna business workspace kholiye.</div>
 
             {error && <div className="alert-error">{error}</div>}
 
@@ -135,15 +135,15 @@ export default function LoginPage() {
               </div>
 
               <button type="submit" disabled={loading} className="btn-primary trust-submit-btn">
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? 'Signing in...' : 'Login karein'}
               </button>
             </form>
 
             <div className="trust-auth-divider" />
             <div className="auth-note">
-              Don&apos;t have an account?{' '}
+              Account nahi hai?{' '}
               <Link href="/register" className="cta-link">
-                Create one free
+                Free mein account banayein
               </Link>
             </div>
             <div className="trust-auth-legal-note">

@@ -292,29 +292,29 @@ export default function ProductsPage() {
         <section className="hero-panel product-hero">
           <div className="page-toolbar items-center gap-2 sm:gap-4">
             <div className="min-w-0">
-              <p className="rr-page-eyebrow">Catalog &amp; inventory</p>
-              <div className="page-title">Products</div>
+              <p className="rr-page-eyebrow">Stock control</p>
+              <div className="page-title">Stock / Products</div>
               <p className={`rr-meta-line${!isOnline ? ' is-warn' : ''}`}>
                 {refreshing
-                  ? 'Refreshing latest inventory…'
+                  ? 'Latest stock refresh ho raha hai...'
                   : !isOnline
                     ? `Offline inventory snapshot${cacheLabel ? ` · last updated ${cacheLabel}` : ''}`
                     : cacheLabel
                       ? `Inventory ready · last synced ${cacheLabel}`
-                      : 'Your complete product catalog'}
+                      : 'Aapka poora stock yahan ready hai'}
               </p>
             </div>
             <button type="button" onClick={openAdd} className="btn-primary w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]" disabled={!isOnline}>
-              + Add
+              + Product
             </button>
           </div>
         </section>
 
         {!isOnline ? (
           <div className="rr-banner-warn" role="status">
-            <strong>Offline inventory mode</strong>
+            <strong>Offline stock mode</strong>
             <div>
-              Products list cached snapshot se dikh rahi hai. Add, edit, delete aur stock actions internet wapas aane par hi chalenge.
+              Products list saved snapshot se dikh rahi hai. Add, edit, delete aur stock actions internet wapas aane par hi chalenge.
             </div>
           </div>
         ) : null}

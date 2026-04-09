@@ -341,14 +341,14 @@ export default function UdhaarPage() {
         <section className="hero-panel ledger-hero">
           <div className="page-toolbar">
             <div className="min-w-0">
-              <p className="rr-page-eyebrow">Parties &amp; credit</p>
-              <div className="page-title">Credit Ledger</div>
+              <p className="rr-page-eyebrow">Parties &amp; payment follow-up</p>
+              <div className="page-title">Udhaar / Credit Ledger</div>
               {!isOnline ? (
                 <p className="rr-meta-line is-warn">
                   Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
                 </p>
               ) : cacheLoaded && cacheLabel ? (
-                <p className="rr-meta-line">Last synced {cacheLabel}</p>
+                <p className="rr-meta-line">Last synced {cacheLabel} · customer aur supplier balance dono yahin milenge</p>
               ) : null}
             </div>
           </div>
@@ -367,23 +367,23 @@ export default function UdhaarPage() {
           <StatCard
             label="Customer Due"
             value={`₹${totalCustomerUdhaar.toFixed(0)}`}
-            note={`${customers.filter((item) => item.totalUdhaar > 0).length} pending • ${customers.length} total`}
+            note={`${customers.filter((item) => item.totalUdhaar > 0).length} pending • ${customers.length} total customers`}
             tone="danger"
           />
           <StatCard
             label="Supplier Due"
             value={`₹${totalSupplierUdhaar.toFixed(0)}`}
-            note={`${suppliers.filter((item) => item.totalUdhaar > 0).length} pending • ${suppliers.length} total`}
+            note={`${suppliers.filter((item) => item.totalUdhaar > 0).length} pending • ${suppliers.length} total suppliers`}
             tone="warning"
           />
         </section>
 
         <div className="ui-segmented">
           <button type="button" onClick={() => switchTab('customers')} className={`ui-segment ${isCustomer ? 'is-active' : ''}`}>
-            Customers ({customers.length})
+            Customers / Grahak ({customers.length})
           </button>
           <button type="button" onClick={() => switchTab('suppliers')} className={`ui-segment ${!isCustomer ? 'is-active' : ''}`}>
-            Suppliers ({suppliers.length})
+            Suppliers / Vendor ({suppliers.length})
           </button>
         </div>
 

@@ -7,24 +7,24 @@ import { getPostAuthRoute, readStoredSubscription } from '../lib/subscription';
 
 const HIGHLIGHTS = [
   {
-    title: 'Fast GST billing',
-    copy: 'Create professional invoices, print instantly, and keep tax-ready records without extra clutter.',
+    title: 'Fast billing, simple flow',
+    copy: 'Jaldi bill banao, print karo, aur GST-ready records ek clean screen mein rakho.',
   },
   {
-    title: 'Inventory that stays clear',
-    copy: 'Track stock, purchases, and product movement in one place built for daily retail work.',
+    title: 'Stock always visible',
+    copy: 'Stock, purchases aur product movement ko ek hi jagah clear tareeke se dekho.',
   },
   {
-    title: 'Udhaar and reports together',
-    copy: 'Follow customer dues, supplier balances, and business reports from the same focused workspace.',
+    title: 'Udhaar plus reports',
+    copy: 'Customer dues, supplier balance aur reports ko ek hi business workspace se handle karo.',
   },
 ];
 
 const TRUST_POINTS = [
-  'Made for Indian retail workflows',
-  'Free trial to start quickly',
+  'Indian dukaan workflow ke liye',
+  'Start karne ke liye free trial',
   'Mobile-first business control',
-  'Billing, GST, stock, and reports in one app',
+  'Billing, GST, stock aur reports ek app mein',
 ];
 
 export default function HomePage() {
@@ -41,16 +41,16 @@ export default function HomePage() {
     <div className="landing-root">
       <section className="landing-hero">
         <div className="landing-hero-copy">
-          <div className="landing-kicker">Retail operating system for growing Indian businesses</div>
-          <h1>Rakhrakhaav makes your business look professional from stock room to invoice.</h1>
+          <div className="landing-kicker">Blue business workspace for modern Indian dukaan teams</div>
+          <h1>Rakhrakhaav ko use karke stock se invoice tak poora kaam simple aur professional dikhta hai.</h1>
           <p>
-            Manage products, GST billing, purchases, udhaar, and business reports in one clean workspace designed for
-            real market use.
+            Products, GST billing, purchases, udhaar aur reports ko ek mobile-friendly workspace mein manage kariye
+            jo real market use ke liye bana hai.
           </p>
 
           <div className="landing-cta-row">
-            <Link href="/register" className="landing-btn landing-btn-primary">Start free trial</Link>
-            <Link href="/login" className="landing-btn landing-btn-secondary">Sign in</Link>
+            <Link href="/register" className="landing-btn landing-btn-primary">Free trial shuru karein</Link>
+            <Link href="/login" className="landing-btn landing-btn-secondary">Login karein</Link>
           </div>
 
           <div className="landing-trust-row">
@@ -65,15 +65,15 @@ export default function HomePage() {
           <div className="landing-dashboard-card">
             <div className="landing-dashboard-top">
               <div>
-                <div className="landing-dashboard-badge">Today&apos;s business pulse</div>
-                <div className="landing-dashboard-title">Live business workspace</div>
+                <div className="landing-dashboard-badge">Aaj ka business pulse</div>
+                <div className="landing-dashboard-title">Live dukaan workspace</div>
               </div>
-              <div className="landing-live-pill">Active</div>
+              <div className="landing-live-pill">Live</div>
             </div>
 
             <div className="landing-metric-grid">
               <article className="landing-metric-card">
-                <span>Invoices</span>
+                <span>Bills</span>
                 <strong>128</strong>
                 <small>Fast billing flow</small>
               </article>
@@ -95,7 +95,7 @@ export default function HomePage() {
             </div>
 
             <div className="landing-flow-card">
-              <div className="landing-flow-heading">Everything connected</div>
+              <div className="landing-flow-heading">Sab kuch connected</div>
               <div className="landing-flow-steps">
                 <span>Product</span>
                 <span>Purchase</span>
@@ -112,7 +112,7 @@ export default function HomePage() {
       <section className="landing-feature-section">
         <div className="landing-section-head">
           <div className="landing-kicker">Why shops choose it</div>
-          <h2>Built for speed, trust, and everyday business clarity</h2>
+          <h2>Roz ke kaam ke liye fast, clear aur bharosemand business system</h2>
         </div>
 
         <div className="landing-feature-grid">
@@ -128,11 +128,11 @@ export default function HomePage() {
       <section className="landing-proof-strip">
         <div>
           <strong>Professional feel</strong>
-          <span>Sharper invoices, cleaner records, and a more serious customer-facing experience.</span>
+          <span>Saaf invoices, better records aur customer-facing experience jo zyada strong lage.</span>
         </div>
         <div>
           <strong>Stay logged in</strong>
-          <span>Once you register, you stay inside your business workspace instead of bouncing back to auth pages.</span>
+          <span>Register karne ke baad aap direct business workspace mein rehte hain, baar baar auth page par nahi jaate.</span>
         </div>
       </section>
     </div>

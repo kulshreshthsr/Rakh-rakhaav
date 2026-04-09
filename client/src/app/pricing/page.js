@@ -8,7 +8,7 @@ import { API, FALLBACK_PLANS, formatCurrency, getToken, mergePlansWithFallback, 
 const PLAN_STYLES = {
   weekly: {
     toneClass: 'pricing-plan-card-starter',
-    badge: 'Trial Pack',
+    badge: 'Starter',
   },
   monthly: {
     toneClass: 'pricing-plan-card-starter',
@@ -28,7 +28,7 @@ const COMPARISON_ROWS = [
   ['Premium billing', true, true, true, true],
   ['GST reports', true, true, true, true],
   ['Inventory & purchases', true, true, true, true],
-  ['Lower effective monthly cost', false, false, true, true],
+  ['Lower monthly cost', false, false, true, true],
 ];
 
 const PLAN_ANIMATION_DELAY_CLASSES = ['delay-[0ms]', 'delay-[100ms]', 'delay-[200ms]', 'delay-[300ms]'];
@@ -79,8 +79,8 @@ export default function PricingPage() {
     <div className="pricing-page-shell pricing-compact-shell">
       <section className="pricing-hero-card">
         <div className="pricing-hero-tag">Choose your plan</div>
-        <h1 className="pricing-hero-title">Select the perfect plan for your business</h1>
-        <p className="pricing-hero-subtitle">Flexible billing options designed for growing Indian retailers</p>
+        <h1 className="pricing-hero-title">Apne business ke liye sahi plan choose kariye</h1>
+        <p className="pricing-hero-subtitle">Flexible billing plans jo Indian retailers ke daily kaam ke liye banaye gaye hain</p>
       </section>
 
       <section className="pricing-plan-stack">
@@ -108,10 +108,10 @@ export default function PricingPage() {
               {plan.savingsLabel ? <div className="pricing-plan-saving">{plan.savingsLabel}</div> : <div className="pricing-plan-saving is-empty" />}
 
               {isSelected ? (
-                <div className="pricing-plan-selected">Selected for checkout</div>
+                <div className="pricing-plan-selected">Checkout ke liye selected</div>
               ) : (
                 <button type="button" className="pricing-select-button" onClick={() => setSelectedPlan(plan.id)}>
-                  Select plan
+                  Plan select karein
                 </button>
               )}
             </article>
@@ -125,10 +125,10 @@ export default function PricingPage() {
           {COMPARISON_ROWS.map(([label, weekly, monthly, sixMonth, yearly]) => (
             <div key={label} className="pricing-compare-row">
               <span>{label}</span>
-              <span>{weekly ? '✓' : '-'}</span>
-              <span>{monthly ? '✓' : '-'}</span>
-              <span>{sixMonth ? '✓' : '-'}</span>
-              <span>{yearly ? '✓' : '-'}</span>
+              <span>{weekly ? 'Yes' : '-'}</span>
+              <span>{monthly ? 'Yes' : '-'}</span>
+              <span>{sixMonth ? 'Yes' : '-'}</span>
+              <span>{yearly ? 'Yes' : '-'}</span>
             </div>
           ))}
         </div>
@@ -140,16 +140,16 @@ export default function PricingPage() {
         <div className="pricing-payment-price">{formatCurrency(selected?.amount || 0)}</div>
         <div className="pricing-payment-note">
           <span aria-hidden="true">i</span>
-          <span>Billed once</span>
+          <span>One-time billing</span>
         </div>
 
         {isLoggedIn ? (
           <button type="button" className="pricing-payment-button" onClick={() => setShowUpgradeModal(true)}>
-            Proceed to checkout
+            Checkout par jao
           </button>
         ) : (
           <Link href="/register" className="pricing-payment-button pricing-payment-link">
-            Unlock now
+            Abhi unlock karein
           </Link>
         )}
       </section>
@@ -161,11 +161,11 @@ export default function PricingPage() {
         </div>
         {isLoggedIn ? (
           <button type="button" className="btn-primary membership-mobile-button" onClick={() => setShowUpgradeModal(true)}>
-            Proceed to checkout
+            Checkout par jao
           </button>
         ) : (
           <Link href="/register" className="btn-primary membership-mobile-button no-underline">
-            Unlock now
+            Abhi unlock karein
           </Link>
         )}
       </div>

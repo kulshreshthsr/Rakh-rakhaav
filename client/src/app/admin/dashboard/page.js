@@ -139,8 +139,8 @@ export default function AdminDashboardPage() {
         <header className="admin-header">
           <div>
             <div className="admin-kicker">Secure Owner Console</div>
-            <h1>Admin Dashboard</h1>
-            <p>Track registered shops, subscription health, expiring trials and user growth from one focused control room.</p>
+            <h1>Admin Dashboard / Control Room</h1>
+            <p>Registered shops, subscription health, expiring trials aur user growth ko ek focused control room se track karein.</p>
           </div>
 
           <button type="button" className="admin-logout-btn" onClick={handleLogout} disabled={loggingOut}>
@@ -164,7 +164,7 @@ export default function AdminDashboardPage() {
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Shop name or phone number"
+              placeholder="Shop name ya phone number"
             />
           </div>
 
@@ -182,7 +182,7 @@ export default function AdminDashboardPage() {
           <div className="admin-table-head">
             <div>
               <h2>Registered Shops</h2>
-              <p>Profile details, plan status, trial dates, and subscription alerts in one place.</p>
+              <p>Profile details, plan status, trial dates aur subscription alerts ek hi jagah.</p>
             </div>
             <div className="admin-table-count">{shops.length} shops</div>
           </div>

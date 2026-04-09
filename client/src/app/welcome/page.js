@@ -7,15 +7,15 @@ import { hasWelcomePending, markTrialGateSeen, readStoredSubscription, setWelcom
 const featureCards = [
   {
     title: 'Fast billing',
-    copy: 'Create invoices, print bills and share them quickly from mobile.',
+    copy: 'Mobile se jaldi invoice banao, bill print karo aur share karo.',
   },
   {
     title: 'GST ready',
-    copy: 'Keep tax data, reports and exports prepared without extra effort.',
+    copy: 'Tax data, reports aur exports ko bina extra tension ke ready rakho.',
   },
   {
     title: 'Inventory + udhaar',
-    copy: 'Track stock, purchases and customer dues from one clean workspace.',
+    copy: 'Stock, purchases aur customer dues ko ek clean workspace se track karo.',
   },
 ];
 
@@ -46,16 +46,16 @@ export default function WelcomePage() {
       <div className="trial-gate-shell trust-welcome-shell">
         <section className="trial-gate-hero trust-welcome-hero">
           <div className="subscription-pill">Welcome to Rakhrakhaav</div>
-          <h1>A premium business cockpit your customers will feel in every interaction.</h1>
+          <h1>Yeh aapka naya blue business workspace hai jo har screen par professional feel deta hai.</h1>
           <p>
-            This experience is built to make your business feel more serious, more reliable, and more modern from the
-            first screen to the final bill.
+            Is experience ko aise design kiya gaya hai ki pehli screen se final bill tak aapka business zyada clear,
+            reliable aur modern lage.
           </p>
 
           <div className="trial-gate-chip-row">
             <span>7-day free trial</span>
-            <span>Sharper premium theme</span>
-            <span>Razorpay-ready upgrades</span>
+            <span>Blue premium theme</span>
+            <span>Mobile-friendly flow</span>
           </div>
 
           <div className="trial-gate-feature-grid">
@@ -71,11 +71,11 @@ export default function WelcomePage() {
         <aside className="trial-gate-sidecard trust-welcome-sidecard">
           <div className="trial-gate-side-kicker">Trial access</div>
           <div className="trial-gate-side-title">
-            {subscription?.trialDaysLeft ? `${subscription.trialDaysLeft} days ready for you` : 'Trial ready to start'}
+            {subscription?.trialDaysLeft ? `${subscription.trialDaysLeft} din ready hain` : 'Trial ready to start'}
           </div>
           <p>
-            Enter the dashboard and explore the new trust-focused visual system, built to make the product feel bold
-            without losing credibility.
+            Dashboard kholo aur naya clean visual system explore karo, jo product ko modern bhi banata hai aur
+            business credibility bhi maintain karta hai.
           </p>
 
           <div className="trust-mini-strip trust-mini-strip-dark">
@@ -85,7 +85,7 @@ export default function WelcomePage() {
           </div>
 
           <button type="button" className="btn-primary trust-submit-btn" onClick={startTrial}>
-            Start your free trial
+            Free trial start karein
           </button>
         </aside>
       </div>

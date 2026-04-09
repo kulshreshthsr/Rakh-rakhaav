@@ -824,15 +824,15 @@ export default function PurchasesPage() {
           <div className="page-toolbar items-center gap-2 sm:gap-4">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Stock inward</p>
-              <div className="page-title">Purchases</div>
-              {refreshing ? <p className="rr-meta-line">Refreshing purchase data…</p> : null}
+              <div className="page-title">Purchases / Kharidna</div>
+              {refreshing ? <p className="rr-meta-line">Latest purchase data refresh ho raha hai...</p> : null}
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               <Link href="/purchases/suppliers" className="btn-ghost w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
-                Suppliers
+                Suppliers / Vendor
               </Link>
               <button type="button" onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
-                + Purchase
+                + New Purchase
               </button>
             </div>
           </div>
@@ -945,7 +945,7 @@ export default function PurchasesPage() {
                     data-purchase-anchor={p._id}
                     className={highlightedPurchaseId === p._id ? 'purchase-row-highlight' : ''}
                   >
-                    <td style={{ color: '#f59e0b', fontWeight: 600, fontSize: 12 }}>
+                    <td style={{ color: '#2563eb', fontWeight: 600, fontSize: 12 }}>
                       {p.invoice_number}
                       {p._isOffline && (
                         (() => {
@@ -989,10 +989,10 @@ export default function PurchasesPage() {
                     <td>₹{(p.taxable_amount || 0).toFixed(2)}</td>
                     <td>
                       {p.total_gst > 0
-                        ? <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
-                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>â€”</span>}
+                        ? <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
+                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>}
                     </td>
-                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
+                    <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
                     <td style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
                     <td>
                       {(p.balance_due || 0) > 0
@@ -1008,7 +1008,7 @@ export default function PurchasesPage() {
                         <button
                           onClick={() => sendPurchaseWhatsApp(p)}
                           className="action-soft whatsapp"
-                          style={{ borderRadius: 999, padding: '6px 10px', marginRight: 6, background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}
+                          style={{ borderRadius: 999, padding: '6px 10px', marginRight: 6 }}
                         >
                           WhatsApp
                         </button>
@@ -1037,8 +1037,8 @@ export default function PurchasesPage() {
               <div key={p._id} className="card"
                 data-purchase-anchor={p._id}
                 style={{
-                  borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#f59e0b'}`,
-                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(8, 145, 178, 0.22), 0 18px 32px rgba(8, 145, 178, 0.12)' : undefined,
+                  borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#2563eb'}`,
+                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(37, 99, 235, 0.22), 0 18px 32px rgba(37, 99, 235, 0.12)' : undefined,
                   transition: 'box-shadow 0.2s ease',
                 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -1048,7 +1048,7 @@ export default function PurchasesPage() {
                         ? `${p.items.length} products`
                         : p.product_name}
                     </div>
-                    <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>{p.invoice_number}</div>
+                    <div style={{ fontSize: 11, color: '#2563eb', fontWeight: 600 }}>{p.invoice_number}</div>
                     {p._isOffline && (
                       (() => {
                         const badge = getOfflineBadgeMeta(p._queueStatus);
@@ -1076,7 +1076,7 @@ export default function PurchasesPage() {
                     {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: 16 }}>
+                    <div style={{ fontWeight: 700, color: '#2563eb', fontSize: 16 }}>
                       ₹{(p.total_amount || 0).toFixed(2)}
                     </div>
                     <PayBadge type={p.payment_type} />
@@ -1085,7 +1085,7 @@ export default function PurchasesPage() {
 
                 <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{(p.taxable_amount || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#0891b2' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
+                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#2563eb' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
                   <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>₹{(p.amount_paid || 0).toFixed(2)}</div></div>
                   {(p.balance_due || 0) > 0 && (
                     <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>₹{p.balance_due.toFixed(2)}</div></div>
@@ -1103,7 +1103,7 @@ export default function PurchasesPage() {
                   {p.supplier_phone ? (
                     <button onClick={() => sendPurchaseWhatsApp(p)}
                       className="action-soft whatsapp"
-                      style={{ width: '100%', padding: '9px', background: '#25D366', color: '#ffffff', borderColor: '#25D366' }}>
+                      style={{ width: '100%', padding: '9px' }}>
                       WhatsApp
                     </button>
                   ) : null}

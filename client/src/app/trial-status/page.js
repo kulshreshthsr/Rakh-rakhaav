@@ -37,12 +37,12 @@ export default function TrialStatusPage() {
   };
 
   const title = subscription?.isReadOnly
-    ? 'Your free trial has ended.'
-    : `Your free trial ends in ${subscription?.trialDaysLeft || 0} day${subscription?.trialDaysLeft === 1 ? '' : 's'}.`;
+    ? 'Aapka free trial khatam ho gaya hai.'
+    : `Aapka free trial ${subscription?.trialDaysLeft || 0} day${subscription?.trialDaysLeft === 1 ? '' : 's'} mein end hoga.`;
 
   const subtitle = subscription?.isReadOnly
-    ? 'Upgrade and continue using billing, GST reports, customer credit and daily workflows without interruption.'
-    : 'Upgrade and continue using our services without interruption once the countdown ends.';
+    ? 'Upgrade karke billing, GST reports, customer credit aur daily workflows ko bina rukawat continue rakhiye.'
+    : 'Countdown khatam hone ke baad bhi bina interruption service continue rakhne ke liye upgrade kariye.';
   const daysLeft = subscription?.trialDaysLeft || 0;
 
   return (
@@ -60,24 +60,24 @@ export default function TrialStatusPage() {
           <div className="trial-benefit-list">
             <div className="trial-benefit-row">
               <span className="trial-benefit-check">✓</span>
-              <span>Continue billing and invoicing without interruption</span>
+              <span>Billing aur invoicing bina interruption continue rakhiye</span>
             </div>
             <div className="trial-benefit-row">
               <span className="trial-benefit-check">✓</span>
-              <span>Keep GST exports and purchase records ready for filing</span>
+              <span>GST exports aur purchase records filing ke liye ready rakhiye</span>
             </div>
             <div className="trial-benefit-row">
               <span className="trial-benefit-check">✓</span>
-              <span>Stay on top of udhaar, customers, and daily cash flow</span>
+              <span>Udhaar, customers aur daily cash flow par control rakhiye</span>
             </div>
           </div>
 
           <div className="trial-gate-action-stack">
             <button type="button" className="btn-primary" onClick={() => router.push('/pricing')}>
-              View subscription plans
+              Plans dekhein
             </button>
             <button type="button" className="btn-ghost" onClick={continueToApp}>
-              Continue to Rakhrakhaav
+              App mein continue karein
             </button>
           </div>
         </section>

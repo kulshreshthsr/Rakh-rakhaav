@@ -1027,28 +1027,28 @@ export default function SalesPage() {
         <div className="sales-content-wrap mx-auto w-full max-w-7xl px-2 pb-2 pt-1 sm:px-3 sm:pt-2">
           <header className="hero-panel sales-hero sales-header-shell mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Sales</h1>
-              <p className="text-xs text-slate-400">Billing &amp; Invoices</p>
+              <h1 className="text-2xl font-bold">Sales / Bechna</h1>
+              <p className="text-xs text-slate-400">Billing, invoice aur customer payment flow</p>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <div className={`inline-flex h-10 items-center rounded-full border px-1 ${form.payment_type === 'credit' ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50'}`}>
                 <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>Cash</button>
                 <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>Credit</button>
               </div>
-              <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-slate-600 sm:h-11 sm:px-4 sm:text-sm">Customers</Link>
-              <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-teal-600 px-4 text-xs font-semibold text-white sm:h-11 sm:px-5 sm:text-sm">✚ Sale</button>
+              <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-700 sm:h-11 sm:px-4 sm:text-sm">Customers / Grahak</Link>
+              <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 text-xs font-semibold text-white shadow-lg shadow-blue-600/20 sm:h-11 sm:px-5 sm:text-sm">+ New Sale</button>
             </div>
           </header>
           <section className="sales-kpi-strip -mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
-            <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-teal-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Revenue</p><p className="text-2xl font-bold">₹{fmt(revenueDisplay)}</p></div>
-            <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-cyan-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">GST Collected</p><p className="text-2xl font-bold">₹{fmt(gstDisplay)}</p></div>
-            <div className="min-w-[180px] rounded-2xl border border-gray-200 border-l-4 border-l-indigo-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Total Invoices</p><p className="text-2xl font-bold">{filteredSales.length}</p></div>
+            <div className="min-w-[180px] rounded-2xl border border-blue-100 border-l-4 border-l-blue-600 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Revenue</p><p className="text-2xl font-bold text-blue-700">₹{fmt(revenueDisplay)}</p></div>
+            <div className="min-w-[180px] rounded-2xl border border-sky-100 border-l-4 border-l-sky-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">GST Collected</p><p className="text-2xl font-bold text-sky-700">₹{fmt(gstDisplay)}</p></div>
+            <div className="min-w-[180px] rounded-2xl border border-indigo-100 border-l-4 border-l-indigo-500 bg-white p-3 shadow-sm"><p className="text-xs text-slate-400">Total Invoices</p><p className="text-2xl font-bold text-indigo-700">{filteredSales.length}</p></div>
           </section>
 
           <section className="sales-filter-card mb-4 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-teal-500" placeholder="Search invoice, customer, phone, product..." value={billSearch} onChange={(e) => setBillSearch(e.target.value)} />
-              <input className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-teal-500 sm:w-52" type="month" value={billMonth} onChange={(e) => setBillMonth(e.target.value)} />
+              <input className="h-11 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-blue-500" placeholder="Search invoice, customer, phone, product..." value={billSearch} onChange={(e) => setBillSearch(e.target.value)} />
+              <input className="h-11 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-blue-500 sm:w-52" type="month" value={billMonth} onChange={(e) => setBillMonth(e.target.value)} />
               {hasBillFilters ? <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); }} className="h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-slate-600">Clear</button> : null}
             </div>
           </section>
@@ -1066,10 +1066,10 @@ export default function SalesPage() {
                     <tbody>
                       {filteredSales.map((s) => (
                         <tr key={s._id} className="border-t border-gray-100">
-                          <td className="px-3 py-3 align-top"><div className="font-mono text-xs font-semibold text-cyan-600">{s.invoice_number}</div>{s._isOffline ? <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />Pending Sync</div> : null}{s._isOffline && s._queueError ? <div className="mt-1 text-xs text-red-600">{s._queueError}</div> : null}</td>
+                          <td className="px-3 py-3 align-top"><div className="font-mono text-xs font-semibold text-blue-600">{s.invoice_number}</div>{s._isOffline ? <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />Pending Sync</div> : null}{s._isOffline && s._queueError ? <div className="mt-1 text-xs text-red-600">{s._queueError}</div> : null}</td>
                           <td className="px-3 py-3 align-top">{s.buyer_name || 'Walk-in Customer'}</td>
                           <td className="px-3 py-3 align-top">{s.items && s.items.length > 1 ? `${s.items.length} items` : s.product_name}</td>
-                          <td className="px-3 py-3 align-top">₹{fmt(s.taxable_amount)}</td><td className="px-3 py-3 align-top">₹{fmt(s.total_gst)}</td><td className="px-3 py-3 align-top font-semibold text-teal-600">₹{fmt(s.total_amount)}</td><td className="px-3 py-3 align-top"><PayBadge type={s.payment_type} /></td><td className="px-3 py-3 align-top text-xs text-slate-500">{formatFullDateTime(s.createdAt || s.sold_at)}</td>
+                          <td className="px-3 py-3 align-top">₹{fmt(s.taxable_amount)}</td><td className="px-3 py-3 align-top">₹{fmt(s.total_gst)}</td><td className="px-3 py-3 align-top font-semibold text-blue-600">₹{fmt(s.total_amount)}</td><td className="px-3 py-3 align-top"><PayBadge type={s.payment_type} /></td><td className="px-3 py-3 align-top text-xs text-slate-500">{formatFullDateTime(s.createdAt || s.sold_at)}</td>
                           <td className="px-3 py-3 align-top"><div className="flex flex-wrap gap-1.5"><button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="rounded-full border border-gray-200 px-2 py-1 text-xs disabled:opacity-50">Edit</button><button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)} className="rounded-full border border-gray-200 px-2 py-1 text-xs disabled:opacity-50">Print</button><button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)} className="rounded-full border border-gray-200 px-2 py-1 text-xs disabled:opacity-50">WhatsApp</button><button onClick={() => handleDelete(s)} className="rounded-full border border-red-200 px-2 py-1 text-xs text-red-600">{s._isOffline ? 'Remove' : 'Delete'}</button></div></td>
                         </tr>
                       ))}
@@ -1079,9 +1079,9 @@ export default function SalesPage() {
                 <div className="sales-mobile-list grid gap-3 md:hidden">
                   {filteredSales.map((s) => (
                     <div key={s._id} className="sales-mobile-card rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-                      <div className="mb-2 flex items-start justify-between"><div><p className="text-sm font-semibold">{s.items && s.items.length > 1 ? `${s.items.length} items` : s.product_name}</p><p className="font-mono text-xs text-cyan-600">{s.invoice_number}</p></div><div className="text-right"><p className="text-base font-bold text-teal-600">₹{fmt(s.total_amount)}</p><PayBadge type={s.payment_type} /></div></div>
+                      <div className="mb-2 flex items-start justify-between"><div><p className="text-sm font-semibold">{s.items && s.items.length > 1 ? `${s.items.length} items` : s.product_name}</p><p className="font-mono text-xs text-blue-600">{s.invoice_number}</p></div><div className="text-right"><p className="text-base font-bold text-blue-600">₹{fmt(s.total_amount)}</p><PayBadge type={s.payment_type} /></div></div>
                       <p className="mb-2 text-xs text-slate-500">{formatFullDateTime(s.createdAt || s.sold_at)}</p>
-                      <div className="mb-2 flex gap-2"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">Taxable ₹{fmt(s.taxable_amount)}</span><span className="rounded-full bg-cyan-50 px-2 py-0.5 text-xs text-cyan-700">GST ₹{fmt(s.total_gst)}</span></div>
+                      <div className="mb-2 flex gap-2"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">Taxable ₹{fmt(s.taxable_amount)}</span><span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">GST ₹{fmt(s.total_gst)}</span></div>
                       <div className="grid grid-cols-2 gap-2"><button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)} className="rounded-xl border border-gray-200 py-2 text-xs disabled:opacity-50">Edit</button><button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)} className="rounded-xl border border-gray-200 py-2 text-xs disabled:opacity-50">Print</button><button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)} className="rounded-xl border border-gray-200 py-2 text-xs disabled:opacity-50">WhatsApp</button><button onClick={() => handleDelete(s)} className="rounded-xl border border-red-200 py-2 text-xs text-red-600">{s._isOffline ? 'Remove' : 'Delete'}</button></div>
                     </div>
                   ))}

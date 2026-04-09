@@ -42,26 +42,26 @@ export default function AdminLoginPage() {
       <div className="admin-auth-shell">
         <section className="admin-auth-panel">
           <div className="admin-auth-badge">Admin Access</div>
-          <h1>Rakh-Rakhaav Admin Dashboard</h1>
+          <h1>Rakhrakhaav Admin Dashboard</h1>
           <p>
-            Monitor registered shops, subscription health, expiring trials and overall growth from one secure workspace.
+            Registered shops, subscription health, expiring trials aur overall growth ko ek secure workspace se monitor karein.
           </p>
 
           <div className="admin-auth-points">
             <div className="admin-auth-point">
               <strong>Live shop data</strong>
-              <span>Shop profile details and subscription status in one place.</span>
+              <span>Shop profile details aur subscription status ek hi jagah.</span>
             </div>
             <div className="admin-auth-point">
               <strong>Secure session</strong>
-              <span>Admin access is protected with JWT and HTTP-only cookies.</span>
+              <span>Admin access JWT aur HTTP-only cookies se protected hai.</span>
             </div>
           </div>
         </section>
 
         <section className="admin-auth-card">
-          <div className="admin-auth-title">Owner Login</div>
-          <div className="admin-auth-subtitle">Use your admin credentials to continue.</div>
+          <div className="admin-auth-title">Owner Login / Admin Sign in</div>
+          <div className="admin-auth-subtitle">Continue karne ke liye apne admin credentials use karein.</div>
 
           {error ? <div className="admin-auth-error">{error}</div> : null}
 
@@ -72,7 +72,7 @@ export default function AdminLoginPage() {
                 type="text"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
-                placeholder="Enter admin username"
+                placeholder="Admin username dijiye"
                 autoComplete="username"
                 required
               />
@@ -84,14 +84,14 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter admin password"
+                placeholder="Admin password dijiye"
                 autoComplete="current-password"
                 required
               />
             </label>
 
             <button type="submit" className="admin-submit-btn" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in to dashboard'}
+              {loading ? 'Signing in...' : 'Dashboard mein login karein'}
             </button>
           </form>
         </section>

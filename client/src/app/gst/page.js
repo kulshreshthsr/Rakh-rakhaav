@@ -537,10 +537,10 @@ export default function GSTPage() {
         <section className="hero-panel gst-hero">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0 flex-1">
-              <p className="rr-page-eyebrow">Compliance</p>
-              <div className="page-title">GST Summary</div>
+              <p className="rr-page-eyebrow">Tax & compliance</p>
+              <div className="page-title">GST / Tax Summary</div>
               <p className="page-subtitle mt-1 max-w-xl">
-                Track collected GST, ITC and filing-ready exports for the selected period.
+                Selected period ke liye collected GST, ITC aur filing-ready exports ek hi jagah dekho.
               </p>
               {!isOnline ? (
                 <p className="rr-meta-line is-warn mt-2">

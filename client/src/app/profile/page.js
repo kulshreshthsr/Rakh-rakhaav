@@ -199,16 +199,16 @@ export default function ProfilePage() {
       <div className="page-shell profile-shell profile-settings-shell">
         <section className="profile-settings-header">
           <div className="profile-settings-header-line" />
-          <div className="profile-settings-tag">Profile Control</div>
-          <div className="profile-settings-title">Profile &amp; Settings</div>
-          <div className="profile-settings-subtitle">Manage shop identity, invoice details and account security in one place.</div>
+          <div className="profile-settings-tag">Shop profile</div>
+          <div className="profile-settings-title">Profile / Shop Settings</div>
+          <div className="profile-settings-subtitle">Shop identity, invoice details aur account setup ko ek jagah se manage karein.</div>
         </section>
 
         <section className="profile-user-card profile-settings-stagger">
           <div className="profile-user-avatar">{user?.name?.charAt(0).toUpperCase() || 'M'}</div>
           <div className="profile-user-copy">
             <div className="profile-user-name">{user?.name || 'Profile & Settings'}</div>
-            <div className="profile-user-note">Manage shop identity, invoice details and account security.</div>
+            <div className="profile-user-note">Shop identity, invoice details aur account security yahan se control hoti hai.</div>
           </div>
         </section>
 
@@ -232,7 +232,7 @@ export default function ProfilePage() {
         <form onSubmit={updateShop} className="profile-settings-form">
           <section className="profile-settings-section profile-settings-stagger">
             <div className="profile-section-title">Shop Details</div>
-            <div className="profile-section-subtitle">GST compliance, billing identity and printed invoice information</div>
+            <div className="profile-section-subtitle">GST, billing identity aur printed invoice information</div>
 
             {shopMsg && <div className="alert-success">{shopMsg}</div>}
             {shopError && <div className="alert-error">{shopError}</div>}
@@ -282,8 +282,8 @@ export default function ProfilePage() {
 
           <section className="profile-settings-section profile-settings-stagger">
             <div className="profile-section-title">Bank Details</div>
-            <div className="profile-section-subtitle">Will appear on invoices when available</div>
-            <div className="profile-section-note">Optional - Add bank details for professional invoices</div>
+            <div className="profile-section-subtitle">Available hone par invoice par dikh jayega</div>
+            <div className="profile-section-note">Optional - professional invoice ke liye bank details add karein</div>
 
             <div className="form-group">
               <label className="form-label">Bank Name</label>
@@ -308,7 +308,7 @@ export default function ProfilePage() {
 
           <section className="profile-settings-section profile-settings-stagger">
             <div className="profile-section-title">Terms &amp; Conditions</div>
-            <div className="profile-section-subtitle">Printed on invoices for cleaner business communication</div>
+            <div className="profile-section-subtitle">Invoice par print hoga for clearer business communication</div>
 
             <div className="form-group">
               <label className="form-label">Terms</label>
