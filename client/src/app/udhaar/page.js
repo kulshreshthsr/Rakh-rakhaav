@@ -383,7 +383,7 @@ export default function UdhaarPage() {
             Customers / ग्राहक ({customers.length})
           </button>
           <button type="button" onClick={() => switchTab('suppliers')} className={`ui-segment ${!isCustomer ? 'is-active' : ''}`}>
-            Suppliers / Vendor ({suppliers.length})
+            Suppliers / आपूर्तिकर्ता ({suppliers.length})
           </button>
         </div>
 

@@ -829,7 +829,7 @@ export default function PurchasesPage() {
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               <Link href="/purchases/suppliers" className="btn-ghost w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
-                Suppliers / Vendor
+                सप्लायर लिस्ट
               </Link>
               <button type="button" onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
                 + New Purchase

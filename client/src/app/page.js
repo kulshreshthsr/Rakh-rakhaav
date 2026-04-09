@@ -39,6 +39,11 @@ export default function HomePage() {
 
   return (
     <div className="landing-root">
+      <Link href="/udhaar" className="landing-udhaar-float" aria-label="उधार page खोलें">
+        <span className="landing-udhaar-float-kicker">Quick Access</span>
+        <strong>उधार</strong>
+      </Link>
+
       <section className="landing-hero">
         <div className="landing-hero-copy">
           <div className="landing-kicker">Blue business workspace for modern Indian dukaan teams</div>

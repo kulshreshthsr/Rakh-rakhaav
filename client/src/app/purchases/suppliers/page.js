@@ -169,7 +169,7 @@ export default function SupplierDirectoryPage() {
           <div className="page-toolbar">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Suppliers</p>
-              <div className="page-title">Supplier Directory / Vendor List</div>
+              <div className="page-title">सप्लायर लिस्ट</div>
               {refreshing ? <p className="rr-meta-line">Refreshing suppliers...</p> : null}
             </div>
             <div className="flex flex-wrap justify-end gap-2">

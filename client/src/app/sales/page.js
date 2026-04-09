@@ -1031,11 +1031,7 @@ export default function SalesPage() {
               <p className="text-xs text-slate-400">Billing, invoice और customer payment flow</p>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <div className={`inline-flex h-10 items-center rounded-full border px-1 ${form.payment_type === 'credit' ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50'}`}>
-                <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>Cash</button>
-                <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>Credit</button>
-              </div>
-              <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-700 sm:h-11 sm:px-4 sm:text-sm">Customers / ग्राहक</Link>
+              <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-3 text-xs font-semibold text-sky-700 shadow-sm shadow-sky-100 sm:h-11 sm:px-4 sm:text-sm">Customer Contacts</Link>
               <button type="button" onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 text-xs font-semibold text-white shadow-lg shadow-blue-600/20 sm:h-11 sm:px-5 sm:text-sm">+ New Sale</button>
             </div>
           </header>
@@ -1094,7 +1090,18 @@ export default function SalesPage() {
       <div className={`fixed inset-0 z-[70] transition-opacity duration-300 ${showModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
         <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
         <aside className={`sales-entry-modal absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100vh-56px)] flex-col rounded-t-2xl bg-white shadow-xl transition-transform duration-300 md:inset-y-0 md:right-0 md:left-auto md:top-0 md:w-[420px] md:max-h-screen md:rounded-none ${showModal ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'}`}>
-          <div className="sticky top-0 z-20 border-b border-gray-200 bg-white px-4 py-3 md:px-6"><div className="flex items-start justify-between"><div><h3 className="text-lg font-bold">{editingSaleId ? 'Edit Sale' : 'New Sale'}</h3><span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${form.payment_type === 'credit' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>{form.payment_type === 'credit' ? 'Credit Sale' : 'Cash Sale'}</span></div><button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="h-9 w-9 rounded-full border border-gray-200 text-xl text-slate-500">×</button></div></div>
+          <div className="sticky top-0 z-20 border-b border-gray-200 bg-white px-4 py-3 md:px-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold">{editingSaleId ? 'Edit Sale' : 'New Sale'}</h3>
+                <div className={`mt-2 inline-flex h-10 items-center rounded-full border px-1 ${form.payment_type === 'credit' ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50'}`}>
+                  <button type="button" onClick={() => updateForm({ payment_type: 'cash', amount_paid: '' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'cash' ? 'bg-emerald-500 text-white' : 'text-slate-600'}`}>कैश</button>
+                  <button type="button" onClick={() => updateForm({ payment_type: 'credit' })} className={`h-8 rounded-full px-3 text-xs font-semibold sm:h-9 sm:px-4 sm:text-sm ${form.payment_type === 'credit' ? 'bg-red-500 text-white' : 'text-slate-600'}`}>उधार</button>
+                </div>
+              </div>
+              <button type="button" onClick={() => { setShowModal(false); resetForm(); }} className="h-9 w-9 rounded-full border border-gray-200 text-xl text-slate-500">×</button>
+            </div>
+          </div>
           <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
             <div className="grid grid-cols-2 gap-3">
               <div><p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Invoice No.</p><div className="flex h-11 items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3 font-mono text-xs text-cyan-600"><span>{invoicePreview}</span><button type="button" onClick={() => navigator?.clipboard?.writeText(invoicePreview)}>📋</button></div></div>
