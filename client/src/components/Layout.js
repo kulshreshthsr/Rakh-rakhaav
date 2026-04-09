@@ -276,7 +276,6 @@ function LayoutInner({ children }) {
                 <Logo />
                 <div>
                   <div className="brand-title brand-title-hindi">रखरखाव</div>
-                  <div className="brand-subtitle">Blue business workspace for daily दुकान काम</div>
                 </div>
               </div>
             </div>

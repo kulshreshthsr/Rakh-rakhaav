@@ -208,7 +208,7 @@ export default function DashboardPage() {
   const lowStockCount = lowStockProducts.length;
   const statCards = [
     {
-      label: 'आज की बिक्री',
+      label: 'महीने की बिक्री',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} bill इस महीने`,
       tone: 'secondary',
@@ -278,8 +278,8 @@ export default function DashboardPage() {
         <section className="hero-panel dashboard-hero">
           <div className="page-toolbar dashboard-toolbar items-start gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
-              <p className="rr-page-eyebrow">Daily business snapshot</p>
-              <div className="page-title leading-tight">नमस्ते, आज का दुकान dashboard</div>
+              <p className="rr-page-eyebrow">Monthly business snapshot</p>
+              <div className="page-title leading-tight">नमस्ते, इस महीने का दुकान dashboard</div>
               {refreshing ? (
                 <p className="rr-meta-line">Latest numbers refresh हो रहे हैं...</p>
               ) : !isOnline ? (
