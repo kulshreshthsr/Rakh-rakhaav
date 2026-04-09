@@ -997,6 +997,86 @@
   .flow-muted-chip { @apply inline-flex items-center gap-1.5 rounded-full border border-cyan-500/15 bg-cyan-50 px-2.5 py-1.5 text-[11px] font-bold text-cyan-700; }
   .sale-entry-modal { display: flex; flex-direction: column; max-height: min(calc(100dvh - 40px), 860px); overflow: hidden; }
   .sale-entry-form { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 2px; padding-bottom: 8px; overscroll-behavior: contain; }
+  .entry-form-shell { display: flex; flex-direction: column; gap: 14px; }
+  .entry-form-shell input:not([type='checkbox']):not([type='radio']),
+  .entry-form-shell select,
+  .entry-form-shell textarea,
+  .entry-form-shell .form-input {
+    border: 1.5px solid rgba(148, 163, 184, 0.42) !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.96)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 1px 3px rgba(15,23,42,0.04);
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+  .entry-form-shell input:not([type='checkbox']):not([type='radio']):focus,
+  .entry-form-shell select:focus,
+  .entry-form-shell textarea:focus,
+  .entry-form-shell .form-input:focus {
+    border-color: rgba(14, 165, 233, 0.68) !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14), 0 12px 24px rgba(14,165,233,0.1);
+    outline: none;
+  }
+  .entry-form-shell ::placeholder { color: #94a3b8; }
+  .entry-form-section {
+    border-radius: 22px;
+    border: 1px solid rgba(148,163,184,0.28);
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.95));
+    padding: 14px;
+    box-shadow: 0 12px 28px rgba(15,23,42,0.06);
+  }
+  .entry-form-section--cool {
+    border-color: rgba(56,189,248,0.28);
+    background: linear-gradient(180deg, rgba(240,249,255,0.96), rgba(255,255,255,0.99));
+  }
+  .entry-form-section--danger {
+    border-color: rgba(248,113,113,0.34);
+    background: linear-gradient(180deg, rgba(254,242,242,0.98), rgba(255,255,255,0.99));
+  }
+  .entry-section-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .entry-section-title { font-size: 12px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #0f172a; }
+  .entry-section-subtitle { margin-top: 4px; font-size: 11px; line-height: 1.45; color: #64748b; }
+  .entry-section-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px; font-size: 10px; font-weight: 800; background: rgba(226,232,240,0.78); color: #475569; }
+  .entry-section-chip--danger { background: rgba(254,226,226,0.96); color: #b91c1c; }
+  .entry-item-card {
+    border-radius: 18px;
+    border: 1px solid rgba(191,219,254,0.92);
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(247,250,255,0.96));
+    padding: 10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 18px rgba(59,130,246,0.08);
+  }
+  .entry-inline-panel {
+    border-radius: 16px;
+    border: 1px solid rgba(96,165,250,0.42);
+    background: linear-gradient(180deg, rgba(239,246,255,0.94), rgba(255,255,255,0.99));
+    padding: 12px;
+    box-shadow: 0 12px 24px rgba(37,99,235,0.08);
+  }
+  .entry-summary-card {
+    border-radius: 20px;
+    border: 1px solid rgba(125,211,252,0.42);
+    background: linear-gradient(135deg, rgba(239,246,255,0.98), rgba(236,254,255,0.95));
+    box-shadow: 0 14px 28px rgba(14,165,233,0.12);
+  }
+  .entry-summary-card--danger {
+    border-color: rgba(252,165,165,0.45);
+    background: linear-gradient(135deg, rgba(254,242,242,0.98), rgba(255,255,255,0.97));
+    box-shadow: 0 14px 28px rgba(239,68,68,0.12);
+  }
+  .entry-add-button {
+    width: 100%;
+    border-radius: 16px;
+    border: 1.5px dashed rgba(148,163,184,0.58);
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.96));
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #334155;
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+  .entry-add-button:hover { transform: translateY(-1px); border-color: rgba(14,165,233,0.45); box-shadow: 0 12px 24px rgba(14,165,233,0.08); }
+  .entry-mode-switch { display: inline-flex; align-items: center; gap: 4px; padding: 4px; border-radius: 999px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.92); }
+  .entry-submit-button { background: linear-gradient(135deg, #0f766e, #0891b2 72%, #38bdf8); box-shadow: 0 16px 28px rgba(8,145,178,0.2); }
+  .entry-cancel-button { background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.95)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.92); }
   .dashboard-shell .dashboard-hero,
   .sales-shell .sales-hero,
   .purchases-shell .purchases-hero,

@@ -1129,7 +1129,7 @@ export default function PurchasesPage() {
       {/* â”€â”€ Modal â”€â”€ */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal flow-modal" style={{ maxWidth: 560 }}>
+          <div className="modal flow-modal purchase-entry-modal" style={{ maxWidth: 560 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
               <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 0, color: '#0f172a' }}>
                 Record Purchase
@@ -1147,7 +1147,7 @@ export default function PurchasesPage() {
             <div className="flow-compact-note">
               Add products first, then choose payment and supplier details.
             </div>
-            <form onSubmit={(e) => e.preventDefault()}>
+            <form onSubmit={(e) => e.preventDefault()} className="entry-form-shell">
 
               {/* Items */}
               <div className="flow-step-panel" style={{ display: purchaseStep === 0 ? 'block' : 'none' }}>
@@ -1159,7 +1159,7 @@ export default function PurchasesPage() {
                   const rowGST = calcRowGST(item);
                   const prod = products.find(p => p._id === item.product_id);
                   return (
-                    <div key={index} style={{ background: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #e2e8f0' }}>
+                    <div key={index} className="entry-item-card" style={{ marginBottom: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
                         {items.length > 1 && (
@@ -1199,7 +1199,7 @@ export default function PurchasesPage() {
                       </div>
 
                       {showInlineProductForm && inlineProductRowIndex === index ? (
-                        <div style={{ background: '#ffffff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                        <div className="entry-inline-panel" style={{ marginBottom: 10 }}>
                           <div style={{ fontSize: 12, fontWeight: 800, color: '#1d4ed8', marginBottom: 4 }}>
                             Naya product yahin add karein
                           </div>
@@ -1353,7 +1353,7 @@ export default function PurchasesPage() {
                 </button>
 
                 {billTotals.total > 0 && (
-                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 14px', marginTop: 14, fontSize: 13 }}>
+                  <div className="entry-summary-card" style={{ padding: '12px 14px', marginTop: 14, fontSize: 13 }}>
                     <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
                     <div style={{ display: 'grid', gap: 4 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1373,7 +1373,7 @@ export default function PurchasesPage() {
               {/* Payment */}
               <div className="flow-step-panel" style={{ display: purchaseStep === 1 ? 'block' : 'none' }}>
                 {billTotals.total > 0 && (
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
+                <div className="entry-summary-card" style={{ padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
                   <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1442,7 +1442,7 @@ export default function PurchasesPage() {
                       placeholder={`Max ₹${billTotals.total.toFixed(2)}`}
                       value={form.amount_paid}
                       onChange={e => updateForm({ amount_paid: e.target.value })} />
-                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
+                    <div className="entry-summary-card entry-summary-card--danger" style={{ padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
                       Balance ₹{balanceDue.toFixed(2)} will be added to the supplier ledger automatically.
                     </div>
                   </div>
