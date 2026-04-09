@@ -238,8 +238,8 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'बेचना', en: 'Sale', sub: 'नया bill बनाएं', semantic: 'sales', iconClass: 'bg-blue-600/10 text-blue-700' },
-    { href: '/purchases', icon: 'purchase', hi: 'खरीदना', en: 'Purchase', sub: 'नया purchase लिखें', semantic: 'purchase', iconClass: 'bg-sky-500/10 text-sky-700' },
+    { href: '/sales', icon: 'sales', hi: 'बेचिए', en: 'Sale', sub: 'नया bill बनाएं', semantic: 'sales', iconClass: 'bg-blue-600/10 text-blue-700' },
+    { href: '/purchases', icon: 'purchase', hi: 'खरीदिए', en: 'Purchase', sub: 'नया purchase लिखें', semantic: 'purchase', iconClass: 'bg-sky-500/10 text-sky-700' },
     { href: '/udhaar', icon: 'credit', hi: 'उधार', en: 'Credit', sub: 'बाकी हिसाब देखें', semantic: 'credit', iconClass: 'bg-rose-500/10 text-rose-600' },
     { href: '/product', icon: 'stock', hi: 'स्टॉक', en: 'Product', sub: 'माल update करें', semantic: 'stock', iconClass: 'bg-indigo-500/10 text-indigo-700' },
     { href: '/gst', icon: 'gst', hi: 'GST', en: 'Tax', sub: 'Tax summary खोलें', semantic: 'gst', iconClass: 'bg-cyan-600/10 text-cyan-700' },

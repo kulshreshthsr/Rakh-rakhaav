@@ -824,7 +824,7 @@ export default function PurchasesPage() {
           <div className="page-toolbar items-center gap-2 sm:gap-4">
             <div className="min-w-0">
               <p className="rr-page-eyebrow">Stock inward</p>
-              <div className="page-title">Purchases / खरीदना</div>
+              <div className="page-title">Purchases / खरीदिए</div>
               {refreshing ? <p className="rr-meta-line">Latest purchase data refresh ho raha hai...</p> : null}
             </div>
             <div className="flex flex-wrap justify-end gap-2">

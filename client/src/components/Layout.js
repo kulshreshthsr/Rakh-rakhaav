@@ -239,8 +239,8 @@ function LayoutInner({ children }) {
   const bilingualLabels = useMemo(() => ({
     dashboard: 'होम / Dashboard',
     products: 'स्टॉक / Products',
-    sales: 'बेचना / Sales',
-    purchases: 'खरीदना / Purchases',
+    sales: 'बेचिए / Sales',
+    purchases: 'खरीदिए / Purchases',
     udhaar: 'उधार / Credit',
     gst: 'GST / Tax',
     reports: 'रिपोर्ट / Hisaab',
