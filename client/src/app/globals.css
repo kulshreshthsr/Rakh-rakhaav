@@ -1436,9 +1436,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 138px;
-  padding: 16px 18px;
-  border-radius: 24px;
+  min-width: 108px;
+  padding: 12px 14px;
+  border-radius: 18px;
   text-decoration: none;
   color: #ffffff;
   background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
@@ -1461,7 +1461,7 @@
 }
 
 .landing-udhaar-float strong {
-  font-size: 34px;
+  font-size: 26px;
   line-height: 1;
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -1475,9 +1475,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 138px;
-  padding: 16px 18px;
-  border-radius: 24px;
+  min-width: 108px;
+  padding: 12px 14px;
+  border-radius: 18px;
   text-decoration: none;
   color: #ffffff;
   background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
@@ -1500,7 +1500,7 @@
 }
 
 .dashboard-udhaar-float strong {
-  font-size: 34px;
+  font-size: 26px;
   line-height: 1;
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -1961,26 +1961,26 @@
     right: 14px;
     top: auto;
     bottom: calc(88px + env(safe-area-inset-bottom));
-    min-width: 112px;
-    padding: 12px 14px;
-    border-radius: 20px;
+    min-width: 98px;
+    padding: 10px 12px;
+    border-radius: 16px;
   }
 
   .landing-udhaar-float strong {
-    font-size: 28px;
+    font-size: 22px;
   }
 
   .dashboard-udhaar-float {
     right: 14px;
     top: auto;
     bottom: calc(88px + env(safe-area-inset-bottom));
-    min-width: 112px;
-    padding: 12px 14px;
-    border-radius: 20px;
+    min-width: 98px;
+    padding: 10px 12px;
+    border-radius: 16px;
   }
 
   .dashboard-udhaar-float strong {
-    font-size: 28px;
+    font-size: 22px;
   }
 
   .landing-hero-copy,
