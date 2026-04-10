@@ -820,21 +820,28 @@ export default function PurchasesPage() {
   return (
     <Layout>
       <div className="page-shell purchases-shell">
-        <section className="hero-panel purchases-hero">
-          <div className="page-toolbar items-center gap-2 sm:gap-4">
-            <div className="min-w-0">
-              <p className="rr-page-eyebrow">Stock inward</p>
-              <div className="page-title">Purchases / खरीदिए</div>
-              {refreshing ? <p className="rr-meta-line">Latest purchase data refresh ho raha hai...</p> : null}
-            </div>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Link href="/purchases/suppliers" className="btn-ghost w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
-                सप्लायर लिस्ट
-              </Link>
-              <button type="button" onClick={() => { resetModal(); setShowModal(true); }} className="btn-primary w-auto shrink-0 px-3 py-2 text-[12px] sm:px-4 sm:py-2.5 sm:text-[13px]">
-                + New Purchase
-              </button>
-            </div>
+        <section className="hero-panel purchases-hero sales-header-shell mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold">Purchases / खरीदिए</h1>
+            <p className="text-xs text-slate-400">
+              Supplier billing, stock inward और purchase payment flow
+              {refreshing ? ' · latest purchase data refresh ho raha hai...' : ''}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <Link
+              href="/purchases/suppliers"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-3 text-xs font-semibold text-sky-700 shadow-sm shadow-sky-100 sm:h-11 sm:px-4 sm:text-sm"
+            >
+              सप्लायर लिस्ट
+            </Link>
+            <button
+              type="button"
+              onClick={() => { resetModal(); setShowModal(true); }}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 text-xs font-semibold text-white shadow-lg shadow-blue-600/20 sm:h-11 sm:px-5 sm:text-sm"
+            >
+              + New Purchase
+            </button>
           </div>
         </section>
 
