@@ -13,6 +13,7 @@ const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisga
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
 
 const getToken = () => localStorage.getItem('token');
+const fmt = (n) => Number(n || 0).toFixed(2);
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const GSTIN_LENGTH = 15;
 const PURCHASES_CACHE_KEY = 'purchases-page';
@@ -41,16 +42,6 @@ const getMonthFilterValue = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-};
-const monthInputWrapStyle = { position: 'relative', minWidth: 180 };
-const monthInputHintStyle = {
-  position: 'absolute',
-  left: 16,
-  top: '50%',
-  transform: 'translateY(-50%)',
-  color: '#9ca3af',
-  fontSize: 14,
-  pointerEvents: 'none',
 };
 const getPurchaseSearchText = (purchase) => {
   const itemNames = Array.isArray(purchase.items) ? purchase.items.map((item) => item.product_name || '').join(' ') : '';
@@ -156,16 +147,23 @@ const buildPurchaseWhatsAppMessage = (purchase) => {
 
 const getOfflineBadgeMeta = (status) => {
   if (status === 'syncing') {
-    return { label: 'Syncing...', background: '#dbeafe', color: '#1d4ed8' };
+    return { label: 'Syncing...', color: 'text-blue-700 bg-blue-50 border-blue-200' };
   }
   if (status === 'failed') {
-    return { label: 'Sync failed', background: '#fee2e2', color: '#b91c1c' };
+    return { label: 'Sync failed', color: 'text-rose-700 bg-rose-50 border-rose-200' };
   }
   if (status === 'abandoned') {
-    return { label: 'Sync retry needed', background: '#fde68a', color: '#92400e' };
+    return { label: 'Sync retry needed', color: 'text-amber-700 bg-amber-50 border-amber-200' };
   }
-  return { label: 'Sync pending', background: '#f59e0b', color: '#000' };
+  return { label: 'Sync pending', color: 'text-amber-700 bg-amber-50 border-amber-200' };
 };
+const PAY_BADGE = {
+  cash: { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Cash' },
+  credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200', label: 'Credit' },
+  upi: { cls: 'bg-cyan-50 text-cyan-700 border-cyan-200', label: 'UPI' },
+  bank: { cls: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Bank' },
+};
+const INPUT = 'h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all';
 
 const buildOfflinePurchaseItems = (rawItems, products) => (
   (rawItems || []).map((item) => {
@@ -786,20 +784,9 @@ export default function PurchasesPage() {
     setShowModal(true);
   };
 
-  // â”€â”€ Payment type badge helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const PayBadge = ({ type }) => {
-    const map = {
-      cash:   { bg: '#dcfce7', color: '#166534', label: 'Cash' },
-      credit: { bg: '#fee2e2', color: '#991b1b', label: 'Credit' },
-      upi:    { bg: '#ecfeff', color: '#0f766e', label: 'UPI' },
-      bank:   { bg: '#dbeafe', color: '#1e40af', label: 'Bank' },
-    };
-    const s = map[type] || map.cash;
-    return (
-      <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
-        {s.label}
-      </span>
-    );
+    const s = PAY_BADGE[type] || PAY_BADGE.cash;
+    return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border ${s.cls}`}>{s.label}</span>;
   };
 
   const pendingOfflinePurchases = purchases.filter((purchase) => purchase?._isOffline);
@@ -819,756 +806,481 @@ export default function PurchasesPage() {
 
   return (
     <Layout>
-      <div className="page-shell purchases-shell">
-        <section className="hero-panel purchases-hero sales-header-shell mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold">Purchases / खरीदिए</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <Link
-              href="/purchases/suppliers"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-3 text-xs font-semibold text-sky-700 shadow-sm shadow-sky-100 sm:h-11 sm:px-4 sm:text-sm"
-            >
-              सप्लायर लिस्ट
-            </Link>
-            <button
-              type="button"
-              onClick={() => { resetModal(); setShowModal(true); }}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-blue-600 px-4 text-xs font-semibold text-white shadow-lg shadow-blue-600/20 sm:h-11 sm:px-5 sm:text-sm"
-            >
-              + New Purchase
-            </button>
-          </div>
-        </section>
-
-        <section className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Total Spend</div>
-            <div className="metric-value" style={{ color: '#b45309' }}>₹{totalSpendDisplay.toFixed(2)}</div>
-            <div className="metric-note">Purchase outflow</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Input GST</div>
-            <div className="metric-value" style={{ color: '#1d4ed8' }}>₹{totalItcDisplay.toFixed(2)}</div>
-            <div className="metric-note">ITC available</div>
-          </div>
-          <div className="metric-card" style={{ cursor: 'default' }}>
-            <div className="metric-label">Balance Due</div>
-            <div className="metric-value" style={{ color: totalDueDisplay > 0 ? '#dc2626' : '#0f766e' }}>₹{totalDueDisplay.toFixed(2)}</div>
-            <div className="metric-note">Supplier credit outstanding</div>
-            {totalDueDisplay > 0 ? (
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
+        <div className="relative overflow-hidden mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/40 p-5 shadow-sm">
+          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-cyan-200/30 blur-3xl" />
+          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700">
+                Purchase Hub
+              </span>
+              <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight tracking-tight">
+                Purchases / खरीदिए
+              </h1>
+              <p className="mt-1 text-[13px] text-slate-500">
+                Supplier bills, ITC, and payable balance in the same visual flow as sales.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                href="/purchases/suppliers"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-sm hover:-translate-y-px hover:shadow-md transition-all"
+              >
+                सप्लायर लिस्ट
+              </Link>
               <button
                 type="button"
-                onClick={focusPendingPurchase}
-                style={{ marginTop: 10, padding: 0, border: 'none', background: 'none', color: '#0891b2', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                onClick={() => { resetModal(); setShowModal(true); }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
               >
-                Pay Now
+                + New Purchase
               </button>
-            ) : null}
-          </div>
-        </section>
-
-        {pendingOfflinePurchases.length > 0 ? (
-          <div className="rr-banner-warn" role="status">
-            <strong>{pendingOfflinePurchases.length} offline purchase{pendingOfflinePurchases.length > 1 ? 's' : ''} pending</strong>
-            <div>
-              Ye purchase entries local queue me saved hain. Internet aate hi sync ho jayengi. Pending entries ko ab remove bhi kar sakte ho.
             </div>
           </div>
-        ) : null}
+        </div>
 
-        <div className="toolbar-card">
-          <div className="toolbar">
+        {pendingOfflinePurchases.length > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <span className="text-xl">📶</span>
+            <div className="flex-1">
+              <div className="text-[13px] font-black text-amber-800">
+                {pendingOfflinePurchases.length} offline purchase{pendingOfflinePurchases.length > 1 ? 's' : ''} pending
+              </div>
+              <div className="text-[11px] text-amber-600">
+                Ye purchase entries local queue me saved hain. Internet aate hi sync ho jayengi.
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          {[
+            { label: 'Total Spend', value: `₹${fmt(totalSpendDisplay)}`, cls: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
+            { label: 'Input GST', value: `₹${fmt(totalItcDisplay)}`, cls: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
+            { label: 'Balance Due', value: `₹${fmt(totalDueDisplay)}`, cls: totalDueDisplay > 0 ? 'text-rose-700' : 'text-emerald-700', bg: totalDueDisplay > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200' },
+          ].map((k) => (
+            <div key={k.label} className={`${k.bg} border rounded-2xl p-3 shadow-sm`}>
+              <div className={`text-[18px] sm:text-[20px] font-black leading-none ${k.cls}`}>{k.value}</div>
+              <div className="mt-1 text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wide">{k.label}</div>
+              {k.label === 'Balance Due' && totalDueDisplay > 0 && (
+                <button type="button" onClick={focusPendingPurchase} className="mt-2 text-[11px] font-black text-cyan-600 hover:text-cyan-700">
+                  Pay Now
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm mb-4">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
-              className="form-input"
-              style={{ flex: 1, minWidth: 220 }}
+              className="flex-1 h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
               placeholder="Search bill, supplier, phone or product..."
               value={billSearch}
               onChange={(e) => setBillSearch(e.target.value)}
             />
-            <div style={monthInputWrapStyle}>
-              {!billMonth ? <span style={monthInputHintStyle}>Select month and year</span> : null}
-              <input
-                className="form-input"
-                style={{ minWidth: 180, position: 'relative', background: 'transparent' }}
-                type="month"
-                value={billMonth}
-                onChange={(e) => setBillMonth(e.target.value)}
-              />
-            </div>
-            {hasBillFilters ? (
-              <button type="button" className="btn-ghost" style={{ width: 'auto' }} onClick={() => { setBillSearch(''); setBillMonth(''); }}>
+            <input
+              className="h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all sm:w-40"
+              type="month"
+              value={billMonth}
+              onChange={(e) => setBillMonth(e.target.value)}
+            />
+            {hasBillFilters && (
+              <button
+                type="button"
+                onClick={() => { setBillSearch(''); setBillMonth(''); }}
+                className="h-10 px-4 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+              >
                 Clear
               </button>
-            ) : null}
+            )}
           </div>
         </div>
 
         {error && !showModal && (
-          <div className="alert-error">
-          {error}
+          <div className="mb-4 flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">
+            <span className="text-base leading-none">!</span>
+            <span>{error}</span>
           </div>
         )}
 
         {loading ? (
-          <div className="card" style={{ display: 'grid', gap: 12 }}>
+          <div className="flex flex-col gap-3">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="skeleton" style={{ height: 72 }} />
+              <div key={index} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse" />
             ))}
           </div>
         ) : filteredPurchases.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">PO</div>
-            <div>{hasBillFilters ? 'No purchases found for this search/filter.' : 'No purchases yet.'}</div>
+          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
+            <div className="text-4xl mb-3">📦</div>
+            <div className="text-[15px] font-bold text-slate-700 mb-1">
+              {hasBillFilters ? 'No purchases found for this search/filter.' : 'No purchases yet.'}
+            </div>
+            <div className="text-[12px] text-slate-400 mb-5">
+              Add your first supplier bill to start tracking stock cost and ITC.
+            </div>
+            {!hasBillFilters && (
+              <button
+                type="button"
+                onClick={() => { resetModal(); setShowModal(true); }}
+                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg transition-all"
+              >
+                Record Purchase
+              </button>
+            )}
           </div>
         ) : (
-          <>
-          {/* Desktop table */}
-          <div className="table-container hidden min-[641px]:block">
-            <table>
-              <thead>
-                <tr>
-                  <th>Bill No.</th>
-                  <th>Product</th>
-                  <th>Items</th>
-                  <th>Taxable</th>
-                  <th>GST (ITC)</th>
-                  <th>Total</th>
-                  <th>Paid</th>
-                  <th>Balance Due</th>
-                  <th>Payment</th>
-                  <th>Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPurchases.map(p => (
-                  <tr
-                    key={p._id}
-                    data-purchase-anchor={p._id}
-                    className={highlightedPurchaseId === p._id ? 'purchase-row-highlight' : ''}
-                  >
-                    <td style={{ color: '#2563eb', fontWeight: 600, fontSize: 12 }}>
-                      {p.invoice_number}
-                      {p._isOffline && (
-                        (() => {
-                          const badge = getOfflineBadgeMeta(p._queueStatus);
-                          return (
-                        <span style={{
-                          display: 'block',
-                          fontSize: 9,
-                          background: badge.background,
-                          color: badge.color,
-                          padding: '1px 6px',
-                          borderRadius: 20,
-                          fontWeight: 700,
-                          marginTop: 2,
-                        }}>
-                          {badge.label}
-                        </span>
-                          );
-                        })()
-                      )}
-                      {p._isOffline && p._queueError ? (
-                        <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 160 }}>
-                          {p._queueError}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>
-                        {/* Show all item names if multi-item */}
-                        {p.items && p.items.length > 1
-                          ? p.items.map(i => i.product_name).join(', ')
-                          : p.product_name}
+          <div className="flex flex-col gap-3">
+            {filteredPurchases.map((p) => {
+              const meta = p._isOffline ? getOfflineBadgeMeta(p._queueStatus) : null;
+              const isHighlighted = highlightedPurchaseId === p._id;
+              const itemLabel = p.items && p.items.length > 1 ? `${p.items.length} products` : p.product_name;
+              const itemNames = p.items && p.items.length > 1 ? p.items.map((item) => item.product_name).join(', ') : p.product_name;
+
+              return (
+                <div
+                  key={p._id}
+                  data-purchase-anchor={p._id}
+                  className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${p._isOffline ? 'border-amber-200' : 'border-slate-200'} ${isHighlighted ? 'ring-2 ring-cyan-300 shadow-lg shadow-cyan-100/70' : 'hover:shadow-md'}`}
+                >
+                  {meta && (
+                    <div className={`flex items-center gap-2 px-4 py-2 border-b text-[11px] font-black ${meta.color}`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                      {meta.label}
+                      {p._queueError && <span className="font-normal text-rose-600 ml-1">{p._queueError}</span>}
+                    </div>
+                  )}
+
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0">
+                        <div className="text-[14px] font-black text-slate-900 truncate">{itemLabel}</div>
+                        <div className="font-mono text-[11px] text-cyan-600 mt-0.5">{p.invoice_number}</div>
                       </div>
-                      {p.supplier_name && (
-                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>
-                      )}
-                    </td>
-                    <td style={{ fontSize: 12, color: '#6b7280' }}>
-                      {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
-                    </td>
-                    <td>₹{(p.taxable_amount || 0).toFixed(2)}</td>
-                    <td>
-                      {p.total_gst > 0
-                        ? <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>₹{p.total_gst.toFixed(2)}</span>
-                        : <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>}
-                    </td>
-                    <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{(p.total_amount || 0).toFixed(2)}</td>
-                    <td style={{ color: '#10b981', fontWeight: 600 }}>₹{(p.amount_paid || 0).toFixed(2)}</td>
-                    <td>
-                      {(p.balance_due || 0) > 0
-                        ? <span style={{ color: '#ef4444', fontWeight: 700 }}>₹{p.balance_due.toFixed(2)}</span>
-                        : <span style={{ color: '#10b981' }}>Paid</span>}
-                    </td>
-                    <td><PayBadge type={p.payment_type} /></td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>
-                      {formatFullDateTime(p.createdAt)}
-                    </td>
-                    <td>
-                      {p.supplier_phone ? (
-                        <button
-                          onClick={() => sendPurchaseWhatsApp(p)}
-                          className="action-soft whatsapp"
-                          style={{ borderRadius: 999, padding: '6px 10px', marginRight: 6 }}
-                        >
-                          WhatsApp
-                        </button>
-                      ) : null}
-                      <button onClick={() => startEditPurchase(p)}
+                      <div className="text-right ml-3">
+                        <div className="text-[18px] font-black text-slate-900">₹{fmt(p.total_amount)}</div>
+                        <div className="mt-0.5"><PayBadge type={p.payment_type} /></div>
+                      </div>
+                    </div>
+
+                    <div className="text-[12px] text-slate-500 mb-3">
+                      {p.supplier_name ? `Supplier: ${p.supplier_name}` : 'Supplier not added'}
+                      {' • '}
+                      {formatFullDateTime(p.createdAt || p.purchased_at)}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-500">
+                        {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-[11px] font-semibold text-blue-600">
+                        ITC ₹{fmt(p.total_gst)}
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${(p.balance_due || 0) > 0 ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                        {(p.balance_due || 0) > 0 ? `Due ₹${fmt(p.balance_due)}` : 'Paid'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
+                        <div className="text-slate-400">Taxable</div>
+                        <div className="font-black text-slate-900">₹{fmt(p.taxable_amount)}</div>
+                      </div>
+                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
+                        <div className="text-slate-400">Paid</div>
+                        <div className="font-black text-emerald-600">₹{fmt(p.amount_paid)}</div>
+                      </div>
+                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
+                        <div className="text-slate-400">GST</div>
+                        <div className="font-black text-blue-600">₹{fmt(p.total_gst)}</div>
+                      </div>
+                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
+                        <div className="text-slate-400">Items</div>
+                        <div className="font-black text-slate-900 truncate">{itemNames}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => sendPurchaseWhatsApp(p)}
+                        disabled={!p.supplier_phone}
+                        className="py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+                      >
+                        WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => startEditPurchase(p)}
                         disabled={Boolean(p._isOffline)}
-                        className="action-soft edit"
-                        style={{ borderRadius: 999, padding: '6px 10px', opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
+                        className="py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                      >
                         Edit
                       </button>
-                      <button onClick={() => handleDelete(p)}
-                        className="action-soft delete"
-                        style={{ borderRadius: 999, padding: '6px 10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(p)}
+                        className="py-2 rounded-xl border border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors"
+                      >
                         {p._isOffline ? 'Remove' : 'Delete'}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="flex flex-col gap-3 min-[641px]:hidden">
-            {filteredPurchases.map(p => (
-              <div key={p._id} className="card"
-                data-purchase-anchor={p._id}
-                style={{
-                  borderLeft: `3px solid ${p.payment_type === 'credit' ? '#ef4444' : '#2563eb'}`,
-                  boxShadow: highlightedPurchaseId === p._id ? '0 0 0 2px rgba(37, 99, 235, 0.22), 0 18px 32px rgba(37, 99, 235, 0.12)' : undefined,
-                  transition: 'box-shadow 0.2s ease',
-                }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
-                      {p.items && p.items.length > 1
-                        ? `${p.items.length} products`
-                        : p.product_name}
                     </div>
-                    <div style={{ fontSize: 11, color: '#2563eb', fontWeight: 600 }}>{p.invoice_number}</div>
-                    {p._isOffline && (
-                      (() => {
-                        const badge = getOfflineBadgeMeta(p._queueStatus);
-                        return (
-                      <span style={{
-                        display: 'block',
-                        fontSize: 9,
-                        background: badge.background,
-                        color: badge.color,
-                        padding: '1px 6px',
-                        borderRadius: 20,
-                        fontWeight: 700,
-                        marginTop: 2,
-                      }}>
-                        {badge.label}
-                      </span>
-                        );
-                      })()
-                    )}
-                    {p._isOffline && p._queueError ? (
-                      <div style={{ fontSize: 10, color: '#b91c1c', marginTop: 4, maxWidth: 180 }}>
-                        {p._queueError}
-                      </div>
-                    ) : null}
-                    {p.supplier_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>Supplier: {p.supplier_name}</div>}
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: '#2563eb', fontSize: 16 }}>
-                      ₹{(p.total_amount || 0).toFixed(2)}
-                    </div>
-                    <PayBadge type={p.payment_type} />
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>TAXABLE</div><div style={{ fontWeight: 600, fontSize: 13 }}>₹{(p.taxable_amount || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>ITC</div><div style={{ fontWeight: 600, fontSize: 13, color: '#2563eb' }}>₹{(p.total_gst || 0).toFixed(2)}</div></div>
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>PAID</div><div style={{ fontWeight: 600, fontSize: 13, color: '#10b981' }}>₹{(p.amount_paid || 0).toFixed(2)}</div></div>
-                  {(p.balance_due || 0) > 0 && (
-                    <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DUE</div><div style={{ fontWeight: 700, fontSize: 13, color: '#ef4444' }}>₹{p.balance_due.toFixed(2)}</div></div>
-                  )}
-                  <div><div style={{ fontSize: 11, color: '#9ca3af' }}>DATE</div><div style={{ fontWeight: 600, fontSize: 13 }}>{formatFullDateTime(p.createdAt)}</div></div>
-                </div>
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                    gap: 8,
-                  }}
-                >
-                  {p.supplier_phone ? (
-                    <button onClick={() => sendPurchaseWhatsApp(p)}
-                      className="action-soft whatsapp"
-                      style={{ width: '100%', padding: '9px' }}>
-                      WhatsApp
-                    </button>
-                  ) : null}
-                  <button onClick={() => startEditPurchase(p)}
-                    disabled={Boolean(p._isOffline)}
-                    className="action-soft edit"
-                    style={{ width: '100%', padding: '9px', opacity: p._isOffline ? 0.55 : 1, cursor: p._isOffline ? 'not-allowed' : 'pointer' }}>
-                    Edit
-                  </button>
-                  <button onClick={() => handleDelete(p)}
-                    className="action-soft delete"
-                    style={{ width: '100%', padding: '9px', gridColumn: p.supplier_phone ? 'span 2 / span 2' : undefined }}>
-                    {p._isOffline ? 'Remove' : 'Delete'}
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </>
         )}
       </div>
 
-      {/* â”€â”€ Modal â”€â”€ */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal flow-modal purchase-entry-modal" style={{ maxWidth: 560 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 0, color: '#0f172a' }}>
-                Record Purchase
-              </h3>
-              <button type="button" className="modal-close-btn" onClick={resetModal} aria-label="Close record purchase modal">×</button>
+      <div className={`fixed inset-0 z-[70] transition-all duration-300 ${showModal ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        <button
+          type="button"
+          aria-label="Close purchase modal overlay"
+          onClick={resetModal}
+          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${showModal ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <aside className={`absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100dvh-56px)] flex-col rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 ${showModal ? 'translate-y-0' : 'translate-y-full'}`}>
+          <div className="flex justify-center pt-3 pb-1 md:hidden flex-shrink-0">
+            <div className="w-10 h-1 rounded-full bg-slate-200" />
+          </div>
+          <div className="flex-shrink-0 border-b border-slate-100 px-5 pt-3 pb-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  {editingPurchaseId ? 'Edit Purchase' : 'New Purchase'}
+                </p>
+                <h3 className="text-[20px] font-black text-slate-900 mt-0.5">Record Purchase</h3>
+                <p className="text-[12px] text-slate-500 mt-1">Add products first, then payment and supplier details.</p>
+              </div>
+              <button
+                type="button"
+                onClick={resetModal}
+                className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+                aria-label="Close purchase modal"
+              >
+                ×
+              </button>
             </div>
-            {editingPurchaseId ? (
-              <div style={{ fontSize: 12, color: '#2563eb', fontWeight: 700, marginBottom: 10 }}>Editing existing purchase</div>
-            ) : null}
+            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+              {[
+                { id: 0, label: 'Items' },
+                { id: 1, label: 'Payment' },
+                { id: 2, label: 'Supplier' },
+              ].map((step) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => setPurchaseStep(step.id)}
+                  className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${purchaseStep === step.id ? 'bg-white text-cyan-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {step.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <form onSubmit={(e) => e.preventDefault()} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {error && (
-              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: 8, fontSize: 13, marginBottom: 12 }}>
-                {error}
+              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">
+                <span className="text-base leading-none">!</span>
+                <span>{error}</span>
               </div>
             )}
-            <div className="flow-compact-note">
-              Add products first, then choose payment and supplier details.
-            </div>
-            <form onSubmit={(e) => e.preventDefault()} className="entry-form-shell">
 
-              {/* Items */}
-              <div className="flow-step-panel" style={{ display: purchaseStep === 0 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-                  Products
+            {purchaseStep === 0 && (
+              <>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="space-y-3">
+                    {items.map((item, index) => {
+                      const rowGST = calcRowGST(item);
+                      const prod = products.find((p) => p._id === item.product_id);
+
+                      return (
+                        <div key={index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Item {index + 1}</span>
+                            <div className="flex justify-end gap-1.5">
+                              <button type="button" onClick={() => openInlineProductForm(index)} className="px-2.5 py-1 rounded-lg border border-cyan-200 bg-cyan-50 text-[10px] text-cyan-700 hover:bg-cyan-100 transition-colors">+ New Product</button>
+                              {items.length > 1 && (
+                                <button type="button" onClick={() => removeItem(index)} className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] text-rose-600 hover:bg-rose-100 transition-colors">Remove</button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Product</p>
+                            <SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} placeholder="Search product..." />
+                          </div>
+
+                          {showInlineProductForm && inlineProductRowIndex === index && (
+                            <div className="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-4 space-y-3">
+                              <p className="text-[13px] font-black text-cyan-700">Naya product yahin add karein</p>
+                              <input className={INPUT} placeholder="Jaise: New Chips 45g" value={newProductForm.name} onChange={(e) => updateNewProductForm({ name: e.target.value })} />
+                              <div className="grid grid-cols-2 gap-3">
+                                <input className={INPUT} type="number" min="0" step="0.01" placeholder="MRP / selling price" value={newProductForm.price} onChange={(e) => updateNewProductForm({ price: e.target.value })} />
+                                <select className={INPUT} value={newProductForm.gst_rate} onChange={(e) => updateNewProductForm({ gst_rate: e.target.value })}>
+                                  {[0, 5, 12, 18, 28].map((rate) => <option key={rate} value={String(rate)}>{rate}%</option>)}
+                                </select>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <input className={INPUT} placeholder="pcs / box / kg" value={newProductForm.unit} onChange={(e) => updateNewProductForm({ unit: e.target.value })} />
+                                <input className={INPUT} placeholder="Optional HSN" value={newProductForm.hsn_code} onChange={(e) => updateNewProductForm({ hsn_code: e.target.value })} />
+                              </div>
+                              <div className="flex gap-3">
+                                <button type="button" onClick={createInlineProduct} disabled={creatingProduct} className="flex-1 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg disabled:opacity-60 transition-all">{creatingProduct ? 'Adding...' : 'Save Product'}</button>
+                                <button type="button" onClick={resetInlineProductForm} disabled={creatingProduct} className="px-4 py-3 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white transition-colors">Cancel</button>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <input className={INPUT} type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} required />
+                            <input className={INPUT} type="number" step="0.01" value={item.price_per_unit} onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)} required />
+                          </div>
+
+                          {prod && <div className="text-[11px] text-slate-500">GST {prod.gst_rate || 0}% {prod.hsn_code ? `• HSN ${prod.hsn_code}` : ''} {prod.unit ? `• ${prod.unit}` : ''}</div>}
+
+                          {rowGST && (
+                            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
+                              <span className="text-slate-400">₹{fmt(rowGST.taxable)} + <span className="text-amber-600">₹{fmt(rowGST.gst)} GST</span></span>
+                              <span className="font-black text-slate-900">= ₹{fmt(rowGST.total)}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button type="button" onClick={addItem} className="w-full mt-3 py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-cyan-600 hover:bg-cyan-50/40 transition-all">
+                    + Add Another Product
+                  </button>
                 </div>
 
-                {items.map((item, index) => {
-                  const rowGST = calcRowGST(item);
-                  const prod = products.find(p => p._id === item.product_id);
-                  return (
-                    <div key={index} className="entry-item-card" style={{ marginBottom: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#6b7280' }}>Item {index + 1}</span>
-                        {items.length > 1 && (
-                          <button type="button" onClick={() => removeItem(index)}
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>
-                            ×
-                          </button>
-                        )}
-                      </div>
+                {billTotals.total > 0 && (
+                  <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
+                    <div className="space-y-1.5 mb-3">
+                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Taxable Amount</span><span className="font-bold text-white">₹{fmt(billTotals.taxable)}</span></div>
+                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Total GST / ITC</span><span className="font-bold text-amber-400">₹{fmt(billTotals.gst)}</span></div>
+                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Grand Total</span><span className="font-bold text-cyan-400">₹{fmt(billTotals.total)}</span></div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
-                      <div className="form-group">
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
-                          <label className="form-label" style={{ marginBottom: 0 }}>Product *</label>
-                          <button
-                            type="button"
-                            onClick={() => openInlineProductForm(index)}
-                            style={{
-                              border: 'none',
-                              background: '#dbeafe',
-                              color: '#1d4ed8',
-                              padding: '6px 10px',
-                              borderRadius: 999,
-                              fontSize: 11,
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            + New Product
-                          </button>
-                        </div>
-                        <SearchableProductSelect
-                          products={products}
-                          value={item.product_id}
-                          onChange={(id) => updateItem(index, 'product_id', id)}
-                          placeholder='Search product...'
-                        />
-                      </div>
-
-                      {showInlineProductForm && inlineProductRowIndex === index ? (
-                        <div className="entry-inline-panel" style={{ marginBottom: 10 }}>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: '#1d4ed8', marginBottom: 4 }}>
-                            Naya product yahin add karein
-                          </div>
-                          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 10 }}>
-                            Opening stock 0 rahega. Is purchase ko save karte hi stock badh jayega.
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">Product Name *</label>
-                            <input
-                              className="form-input"
-                              placeholder="Jaise: New Chips 45g"
-                              value={newProductForm.name}
-                              onChange={(e) => updateNewProductForm({ name: e.target.value })}
-                            />
-                          </div>
-
-                          <div className="grid-2">
-                            <div className="form-group">
-                              <label className="form-label">Selling Price *</label>
-                              <input
-                                className="form-input"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="MRP / selling price"
-                                value={newProductForm.price}
-                                onChange={(e) => updateNewProductForm({ price: e.target.value })}
-                              />
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">GST Rate</label>
-                              <select
-                                className="form-input"
-                                value={newProductForm.gst_rate}
-                                onChange={(e) => updateNewProductForm({ gst_rate: e.target.value })}
-                              >
-                                {[0, 5, 12, 18, 28].map((rate) => (
-                                  <option key={rate} value={String(rate)}>{rate}%</option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="grid-2">
-                            <div className="form-group">
-                              <label className="form-label">Unit</label>
-                              <input
-                                className="form-input"
-                                placeholder="pcs / box / kg"
-                                value={newProductForm.unit}
-                                onChange={(e) => updateNewProductForm({ unit: e.target.value })}
-                              />
-                            </div>
-                            <div className="form-group">
-                              <label className="form-label">HSN Code</label>
-                              <input
-                                className="form-input"
-                                placeholder="Optional"
-                                value={newProductForm.hsn_code}
-                                onChange={(e) => updateNewProductForm({ hsn_code: e.target.value })}
-                              />
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button
-                              type="button"
-                              onClick={createInlineProduct}
-                              disabled={creatingProduct}
-                              style={{
-                                flex: 1,
-                                border: 'none',
-                                background: '#1d4ed8',
-                                color: '#fff',
-                                padding: '10px 12px',
-                                borderRadius: 10,
-                                fontSize: 13,
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              {creatingProduct ? 'Adding...' : 'Save Product'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={resetInlineProductForm}
-                              disabled={creatingProduct}
-                              style={{
-                                border: '1px solid #cbd5e1',
-                                background: '#f8fafc',
-                                color: '#334155',
-                                padding: '10px 12px',
-                                borderRadius: 10,
-                                fontSize: 13,
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      <div className="grid-2">
-                        <div className="form-group">
-                          <label className="form-label">Quantity *</label>
-                          <input className="form-input" type="number" min="1"
-                            value={item.quantity}
-                            onChange={e => updateItem(index, 'quantity', e.target.value)} required />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Purchase Price *</label>
-                          <input className="form-input" type="number" step="0.01"
-                            value={item.price_per_unit}
-                            onChange={e => updateItem(index, 'price_per_unit', e.target.value)} required />
-                        </div>
-                      </div>
-
-                      {prod ? (
-                        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
-                          GST: {prod.gst_rate || 0}% {prod.hsn_code ? `• HSN ${prod.hsn_code}` : ''} {prod.unit ? `• ${prod.unit}` : ''}
-                        </div>
-                      ) : null}
-
-                      {rowGST && (
-                        <div style={{ fontSize: 12, color: '#6b7280', background: rowGST.gst_rate > 0 ? '#fffbeb' : '#f0fdf4', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                          <span>Taxable: <strong>₹{rowGST.taxable.toFixed(2)}</strong></span>
-                          {rowGST.gst_rate > 0 ? (
-                            <span>
-                              {rowGST.isIGST
-                                ? `IGST ${rowGST.gst_rate}%: ₹${rowGST.gst.toFixed(2)}`
-                                : `CGST ${(rowGST.gst_rate / 2).toFixed(1)}% + SGST ${(rowGST.gst_rate / 2).toFixed(1)}%: ₹${rowGST.gst.toFixed(2)}`}
-                            </span>
-                          ) : (
-                            <span>No GST</span>
-                          )}
-                          <span>Total: <strong>₹{rowGST.total.toFixed(2)}</strong></span>
-                        </div>
+            {purchaseStep === 1 && (
+              <>
+                {billTotals.total > 0 && (
+                  <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
+                    <div className="space-y-1.5 mb-3">
+                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Taxable Amount</span><span className="font-bold text-white">₹{fmt(billTotals.taxable)}</span></div>
+                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Total GST / ITC</span><span className="font-bold text-amber-400">₹{fmt(billTotals.gst)}</span></div>
+                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Round Off</span><span className="font-bold text-emerald-400">{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</span></div>
+                      {form.supplier_state && (
+                        <div className="flex justify-between text-[12px]"><span className="text-slate-400">Tax Type</span><span className="font-bold text-white">{normalizeState(shopState) !== normalizeState(form.supplier_state) ? 'IGST' : 'CGST + SGST'}</span></div>
                       )}
                     </div>
-                  );
-                })}
-
-                <button type="button" onClick={addItem}
-                  className="btn-ghost"
-                  style={{ width: '100%', marginTop: 4 }}
-                >
-                  + Add Another Product
-                </button>
-
-                {billTotals.total > 0 && (
-                  <div className="entry-summary-card" style={{ padding: '12px 14px', marginTop: 14, fontSize: 13 }}>
-                    <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
-                    <div style={{ display: 'grid', gap: 4 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Subtotal (Taxable):</span><strong>₹{billTotals.taxable.toFixed(2)}</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>₹{billTotals.gst.toFixed(2)}</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Grand Total:</span><span>₹{billTotals.total.toFixed(2)}</span>
-                      </div>
+                    <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
+                      <span className="text-[14px] font-black">Rounded Total</span>
+                      <span className="text-[24px] font-black text-cyan-400">₹{fmt(roundedBill.roundedTotal)}</span>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Payment */}
-              <div className="flow-step-panel" style={{ display: purchaseStep === 1 ? 'block' : 'none' }}>
-                {billTotals.total > 0 && (
-                <div className="entry-summary-card" style={{ padding: '12px 14px', marginBottom: 14, fontSize: 13 }}>
-                  <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: 6 }}>Bill Summary</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Subtotal (Taxable):</span><strong>₹{billTotals.taxable.toFixed(2)}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Total GST (ITC):</span><strong style={{ color: '#1d4ed8' }}>₹{billTotals.gst.toFixed(2)}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Grand Total:</span><span>₹{billTotals.total.toFixed(2)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Round Off:</span><strong>{roundedBill.roundOff >= 0 ? '+' : ''}₹{roundedBill.roundOff.toFixed(2)}</strong>
-                    </div>
-                    {form.supplier_state && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                        <span>Tax Type:</span>
-                        <strong>{normalizeState(shopState) !== normalizeState(form.supplier_state) ? 'IGST' : 'CGST + SGST'}</strong>
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}>
-                      <span>Rounded Total:</span><span>₹{roundedBill.roundedTotal.toFixed(2)}</span>
-                    </div>
-                    {form.payment_type === 'credit' && amountPaidNum > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444', fontWeight: 700 }}>
-                        <span>Balance Due:</span><span>₹{balanceDue.toFixed(2)}</span>
+                    {form.payment_type === 'credit' && (
+                      <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
+                        <span className="text-[12px] text-rose-300">Balance Due</span>
+                        <span className="text-[14px] font-black text-rose-400">₹{fmt(balanceDue)}</span>
                       </div>
                     )}
                   </div>
-                </div>
                 )}
-                <div className="flow-section-kicker"><span>Payment</span><span>Method + advance</span></div>
-                <div className="form-group">
-                  <label className="form-label">Payment Type *</label>
-                  <div className="flow-choice-grid">
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl mb-4">
                     {[
-                      { val: 'cash', label: 'Cash', color: '#10b981' },
-                      { val: 'credit', label: 'Credit', color: '#ef4444' },
-                      { val: 'upi', label: 'UPI', color: '#0891b2' },
-                      { val: 'bank', label: 'Bank', color: '#3b82f6' },
-                    ].map(opt => (
+                      { type: 'cash', label: 'Cash', active: 'bg-emerald-500 text-white shadow-sm' },
+                      { type: 'credit', label: 'Credit', active: 'bg-rose-500 text-white shadow-sm' },
+                      { type: 'upi', label: 'UPI', active: 'bg-cyan-500 text-white shadow-sm' },
+                      { type: 'bank', label: 'Bank', active: 'bg-blue-500 text-white shadow-sm' },
+                    ].map((opt) => (
                       <button
-                        key={opt.val}
+                        key={opt.type}
                         type="button"
-                        onClick={() => updateForm({ payment_type: opt.val, amount_paid: opt.val === 'credit' ? form.amount_paid : '' })}
-                        style={{
-                          padding: '11px 10px',
-                          borderRadius: 14,
-                          border: '2px solid',
-                          borderColor: form.payment_type === opt.val ? opt.color : '#e5e7eb',
-                          background: form.payment_type === opt.val ? opt.color : '#f9fafb',
-                          color: form.payment_type === opt.val ? '#fff' : '#374151',
-                          fontWeight: 700,
-                        }}
+                        onClick={() => updateForm({ payment_type: opt.type, amount_paid: opt.type === 'credit' ? form.amount_paid : '' })}
+                        className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-500 hover:text-slate-700'}`}
                       >
                         {opt.label}
                       </button>
                     ))}
                   </div>
-                </div>
 
-                {form.payment_type === 'credit' && (
-                  <div style={{ marginTop: 10 }}>
-                    <label className="form-label">Advance Payment (optional)</label>
-                    <input className="form-input" type="number" step="0.01" min="0"
-                      placeholder={`Max ₹${billTotals.total.toFixed(2)}`}
-                      value={form.amount_paid}
-                      onChange={e => updateForm({ amount_paid: e.target.value })} />
-                    <div className="entry-summary-card entry-summary-card--danger" style={{ padding: '8px 12px', marginTop: 6, fontSize: 12, color: '#991b1b' }}>
-                      Balance ₹{balanceDue.toFixed(2)} will be added to the supplier ledger automatically.
+                  {form.payment_type === 'credit' && (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
+                      <p className="text-[13px] font-black text-slate-900 mb-0.5">Advance Payment</p>
+                      <p className="text-[11px] text-slate-400 mb-3">Supplier ko abhi kitna payment diya?</p>
+                      <input className="h-11 w-full px-4 rounded-xl border border-rose-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all" type="number" step="0.01" min="0" placeholder={`Max ₹${fmt(billTotals.total)}`} value={form.amount_paid} onChange={(e) => updateForm({ amount_paid: e.target.value })} />
+                      <div className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-xl bg-rose-100 border border-rose-200">
+                        <span className="text-[12px] font-bold text-rose-700">Balance Due</span>
+                        <span className="text-[16px] font-black text-rose-700">₹{fmt(balanceDue)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {purchaseStep === 2 && (
+              <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
+                <div className="space-y-3">
+                  <input className={INPUT} placeholder="Supplier ka naam" value={form.supplier_name} onChange={(e) => updateForm({ supplier_name: e.target.value })} required={form.payment_type === 'credit'} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={INPUT} placeholder="Mobile number" value={form.supplier_phone} onChange={(e) => updateForm({ supplier_phone: e.target.value })} />
+                    <div>
+                      <input className={INPUT} placeholder="Supplier GSTIN" value={form.supplier_gstin} maxLength={GSTIN_LENGTH} onChange={(e) => handleSupplierGstinChange(e.target.value)} onBlur={() => setGstinTouched(true)} />
+                      {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">Invalid GSTIN format</p>}
+                      {showGstinLengthHint && <p className="mt-1 text-[11px] text-slate-400">GSTIN should be 15 characters</p>}
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Supplier details */}
-
-              <div className={`flow-step-panel ${form.payment_type === 'credit' ? 'is-warning' : ''}`} style={{ display: purchaseStep === 2 ? 'block' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: form.payment_type === 'credit' ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-                  Supplier Details {form.payment_type === 'credit' ? '(required *)' : '(optional)'}
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    Supplier Name {form.payment_type === 'credit' && <span style={{ color: '#ef4444' }}>*</span>}
-                  </label>
-                    <input className="form-input" placeholder="Supplier ka naam"
-                      value={form.supplier_name}
-                      onChange={e => updateForm({ supplier_name: e.target.value })}
-                      required={form.payment_type === 'credit'} />
-                </div>
-
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Phone</label>
-                    <input className="form-input" placeholder="Mobile number"
-                      value={form.supplier_phone}
-                      onChange={e => updateForm({ supplier_phone: e.target.value })} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={INPUT} type="date" value={form.purchase_date} onChange={(e) => updateForm({ purchase_date: e.target.value })} />
+                    <div>
+                      <select className={INPUT} value={form.supplier_state} onChange={(e) => updateForm({ supplier_state: e.target.value })}>
+                        <option value="">Select State/UT</option>
+                        <optgroup label="States">{STATES.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
+                        <optgroup label="Union Territories">{UTS.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
+                      </select>
+                      {gstinValid && gstinValue.length >= 2 && form.supplier_state && <p className="mt-1 text-[11px] font-semibold text-emerald-600">State auto-detected from GSTIN</p>}
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">GSTIN (optional)</label>
-                      <input className="form-input" placeholder="Supplier GSTIN"
-                        value={form.supplier_gstin}
-                        maxLength={GSTIN_LENGTH}
-                        onChange={e => handleSupplierGstinChange(e.target.value)}
-                        onBlur={() => setGstinTouched(true)} />
-                      {showGstinLengthHint && (
-                        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>GSTIN should be 15 characters</div>
-                      )}
-                      {showGstinError && (
-                        <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>Invalid GSTIN format</div>
-                      )}
-                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>GSTIN decides B2B classification</div>
-                  </div>
-                </div>
-
-                <div className="grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Purchase Date</label>
-                    <input
-                      className="form-input"
-                      type="date"
-                      value={form.purchase_date}
-                      onChange={e => updateForm({ purchase_date: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Supplier State</label>
-                    <select className="form-input" value={form.supplier_state}
-                      onChange={e => updateForm({ supplier_state: e.target.value })}>
-                      <option value="">Select State/UT</option>
-                      <optgroup label="States">
-                        {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                      </optgroup>
-                      <optgroup label="Union Territories">
-                        {UTS.map(s => <option key={s} value={s}>{s}</option>)}
-                      </optgroup>
-                    </select>
-                    {gstinValid && gstinValue.length >= 2 && form.supplier_state && (
-                      <div style={{ fontSize: 11, color: '#059669', marginTop: 4 }}>State auto-detected from GSTIN</div>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Address</label>
-                    <input className="form-input" placeholder="Supplier address"
-                      value={form.supplier_address}
-                      onChange={e => updateForm({ supplier_address: e.target.value })} />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Notes</label>
-                  <input className="form-input" placeholder="Any notes..."
-                    value={form.notes}
-                    onChange={e => updateForm({ notes: e.target.value })} />
+                  <input className={INPUT} placeholder="Supplier address" value={form.supplier_address} onChange={(e) => updateForm({ supplier_address: e.target.value })} />
+                  <input className={INPUT} placeholder="Any notes..." value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} />
                 </div>
               </div>
+            )}
 
-              {/* â”€â”€ SUBMIT â”€â”€ */}
-              <div className="flow-actions">
-                {purchaseStep > 0 && (
-                  <button type="button" className="btn-ghost" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current - 1)}>
-                    Back
-                  </button>
-                )}
-                {purchaseStep < 2 ? (
-                  <button type="button" className="btn-primary" style={{ flex: 1 }} onClick={() => setPurchaseStep((current) => current + 1)}>
-                    Continue
-                  </button>
-                ) : (
-                <button type="button" onClick={handleSubmit} className="btn-primary" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting
-                    ? 'Saving...'
-                    : !isOnline
-                      ? '📥 Offline Save'
-                      : editingPurchaseId
-                        ? 'Update Purchase'
-                        : form.payment_type === 'credit'
-                          ? 'Credit Purchase'
-                          : 'Record Purchase'}
+          </form>
+
+          <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
+            <div className="flex gap-3">
+              {purchaseStep > 0 && (
+                <button type="button" onClick={() => setPurchaseStep((current) => current - 1)} className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                  Back
                 </button>
-                )}
-                <button type="button" onClick={resetModal}
-                  style={{ flex: 1, padding: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Cancel
+              )}
+              {purchaseStep < 2 ? (
+                <button type="button" onClick={() => setPurchaseStep((current) => current + 1)} className="flex-1 flex items-center justify-center py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl transition-all">
+                  Continue
                 </button>
-              </div>
-            </form>
+              ) : (
+                <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all">
+                  {submitting ? 'Saving...' : !isOnline ? '📥 Offline Save' : editingPurchaseId ? 'Update Purchase' : form.payment_type === 'credit' ? 'Credit Purchase' : 'Record Purchase'}
+                </button>
+              )}
+              <button type="button" onClick={resetModal} className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-
+        </aside>
+      </div>
     </Layout>
   );
 }
