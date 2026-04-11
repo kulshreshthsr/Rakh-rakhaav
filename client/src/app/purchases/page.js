@@ -217,7 +217,6 @@ export default function PurchasesPage() {
     unit: 'pcs',
     hsn_code: '',
   });
-  const [purchaseStep, setPurchaseStep] = useState(0);
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth] = useState('');
   const hasBootstrappedRef = useRef(false);
@@ -742,7 +741,6 @@ export default function PurchasesPage() {
     setError('');
     setItems([emptyItem()]);
     setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue() });
-    setPurchaseStep(0);
     setGstinTouched(false);
     resetInlineProductForm();
   }
@@ -778,7 +776,6 @@ export default function PurchasesPage() {
       notes: purchase.notes || '',
       purchase_date: formatDateInputValue(purchase.createdAt || purchase.purchased_at || new Date()),
     });
-    setPurchaseStep(0);
     setGstinTouched(false);
     setError('');
     setShowModal(true);
@@ -1051,7 +1048,7 @@ export default function PurchasesPage() {
                   {editingPurchaseId ? 'Edit Purchase' : 'New Purchase'}
                 </p>
                 <h3 className="text-[20px] font-black text-slate-900 mt-0.5">Record Purchase</h3>
-                <p className="text-[12px] text-slate-500 mt-1">Add products first, then payment and supplier details.</p>
+                <p className="text-[12px] text-slate-500 mt-1">Ek hi compact form me items, payment aur supplier details.</p>
               </div>
               <button
                 type="button"
@@ -1064,17 +1061,16 @@ export default function PurchasesPage() {
             </div>
             <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
               {[
-                { id: 0, label: 'Items' },
-                { id: 1, label: 'Payment' },
-                { id: 2, label: 'Supplier' },
-              ].map((step) => (
+                { type: 'cash', label: 'Cash', active: 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' },
+                { type: 'credit', label: 'Credit', active: 'bg-rose-500 text-white shadow-md shadow-rose-500/20' },
+              ].map((opt) => (
                 <button
-                  key={step.id}
+                  key={opt.type}
                   type="button"
-                  onClick={() => setPurchaseStep(step.id)}
-                  className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${purchaseStep === step.id ? 'bg-white text-cyan-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  onClick={() => updateForm({ payment_type: opt.type, amount_paid: opt.type === 'credit' ? form.amount_paid : '' })}
+                  className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  {step.label}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -1087,172 +1083,147 @@ export default function PurchasesPage() {
               </div>
             )}
 
-            {purchaseStep === 0 && (
-              <>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="space-y-3">
-                    {items.map((item, index) => {
-                      const rowGST = calcRowGST(item);
-                      const prod = products.find((p) => p._id === item.product_id);
+            <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-[13px] font-black text-slate-900">Supplier Info</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {form.payment_type === 'credit' ? 'Required for credit purchases' : 'Optional details for supplier record'}
+                  </p>
+                </div>
+                {form.payment_type === 'credit' && (
+                  <span className="px-2.5 py-1 rounded-full bg-rose-100 text-[10px] font-black text-rose-700 border border-rose-200">Required *</span>
+                )}
+              </div>
 
-                      return (
-                        <div key={index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Item {index + 1}</span>
-                            <div className="flex justify-end gap-1.5">
-                              <button type="button" onClick={() => openInlineProductForm(index)} className="px-2.5 py-1 rounded-lg border border-cyan-200 bg-cyan-50 text-[10px] text-cyan-700 hover:bg-cyan-100 transition-colors">+ New Product</button>
-                              {items.length > 1 && (
-                                <button type="button" onClick={() => removeItem(index)} className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] text-rose-600 hover:bg-rose-100 transition-colors">Remove</button>
-                              )}
-                            </div>
-                          </div>
+              <div className="space-y-3">
+                <input className={INPUT} placeholder="Supplier ka naam" value={form.supplier_name} onChange={(e) => updateForm({ supplier_name: e.target.value })} required={form.payment_type === 'credit'} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input className={INPUT} placeholder="Mobile number" value={form.supplier_phone} onChange={(e) => updateForm({ supplier_phone: e.target.value })} />
+                  <div>
+                    <input className={INPUT} placeholder="Supplier GSTIN" value={form.supplier_gstin} maxLength={GSTIN_LENGTH} onChange={(e) => handleSupplierGstinChange(e.target.value)} onBlur={() => setGstinTouched(true)} />
+                    {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">Invalid GSTIN format</p>}
+                    {showGstinLengthHint && <p className="mt-1 text-[11px] text-slate-400">GSTIN should be 15 characters</p>}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <input className={INPUT} type="date" value={form.purchase_date} onChange={(e) => updateForm({ purchase_date: e.target.value })} />
+                  <div>
+                    <select className={INPUT} value={form.supplier_state} onChange={(e) => updateForm({ supplier_state: e.target.value })}>
+                      <option value="">Select State/UT</option>
+                      <optgroup label="States">{STATES.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
+                      <optgroup label="Union Territories">{UTS.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
+                    </select>
+                    {gstinValid && gstinValue.length >= 2 && form.supplier_state && <p className="mt-1 text-[11px] font-semibold text-emerald-600">State auto-detected from GSTIN</p>}
+                  </div>
+                </div>
+                <input className={INPUT} placeholder="Supplier address" value={form.supplier_address} onChange={(e) => updateForm({ supplier_address: e.target.value })} />
+                <input className={INPUT} placeholder="Any notes..." value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} />
+              </div>
+            </div>
 
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Product</p>
-                            <SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} placeholder="Search product..." />
-                          </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="space-y-3">
+                {items.map((item, index) => {
+                  const rowGST = calcRowGST(item);
+                  const prod = products.find((p) => p._id === item.product_id);
 
-                          {showInlineProductForm && inlineProductRowIndex === index && (
-                            <div className="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-4 space-y-3">
-                              <p className="text-[13px] font-black text-cyan-700">Naya product yahin add karein</p>
-                              <input className={INPUT} placeholder="Jaise: New Chips 45g" value={newProductForm.name} onChange={(e) => updateNewProductForm({ name: e.target.value })} />
-                              <div className="grid grid-cols-2 gap-3">
-                                <input className={INPUT} type="number" min="0" step="0.01" placeholder="MRP / selling price" value={newProductForm.price} onChange={(e) => updateNewProductForm({ price: e.target.value })} />
-                                <select className={INPUT} value={newProductForm.gst_rate} onChange={(e) => updateNewProductForm({ gst_rate: e.target.value })}>
-                                  {[0, 5, 12, 18, 28].map((rate) => <option key={rate} value={String(rate)}>{rate}%</option>)}
-                                </select>
-                              </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                <input className={INPUT} placeholder="pcs / box / kg" value={newProductForm.unit} onChange={(e) => updateNewProductForm({ unit: e.target.value })} />
-                                <input className={INPUT} placeholder="Optional HSN" value={newProductForm.hsn_code} onChange={(e) => updateNewProductForm({ hsn_code: e.target.value })} />
-                              </div>
-                              <div className="flex gap-3">
-                                <button type="button" onClick={createInlineProduct} disabled={creatingProduct} className="flex-1 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg disabled:opacity-60 transition-all">{creatingProduct ? 'Adding...' : 'Save Product'}</button>
-                                <button type="button" onClick={resetInlineProductForm} disabled={creatingProduct} className="px-4 py-3 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white transition-colors">Cancel</button>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <input className={INPUT} type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} required />
-                            <input className={INPUT} type="number" step="0.01" value={item.price_per_unit} onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)} required />
-                          </div>
-
-                          {prod && <div className="text-[11px] text-slate-500">GST {prod.gst_rate || 0}% {prod.hsn_code ? `• HSN ${prod.hsn_code}` : ''} {prod.unit ? `• ${prod.unit}` : ''}</div>}
-
-                          {rowGST && (
-                            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
-                              <span className="text-slate-400">₹{fmt(rowGST.taxable)} + <span className="text-amber-600">₹{fmt(rowGST.gst)} GST</span></span>
-                              <span className="font-black text-slate-900">= ₹{fmt(rowGST.total)}</span>
-                            </div>
+                  return (
+                    <div key={index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Item {index + 1}</span>
+                        <div className="flex justify-end gap-1.5">
+                          <button type="button" onClick={() => openInlineProductForm(index)} className="px-2.5 py-1 rounded-lg border border-cyan-200 bg-cyan-50 text-[10px] text-cyan-700 hover:bg-cyan-100 transition-colors">+ New Product</button>
+                          {items.length > 1 && (
+                            <button type="button" onClick={() => removeItem(index)} className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] text-rose-600 hover:bg-rose-100 transition-colors">Remove</button>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
 
-                  <button type="button" onClick={addItem} className="w-full mt-3 py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-cyan-600 hover:bg-cyan-50/40 transition-all">
-                    + Add Another Product
-                  </button>
-                </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Product</p>
+                        <SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} placeholder="Search product..." />
+                      </div>
 
-                {billTotals.total > 0 && (
-                  <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
-                    <div className="space-y-1.5 mb-3">
-                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Taxable Amount</span><span className="font-bold text-white">₹{fmt(billTotals.taxable)}</span></div>
-                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Total GST / ITC</span><span className="font-bold text-amber-400">₹{fmt(billTotals.gst)}</span></div>
-                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Grand Total</span><span className="font-bold text-cyan-400">₹{fmt(billTotals.total)}</span></div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+                      {showInlineProductForm && inlineProductRowIndex === index && (
+                        <div className="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-4 space-y-3">
+                          <p className="text-[13px] font-black text-cyan-700">Naya product yahin add karein</p>
+                          <input className={INPUT} placeholder="Jaise: New Chips 45g" value={newProductForm.name} onChange={(e) => updateNewProductForm({ name: e.target.value })} />
+                          <div className="grid grid-cols-2 gap-3">
+                            <input className={INPUT} type="number" min="0" step="0.01" placeholder="MRP / selling price" value={newProductForm.price} onChange={(e) => updateNewProductForm({ price: e.target.value })} />
+                            <select className={INPUT} value={newProductForm.gst_rate} onChange={(e) => updateNewProductForm({ gst_rate: e.target.value })}>
+                              {[0, 5, 12, 18, 28].map((rate) => <option key={rate} value={String(rate)}>{rate}%</option>)}
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <input className={INPUT} placeholder="pcs / box / kg" value={newProductForm.unit} onChange={(e) => updateNewProductForm({ unit: e.target.value })} />
+                            <input className={INPUT} placeholder="Optional HSN" value={newProductForm.hsn_code} onChange={(e) => updateNewProductForm({ hsn_code: e.target.value })} />
+                          </div>
+                          <div className="flex gap-3">
+                            <button type="button" onClick={createInlineProduct} disabled={creatingProduct} className="flex-1 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg disabled:opacity-60 transition-all">{creatingProduct ? 'Adding...' : 'Save Product'}</button>
+                            <button type="button" onClick={resetInlineProductForm} disabled={creatingProduct} className="px-4 py-3 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white transition-colors">Cancel</button>
+                          </div>
+                        </div>
+                      )}
 
-            {purchaseStep === 1 && (
-              <>
-                {billTotals.total > 0 && (
-                  <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
-                    <div className="space-y-1.5 mb-3">
-                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Taxable Amount</span><span className="font-bold text-white">₹{fmt(billTotals.taxable)}</span></div>
-                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Total GST / ITC</span><span className="font-bold text-amber-400">₹{fmt(billTotals.gst)}</span></div>
-                      <div className="flex justify-between text-[12px]"><span className="text-slate-400">Round Off</span><span className="font-bold text-emerald-400">{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</span></div>
-                      {form.supplier_state && (
-                        <div className="flex justify-between text-[12px]"><span className="text-slate-400">Tax Type</span><span className="font-bold text-white">{normalizeState(shopState) !== normalizeState(form.supplier_state) ? 'IGST' : 'CGST + SGST'}</span></div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Qty</p>
+                          <input className={INPUT} type="number" min="1" placeholder="1" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} required />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Cost Price (₹)</p>
+                          <input className={INPUT} type="number" step="0.01" placeholder="0.00" value={item.price_per_unit} onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)} required />
+                        </div>
+                      </div>
+
+                      {prod && <div className="text-[11px] text-slate-500">GST {prod.gst_rate || 0}% {prod.hsn_code ? `• HSN ${prod.hsn_code}` : ''} {prod.unit ? `• ${prod.unit}` : ''}</div>}
+
+                      {rowGST && (
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
+                          <span className="text-slate-400">₹{fmt(rowGST.taxable)} + <span className="text-amber-600">₹{fmt(rowGST.gst)} GST</span></span>
+                          <span className="font-black text-slate-900">= ₹{fmt(rowGST.total)}</span>
+                        </div>
                       )}
                     </div>
-                    <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
-                      <span className="text-[14px] font-black">Rounded Total</span>
-                      <span className="text-[24px] font-black text-cyan-400">₹{fmt(roundedBill.roundedTotal)}</span>
-                    </div>
-                    {form.payment_type === 'credit' && (
-                      <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
-                        <span className="text-[12px] text-rose-300">Balance Due</span>
-                        <span className="text-[14px] font-black text-rose-400">₹{fmt(balanceDue)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  );
+                })}
+              </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl mb-4">
-                    {[
-                      { type: 'cash', label: 'Cash', active: 'bg-emerald-500 text-white shadow-sm' },
-                      { type: 'credit', label: 'Credit', active: 'bg-rose-500 text-white shadow-sm' },
-                      { type: 'upi', label: 'UPI', active: 'bg-cyan-500 text-white shadow-sm' },
-                      { type: 'bank', label: 'Bank', active: 'bg-blue-500 text-white shadow-sm' },
-                    ].map((opt) => (
-                      <button
-                        key={opt.type}
-                        type="button"
-                        onClick={() => updateForm({ payment_type: opt.type, amount_paid: opt.type === 'credit' ? form.amount_paid : '' })}
-                        className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+              <button type="button" onClick={addItem} className="w-full mt-3 py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-cyan-600 hover:bg-cyan-50/40 transition-all">
+                + Add Another Product
+              </button>
+            </div>
 
-                  {form.payment_type === 'credit' && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
-                      <p className="text-[13px] font-black text-slate-900 mb-0.5">Advance Payment</p>
-                      <p className="text-[11px] text-slate-400 mb-3">Supplier ko abhi kitna payment diya?</p>
-                      <input className="h-11 w-full px-4 rounded-xl border border-rose-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all" type="number" step="0.01" min="0" placeholder={`Max ₹${fmt(billTotals.total)}`} value={form.amount_paid} onChange={(e) => updateForm({ amount_paid: e.target.value })} />
-                      <div className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-xl bg-rose-100 border border-rose-200">
-                        <span className="text-[12px] font-bold text-rose-700">Balance Due</span>
-                        <span className="text-[16px] font-black text-rose-700">₹{fmt(balanceDue)}</span>
-                      </div>
-                    </div>
-                  )}
+            {form.payment_type === 'credit' && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
+                <p className="text-[13px] font-black text-slate-900 mb-0.5">Advance Payment</p>
+                <p className="text-[11px] text-slate-400 mb-3">Supplier ko abhi kitna payment diya?</p>
+                <input className="h-11 w-full px-4 rounded-xl border border-rose-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all" type="number" step="0.01" min="0" placeholder={`Max ₹${fmt(billTotals.total)}`} value={form.amount_paid} onChange={(e) => updateForm({ amount_paid: e.target.value })} />
+                <div className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-xl bg-rose-100 border border-rose-200">
+                  <span className="text-[12px] font-bold text-rose-700">Balance Due</span>
+                  <span className="text-[16px] font-black text-rose-700">₹{fmt(balanceDue)}</span>
                 </div>
-              </>
+              </div>
             )}
 
-            {purchaseStep === 2 && (
-              <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
-                <div className="space-y-3">
-                  <input className={INPUT} placeholder="Supplier ka naam" value={form.supplier_name} onChange={(e) => updateForm({ supplier_name: e.target.value })} required={form.payment_type === 'credit'} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={INPUT} placeholder="Mobile number" value={form.supplier_phone} onChange={(e) => updateForm({ supplier_phone: e.target.value })} />
-                    <div>
-                      <input className={INPUT} placeholder="Supplier GSTIN" value={form.supplier_gstin} maxLength={GSTIN_LENGTH} onChange={(e) => handleSupplierGstinChange(e.target.value)} onBlur={() => setGstinTouched(true)} />
-                      {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">Invalid GSTIN format</p>}
-                      {showGstinLengthHint && <p className="mt-1 text-[11px] text-slate-400">GSTIN should be 15 characters</p>}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={INPUT} type="date" value={form.purchase_date} onChange={(e) => updateForm({ purchase_date: e.target.value })} />
-                    <div>
-                      <select className={INPUT} value={form.supplier_state} onChange={(e) => updateForm({ supplier_state: e.target.value })}>
-                        <option value="">Select State/UT</option>
-                        <optgroup label="States">{STATES.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
-                        <optgroup label="Union Territories">{UTS.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
-                      </select>
-                      {gstinValid && gstinValue.length >= 2 && form.supplier_state && <p className="mt-1 text-[11px] font-semibold text-emerald-600">State auto-detected from GSTIN</p>}
-                    </div>
-                  </div>
-                  <input className={INPUT} placeholder="Supplier address" value={form.supplier_address} onChange={(e) => updateForm({ supplier_address: e.target.value })} />
-                  <input className={INPUT} placeholder="Any notes..." value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} />
+            {billTotals.total > 0 && (
+              <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
+                <div className="space-y-1.5 mb-3">
+                  <div className="flex justify-between text-[12px]"><span className="text-slate-400">Taxable Amount</span><span className="font-bold text-white">₹{fmt(billTotals.taxable)}</span></div>
+                  <div className="flex justify-between text-[12px]"><span className="text-slate-400">Total GST / ITC</span><span className="font-bold text-amber-400">₹{fmt(billTotals.gst)}</span></div>
+                  <div className="flex justify-between text-[12px]"><span className="text-slate-400">Round Off</span><span className="font-bold text-emerald-400">{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</span></div>
                 </div>
+                <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
+                  <span className="text-[14px] font-black">Grand Total</span>
+                  <span className="text-[24px] font-black text-cyan-400">₹{fmt(billTotals.total)}</span>
+                </div>
+                {form.payment_type === 'credit' && (
+                  <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
+                    <span className="text-[12px] text-rose-300">Balance Due</span>
+                    <span className="text-[14px] font-black text-rose-400">₹{fmt(balanceDue)}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1260,20 +1231,9 @@ export default function PurchasesPage() {
 
           <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
             <div className="flex gap-3">
-              {purchaseStep > 0 && (
-                <button type="button" onClick={() => setPurchaseStep((current) => current - 1)} className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                  Back
-                </button>
-              )}
-              {purchaseStep < 2 ? (
-                <button type="button" onClick={() => setPurchaseStep((current) => current + 1)} className="flex-1 flex items-center justify-center py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl transition-all">
-                  Continue
-                </button>
-              ) : (
-                <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all">
-                  {submitting ? 'Saving...' : !isOnline ? '📥 Offline Save' : editingPurchaseId ? 'Update Purchase' : form.payment_type === 'credit' ? 'Credit Purchase' : 'Record Purchase'}
-                </button>
-              )}
+              <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all">
+                {submitting ? 'Saving...' : !isOnline ? 'Offline Save' : editingPurchaseId ? 'Update Purchase' : form.payment_type === 'credit' ? 'Credit Purchase' : 'Record Purchase'}
+              </button>
               <button type="button" onClick={resetModal} className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                 Cancel
               </button>
