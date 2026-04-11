@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import { StatCard, StatusBadge } from '../../components/ui/AppUI';
 import { apiUrl } from '../../lib/api';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 
+/* ─── Constants (UNCHANGED) ─────────────────────────────────────── */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v3';
 
@@ -16,107 +16,86 @@ const getUserCacheNamespace = () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
     return storedUser?.username || storedUser?.id || 'anonymous';
-  } catch {
-    return 'anonymous';
-  }
+  } catch { return 'anonymous'; }
 };
 const getCacheKey = (month, year) => `${DASHBOARD_CACHE_PREFIX}:${getUserCacheNamespace()}:${year}:${month}`;
+const readDashboardCache  = (month, year) => readPageCache(getCacheKey(month, year));
+const writeDashboardCache = (month, year, value) => writePageCache(getCacheKey(month, year), value);
 
-const readDashboardCache = (month, year) => readPageCache(getCacheKey(month, year));
-
-const writeDashboardCache = (month, year, value) => {
-  writePageCache(getCacheKey(month, year), value);
-};
-
+/* ─── Quick-action icon glyphs (UNCHANGED) ──────────────────────── */
 function QuickActionGlyph({ name }) {
   const common = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.9,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
+    width: 18, height: 18, viewBox: '0 0 24 24',
+    fill: 'none', stroke: 'currentColor',
+    strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round',
     'aria-hidden': true,
   };
-
   switch (name) {
-    case 'sales':
-      return <svg {...common}><path d="M12 2v20" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></svg>;
-    case 'purchase':
-      return <svg {...common}><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7" /></svg>;
-    case 'credit':
-      return <svg {...common}><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3" /><path d="M6 3.5v20" /><path d="M9 7.5h6" /><path d="M9 11.5h6" /><path d="M9 15.5h4" /></svg>;
-    case 'stock':
-      return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></svg>;
-    case 'gst':
-      return <svg {...common}><path d="M7 4.5h10" /><path d="M7 9.5h10" /><path d="M7 14.5h5" /><path d="M16.5 13v7" /><path d="M13.5 16h6" /><rect x="4" y="3" width="16" height="18" rx="2.5" /></svg>;
-    default:
-      return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" /></svg>;
+    case 'sales':    return <svg {...common}><path d="M12 2v20"/><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"/></svg>;
+    case 'purchase': return <svg {...common}><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7"/></svg>;
+    case 'credit':   return <svg {...common}><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3"/><path d="M6 3.5v20"/><path d="M9 7.5h6"/><path d="M9 11.5h6"/><path d="M9 15.5h4"/></svg>;
+    case 'stock':    return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z"/><path d="M4 7.5V16.5L12 21l8-4.5V7.5"/><path d="M12 12v9"/></svg>;
+    case 'gst':      return <svg {...common}><path d="M7 4.5h10"/><path d="M7 9.5h10"/><path d="M7 14.5h5"/><path d="M16.5 13v7"/><path d="M13.5 16h6"/><rect x="4" y="3" width="16" height="18" rx="2.5"/></svg>;
+    case 'reports':  return <svg {...common}><path d="M5 19.5V10.5"/><path d="M12 19.5V5.5"/><path d="M19 19.5V13.5"/><path d="M3.5 19.5h17"/></svg>;
+    default:         return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z"/></svg>;
   }
 }
 
+/* ─── Skeleton (new design) ─────────────────────────────────────── */
 const DashboardSkeleton = () => (
-  <div className="page-shell">
-    <section className="card">
-      <div className="page-toolbar">
-        <div>
-          <div className="skeleton mb-2 h-4 w-[110px]" />
-          <div className="skeleton h-7 w-[180px]" />
-        </div>
-        <div className="grid w-full max-w-[260px] grid-cols-2 gap-2">
-          <div className="skeleton h-11" />
-          <div className="skeleton h-11" />
-        </div>
-      </div>
-    </section>
-
-    <section className="metric-grid">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="card min-h-[138px]">
-          <div className="skeleton mb-4 h-3 w-24" />
-          <div className="skeleton mb-3 h-[34px] w-[120px]" />
-          <div className="skeleton h-3 w-[140px]" />
+  <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+    {/* Hero */}
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm animate-pulse">
+      <div className="h-3 w-28 bg-slate-200 rounded-full mb-3" />
+      <div className="h-6 w-56 bg-slate-200 rounded-full mb-2" />
+      <div className="h-3 w-44 bg-slate-100 rounded-full" />
+    </div>
+    {/* KPI grid */}
+    <div className="grid grid-cols-2 gap-2.5">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm animate-pulse">
+          <div className="h-3 w-20 bg-slate-200 rounded-full mb-3" />
+          <div className="h-7 w-28 bg-slate-200 rounded-full mb-2" />
+          <div className="h-3 w-16 bg-slate-100 rounded-full" />
         </div>
       ))}
-    </section>
-
-    <section className="card">
-      <div className="skeleton mb-2.5 h-4 w-[180px]" />
-      <div className="skeleton mb-[18px] h-3 w-[240px]" />
-      <div className="quick-actions-row grid grid-cols-3 gap-[10px]">
-        <div className="skeleton h-11" />
-        <div className="skeleton h-11" />
+    </div>
+    {/* Quick actions */}
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm animate-pulse">
+      <div className="h-4 w-24 bg-slate-200 rounded-full mb-4" />
+      <div className="grid grid-cols-3 gap-2.5">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-24 rounded-2xl bg-slate-100" />
+        ))}
       </div>
-    </section>
+    </div>
   </div>
 );
 
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN PAGE
+═══════════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
   const router = useRouter();
   const now = new Date();
 
+  /* ── All state (UNCHANGED) ── */
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [stats, setStats] = useState(null);
-  const [topProducts, setTopProducts] = useState([]);
-  const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [selectedYear,  setSelectedYear]  = useState(now.getFullYear());
+  const [stats,               setStats]               = useState(null);
+  const [topProducts,         setTopProducts]         = useState([]);
+  const [lowStockProducts,    setLowStockProducts]    = useState([]);
   const [totalCustomerUdhaar, setTotalCustomerUdhaar] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [cacheLoaded, setCacheLoaded] = useState(false);
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
+  const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
+  const [cacheLoaded,  setCacheLoaded]  = useState(false);
+  const [isOnline,     setIsOnline]     = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
+  /* ── All effects/logic (UNCHANGED) ── */
   useEffect(() => {
     const token = getToken();
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+    if (!token) { router.push('/login'); return; }
 
     const cached = readDashboardCache(selectedMonth, selectedYear);
     if (cached) {
@@ -141,12 +120,7 @@ export default function DashboardPage() {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
-
-        if (!res.ok) {
-          if (res.status === 401) router.push('/login');
-          return;
-        }
-
+        if (!res.ok) { if (res.status === 401) router.push('/login'); return; }
         const data = await res.json();
         setStats(data.stats || null);
         setTopProducts(data.topProducts || []);
@@ -157,336 +131,414 @@ export default function DashboardPage() {
         writeDashboardCache(selectedMonth, selectedYear, data);
         setCacheUpdatedAt(new Date().toISOString());
       } catch (error) {
-        if (error.name !== 'AbortError' && !cached) {
-          setLoading(false);
-        }
+        if (error.name !== 'AbortError' && !cached) setLoading(false);
       } finally {
         setRefreshing(false);
       }
     });
 
-    return () => {
-      controller.abort();
-      cancelDeferred(idleId);
-    };
+    return () => { controller.abort(); cancelDeferred(idleId); };
   }, [router, selectedMonth, selectedYear]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const handleOnline = () => setIsOnline(true);
+    if (typeof window === 'undefined') return;
+    const handleOnline  = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
+    window.addEventListener('online',  handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
-      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('online',  handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
+  /* ── Derived values (UNCHANGED) ── */
   const fmt = (n) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
+
   const cacheLabel = cacheUpdatedAt
-    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
     : null;
 
   if (loading && !cacheLoaded) {
-    return (
-      <Layout>
-        <DashboardSkeleton />
-      </Layout>
-    );
+    return <Layout><DashboardSkeleton /></Layout>;
   }
 
-  const netGST = stats?.netGSTPayable ?? 0;
-  const profit = stats?.grossProfit ?? 0;
-  const revenue = stats?.totalRevenue || 0;
-  const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
+  const netGST       = stats?.netGSTPayable ?? 0;
+  const profit       = stats?.grossProfit ?? 0;
+  const revenue      = stats?.totalRevenue || 0;
+  const margin       = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
   const lowStockCount = lowStockProducts.length;
-  const statCards = [
+
+  const kpiCards = [
     {
       label: 'महीने की बिक्री',
       value: `₹${fmt(stats?.totalRevenue)}`,
       note: `${stats?.salesCount || 0} bill इस महीने`,
-      tone: 'secondary',
       href: '/sales',
+      accent: 'border-t-cyan-500',
+      valueColor: 'text-cyan-700',
+      noteBg: 'bg-cyan-50 text-cyan-700',
     },
     {
       label: 'मुनाफा',
       value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
       note: revenue > 0 ? `Margin ${margin}%` : 'रिपोर्ट देखें',
-      tone: profit >= 0 ? 'secondary' : 'danger',
       href: '/reports',
+      accent: profit >= 0 ? 'border-t-emerald-500' : 'border-t-rose-500',
+      valueColor: profit >= 0 ? 'text-emerald-700' : 'text-rose-600',
+      noteBg: profit >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600',
     },
     {
-      label: 'उधार',
+      label: 'उधार बाकी',
       value: `₹${fmt(totalCustomerUdhaar)}`,
-      note: totalCustomerUdhaar > 0 ? 'कलेक्शन बाकी है' : 'सब clear है',
-      tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
+      note: totalCustomerUdhaar > 0 ? 'Collection बाकी है' : 'सब clear है ✓',
       href: '/udhaar',
+      accent: totalCustomerUdhaar > 0 ? 'border-t-rose-500' : 'border-t-emerald-400',
+      valueColor: totalCustomerUdhaar > 0 ? 'text-rose-600' : 'text-emerald-700',
+      noteBg: totalCustomerUdhaar > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700',
     },
     {
       label: 'GST Due',
       value: `₹${fmt(Math.abs(netGST))}`,
       note: netGST >= 0 ? 'Tax जमा करना है' : 'Refund side',
-      tone: 'warning',
       href: '/gst',
+      accent: 'border-t-amber-500',
+      valueColor: 'text-amber-700',
+      noteBg: 'bg-amber-50 text-amber-700',
     },
   ];
 
   const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'बेचिए', en: 'Sale', sub: 'नया bill बनाएं', semantic: 'sales', iconClass: 'bg-blue-600/10 text-blue-700' },
-    { href: '/purchases', icon: 'purchase', hi: 'खरीदिए', en: 'Purchase', sub: 'नया purchase लिखें', semantic: 'purchase', iconClass: 'bg-sky-500/10 text-sky-700' },
-    { href: '/udhaar', icon: 'credit', hi: 'उधार', en: 'Credit', sub: 'बाकी हिसाब देखें', semantic: 'credit', iconClass: 'bg-rose-500/10 text-rose-600' },
-    { href: '/product', icon: 'stock', hi: 'स्टॉक', en: 'Product', sub: 'माल update करें', semantic: 'stock', iconClass: 'bg-indigo-500/10 text-indigo-700' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'Tax', sub: 'Tax summary खोलें', semantic: 'gst', iconClass: 'bg-cyan-600/10 text-cyan-700' },
-    { href: '/pricing', icon: 'premium', hi: 'प्रो', en: 'Premium', sub: 'और tools unlock करें', semantic: 'premium', iconClass: 'bg-blue-500/10 text-blue-700' },
-  ];
-  const focusPills = [
-    `${stats?.salesCount || 0} bill`,
-    `₹${fmt(totalCustomerUdhaar)} उधार`,
-    `${lowStockCount} low stock`,
-    `${margin}% margin`,
-  ];
-  const progressPct = Math.min(100, Math.abs((profit / (revenue || 1)) * 100));
-  const progressWidthClass = progressPct >= 100 ? 'w-full'
-    : progressPct >= 90 ? 'w-[90%]'
-      : progressPct >= 80 ? 'w-[80%]'
-        : progressPct >= 70 ? 'w-[70%]'
-          : progressPct >= 60 ? 'w-[60%]'
-            : progressPct >= 50 ? 'w-1/2'
-              : progressPct >= 40 ? 'w-[40%]'
-                : progressPct >= 30 ? 'w-[30%]'
-                  : progressPct >= 20 ? 'w-1/5'
-                    : progressPct >= 10 ? 'w-[10%]'
-                      : progressPct > 0 ? 'w-[5%]'
-                        : 'w-0';
-  const topProductRankClass = [
-    'bg-gradient-to-br from-blue-700 to-blue-500',
-    'bg-gradient-to-br from-sky-600 to-cyan-400',
-    'bg-gradient-to-br from-indigo-600 to-blue-400',
-    'bg-gradient-to-br from-violet-600 to-indigo-400',
-    'bg-gradient-to-br from-slate-700 to-blue-400',
+    { href: '/sales',     icon: 'sales',    hi: 'बेचिए',    sub: 'नया bill बनाएं',     iconBg: 'bg-cyan-50',    iconColor: 'text-cyan-700'   },
+    { href: '/purchases', icon: 'purchase', hi: 'खरीदिए',   sub: 'नया purchase लिखें', iconBg: 'bg-blue-50',    iconColor: 'text-blue-700'   },
+    { href: '/udhaar',    icon: 'credit',   hi: 'उधार',     sub: 'बाकी हिसाब देखें',   iconBg: 'bg-rose-50',    iconColor: 'text-rose-600'   },
+    { href: '/product',   icon: 'stock',    hi: 'स्टॉक',    sub: 'माल update करें',     iconBg: 'bg-violet-50',  iconColor: 'text-violet-700' },
+    { href: '/gst',       icon: 'gst',      hi: 'GST',      sub: 'Tax summary खोलें',   iconBg: 'bg-amber-50',   iconColor: 'text-amber-700'  },
+    { href: '/reports',   icon: 'reports',  hi: 'रिपोर्ट',  sub: 'Sales hisaab देखें',  iconBg: 'bg-indigo-50',  iconColor: 'text-indigo-700' },
   ];
 
+  const breakdownItems = [
+    { label: 'Bikri',   value: stats?.totalRevenue, prefix: '',   color: 'text-cyan-700'    },
+    { label: 'Munafa',  value: profit,               prefix: profit >= 0 ? '+' : '', color: profit >= 0 ? 'text-emerald-700' : 'text-rose-600' },
+    { label: 'GST Mila',value: stats?.gstCollected, prefix: '',   color: 'text-amber-700'   },
+    { label: 'ITC',     value: stats?.gstITC,        prefix: '-',  color: 'text-blue-600'    },
+    { label: 'Net GST', value: netGST,               prefix: '',   color: netGST >= 0 ? 'text-slate-900' : 'text-emerald-600' },
+  ];
+
+  const rankColors = [
+    'from-cyan-500 to-blue-600',
+    'from-blue-500 to-indigo-600',
+    'from-indigo-500 to-violet-600',
+    'from-violet-500 to-purple-600',
+    'from-slate-600 to-slate-800',
+  ];
+
+  /* ─────────────────────────────────────────────────────────────── */
   return (
     <Layout>
-      <div className="page-shell dashboard-shell">
-        <Link href="/udhaar" className="dashboard-udhaar-float" aria-label="उधार page खोलें">
-          <span className="dashboard-udhaar-float-kicker">Quick Access</span>
-          <strong>उधार</strong>
-        </Link>
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
-        <section className="hero-panel dashboard-hero">
-          <div className="page-toolbar dashboard-toolbar items-start gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="rr-page-eyebrow">Monthly business snapshot</p>
-              <div className="page-title leading-tight">नमस्ते, इस महीने का दुकान dashboard</div>
-              {refreshing ? (
-                <p className="rr-meta-line">Latest numbers refresh हो रहे हैं...</p>
-              ) : !isOnline ? (
-                <p className="rr-meta-line is-warn">
-                  Offline snapshot active{cacheLabel ? ` · last sync ${cacheLabel}` : ''}
-                </p>
-              ) : cacheLoaded && cacheLabel ? (
-                <p className="rr-meta-line">Last synced {cacheLabel} · सबसे ज़रूरी चीजें नीचे ready हैं</p>
-              ) : null}
+        {/* ── HERO / PAGE HEADER ── */}
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/40 p-5 shadow-sm">
+          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-cyan-200/30 blur-3xl" />
+
+          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            {/* Left — title + status */}
+            <div className="flex-1 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700">
+                <span className={`w-1.5 h-1.5 rounded-full ${refreshing ? 'bg-cyan-400 animate-pulse' : 'bg-cyan-500'}`} />
+                {refreshing ? 'Refreshing...' : 'Dashboard'}
+              </span>
+              <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight tracking-tight">
+                नमस्ते 👋 दुकान का हाल
+              </h1>
+              <p className="mt-1 text-[13px] text-slate-500">
+                {!isOnline
+                  ? `📶 Offline snapshot · ${cacheLabel ? `last sync ${cacheLabel}` : 'no network'}`
+                  : cacheLabel
+                    ? `Last synced ${cacheLabel}`
+                    : 'आज का पूरा हिसाब एक जगह'
+                }
+              </p>
             </div>
 
-            <div className="dashboard-period-controls dashboard-period-shell flex w-[108px] shrink-0 flex-col gap-1.5 sm:w-[118px]">
+            {/* Right — month/year selects */}
+            <div className="flex items-center gap-2 flex-shrink-0">
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="form-input h-9 min-w-0 px-2 text-[12px]"
+                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
               >
-                {MONTHS.map((month, index) => (
-                  <option key={month} value={index + 1}>{month}</option>
-                ))}
+                {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="form-input h-9 min-w-0 px-2 text-[12px]"
+                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
               >
-                {[2023, 2024, 2025, 2026].map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
+                {[2023, 2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2.5">
-            {focusPills.map((pill) => (
-              <StatusBadge key={pill} tone="secondary" className="rounded-full px-3 py-1.5">
+
+          {/* Summary pills */}
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            {[
+              `${stats?.salesCount || 0} bills`,
+              `₹${fmt(totalCustomerUdhaar)} उधार`,
+              `${lowStockCount} low stock`,
+              `${margin}% margin`,
+            ].map((pill) => (
+              <span key={pill} className="inline-flex items-center px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[12px] font-semibold text-slate-600 shadow-sm">
                 {pill}
-              </StatusBadge>
+              </span>
             ))}
           </div>
-        </section>
+        </div>
 
-        {!isOnline ? (
-          <section className="rr-banner-warn" role="status">
-            <strong>Offline mode on</strong>
+        {/* ── OFFLINE BANNER ── */}
+        {!isOnline && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200">
+            <span className="text-xl flex-shrink-0">📶</span>
             <div>
-              अभी saved snapshot दिख रहा है. Internet आते ही live sales, GST, stock और उधार numbers फिर से update हो जाएंगे.
-            </div>
-          </section>
-        ) : null}
-
-        <section className="metric-grid">
-          {statCards.map((card) => (
-            <StatCard
-              key={card.label}
-              className="dashboard-stat-card"
-              tone={card.tone}
-              label={card.label}
-              value={card.value}
-              note={card.note}
-              onClick={() => router.push(card.href)}
-            />
-          ))}
-        </section>
-
-        {revenue > 0 && (
-          <section className="card dashboard-section-card">
-            <div className="mb-[18px] flex flex-wrap justify-between gap-[14px]">
-              <div>
-                <div className="section-title">पैसों का हिसाब</div>
-                <div className="section-subtitle">बिक्री, मुनाफा और GST एक simple view में</div>
+              <div className="text-[13px] font-black text-amber-800">Offline Mode</div>
+              <div className="text-[11px] text-amber-600">
+                Saved snapshot दिख रहा है। Internet आने पर live numbers update होंगे।
               </div>
-              <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
+            </div>
+          </div>
+        )}
+
+        {/* ── KPI CARDS 2×2 ── */}
+        <div className="grid grid-cols-2 gap-2.5">
+          {kpiCards.map((card) => (
+            <button
+              key={card.label}
+              type="button"
+              onClick={() => router.push(card.href)}
+              className={`bg-white rounded-2xl border border-slate-200 border-t-4 ${card.accent} p-4 shadow-sm text-left hover:-translate-y-0.5 hover:shadow-md transition-all`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                {card.label}
+              </div>
+              <div className={`text-[22px] font-black leading-none tracking-tight ${card.valueColor} mb-2`}>
+                {card.value}
+              </div>
+              <span className={`inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-bold ${card.noteBg}`}>
+                {card.note}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── LOW STOCK ALERT ── */}
+        {lowStockCount > 0 && (
+          <button
+            type="button"
+            onClick={() => router.push('/product')}
+            className="w-full text-left bg-white rounded-2xl border border-amber-200 border-t-4 border-t-amber-500 p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+                    Low Stock Alert
+                  </span>
+                </div>
+                <div className="text-[15px] font-black text-slate-900">
+                  {lowStockCount} item{lowStockCount > 1 ? 's' : ''} जल्दी खत्म होंगे
+                </div>
+              </div>
+              <span className="inline-flex items-center px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 text-[12px] font-black text-amber-700 flex-shrink-0">
+                Stock खोलो →
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {lowStockProducts.slice(0, 5).map((p) => (
+                <span key={p._id} className="inline-flex items-center px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[11px] font-bold text-amber-800">
+                  {p.name} <span className="ml-1 opacity-60">({p.quantity ?? 0})</span>
+                </span>
+              ))}
+              {lowStockCount > 5 && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] font-bold text-slate-500">
+                  +{lowStockCount - 5} more
+                </span>
+              )}
+            </div>
+          </button>
+        )}
+
+        {/* ── QUICK ACTIONS ── */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Shortcuts</span>
+              <div className="text-[16px] font-black text-slate-900 mt-0.5">जल्दी काम</div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] font-bold text-slate-500">
+              6 shortcuts
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2.5">
+            {quickActions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="flex flex-col items-start gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white hover:-translate-y-0.5 hover:shadow-sm transition-all no-underline"
+              >
+                <div className={`w-9 h-9 rounded-xl ${action.iconBg} ${action.iconColor} flex items-center justify-center flex-shrink-0`}>
+                  <QuickActionGlyph name={action.icon} />
+                </div>
+                <div>
+                  <div className="text-[13px] font-black text-slate-900 leading-tight">{action.hi}</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 leading-snug">{action.sub}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* ── FINANCIAL BREAKDOWN ── */}
+        {revenue > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  {MONTHS[selectedMonth - 1]} {selectedYear}
+                </span>
+                <div className="text-[16px] font-black text-slate-900 mt-0.5">पैसों का हिसाब</div>
+              </div>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                profit >= 0
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-rose-50 border-rose-200 text-rose-600'
+              }`}>
+                Margin {margin}%
+              </span>
             </div>
 
-            <div className="metric-grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
-              {[
-                { label: 'Bikri', value: stats?.totalRevenue, valueClass: 'text-blue-700', prefix: '' },
-                { label: 'Munafa', value: profit, valueClass: profit >= 0 ? 'text-blue-600' : 'text-red-600', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Mila', value: stats?.gstCollected, valueClass: 'text-blue-500', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, valueClass: 'text-cyan-600', prefix: '-' },
-                { label: 'Net GST', value: netGST, valueClass: netGST >= 0 ? 'text-blue-700' : 'text-emerald-500', prefix: '' },
-              ].map((item) => (
-                <div key={item.label} className="dashboard-breakdown-card rounded-[18px] p-[14px]">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-600">
-                      {item.label}
-                    </div>
-                  <div className={`mt-2 text-[24px] font-extrabold tracking-[-0.05em] ${item.valueClass}`}>
+            {/* Breakdown chips */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-4">
+              {breakdownItems.map((item) => (
+                <div key={item.label} className="bg-slate-50 rounded-xl border border-slate-100 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                    {item.label}
+                  </div>
+                  <div className={`text-[18px] font-black leading-none tracking-tight ${item.color}`}>
                     {item.prefix}₹{fmt(item.value)}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-5">
-              <div className="mb-1.5 flex justify-between gap-3 text-[12px] text-slate-600">
-                <span>Profit Margin</span>
-                <strong className={profit >= 0 ? 'text-blue-600' : 'text-red-600'}>{margin}%</strong>
+            {/* Profit margin progress bar */}
+            <div>
+              <div className="flex items-center justify-between text-[12px] mb-1.5">
+                <span className="text-slate-500">Profit Margin</span>
+                <span className={`font-black ${profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                  {margin}%
+                </span>
               </div>
-              <div className="dashboard-progress-track h-2.5 overflow-hidden rounded-full">
+              <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
                 <div
-                  className={`dashboard-progress-fill h-full rounded-full ${progressWidthClass} ${profit >= 0 ? 'bg-gradient-to-r from-blue-700 to-cyan-500' : 'bg-gradient-to-r from-red-600 to-rose-500'}`}
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    profit >= 0
+                      ? 'bg-gradient-to-r from-cyan-500 to-emerald-500'
+                      : 'bg-gradient-to-r from-rose-500 to-rose-600'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.abs(parseFloat(margin)))}%` }}
                 />
               </div>
             </div>
-          </section>
+          </div>
         )}
 
-        {lowStockCount > 0 && (
-          <section
-            className="card dashboard-section-card dashboard-warning-card cursor-pointer"
-            onClick={() => router.push('/product')}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <div className="section-title text-blue-700">Low Stock Alert</div>
-                <div className="section-subtitle text-slate-600">
-                  {lowStockCount} item{lowStockCount > 1 ? 's hain' : ' hai'} jo jaldi khatam ho sakte hain
-                </div>
-                <div className="mt-[14px] flex flex-wrap gap-2">
-                  {lowStockProducts.slice(0, 5).map((product) => (
-                    <span
-                      key={product._id}
-                      className="dashboard-chip-warning px-[11px] py-[7px]"
-                    >
-                      {product.name} ({product.quantity ?? 0})
-                    </span>
-                  ))}
-                  {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
-                </div>
-              </div>
-              <div className="btn-primary w-auto">स्टॉक खोलो</div>
-            </div>
-          </section>
-        )}
-
-        <section className="card dashboard-section-card pb-[18px]">
-          <div className="mb-[14px] flex flex-wrap items-center justify-between gap-[14px]">
+        {/* ── TOP PRODUCTS ── */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="section-title">जल्दी काम</div>
-              <div className="section-subtitle">रोज़ के सबसे useful shortcuts</div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                {MONTHS[selectedMonth - 1]} {selectedYear}
+              </span>
+              <div className="text-[16px] font-black text-slate-900 mt-0.5">Top Products</div>
             </div>
-            <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
+            <Link
+              href="/sales"
+              className="text-[12px] font-bold text-cyan-600 hover:text-cyan-700 transition-colors"
+            >
+              सब देखें →
+            </Link>
           </div>
-          <div className="quick-actions-carousel">
-            <div className="quick-actions-row grid grid-cols-3 gap-[10px]">
-              {quickActions.map((action) => (
-                <Link
-                  key={action.href}
-                  href={action.href}
-                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic} min-h-[94px] rounded-[18px] px-3 py-[14px] no-underline`}
-                >
-                  <div className="grid justify-items-start gap-[10px]">
-                    <div className={`dashboard-quick-icon flex h-10 min-w-10 shrink-0 items-center justify-center rounded-[10px] ${action.iconClass}`}><QuickActionGlyph name={action.icon} /></div>
-                    <div>
-                      <div className="text-[13px] font-extrabold leading-[1.3] text-slate-900">{action.hi}</div>
-                      <div className="mt-0.5 text-[11px] leading-[1.45] text-slate-600">{action.sub}</div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <div className="quick-actions-fade" aria-hidden="true" />
-            <div className="quick-actions-chevron" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-        </section>
 
-        <section className="card dashboard-section-card">
-          <div className="mb-4">
-            <div className="section-title">Top Products</div>
-            <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} mein sabse zyada bikne wale items</div>
-          </div>
           {topProducts.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">PK</div>
-              <div>Is period ke liye abhi top products data nahi mila.</div>
+            /* ── Proper empty state (fixes the ugly PK avatar bug) ── */
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl mb-3">
+                📦
+              </div>
+              <div className="text-[14px] font-black text-slate-700 mb-1">
+                अभी कोई data नहीं है
+              </div>
+              <div className="text-[12px] text-slate-400 mb-4 max-w-[200px] leading-relaxed">
+                इस period में sales record करो — top products यहाँ दिखेंगे
+              </div>
+              <Link
+                href="/sales"
+                className="inline-flex items-center px-4 py-2 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg transition-all"
+              >
+                + पहला Bill बनाएं
+              </Link>
             </div>
           ) : (
-            <div className="top-products-row grid grid-cols-4 gap-[10px]">
+            <div className="flex flex-col gap-2.5">
               {topProducts.map((product, index) => (
                 <div
                   key={product.name}
-                  className="dashboard-top-card flex min-w-0 items-center gap-[10px] rounded-[18px] p-[14px]"
+                  className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-slate-200 transition-all"
                 >
-                  <div className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[14px] font-extrabold text-white ${topProductRankClass[index] || topProductRankClass[0]}`}>
+                  {/* Rank badge */}
+                  <div className={`w-9 h-9 flex-shrink-0 rounded-xl bg-gradient-to-br ${rankColors[index] || rankColors[0]} flex items-center justify-center text-[13px] font-black text-white shadow-sm`}>
                     {index + 1}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate whitespace-nowrap text-[14px] font-bold text-sl5te-900">{product.name}</div>
-                    <div className="text-[12px] text-slate-600">{product.qty} units sold</div>
+                  {/* Name + qty */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-black text-slate-900 truncate">{product.name}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{product.qty} units sold</div>
                   </div>
-                  <div className="shrink-0 text-[15px] font-extrabold text-emerald-600">₹{fmt(product.revenue)}</div>
+                  {/* Revenue */}
+                  <div className="flex-shrink-0 text-[15px] font-black text-emerald-700">
+                    ₹{fmt(product.revenue)}
+                  </div>
                 </div>
               ))}
             </div>
           )}
-        </section>
+        </div>
+
+        {/* ── BOTTOM CTA — upgrade nudge for non-pro ── */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 shadow-sm">
+          <div className="pointer-events-none absolute -top-8 -right-8 w-32 h-32 rounded-full bg-cyan-500/10" />
+          <div className="pointer-events-none absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-blue-500/10" />
+          <div className="relative flex items-center justify-between gap-4">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                रखरखाव Pro
+              </div>
+              <div className="text-[15px] font-black text-white leading-tight">
+                Full reports, GST export,<br />unlimited billing
+              </div>
+            </div>
+            <Link
+              href="/pricing"
+              className="flex-shrink-0 inline-flex items-center px-4 py-2.5 rounded-xl text-[13px] font-black text-slate-900 bg-white shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all"
+            >
+              Upgrade ⚡
+            </Link>
+          </div>
+        </div>
+
       </div>
     </Layout>
   );
 }
-
