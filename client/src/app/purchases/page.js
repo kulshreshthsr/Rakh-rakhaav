@@ -529,9 +529,9 @@ export default function PurchasesPage() {
             { label: 'Input GST',     value: `₹${totalItcDisplay.toFixed(2)}`,    note: 'ITC available',              accent: 'border-t-blue-500',   val: 'text-blue-700',    icon: '📋', bg: 'bg-blue-50'   },
             { label: 'Balance Due',   value: `₹${totalDueDisplay.toFixed(2)}`,    note: totalDueDisplay > 0 ? 'Supplier credit outstanding' : 'All paid ✓', accent: totalDueDisplay > 0 ? 'border-t-rose-500' : 'border-t-emerald-400', val: totalDueDisplay > 0 ? 'text-rose-600' : 'text-emerald-700', icon: '💸', bg: totalDueDisplay > 0 ? 'bg-rose-50' : 'bg-emerald-50' },
           ].map((kpi) => (
-            <div key={kpi.label} className={`bg-white rounded-2xl border border-slate-200 border-t-4 ${kpi.accent} p-4 lg:p-5 shadow-sm`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className={`w-9 h-9 rounded-xl ${kpi.bg} flex items-center justify-center text-lg`}>{kpi.icon}</div>
+            <div key={kpi.label} className={`bg-white rounded-2xl border border-slate-200 border-t-4 ${kpi.accent} p-3.5 shadow-sm`}>
+              <div className="flex items-start justify-between mb-2.5">
+                <div className={`w-8 h-8 rounded-xl ${kpi.bg} flex items-center justify-center text-base`}>{kpi.icon}</div>
                 {kpi.label === 'Balance Due' && totalDueDisplay > 0 && (
                   <button type="button" onClick={focusPendingPurchase}
                     className="text-[11px] font-black text-cyan-600 bg-cyan-50 border border-cyan-200 px-2.5 py-1 rounded-lg hover:bg-cyan-100 transition-colors"
@@ -540,8 +540,8 @@ export default function PurchasesPage() {
                   </button>
                 )}
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{kpi.label}</div>
-              <div className={`text-[22px] font-black leading-none tracking-tight ${kpi.val} mb-2`}>{kpi.value}</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">{kpi.label}</div>
+              <div className={`text-[20px] font-black leading-none tracking-tight ${kpi.val} mb-1.5`}>{kpi.value}</div>
               <span className={`inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-bold ${kpi.bg} ${kpi.val}`}>{kpi.note}</span>
             </div>
           ))}

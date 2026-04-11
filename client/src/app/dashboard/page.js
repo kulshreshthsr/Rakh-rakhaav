@@ -256,14 +256,14 @@ export default function DashboardPage() {
         - Desktop: 4-col KPI row + 3-col main grid (2 left + 1 right)
         - Mobile: single column, bottom nav padding
       */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28 space-y-5">
+      <div className="w-full px-4 sm:px-6 lg:px-8 pt-7 pb-32 space-y-7">
 
         {/* ══ HERO HEADER ════════════════════════════════════════════ */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/60 px-5 py-5 lg:px-7 lg:py-6 shadow-sm">
+        <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/60 px-6 py-6 lg:px-8 lg:py-7 shadow-sm">
           <div className="pointer-events-none absolute -top-16 -right-10 w-64 h-64 rounded-full bg-cyan-200/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-blue-200/15 blur-3xl" />
 
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             {/* Left */}
             <div className="flex-1 min-w-0">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700 shadow-sm">
@@ -318,7 +318,7 @@ export default function DashboardPage() {
         )}
 
         {/* ══ KPI ROW — 2 cols mobile → 4 cols desktop ══════════════ */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiCards.map((card) => (
             <button
               key={card.label}
@@ -388,10 +388,10 @@ export default function DashboardPage() {
             lg:col-span-2  →  Financial breakdown + Top Products
             lg:col-span-1  →  Quick actions + Upgrade + Summary strip
         ══════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
           {/* ── LEFT: 2/3 width ─────────────────────────────────── */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-5">
 
             {/* Financial breakdown */}
             {revenue > 0 && (
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* 5-chip breakdown */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
                   {breakdownItems.map((item) => (
                     <div key={item.label} className="bg-slate-50 rounded-xl border border-slate-100 p-3">
                       <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
@@ -501,20 +501,20 @@ export default function DashboardPage() {
           </div>
 
           {/* ── RIGHT: 1/3 width ─────────────────────────────────── */}
-          <div className="space-y-4">
+            <div className="space-y-5">
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
               <div className="mb-4">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Shortcuts</span>
                 <div className="text-[16px] font-black text-slate-900 mt-0.5">जल्दी काम</div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible">
                 {quickActions.map((action) => (
                   <Link
                     key={action.href}
                     href={action.href}
-                    className="flex flex-col items-start gap-2.5 p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white hover:-translate-y-0.5 hover:shadow-sm transition-all no-underline"
+                    className="min-w-[140px] sm:min-w-0 flex flex-col items-start gap-2.5 p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white hover:-translate-y-0.5 hover:shadow-sm transition-all no-underline"
                   >
                     <div className={`w-9 h-9 rounded-xl ${action.iconBg} ${action.iconColor} flex items-center justify-center flex-shrink-0`}>
                       <QuickActionGlyph name={action.icon} />
