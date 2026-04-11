@@ -28,8 +28,8 @@ const NAV_ITEMS = [
 const MOBILE_BOTTOM_NAV = [
   { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    icon: 'dashboard' },
   { href: '/sales',     key: 'sales',     shortLabel: 'Sale',    icon: 'sales'     },
-  { href: '/reports',   key: 'reports',   shortLabel: 'Reports', icon: 'reports'   },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',  icon: 'udhaar'    },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',      icon: 'purchases' },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Credit',   icon: 'udhaar'    },
 ];
 
 // ── More drawer items ──
@@ -37,6 +37,7 @@ const MORE_DRAWER_ITEMS = [
   { href: '/dashboard', key: 'dashboard', label: 'होम',       sublabel: 'Dashboard',  icon: 'dashboard' },
   { href: '/sales',     key: 'sales',     label: 'बेचिए',     sublabel: 'Sale',       icon: 'sales'     },
   { href: '/purchases', key: 'purchases', label: 'खरीदिए',    sublabel: 'Purchase',   icon: 'purchases' },
+  { href: '/reports',   key: 'reports',   shortLabel: 'Reports', icon: 'reports'   },
   { href: '/gst',       key: 'gst',       label: 'GST',        sublabel: 'Tax Filing', icon: 'gst'       },
   { href: '/udhaar',    key: 'udhaar',    label: 'उधार',       sublabel: 'Credit',     icon: 'udhaar'    },
 ];
