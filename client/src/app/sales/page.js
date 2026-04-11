@@ -542,24 +542,37 @@ export default function SalesPage() {
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-28">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">बिक्री</p>
-            <h1 className="text-[22px] font-black text-slate-900">Sales</h1>
+        <div className="relative overflow-hidden mb-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/60 to-blue-50/60 p-5 sm:p-6 shadow-sm">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -top-16 -right-10 h-44 w-44 rounded-full bg-cyan-200/40 blur-3xl" />
+            <div className="absolute -bottom-12 -left-10 h-40 w-40 rounded-full bg-blue-200/35 blur-3xl" />
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/sales/customers"
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-sm hover:-translate-y-px hover:shadow-md transition-all"
-            >
-              👥 Customers
-            </Link>
-            <button
-              type="button"
-              onClick={() => { resetForm(); setShowModal(true); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
-            >
-              + नया Bill
-            </button>
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-cyan-700 shadow-sm">
+                बिक्री • Sales
+              </div>
+              <h1 className="mt-3 text-[clamp(22px,4.5vw,30px)] font-black leading-[1.12] text-slate-900">
+                रोज़ की बिक्री अब super clear
+              </h1>
+              <p className="mt-2 text-[13.5px] text-slate-500">
+                Invoice बनाओ, ग्राहक जोड़ो, और payments track करो — सब एक जगह।
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href="/sales/customers"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-sm hover:-translate-y-px hover:shadow-md transition-all"
+              >
+                👥 Customers
+              </Link>
+              <button
+                type="button"
+                onClick={() => { resetForm(); setShowModal(true); }}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
+              >
+                + नया Bill
+              </button>
+            </div>
           </div>
         </div>
 
