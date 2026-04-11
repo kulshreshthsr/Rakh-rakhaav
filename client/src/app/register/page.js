@@ -2,66 +2,55 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { clearTrialGateSeen, getPostAuthRoute, readStoredSubscription, setWelcomePending, writeStoredSubscription } from '../../lib/subscription';
+import {
+  clearTrialGateSeen,
+  getPostAuthRoute,
+  readStoredSubscription,
+  setWelcomePending,
+  writeStoredSubscription,
+} from '../../lib/subscription';
 import { apiUrl } from '../../lib/api';
 
-const FEATURES = [
-  {
-    title: 'Quick setup',
-    description: 'Account kholo aur seedha real business kaam par jao, extra complexity ke bina.',
-  },
-  {
-    title: 'Made for Indian retail',
-    description: 'Inventory, purchases, dues aur tax workflows daily shop use ke hisaab se bane hain.',
-  },
-  {
-    title: 'Free',
-    description: 'Trial-ready workspace के साथ start करें',
-  },
-  {
-    title: 'GST',
-    description: 'Clean aur dependable records ke liye built',
-  },
-  {
-    title: 'Mobile',
-    description: 'Small screens par bhi easy use ke liye design kiya gaya hai',
-  },
-  {
-    title: 'Premium support',
-    description: 'Indian business owners ke liye jab zarurat ho tab help',
-  },
+/* ── Feature list on left panel ── */
+const PERKS = [
+  { icon: '⚡', title: 'Quick setup', desc: 'Account बनाओ और real business kaam par jao।' },
+  { icon: '🇮🇳', title: 'Indian retail के लिए', desc: 'GST, उधार, stock — daily shop workflow।' },
+  { icon: '🆓', title: 'Free शुरू करो', desc: 'Trial-ready workspace के साथ start करें।' },
+  { icon: '📱', title: 'Mobile-first', desc: 'छोटी screen पर भी perfectly काम करता है।' },
 ];
 
 export default function RegisterPage() {
-  const [name, setName] = useState('');
+  const [name, setName]         = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  /* ── Derived state (same logic as original) ── */
   const normalizedUsername = username.trim().toLowerCase().replace(/\s+/g, '_');
   const usernameIsValid = normalizedUsername.length > 0 && /^[a-z0-9_]+$/.test(normalizedUsername);
   const usernameFeedback = normalizedUsername.length === 0
     ? ''
     : usernameIsValid
-      ? 'Username format looks good.'
+      ? 'Username format looks good ✓'
       : 'Use lowercase letters, numbers, and underscore only.';
 
   const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
-  const strengthFillClass = ['w-0 bg-slate-300', 'w-[33%] bg-rose-500', 'w-[66%] bg-amber-500', 'w-full bg-emerald-500'][strength];
-  const strengthLabelClass = ['text-slate-300', 'text-rose-500', 'text-amber-500', 'text-emerald-500'][strength];
-  const strengthLabel = ['', 'Weak', 'Fair', 'Strong'][strength];
+  const strengthBar   = ['w-0', 'w-1/3', 'w-2/3', 'w-full'][strength];
+  const strengthColor = ['bg-slate-300', 'bg-rose-500', 'bg-amber-500', 'bg-emerald-500'][strength];
+  const strengthText  = ['', 'Weak', 'Fair', 'Strong'][strength];
+  const strengthTextColor = ['text-slate-400', 'text-rose-500', 'text-amber-500', 'text-emerald-600'][strength];
 
+  /* ── Redirect if already logged in ── */
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      router.replace(getPostAuthRoute(readStoredSubscription()));
-    }
+    if (token) router.replace(getPostAuthRoute(readStoredSubscription()));
   }, [router]);
 
+  /* ── Submit (logic untouched) ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -70,12 +59,10 @@ export default function RegisterPage() {
       setError('Choose a valid username before creating your account.');
       return;
     }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
       return;
     }
-
     if (!acceptTerms) {
       setError('Please agree to the Terms and Privacy Policy to continue.');
       return;
@@ -107,128 +94,247 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="trust-auth-root trust-auth-root-login trust-auth-root-register">
-      <div className="trust-auth-shell trust-auth-shell-login">
-        <section className="trust-auth-showcase trust-auth-showcase-register trust-auth-showcase-compact">
-          <div className="trust-auth-kicker">Blue onboarding experience</div>
-          <div className="trust-auth-brand-row">
-            <div className="trust-auth-logo">R</div>
-            <div>
-              <div className="trust-auth-brand-name">Rakhrakhaav</div>
-              <div className="trust-auth-brand-subtitle">Launch a simple retail workspace</div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
 
-          <div className="trust-auth-copy trust-auth-copy-register">
-            <h1>एक बार setup करो. पहले invoice से ही business professional लगेगा.</h1>
-            <p>
-              अपना workspace बनाओ और billing, stock control, GST और customer dues के लिए एक clean system use करो.
+      {/* ══════════════════════════════════════
+          LEFT PANEL  (hidden on mobile)
+      ══════════════════════════════════════ */}
+      <div className="hidden lg:flex lg:w-[46%] xl:w-[42%] flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 relative overflow-hidden">
+
+        {/* Background blobs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-emerald-500/8 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl" />
+        </div>
+
+        {/* Brand */}
+        <div className="relative z-10">
+          <Link href="/" className="inline-flex items-center gap-3 no-underline">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-cyan-500/25">
+              र
+            </div>
+            <div>
+              <div className="text-[18px] font-black text-white tracking-tight leading-none">रखरखाव</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Simple Business App</div>
+            </div>
+          </Link>
+
+          <div className="mt-12">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">नया account</p>
+            <h1 className="text-[clamp(26px,3vw,38px)] font-black text-white leading-tight tracking-tight">
+              एक बार setup करो,<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
+                हमेशा के लिए clear।
+              </span>
+            </h1>
+            <p className="mt-4 text-[14px] leading-relaxed text-slate-400 max-w-xs">
+              पहले invoice से ही business professional लगेगा।
             </p>
           </div>
 
-          <div className="trust-feature-stack">
-            {FEATURES.map((feature) => (
-              <article key={feature.title} className="trust-feature-card">
-                <strong>{feature.title}</strong>
-                <span>{feature.description}</span>
-              </article>
+          {/* Perks */}
+          <div className="mt-10 flex flex-col gap-3">
+            {PERKS.map((p) => (
+              <div key={p.title} className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-white/5 border border-white/8">
+                <span className="text-xl mt-0.5">{p.icon}</span>
+                <div>
+                  <div className="text-[13px] font-bold text-white">{p.title}</div>
+                  <div className="text-[11.5px] text-slate-400 mt-0.5 leading-snug">{p.desc}</div>
+                </div>
+              </div>
             ))}
           </div>
-        </section>
+        </div>
 
-        <section className="trust-auth-card-wrap">
-          <div className="trust-auth-card trust-auth-card-login trust-auth-card-register">
-            <div className="trust-form-topline">Create secure workspace</div>
-            <div className="auth-title">Create account / नया account बनाएं</div>
-            <div className="auth-subtitle">आज ही अपना business workspace शुरू करें.</div>
-
-            {error && <div className="alert-error">{error}</div>}
-
-            <form onSubmit={handleSubmit} className="trust-auth-form">
-              <div className="form-group trust-auth-form-group">
-                <label className="form-label">Full Name</label>
-                <input
-                  className="form-input trust-auth-input"
-                  type="text"
-                  placeholder="Sonaa"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoComplete="name"
-                  required
-                />
-              </div>
-
-              <div className="form-group trust-auth-form-group">
-                <label className="form-label">Username</label>
-                <input
-                  className={`form-input trust-auth-input${normalizedUsername.length > 0 && !usernameIsValid ? ' trust-auth-input-error' : ''}`}
-                  type="text"
-                  placeholder="sonaa_store"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
-                  required
-                />
-                <div className={`trust-helper-text ${normalizedUsername.length > 0 ? (usernameIsValid ? 'is-success' : 'is-error') : ''}`}>
-                  {usernameFeedback || 'सिर्फ lowercase letters, numbers और underscore use करें.'}
-                </div>
-              </div>
-
-              <div className="form-group trust-auth-form-group">
-                <label className="form-label">Password</label>
-                <div className="trust-password-wrap">
-                  <input
-                    className="form-input trust-password-input trust-auth-input"
-                    type={showPass ? 'text' : 'password'}
-                    placeholder="Minimum 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
-                  <button type="button" onClick={() => setShowPass(!showPass)} className="trust-password-toggle">
-                    {showPass ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-                <div className="trust-helper-text">Security के लिए कम से कम 6 characters</div>
-                {password.length > 0 && (
-                  <div className="trust-strength-wrap">
-                    <div className="trust-strength-bar">
-                      <div className={`trust-strength-fill ${strengthFillClass}`} />
-                    </div>
-                    <div className={`trust-strength-label ${strengthLabelClass}`}>{strengthLabel}</div>
-                  </div>
-                )}
-              </div>
-
-              <label className="trust-auth-check trust-auth-check-terms">
-                <input
-                  type="checkbox"
-                  checked={acceptTerms}
-                  onChange={(e) => setAcceptTerms(e.target.checked)}
-                />
-                <span>
-                  मैं <a href="/terms" className="trust-auth-link">Terms</a> और <a href="/privacy" className="trust-auth-link">Privacy Policy</a> से agree करता/करती हूँ
-                </span>
-              </label>
-
-              <button type="submit" className="btn-primary trust-submit-btn" disabled={loading}>
-                {loading ? 'Creating account...' : 'Account बनाएं'}
-              </button>
-            </form>
-
-            <div className="trust-auth-divider" />
-            <div className="auth-note">
-              Account पहले से है?{' '}
-              <Link href="/login" className="cta-link">
-                Login करें
-              </Link>
-            </div>
-            <div className="trust-auth-legal-note">
-              <Link href="/" className="trust-auth-link">Back to home</Link>
-            </div>
+        {/* Bottom note */}
+        <div className="relative z-10 mt-8">
+          <div className="px-4 py-4 rounded-2xl bg-white/5 border border-white/8">
+            <p className="text-[12px] font-semibold text-slate-400">
+              🔒 आपका data secure है। कोई credit card नहीं चाहिए।
+            </p>
           </div>
-        </section>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════
+          RIGHT PANEL  — Register form
+      ══════════════════════════════════════ */}
+      <div className="flex-1 flex flex-col justify-center px-5 py-10 sm:px-10 lg:px-16 xl:px-20">
+
+        {/* Mobile brand */}
+        <div className="lg:hidden flex items-center gap-2.5 mb-8">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-base shadow-md">
+            र
+          </div>
+          <div>
+            <div className="text-[17px] font-black tracking-tight text-slate-900 leading-none">रखरखाव</div>
+            <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Simple Business App</div>
+          </div>
+        </div>
+
+        <div className="w-full max-w-sm mx-auto lg:mx-0">
+
+          {/* Heading */}
+          <div className="mb-7">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-600 mb-2">
+              Free account बनाएं
+            </p>
+            <h2 className="text-[26px] font-black tracking-tight text-slate-900 leading-tight">
+              नया account बनाओ 🚀
+            </h2>
+            <p className="mt-1.5 text-[14px] text-slate-500">
+              आज ही अपना business workspace शुरू करें।
+            </p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2.5 px-4 py-3 mb-5 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">
+              <span>⚠️</span> {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+            {/* Full Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Full Name
+              </label>
+              <input
+                type="text"
+                placeholder="Ramesh Gupta"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                required
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
+              />
+            </div>
+
+            {/* Username */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Username
+              </label>
+              <input
+                type="text"
+                placeholder="ramesh_store"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-[14px] text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all ${
+                  normalizedUsername.length > 0 && !usernameIsValid
+                    ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-500/20'
+                    : 'border-slate-200 focus:border-cyan-400'
+                }`}
+              />
+              {normalizedUsername.length > 0 && (
+                <p className={`text-[11.5px] font-semibold ${usernameIsValid ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  {usernameFeedback}
+                </p>
+              )}
+              {normalizedUsername.length === 0 && (
+                <p className="text-[11.5px] text-slate-400">
+                  सिर्फ lowercase letters, numbers और underscore use करें।
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Minimum 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                  className="w-full px-4 py-3 pr-16 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black uppercase tracking-wider text-cyan-600 hover:text-cyan-700 transition-colors"
+                >
+                  {showPass ? 'Hide' : 'Show'}
+                </button>
+              </div>
+
+              {/* Strength bar */}
+              {password.length > 0 && (
+                <div className="mt-1">
+                  <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-300 ${strengthBar} ${strengthColor}`} />
+                  </div>
+                  <p className={`mt-1 text-[11px] font-bold ${strengthTextColor}`}>{strengthText}</p>
+                </div>
+              )}
+              <p className="text-[11.5px] text-slate-400">Security के लिए कम से कम 6 characters</p>
+            </div>
+
+            {/* Terms checkbox */}
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded accent-cyan-600 flex-shrink-0"
+              />
+              <span className="text-[12px] text-slate-600 leading-relaxed">
+                मैं{' '}
+                <a href="/terms" className="font-bold text-cyan-600 hover:underline">Terms</a>
+                {' '}और{' '}
+                <a href="/privacy" className="font-bold text-cyan-600 hover:underline">Privacy Policy</a>
+                {' '}से agree करता/करती हूँ
+              </span>
+            </label>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-cyan-500/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 transition-all"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Creating account...
+                </>
+              ) : 'Account बनाएं →'}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          {/* Login link */}
+          <p className="text-center text-[13px] text-slate-500">
+            Account पहले से है?{' '}
+            <Link href="/login" className="font-bold text-cyan-600 hover:text-cyan-700 hover:underline transition-colors">
+              Login करें
+            </Link>
+          </p>
+
+          <p className="mt-4 text-center">
+            <Link href="/" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors">
+              ← Back to home
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

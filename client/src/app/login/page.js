@@ -12,22 +12,30 @@ import {
 } from '../../lib/subscription';
 import { apiUrl } from '../../lib/api';
 
+/* ── Small feature list shown on the left panel ── */
+const PERKS = [
+  { icon: '🧾', label: 'GST-ready billing' },
+  { icon: '📦', label: 'Stock always visible' },
+  { icon: '💸', label: 'उधार follow-up' },
+  { icon: '📊', label: 'One-tap reports' },
+];
+
 export default function LoginPage() {
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
+  const [password, setPassword]   = useState('');
+  const [showPass, setShowPass]   = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  /* ── Redirect if already logged in ── */
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      router.replace(getPostAuthRoute(readStoredSubscription()));
-    }
+    if (token) router.replace(getPostAuthRoute(readStoredSubscription()));
   }, [router]);
 
+  /* ── Submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -62,95 +70,209 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="trust-auth-root trust-auth-root-login">
-      <div className="trust-auth-shell trust-auth-shell-login">
-        <section className="trust-auth-showcase trust-auth-showcase-login trust-auth-showcase-compact">
-          <div className="trust-auth-kicker">Blue business workspace</div>
-          <div className="trust-auth-brand-row">
-            <div className="trust-auth-logo">R</div>
-            <div>
-              <div className="trust-auth-brand-name">Rakhrakhaav</div>
-              <div className="trust-auth-brand-subtitle">Simple दुकान control for Indian businesses</div>
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+
+      {/* ══════════════════════════════════════
+          LEFT PANEL  (hidden on mobile)
+      ══════════════════════════════════════ */}
+      <div className="hidden lg:flex lg:w-[46%] xl:w-[42%] flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 relative overflow-hidden">
+
+        {/* Background blobs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl" />
+        </div>
+
+        {/* Brand */}
+        <div className="relative z-10">
+          <Link href="/" className="inline-flex items-center gap-3 no-underline">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-cyan-500/25">
+              र
             </div>
+            <div>
+              <div className="text-[18px] font-black text-white tracking-tight leading-none">
+                रखरखाव
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
+                Simple Business App
+              </div>
+            </div>
+          </Link>
+
+          <div className="mt-12">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">
+              Welcome back
+            </p>
+            <h1 className="text-[clamp(28px,3vw,40px)] font-black text-white leading-tight tracking-tight">
+              अपनी दुकान का<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                हिसाब खोलो।
+              </span>
+            </h1>
+            <p className="mt-4 text-[14px] leading-relaxed text-slate-400 max-w-xs">
+              GST billing, inventory, purchases और उधार — सब एक जगह आपका इंतज़ार कर रहा है।
+            </p>
           </div>
 
-          <div className="trust-auth-copy trust-auth-copy-compact">
-            <h1>अपना business clear तरीके से चलाओ.</h1>
-            <p>GST billing, inventory, purchases और उधार एक simple blue workspace में.</p>
+          {/* Perk chips */}
+          <div className="mt-10 grid grid-cols-2 gap-3">
+            {PERKS.map((p) => (
+              <div key={p.label} className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-white/5 border border-white/8">
+                <span className="text-xl">{p.icon}</span>
+                <span className="text-[12px] font-semibold text-slate-300">{p.label}</span>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
 
-        <section className="trust-auth-card-wrap">
-          <div className="trust-auth-card trust-auth-card-login">
-            <div className="trust-form-topline">Secure sign in</div>
-            <div className="auth-title">Welcome back / दोबारा स्वागत है</div>
-            <div className="auth-subtitle">Sign in करके अपना business workspace खोलिए.</div>
+        {/* Bottom quote */}
+        <div className="relative z-10 mt-10">
+          <div className="px-4 py-4 rounded-2xl bg-white/5 border border-white/8">
+            <p className="text-[13px] leading-relaxed text-slate-300 italic">
+              "पहले हाथ से सब लिखते थे, अब रखरखाव से सब clear है।"
+            </p>
+            <p className="mt-2 text-[11px] font-bold text-slate-500">— Kirana store owner, Kanpur</p>
+          </div>
+        </div>
+      </div>
 
-            {error && <div className="alert-error">{error}</div>}
+      {/* ══════════════════════════════════════
+          RIGHT PANEL  — Login form
+      ══════════════════════════════════════ */}
+      <div className="flex-1 flex flex-col justify-center px-5 py-10 sm:px-10 lg:px-16 xl:px-20">
 
-            <form onSubmit={handleSubmit} className="trust-auth-form">
-              <div className="form-group trust-auth-form-group">
-                <label className="form-label">Username or Email</label>
+        {/* Mobile brand */}
+        <div className="lg:hidden flex items-center gap-2.5 mb-8">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-base shadow-md">
+            र
+          </div>
+          <div>
+            <div className="text-[17px] font-black tracking-tight text-slate-900 leading-none">रखरखाव</div>
+            <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Simple Business App</div>
+          </div>
+        </div>
+
+        <div className="w-full max-w-sm mx-auto lg:mx-0">
+
+          {/* Heading */}
+          <div className="mb-7">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-600 mb-2">
+              Secure sign in
+            </p>
+            <h2 className="text-[26px] font-black tracking-tight text-slate-900 leading-tight">
+              दोबारा स्वागत है! 👋
+            </h2>
+            <p className="mt-1.5 text-[14px] text-slate-500">
+              Sign in करके अपना business workspace खोलिए।
+            </p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2.5 px-4 py-3 mb-5 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">
+              <span>⚠️</span> {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+            {/* Username */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Username या Email
+              </label>
+              <input
+                type="text"
+                placeholder="you@business.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Password
+              </label>
+              <div className="relative">
                 <input
-                  type="text"
-                  className="form-input trust-auth-input"
-                  placeholder="you@business.com"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                   required
+                  className="w-full px-4 py-3 pr-16 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black uppercase tracking-wider text-cyan-600 hover:text-cyan-700 transition-colors"
+                >
+                  {showPass ? 'Hide' : 'Show'}
+                </button>
               </div>
+            </div>
 
-              <div className="form-group trust-auth-form-group">
-                <label className="form-label">Password</label>
-                <div className="trust-password-wrap">
-                  <input
-                    type={showPass ? 'text' : 'password'}
-                    className="form-input trust-password-input trust-auth-input"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                  <button type="button" onClick={() => setShowPass(!showPass)} className="trust-password-toggle">
-                    {showPass ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="trust-auth-support-row">
-                <label className="trust-auth-check">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span>Remember me</span>
-                </label>
-                <Link href="/forgot-password" className="trust-auth-link">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <button type="submit" disabled={loading} className="btn-primary trust-submit-btn">
-                {loading ? 'Signing in...' : 'Login करें'}
-              </button>
-            </form>
-
-            <div className="trust-auth-divider" />
-            <div className="auth-note">
-              Account नहीं है?{' '}
-              <Link href="/register" className="cta-link">
-                Free में account बनाएं
+            {/* Remember + forgot */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded accent-cyan-600"
+                />
+                <span className="text-[12px] font-semibold text-slate-600">Remember me</span>
+              </label>
+              <Link href="/forgot-password" className="text-[12px] font-bold text-cyan-600 hover:text-cyan-700 hover:underline transition-colors">
+                Forgot password?
               </Link>
             </div>
-            <div className="trust-auth-legal-note">
-              <Link href="/" className="trust-auth-link">Back to home</Link>
-            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 mt-1 rounded-xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-cyan-500/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 transition-all"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Signing in...
+                </>
+              ) : 'Login करें →'}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-slate-200" />
           </div>
-        </section>
+
+          {/* Register link */}
+          <p className="text-center text-[13px] text-slate-500">
+            Account नहीं है?{' '}
+            <Link href="/register" className="font-bold text-cyan-600 hover:text-cyan-700 hover:underline transition-colors">
+              Free में account बनाएं
+            </Link>
+          </p>
+
+          <p className="mt-4 text-center">
+            <Link href="/" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors">
+              ← Back to home
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
