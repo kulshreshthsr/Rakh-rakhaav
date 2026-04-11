@@ -823,10 +823,6 @@ export default function PurchasesPage() {
         <section className="hero-panel purchases-hero sales-header-shell mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold">Purchases / खरीदिए</h1>
-            <p className="text-xs text-slate-400">
-              Supplier billing, stock inward और purchase payment flow
-              {refreshing ? ' · latest purchase data refresh ho raha hai...' : ''}
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <Link

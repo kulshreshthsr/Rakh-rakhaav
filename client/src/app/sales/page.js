@@ -1037,7 +1037,6 @@ export default function SalesPage() {
           <header className="hero-panel sales-hero sales-header-shell mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold">Sales / बेचिए</h1>
-              <p className="text-xs text-slate-400">Billing, invoice और customer payment flow</p>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <Link href="/sales/customers" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-3 text-xs font-semibold text-sky-700 shadow-sm shadow-sky-100 sm:h-11 sm:px-4 sm:text-sm">Customer Contacts</Link>
