@@ -89,10 +89,10 @@ const getStateFromGstin = (gstin) => {
 };
 const QUICK_QUANTITY_OPTIONS = [1, 2, 5, 10];
 const getOfflineBadgeMeta = (status) => {
-  if (status === 'syncing')   return { label: 'Syncing...', background: '#dbeafe', color: '#1d4ed8' };
-  if (status === 'failed')    return { label: 'Sync failed', background: '#fee2e2', color: '#b91c1c' };
-  if (status === 'abandoned') return { label: 'Sync retry needed', background: '#fde68a', color: '#92400e' };
-  return { label: 'Sync pending', background: '#f59e0b', color: '#000' };
+  if (status === 'syncing')   return { label: 'Syncing...', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+  if (status === 'failed')    return { label: 'Sync failed', color: 'text-rose-700 bg-rose-50 border-rose-200' };
+  if (status === 'abandoned') return { label: 'Sync retry needed', color: 'text-amber-700 bg-amber-50 border-amber-200' };
+  return { label: 'Sync pending', color: 'text-amber-700 bg-amber-50 border-amber-200' };
 };
 const buildOfflineSaleItems = (rawItems, products) => (
   (rawItems || []).map((item) => {
@@ -122,17 +122,6 @@ const numberToWords = (num) => {
   const paise  = Math.round((num - rupees) * 100);
   return convert(rupees) + ' Rupees' + (paise ? ' and '+convert(paise)+' Paise' : '') + ' Only';
 };
-const buildWhatsAppMessage = (sale, shopName) => {
-  const saleDate = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const payLabel = sale.payment_type === 'cash' ? 'Cash (Paid)' : sale.payment_type === 'upi' ? 'UPI (Paid)' : sale.payment_type === 'bank' ? 'Bank Transfer' : 'Udhaar (Credit)';
-  const itemLines = (sale.items && sale.items.length > 0)
-    ? sale.items.map((item, i) => `  ${i + 1}. ${item.product_name} ₹ ${item.quantity} @ ₹${fmt(item.price_per_unit)} = ₹${fmt(item.total_amount)}`).join('\n')
-    : `  1. ${sale.product_name} ₹ ${sale.quantity} @ ₹${fmt(sale.price_per_unit)} = ₹${fmt(sale.total_amount)}`;
-  const isIGST = sale.gst_type === 'IGST' || (sale.items && sale.items.some(i => i.gst_type === 'IGST'));
-  const gstLine = (sale.total_gst && sale.total_gst > 0) ? isIGST ? `IGST: ₹${fmt(sale.igst_amount)}` : `CGST: ₹${fmt(sale.cgst_amount)} | SGST: ₹${fmt(sale.sgst_amount)}` : `GST: NIL`;
-  const greeting = sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' ? `Namaste *${sale.buyer_name}* ji!\n\n` : '';
-  return [`${greeting}*Invoice / Bill Details*`,'--------------------',`Shop: *${shopName || 'Rakh-Rakhaav'}*`,`Invoice No: *${sale.invoice_number}*`,`Date: ${saleDate}`,'--------------------',`*Items:*`,itemLines,'--------------------',`Taxable Amount: ₹${fmt(sale.taxable_amount)}`,gstLine,`*Total Amount: ₹${fmt(sale.total_amount)}*`,'--------------------',`Payment: ${payLabel}`,'--------------------',`Aapka business hamare liye bahut important hai!`,`Thank you for choosing *${shopName || 'Rakh-Rakhaav'}*.`,``,`_Powered by Rakh-Rakhaav Business Manager_`].join('\n');
-};
 const buildWhatsAppShareMessage = (sale, shopName) => {
   const saleDate = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const advancePaid = sale.payment_type === 'credit' ? parseFloat(sale.amount_paid || 0) : parseFloat(sale.total_amount || 0);
@@ -144,28 +133,27 @@ const buildWhatsAppShareMessage = (sale, shopName) => {
   return [sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' ? `Namaste ${sale.buyer_name} ji,` : 'Namaste,','',`Invoice / Bill Details`,`Shop: ${shopName || 'Rakh-Rakhaav'}`,`Invoice No: ${sale.invoice_number}`,`Date: ${saleDate}`,`Items:`,itemLines,`Taxable Amount: ₹${fmt(sale.taxable_amount)}`,`GST: ₹${fmt(sale.total_gst)}`,`Total Amount: ₹${fmt(sale.total_amount)}`,`Payment: ${payLabel}`,...(sale.payment_type === 'credit' ? [`Advance Payment: ₹${fmt(advancePaid)}`,`Udhaar / Due: ₹${fmt(dueAmount)}`] : []),'',`Thank you for choosing ${shopName || 'Rakh-Rakhaav'}`].join('\n');
 };
 
-/* ─── Payment badge ──────────────────────────────────────────────── */
-const PayBadge = ({ type }) => {
-  const map = {
-    cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: '💵 Cash' },
-    credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200',          label: '📒 उधार' },
-    upi:    { cls: 'bg-cyan-50 text-cyan-700 border-cyan-200',           label: '📱 UPI'  },
-    bank:   { cls: 'bg-blue-50 text-blue-700 border-blue-200',           label: '🏦 Bank' },
-  };
-  const s = map[type] || map.cash;
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border ${s.cls}`}>
-      {s.label}
-    </span>
-  );
+/* ─── Payment badge ── */
+const PAY_BADGE = {
+  cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: '💵 Cash' },
+  credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200',          label: '📒 उधार' },
+  upi:    { cls: 'bg-cyan-50 text-cyan-700 border-cyan-200',           label: '📱 UPI'  },
+  bank:   { cls: 'bg-blue-50 text-blue-700 border-blue-200',           label: '🏦 Bank' },
 };
+const PayBadge = ({ type }) => {
+  const s = PAY_BADGE[type] || PAY_BADGE.cash;
+  return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border ${s.cls}`}>{s.label}</span>;
+};
+
+/* ── Reusable input class ── */
+const INPUT = 'h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all';
 
 /* ══════════════════════════════════════════════════════════════════ */
 export default function SalesPage() {
   const router = useRouter();
   const { locale } = useAppLocale();
 
-  /* ── All state (UNCHANGED) ───────────────────────────────────── */
+  /* ── All state (UNCHANGED) ── */
   const [sales, setSales]           = useState([]);
   const [summary, setSummary]       = useState({});
   const [products, setProducts]     = useState([]);
@@ -195,7 +183,7 @@ export default function SalesPage() {
   const saleDateInputRef    = useRef(null);
   const hasBootstrappedRef  = useRef(false);
 
-  /* ── All logic (UNCHANGED) ───────────────────────────────────── */
+  /* ── All logic (100% UNCHANGED) ── */
   const loadPendingOfflineSales = useCallback(async () => {
     try {
       const queueItems = await getDisplayQueue();
@@ -501,7 +489,7 @@ export default function SalesPage() {
     window.open(waUrl, '_blank');
   };
 
-  /* ── Derived (UNCHANGED) ──────────────────────────────────────── */
+  /* ── Derived (UNCHANGED) ── */
   const pendingOfflineSales = sales.filter((sale) => sale?._isOffline);
   const offlineRevenue = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0);
   const offlineGst     = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0);
@@ -532,45 +520,44 @@ export default function SalesPage() {
     setShowMoreCustomerDetails(Boolean(customer.gstin || customer.address || customer.state));
   };
   const customerInfoVisible = form.payment_type === 'credit' || showCustomerInfo;
-  const customerSummary = form.buyer_name || form.buyer_phone ? [form.buyer_name || 'Customer selected', form.buyer_phone || 'No phone'].join(' • ') : 'Walk-in customer';
+  const customerSummary = form.buyer_name || form.buyer_phone
+    ? [form.buyer_name || 'Customer selected', form.buyer_phone || 'No phone'].join(' • ')
+    : 'Walk-in customer';
 
   /* ════════════════════════════════════════════════════════════════
      RENDER
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-4 pt-6 pb-28">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
 
-        {/* ── Header ── */}
-        <div className="relative overflow-hidden mb-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/60 to-blue-50/60 p-5 sm:p-6 shadow-sm">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-16 -right-10 h-44 w-44 rounded-full bg-cyan-200/40 blur-3xl" />
-            <div className="absolute -bottom-12 -left-10 h-40 w-40 rounded-full bg-blue-200/35 blur-3xl" />
-          </div>
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* ── Page header ── */}
+        <div className="relative overflow-hidden mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/40 p-5 shadow-sm">
+          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-cyan-200/30 blur-3xl" />
+          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-cyan-700 shadow-sm">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700">
                 बिक्री • Sales
-              </div>
-              <h1 className="mt-3 text-[clamp(22px,4.5vw,30px)] font-black leading-[1.12] text-slate-900">
-                रोज़ की बिक्री अब super clear
+              </span>
+              <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight tracking-tight">
+                Sales / बेचिए
               </h1>
-              <p className="mt-2 text-[13.5px] text-slate-500">
-                Invoice बनाओ, ग्राहक जोड़ो, और payments track करो — सब एक जगह।
+              <p className="mt-1 text-[13px] text-slate-500">
+                Billing, invoice और customer payment flow
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Link href="/sales/customers"
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-sm hover:-translate-y-px hover:shadow-md transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-sm hover:-translate-y-px hover:shadow-md transition-all"
               >
                 👥 Customers
               </Link>
               <button
                 type="button"
                 onClick={() => { resetForm(); setShowModal(true); }}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
               >
-                + नया Bill
+                + New Sale
               </button>
             </div>
           </div>
@@ -578,52 +565,47 @@ export default function SalesPage() {
 
         {/* ── Offline banner ── */}
         {!isOnline && (
-          <div className="flex items-center gap-3 px-4 py-3 mb-5 rounded-2xl bg-amber-50 border border-amber-200">
+          <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-2xl bg-amber-50 border border-amber-200">
             <span className="text-xl">📶</span>
             <div>
               <div className="text-[13px] font-black text-amber-800">Offline Mode</div>
-              <div className="text-[11px] text-amber-600">Sales offline save होंगी, sync बाद में होगी</div>
+              <div className="text-[11px] text-amber-600">Sales offline save होंगी, internet आने पर sync होंगी</div>
             </div>
           </div>
         )}
 
         {/* ── KPI strip ── */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
           {[
-            { label: 'Revenue', value: `₹${fmt(revenueDisplay)}`, accent: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-100' },
-            { label: 'GST Collected', value: `₹${fmt(gstDisplay)}`, accent: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-100' },
-            { label: 'Invoices', value: filteredSales.length, accent: 'text-slate-700', bg: 'bg-slate-50', border: 'border-slate-100' },
-          ].map((kpi) => (
-            <div key={kpi.label} className={`${kpi.bg} border ${kpi.border} rounded-2xl p-3.5 shadow-sm`}>
-              <div className={`text-[20px] font-black leading-none ${kpi.accent}`}>{kpi.value}</div>
-              <div className="mt-1 text-[11px] font-semibold text-slate-400">{kpi.label}</div>
+            { label: 'Revenue',       value: `₹${fmt(revenueDisplay)}`, cls: 'text-cyan-700',   bg: 'bg-cyan-50 border-cyan-100' },
+            { label: 'GST Collected', value: `₹${fmt(gstDisplay)}`,     cls: 'text-amber-700',  bg: 'bg-amber-50 border-amber-100' },
+            { label: 'Invoices',      value: filteredSales.length,       cls: 'text-slate-700',  bg: 'bg-white border-slate-200' },
+          ].map((k) => (
+            <div key={k.label} className={`${k.bg} border rounded-2xl p-3 shadow-sm`}>
+              <div className={`text-[18px] sm:text-[20px] font-black leading-none ${k.cls}`}>{k.value}</div>
+              <div className="mt-1 text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wide">{k.label}</div>
             </div>
           ))}
         </div>
 
         {/* ── Filters ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm mb-5">
+        <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm mb-4">
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
-              className="flex-1 h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
-              placeholder="🔍 Invoice, customer, product..."
+              className="flex-1 h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
+              placeholder="🔍 Search invoice, customer, product..."
               value={billSearch}
               onChange={(e) => setBillSearch(e.target.value)}
             />
             <input
-              className="h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all sm:w-44"
-              type="month"
-              value={billMonth}
+              className="h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all sm:w-40"
+              type="month" value={billMonth}
               onChange={(e) => setBillMonth(e.target.value)}
             />
             {hasBillFilters && (
-              <button
-                type="button"
-                onClick={() => { setBillSearch(''); setBillMonth(''); }}
-                className="h-11 px-4 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
-              >
-                Clear
-              </button>
+              <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); }}
+                className="h-10 px-4 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+              >Clear</button>
             )}
           </div>
         </div>
@@ -631,15 +613,17 @@ export default function SalesPage() {
         {/* ── Sales list ── */}
         {loading ? (
           <div className="flex flex-col gap-3">
-            {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-white rounded-2xl border border-slate-200 animate-pulse" />)}
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+            ))}
           </div>
         ) : filteredSales.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
             <div className="text-4xl mb-3">🧾</div>
             <div className="text-[15px] font-bold text-slate-700 mb-1">
-              {hasBillFilters ? 'कोई sale नहीं मिली' : 'अभी कोई sale नहीं'}
+              {hasBillFilters ? 'कोई sale नहीं मिली' : 'अभी कोई sale नहीं है'}
             </div>
-            <div className="text-[12px] text-slate-400 mb-4">
+            <div className="text-[12px] text-slate-400 mb-5">
               {hasBillFilters ? 'Filter बदलकर देखें' : 'पहला bill बनाओ और शुरू हो जाओ'}
             </div>
             {!hasBillFilters && (
@@ -653,163 +637,136 @@ export default function SalesPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {filteredSales.map((s) => (
-              <div key={s._id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${s._isOffline ? 'border-amber-200' : 'border-slate-200'}`}>
-                {/* Offline badge */}
-                {s._isOffline && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-[11px] font-black text-amber-700">
-                      {getOfflineBadgeMeta(s._queueStatus).label}
-                    </span>
-                    {s._queueError && <span className="text-[11px] text-rose-600 ml-1">{s._queueError}</span>}
-                  </div>
-                )}
+            {filteredSales.map((s) => {
+              const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
+              return (
+                <div key={s._id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all ${s._isOffline ? 'border-amber-200' : 'border-slate-200'}`}>
+                  {/* Offline banner */}
+                  {s._isOffline && (
+                    <div className={`flex items-center gap-2 px-4 py-2 border-b text-[11px] font-black ${meta.color}`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                      {meta.label}
+                      {s._queueError && <span className="font-normal text-rose-600 ml-1">{s._queueError}</span>}
+                    </div>
+                  )}
 
-                <div className="p-4">
-                  {/* Top row */}
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <div className="text-[14px] font-black text-slate-900">
-                        {s.buyer_name || 'Walk-in Customer'}
+                  <div className="p-4">
+                    {/* Top row */}
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="text-[14px] font-black text-slate-900">
+                          {s.buyer_name || 'Walk-in Customer'}
+                        </div>
+                        <div className="font-mono text-[11px] text-cyan-600 mt-0.5">{s.invoice_number}</div>
                       </div>
-                      <div className="font-mono text-[11px] text-cyan-600 mt-0.5">{s.invoice_number}</div>
+                      <div className="text-right">
+                        <div className="text-[18px] font-black text-slate-900">₹{fmt(s.total_amount)}</div>
+                        <div className="mt-0.5"><PayBadge type={s.payment_type} /></div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-[18px] font-black text-slate-900">₹{fmt(s.total_amount)}</div>
-                      <div className="mt-0.5"><PayBadge type={s.payment_type} /></div>
+
+                    {/* Items summary */}
+                    <div className="text-[12px] text-slate-500 mb-3">
+                      {s.items && s.items.length > 1
+                        ? `${s.items.length} items`
+                        : s.product_name || s.items?.[0]?.product_name || '—'}
                     </div>
-                  </div>
 
-                  {/* Items summary */}
-                  <div className="text-[12px] text-slate-500 mb-2">
-                    {s.items && s.items.length > 1
-                      ? `${s.items.length} items`
-                      : s.product_name || s.items?.[0]?.product_name || '—'}
-                  </div>
+                    {/* Info chips */}
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-500">
+                        Taxable ₹{fmt(s.taxable_amount)}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[11px] font-semibold text-amber-600">
+                        GST ₹{fmt(s.total_gst)}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] text-slate-400">
+                        {formatFullDateTime(s.createdAt || s.sold_at)}
+                      </span>
+                    </div>
 
-                  {/* Chips row */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-500">
-                      Taxable ₹{fmt(s.taxable_amount)}
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[11px] font-semibold text-amber-600">
-                      GST ₹{fmt(s.total_gst)}
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] text-slate-400">
-                      {formatFullDateTime(s.createdAt || s.sold_at)}
-                    </span>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="grid grid-cols-4 gap-2">
-                    <button
-                      onClick={() => startEditSale(s)}
-                      disabled={Boolean(s._isOffline)}
-                      className="py-2 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      onClick={() => printInvoice(s)}
-                      disabled={Boolean(s._isOffline)}
-                      className="py-2 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
-                    >
-                      🖨️ Print
-                    </button>
-                    <button
-                      onClick={() => shareWhatsApp(s)}
-                      disabled={Boolean(s._isOffline)}
-                      className="py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-[12px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
-                    >
-                      📲 WA
-                    </button>
-                    <button
-                      onClick={() => handleDelete(s)}
-                      className="py-2 rounded-xl border border-rose-200 bg-rose-50 text-[12px] font-bold text-rose-600 hover:bg-rose-100 transition-colors"
-                    >
-                      {s._isOffline ? '✕ Remove' : '🗑️ Del'}
-                    </button>
+                    {/* Action buttons */}
+                    <div className="grid grid-cols-4 gap-2">
+                      <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)}
+                        className="py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                      >✏️ Edit</button>
+                      <button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)}
+                        className="py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                      >🖨️ Print</button>
+                      <button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)}
+                        className="py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+                      >📲 WA</button>
+                      <button onClick={() => handleDelete(s)}
+                        className="py-2 rounded-xl border border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors"
+                      >{s._isOffline ? '✕ Remove' : '🗑️ Del'}</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* ════════════════════════════════════════════════════════════
-          NEW / EDIT SALE MODAL — slide-up sheet
+          SALE MODAL — slide-up sheet
       ════════════════════════════════════════════════════════════ */}
-      <div className={`fixed inset-0 z-[70] transition-opacity duration-300 ${showModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
-        {/* Backdrop */}
+      {/* Overlay */}
+      <div className={`fixed inset-0 z-[70] transition-all duration-300 ${showModal ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <button
           type="button"
+          aria-label="Close"
           onClick={() => { setShowModal(false); resetForm(); }}
-          className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${showModal ? 'opacity-100' : 'opacity-0'}`}
         />
 
         {/* Sheet */}
-        <aside className={`absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100vh-56px)] flex-col rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 md:inset-y-0 md:right-0 md:left-auto md:top-0 md:w-[440px] md:max-h-screen md:rounded-none md:rounded-l-3xl ${showModal ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'}`}>
+        <aside className={`absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100dvh-56px)] flex-col rounded-t-3xl bg-white shadow-2xl transition-transform duration-300
+          md:inset-y-0 md:right-0 md:left-auto md:top-0 md:w-[440px] md:max-h-screen md:rounded-none md:rounded-l-3xl
+          ${showModal ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full'}`}>
 
-          {/* Handle (mobile) */}
-          <div className="flex justify-center pt-3 pb-1 md:hidden">
+          {/* Mobile drag handle */}
+          <div className="flex justify-center pt-3 pb-1 md:hidden flex-shrink-0">
             <div className="w-10 h-1 rounded-full bg-slate-200" />
           </div>
 
           {/* Modal header */}
-          <div className="sticky top-0 z-20 bg-white border-b border-slate-100 px-5 pt-3 pb-4">
+          <div className="flex-shrink-0 border-b border-slate-100 px-5 pt-3 pb-4">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                  {editingSaleId ? 'Sale Edit करें' : 'नया Bill'}
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  {editingSaleId ? 'Edit Sale' : 'New Sale'}
                 </p>
                 <h3 className="text-[20px] font-black text-slate-900 mt-0.5">
-                  {editingSaleId ? 'Edit Sale' : 'New Sale'}
+                  {editingSaleId ? 'Sale Edit करें' : 'नया Bill बनाएं'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => { setShowModal(false); resetForm(); }}
-                className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors mt-1"
-              >
-                ✕
-              </button>
+                className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+              >✕</button>
             </div>
 
             {/* Cash / Udhaar toggle */}
             <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
-              <button
-                type="button"
-                onClick={() => { updateForm({ payment_type: 'cash', amount_paid: '' }); setShowCustomerInfo(false); }}
-                className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${
-                  form.payment_type === 'cash'
-                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                💵 कैश
-              </button>
-              <button
-                type="button"
-                onClick={() => { updateForm({ payment_type: 'credit' }); setShowCustomerInfo(true); }}
-                className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${
-                  form.payment_type === 'credit'
-                    ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                📒 उधार
-              </button>
+              {[
+                { type: 'cash',   label: '💵 कैश',  active: 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20', onSelect: () => { updateForm({ payment_type: 'cash', amount_paid: '' }); setShowCustomerInfo(false); } },
+                { type: 'credit', label: '📒 उधार', active: 'bg-rose-500 text-white shadow-md shadow-rose-500/20',     onSelect: () => { updateForm({ payment_type: 'credit' }); setShowCustomerInfo(true); } },
+              ].map((opt) => (
+                <button key={opt.type} type="button" onClick={opt.onSelect}
+                  className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-500 hover:text-slate-700'}`}
+                >{opt.label}</button>
+              ))}
             </div>
           </div>
 
-          {/* Scrollable form body */}
+          {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-bold text-rose-700">
+              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">
                 ⚠️ {error}
               </div>
             )}
@@ -817,23 +774,23 @@ export default function SalesPage() {
             {/* Invoice + Date */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Invoice No.</p>
-                <div className="flex items-center justify-between h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 font-mono text-[11px] text-cyan-600">
-                  <span className="truncate">{invoicePreview}</span>
-                  <button type="button" onClick={() => navigator?.clipboard?.writeText(invoicePreview)} className="text-slate-400 hover:text-slate-600 ml-1 flex-shrink-0">📋</button>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Invoice No.</p>
+                <div className="flex items-center h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 gap-2">
+                  <span className="font-mono text-[11px] text-cyan-600 truncate flex-1">{invoicePreview}</span>
+                  <button type="button" onClick={() => navigator?.clipboard?.writeText(invoicePreview)} className="text-slate-400 hover:text-slate-600 flex-shrink-0 text-xs">📋</button>
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Date</p>
-                <input
-                  className="h-11 w-full px-3 rounded-xl border border-slate-200 bg-slate-50 text-[14px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
-                  type="date" value={form.sale_date} onChange={(e) => updateForm({ sale_date: e.target.value })}
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Date</p>
+                <input className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
+                  type="date" ref={saleDateInputRef} value={form.sale_date}
+                  onChange={(e) => updateForm({ sale_date: e.target.value })}
                 />
               </div>
             </div>
 
-            {/* Customer section */}
-            <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/50' : 'border-slate-200 bg-white'}`}>
+            {/* ── Customer section ── */}
+            <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-[13px] font-black text-slate-900">Customer Info</p>
@@ -843,16 +800,17 @@ export default function SalesPage() {
                 </div>
                 {form.payment_type === 'credit'
                   ? <span className="px-2.5 py-1 rounded-full bg-rose-100 text-[10px] font-black text-rose-700 border border-rose-200">Required *</span>
-                  : <button type="button" onClick={() => setShowCustomerInfo(v => !v)} className="text-[12px] font-bold text-cyan-600">{customerInfoVisible ? 'Hide ▴' : 'Add ▾'}</button>
+                  : <button type="button" onClick={() => setShowCustomerInfo(v => !v)} className="text-[12px] font-bold text-cyan-600 hover:text-cyan-700">{customerInfoVisible ? '▴ Hide' : '▾ Add'}</button>
                 }
               </div>
 
               {customerInfoVisible && (
                 <div className="space-y-3">
+                  {/* Customer name with autocomplete */}
                   <div ref={customerComboRef} className="relative">
                     <input
                       ref={buyerNameInputRef}
-                      className="h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
+                      className={INPUT}
                       placeholder="Customer का नाम"
                       value={customerQuery}
                       onChange={(e) => { setCustomerQuery(e.target.value); updateForm({ buyer_name: e.target.value }); setShowCustomerSuggestions(true); }}
@@ -860,98 +818,78 @@ export default function SalesPage() {
                       required={form.payment_type === 'credit'}
                     />
                     {showCustomerSuggestions && filteredPastCustomers.length > 0 && (
-                      <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-                        {filteredPastCustomers.map((customer) => (
-                          <button key={`${customer.phone}-${customer.name}`} type="button" onClick={() => selectPastCustomer(customer)}
-                            className="flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                      <div className="absolute z-30 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                        {filteredPastCustomers.map((c) => (
+                          <button key={`${c.phone}-${c.name}`} type="button" onClick={() => selectPastCustomer(c)}
+                            className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-slate-50 border-b border-slate-50 last:border-0"
                           >
-                            <span className="font-semibold text-slate-900">{customer.name}</span>
-                            <span className="text-[11px] text-slate-400">{customer.phone}</span>
+                            <span className="text-[13px] font-semibold text-slate-900">{c.name}</span>
+                            <span className="text-[11px] text-slate-400">{c.phone}</span>
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
-                  <input
-                    className="h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
-                    placeholder="Phone number"
-                    value={form.buyer_phone}
-                    onChange={(e) => updateForm({ buyer_phone: e.target.value })}
-                  />
+
+                  <input className={INPUT} placeholder="Phone number" value={form.buyer_phone} onChange={(e) => updateForm({ buyer_phone: e.target.value })} />
+
                   <button type="button" onClick={() => setShowMoreCustomerDetails(v => !v)}
                     className="text-[12px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {showMoreCustomerDetails ? '▴ Less Details' : '▾ More Details (GSTIN, Address)'}
-                  </button>
+                  >{showMoreCustomerDetails ? '▴ Less Details' : '▾ More Details (GSTIN, Address)'}</button>
+
                   {showMoreCustomerDetails && (
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-3">
                       <div>
                         <input
-                          className={`h-11 w-full px-4 rounded-xl border text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${showGstinError ? 'border-rose-400 bg-rose-50 focus:ring-rose-500/20' : 'border-slate-200 bg-white focus:ring-cyan-500/30 focus:border-cyan-400'}`}
-                          placeholder="GSTIN (15 digits)"
-                          value={form.buyer_gstin}
-                          maxLength={GSTIN_LENGTH}
+                          className={`${INPUT} ${showGstinError ? 'border-rose-400 bg-rose-50 focus:ring-rose-500/20 focus:border-rose-400' : ''}`}
+                          placeholder="GSTIN (15 digits)" value={form.buyer_gstin} maxLength={GSTIN_LENGTH}
                           onChange={(e) => handleBuyerGstinChange(e.target.value)}
                           onBlur={() => setGstinTouched(true)}
                         />
                         {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">Invalid GSTIN format</p>}
                         {showGstinLengthHint && <p className="mt-1 text-[11px] text-slate-400">{gstinValue.length}/{GSTIN_LENGTH} characters</p>}
                       </div>
-                      <select
-                        className="h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
-                        value={form.buyer_state}
-                        onChange={(e) => updateForm({ buyer_state: e.target.value })}
-                      >
+                      <select className={INPUT} value={form.buyer_state} onChange={(e) => updateForm({ buyer_state: e.target.value })}>
                         <option value="">State / UT चुनें</option>
                         <optgroup label="States">{STATES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
                         <optgroup label="Union Territories">{UTS.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
                       </select>
-                      <input
-                        className="h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
-                        placeholder="Address"
-                        value={form.buyer_address}
-                        onChange={(e) => updateForm({ buyer_address: e.target.value })}
-                      />
+                      <input className={INPUT} placeholder="Address" value={form.buyer_address} onChange={(e) => updateForm({ buyer_address: e.target.value })} />
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Items section */}
+            {/* ── Items section ── */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[13px] font-black text-slate-900">Items</p>
-                <button
-                  type="button"
-                  onClick={() => setShowBarcodeScanner(true)}
+                <button type="button" onClick={() => setShowBarcodeScanner(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-200 bg-cyan-50 text-[11px] font-bold text-cyan-700 hover:bg-cyan-100 transition-colors"
-                >
-                  📷 Scan Barcode
-                </button>
+                >📷 Scan Barcode</button>
               </div>
 
               <div className="space-y-3">
                 {items.map((item, index) => {
-                  const g = rowGST(item);
+                  const g    = rowGST(item);
                   const prod = products.find((p) => p._id === item.product_id);
                   return (
                     <div key={index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
-                      {/* Item controls */}
+                      {/* Controls row */}
                       <div className="flex justify-end gap-1.5">
                         <button type="button" onClick={() => duplicateItem(index)}
-                          className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[11px] text-slate-500 hover:bg-slate-100 transition-colors"
+                          className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[10px] text-slate-500 hover:bg-slate-100 transition-colors"
                         >⧉ Dupe</button>
                         {items.length > 1 && (
                           <button type="button" onClick={() => removeItem(index)}
-                            className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-[11px] text-rose-600 hover:bg-rose-100 transition-colors"
+                            className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] text-rose-600 hover:bg-rose-100 transition-colors"
                           >✕</button>
                         )}
                       </div>
 
                       <SearchableProductSelect
-                        products={products}
-                        value={item.product_id}
+                        products={products} value={item.product_id}
                         onChange={(id) => updateItem(index, 'product_id', id)}
                         onSelectProduct={(product) => handleProductSelect(index, product)}
                         placeholder="Product चुनें"
@@ -965,25 +903,24 @@ export default function SalesPage() {
                       )}
 
                       <div className="grid grid-cols-2 gap-3">
-                        {/* Qty */}
+                        {/* Quantity */}
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Qty</p>
-                          <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-white overflow-hidden">
+                          <div className="flex h-10 rounded-xl border border-slate-200 bg-white overflow-hidden">
                             <button type="button" onClick={() => updateItemQuantityBy(index, -1)}
-                              className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 font-black text-lg transition-colors"
+                              className="w-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 font-black text-lg transition-colors"
                             >−</button>
                             <input
-                              className="flex-1 h-10 text-center text-[14px] font-black text-slate-900 border-x border-slate-200 bg-white focus:outline-none"
-                              type="number" min="1"
-                              max={prod ? prod.quantity : undefined}
+                              className="flex-1 text-center text-[14px] font-black text-slate-900 border-x border-slate-200 bg-white focus:outline-none"
+                              type="number" min="1" max={prod ? prod.quantity : undefined}
                               value={item.quantity}
                               onChange={(e) => updateItem(index, 'quantity', e.target.value)}
                             />
                             <button type="button" onClick={() => updateItemQuantityBy(index, 1)}
-                              className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 font-black text-lg transition-colors"
+                              className="w-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 font-black text-lg transition-colors"
                             >+</button>
                           </div>
-                          <div className="flex gap-1.5 mt-1.5">
+                          <div className="flex gap-1 mt-1.5">
                             {QUICK_QUANTITY_OPTIONS.map((qty) => (
                               <button key={qty} type="button" onClick={() => applyQuickQuantity(index, qty)}
                                 className={`flex-1 py-1 rounded-lg text-[10px] font-black border transition-colors ${Number(item.quantity) === qty ? 'bg-cyan-500 border-cyan-500 text-white' : 'border-slate-200 text-slate-500 hover:border-cyan-300 hover:text-cyan-600'}`}
@@ -996,11 +933,10 @@ export default function SalesPage() {
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Price (₹)</p>
                           <input
-                            className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all"
-                            type="number" step="0.01"
+                            className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
+                            type="number" step="0.01" placeholder="0.00"
                             value={item.price_per_unit}
                             onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)}
-                            placeholder="0.00"
                           />
                         </div>
                       </div>
@@ -1017,16 +953,14 @@ export default function SalesPage() {
                 })}
 
                 <button type="button" onClick={addItem}
-                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-cyan-600 hover:bg-cyan-50/50 transition-all"
-                >
-                  + Item जोड़ें <span className="text-[11px] opacity-60">(Alt+A)</span>
-                </button>
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-cyan-600 hover:bg-cyan-50/40 transition-all"
+                >+ Item जोड़ें <span className="text-[10px] opacity-60">(Alt+A)</span></button>
               </div>
             </div>
 
-            {/* Advance payment (credit only) */}
+            {/* ── Advance payment (credit only) ── */}
             {form.payment_type === 'credit' && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4">
+              <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
                 <p className="text-[13px] font-black text-slate-900 mb-0.5">Advance Payment</p>
                 <p className="text-[11px] text-slate-400 mb-3">अभी कितना payment मिला?</p>
                 <input
@@ -1051,23 +985,23 @@ export default function SalesPage() {
               </div>
             )}
 
-            {/* Bill summary */}
+            {/* ── Bill summary ── */}
             <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
-              <div className="flex justify-between text-[12px] mb-1.5">
-                <span className="text-slate-400">Taxable Amount</span>
-                <span className="font-bold">₹{fmt(billTotals.taxable)}</span>
+              <div className="space-y-1.5 mb-3">
+                {[
+                  { label: 'Taxable Amount', val: `₹${fmt(billTotals.taxable)}`, cls: 'text-white' },
+                  { label: 'Total GST',      val: `₹${fmt(billTotals.gst)}`,     cls: 'text-amber-400' },
+                  { label: 'Round Off',      val: `${roundedBill.roundOff >= 0 ? '+' : ''}₹${fmt(roundedBill.roundOff)}`, cls: 'text-emerald-400' },
+                ].map((row) => (
+                  <div key={row.label} className="flex justify-between text-[12px]">
+                    <span className="text-slate-400">{row.label}</span>
+                    <span className={`font-bold ${row.cls}`}>{row.val}</span>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between text-[12px] mb-1.5">
-                <span className="text-slate-400">Total GST</span>
-                <span className="font-bold text-amber-400">₹{fmt(billTotals.gst)}</span>
-              </div>
-              <div className="flex justify-between text-[12px] mb-3">
-                <span className="text-slate-400">Round Off</span>
-                <span className="font-bold text-emerald-400">{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</span>
-              </div>
-              <div className="flex justify-between border-t border-slate-700 pt-3">
+              <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
                 <span className="text-[14px] font-black">Grand Total</span>
-                <span className="text-[22px] font-black text-cyan-400">₹{fmt(billTotals.total)}</span>
+                <span className="text-[24px] font-black text-cyan-400">₹{fmt(billTotals.total)}</span>
               </div>
               {form.payment_type === 'credit' && (
                 <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
@@ -1079,29 +1013,26 @@ export default function SalesPage() {
           </div>
 
           {/* Sticky footer */}
-          <div className="sticky bottom-0 bg-white border-t border-slate-100 px-5 py-4">
+          <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+              <button type="button" onClick={handleSubmit} disabled={submitting}
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
               >
-                {submitting ? 'Saving...' : !isOnline ? '📥 Offline Save' : form.payment_type === 'credit' ? '📒 Credit Sale' : '💵 Sale Save करें'}
+                {submitting ? (
+                  <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
+                ) : !isOnline ? '📥 Offline Save'
+                  : form.payment_type === 'credit' ? '📒 Credit Sale Save करें'
+                  : '💵 Sale Save करें'}
               </button>
-              <button
-                type="button"
-                onClick={() => { setShowModal(false); resetForm(); }}
+              <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
+              >Cancel</button>
             </div>
           </div>
         </aside>
       </div>
 
-      {/* Barcode scanner (UNCHANGED usage) */}
+      {/* Barcode scanner (UNCHANGED) */}
       <CameraBarcodeScanner
         open={showBarcodeScanner}
         title="Scan product barcode"
