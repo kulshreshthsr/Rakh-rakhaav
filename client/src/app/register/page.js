@@ -94,7 +94,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50/40 to-blue-50/40 flex flex-col lg:flex-row">
 
       {/* ══════════════════════════════════════
           LEFT PANEL  (hidden on mobile)
@@ -159,7 +159,13 @@ export default function RegisterPage() {
       {/* ══════════════════════════════════════
           RIGHT PANEL  — Register form
       ══════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col justify-center px-5 py-10 sm:px-10 lg:px-16 xl:px-20">
+      <div className="flex-1 relative flex flex-col justify-center px-5 py-10 sm:px-10 lg:px-16 xl:px-20">
+
+        {/* Soft background orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-16 -right-10 w-56 h-56 rounded-full bg-cyan-200/40 blur-3xl" />
+          <div className="absolute bottom-6 -left-12 w-48 h-48 rounded-full bg-emerald-200/35 blur-3xl" />
+        </div>
 
         {/* Mobile brand */}
         <div className="lg:hidden flex items-center gap-2.5 mb-8">
@@ -172,19 +178,35 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <div className="w-full max-w-sm mx-auto lg:mx-0">
+        <div className="relative w-full max-w-sm mx-auto lg:mx-0">
+          <div className="absolute -inset-3 rounded-3xl bg-white/60 blur-2xl" />
+          <div className="relative bg-white/90 backdrop-blur-xl border border-white/70 rounded-3xl shadow-[0_25px_60px_-35px_rgba(15,23,42,0.45)] p-6 sm:p-7 auth-card">
 
           {/* Heading */}
-          <div className="mb-7">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-600 mb-2">
-              Free account बनाएं
-            </p>
-            <h2 className="text-[26px] font-black tracking-tight text-slate-900 leading-tight">
-              नया account बनाओ 🚀
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                Free account
+              </p>
+            </div>
+            <h2 className="mt-3 text-[clamp(24px,4vw,30px)] font-black tracking-tight text-slate-900 leading-[1.12]">
+              नया account बनाओ 
             </h2>
-            <p className="mt-1.5 text-[14px] text-slate-500">
+            <p className="mt-2 text-[14.5px] leading-relaxed text-slate-500">
               आज ही अपना business workspace शुरू करें।
             </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-5">
+            {['No credit card', 'GST-ready', 'Quick setup'].map((item) => (
+              <span
+                key={item}
+                className="inline-flex items-center px-2.5 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-semibold text-slate-600 shadow-sm"
+              >
+                {item}
+              </span>
+            ))}
           </div>
 
           {/* Error */}
@@ -334,8 +356,27 @@ export default function RegisterPage() {
               ← Back to home
             </Link>
           </p>
+          <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 text-[11.5px] text-slate-500 leading-relaxed">
+            Tip: Use a simple username you will remember for daily billing.
+          </div>
+          </div>
         </div>
       </div>
+      <style jsx>{`
+        .auth-card {
+          animation: auth-card-in 520ms ease-out both;
+        }
+        @keyframes auth-card-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.99);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
