@@ -250,7 +250,7 @@ export default function DashboardPage() {
                 {refreshing ? 'Refreshing...' : 'Dashboard'}
               </span>
               <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight tracking-tight">
-                नमस्ते ..दुकान का हाल -
+                नमस्ते 👋 दुकान का हाल
               </h1>
               <p className="mt-1 text-[13px] text-slate-500">
                 {!isOnline
