@@ -18,8 +18,8 @@ const NAV_ITEMS = [
   { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     tone: 'home'     },
   { href: '/product',   key: 'products',  shortLabel: 'Stock',    tone: 'stock'    },
   { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales'    },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',      tone: 'purchase' },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Credit',   tone: 'credit'   },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase' },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit'   },
   { href: '/gst',       key: 'gst',       shortLabel: 'GST',      tone: 'gst'      },
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports',  tone: 'reports'  },
 ];
@@ -28,8 +28,8 @@ const NAV_ITEMS = [
 const MOBILE_BOTTOM_NAV = [
   { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    icon: 'dashboard' },
   { href: '/sales',     key: 'sales',     shortLabel: 'Sale',    icon: 'sales'     },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',      icon: 'purchases' },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Credit',   icon: 'udhaar'    },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', icon: 'purchases' },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   icon: 'udhaar'    },
 ];
 
 // ── More drawer items ──
@@ -39,7 +39,7 @@ const MORE_DRAWER_ITEMS = [
   { href: '/purchases', key: 'purchases', label: 'खरीदिए',    sublabel: 'Purchase',   icon: 'purchases' },
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports', icon: 'reports'   },
   { href: '/gst',       key: 'gst',       label: 'GST',        sublabel: 'Tax Filing', icon: 'gst'       },
-  { href: '/udhaar',    key: 'udhaar',    label: 'उधार',       sublabel: 'Credit',     icon: 'udhaar'    },
+  { href: '/udhaar',    key: 'udhaar',    label: 'उधार',       sublabel: 'Udhaar',     icon: 'udhaar'    },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
