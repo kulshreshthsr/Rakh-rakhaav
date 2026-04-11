@@ -6,52 +6,69 @@ import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
 import SyncStatusBar from './SyncStatusBar';
-import { API, FALLBACK_PLANS, clearTrialGateSeen, hasTrialGateSeen, hasWelcomePending, mergePlansWithFallback, readStoredSubscription, setWelcomePending, writeStoredSubscription } from '../lib/subscription';
+import {
+  API, FALLBACK_PLANS, clearTrialGateSeen, hasTrialGateSeen,
+  hasWelcomePending, mergePlansWithFallback, readStoredSubscription,
+  setWelcomePending, writeStoredSubscription,
+} from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
 
+/* ─── Nav config ─────────────────────────────────────────────────── */
 const NAV_ITEMS = [
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    tone: 'home'     },
-  { href: '/product',   key: 'products',  shortLabel: 'Stock',   tone: 'stock'    },
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',    tone: 'sales'    },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',     tone: 'purchase' },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Credit',  tone: 'credit'   },
-  { href: '/gst',       key: 'gst',       shortLabel: 'GST',     tone: 'gst'      },
-  { href: '/reports',   key: 'reports',   shortLabel: 'Reports', tone: 'reports'  },
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     tone: 'home'     },
+  { href: '/product',   key: 'products',  shortLabel: 'Stock',    tone: 'stock'    },
+  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales'    },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',      tone: 'purchase' },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Credit',   tone: 'credit'   },
+  { href: '/gst',       key: 'gst',       shortLabel: 'GST',      tone: 'gst'      },
+  { href: '/reports',   key: 'reports',   shortLabel: 'Reports',  tone: 'reports'  },
 ];
-const MOBILE_BOTTOM_NAV_ITEMS = [
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sale', tone: 'sales'    },
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home', tone: 'home'     },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Buy',  tone: 'purchase' },
+
+// ── 5-item bottom nav: Home | Sale | Reports | Udhaar | More ──
+const MOBILE_BOTTOM_NAV = [
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    icon: 'dashboard' },
+  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',    icon: 'sales'     },
+  { href: '/reports',   key: 'reports',   shortLabel: 'Reports', icon: 'reports'   },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',  icon: 'udhaar'    },
+];
+
+// ── More drawer items ──
+const MORE_DRAWER_ITEMS = [
+  { href: '/dashboard', key: 'dashboard', label: 'होम',       sublabel: 'Dashboard',  icon: 'dashboard' },
+  { href: '/sales',     key: 'sales',     label: 'बेचिए',     sublabel: 'Sale',       icon: 'sales'     },
+  { href: '/purchases', key: 'purchases', label: 'खरीदिए',    sublabel: 'Purchase',   icon: 'purchases' },
+  { href: '/gst',       key: 'gst',       label: 'GST',        sublabel: 'Tax Filing', icon: 'gst'       },
+  { href: '/udhaar',    key: 'udhaar',    label: 'उधार',       sublabel: 'Credit',     icon: 'udhaar'    },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
-const PREFETCH_ROUTES = [...new Set([...NAV_ITEMS.map((item) => item.href), '/pricing', '/reports', '/profile'])];
+const PREFETCH_ROUTES = [...new Set([...NAV_ITEMS.map((i) => i.href), '/pricing', '/reports', '/profile'])];
 
+/* ─── Helpers ────────────────────────────────────────────────────── */
 function readStoredUser() {
   if (typeof window === 'undefined') return null;
   try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
 }
-
 function shouldRefreshSubscriptionCache() {
   if (typeof window === 'undefined') return true;
   try {
-    const lastRefreshedAt = Number(sessionStorage.getItem('subscription-status:last-refresh') || 0);
-    return !lastRefreshedAt || Date.now() - lastRefreshedAt > SUBSCRIPTION_REFRESH_TTL_MS;
-  } catch {
-    return true;
-  }
+    const t = Number(sessionStorage.getItem('subscription-status:last-refresh') || 0);
+    return !t || Date.now() - t > SUBSCRIPTION_REFRESH_TTL_MS;
+  } catch { return true; }
 }
-
 function markSubscriptionRefreshNow() {
   if (typeof window === 'undefined') return;
-  try {
-    sessionStorage.setItem('subscription-status:last-refresh', String(Date.now()));
-  } catch {}
+  try { sessionStorage.setItem('subscription-status:last-refresh', String(Date.now())); } catch {}
 }
 
-/* ─── Icons ──────────────────────────────── */
+/* ─── Icons ──────────────────────────────────────────────────────── */
 function Glyph({ name, size = 20, stroke = 1.8 }) {
-  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: stroke, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
+  const p = {
+    width: size, height: size, viewBox: '0 0 24 24',
+    fill: 'none', stroke: 'currentColor',
+    strokeWidth: stroke, strokeLinecap: 'round', strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
   const icons = {
     dashboard:  <><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10.5V20h13V10.5" /><path d="M9.5 20v-5h5v5" /></>,
     products:   <><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></>,
@@ -63,13 +80,14 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
     profile:    <><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
     logout:     <><path d="M10 7V5.5A2.5 2.5 0 0 1 12.5 3H18a2.5 2.5 0 0 1 2.5 2.5v13A2.5 2.5 0 0 1 18 21h-5.5A2.5 2.5 0 0 1 10 18.5V17" /><path d="M14 12H3.5" /><path d="m7.5 8-4 4 4 4" /></>,
     pricing:    <path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" />,
-    language:   <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a15 15 0 0 1 0 18" /><path d="M12 3a15 15 0 0 0 0 18" /></>,
     menu:       <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
+    close:      <><path d="M18 6 6 18" /><path d="M6 6l12 12" /></>,
+    more:       <><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.2" fill="currentColor" stroke="none"/></>,
   };
   return <svg {...p}>{icons[name] || <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />}</svg>;
 }
 
-/* ─── Logo ───────────────────────────────── */
+/* ─── Logo ───────────────────────────────────────────────────────── */
 function Logo({ size = 'md' }) {
   const [err, setErr] = useState(false);
   const dim = size === 'sm' ? 34 : size === 'lg' ? 58 : 46;
@@ -90,7 +108,6 @@ function Logo({ size = 'md' }) {
       </div>
     );
   }
-
   return (
     <div className={`brand-logo-fallback ${frameClass}`}>
       <span className={fallbackTextClass}>R</span>
@@ -98,7 +115,7 @@ function Logo({ size = 'md' }) {
   );
 }
 
-/* ─── User dropdown ──────────────────────── */
+/* ─── User dropdown (desktop) ────────────────────────────────────── */
 function UserDropdown({ onProfile, onLogout, extraItems }) {
   return (
     <div className="sidebar-user-menu">
@@ -109,26 +126,193 @@ function UserDropdown({ onProfile, onLogout, extraItems }) {
   );
 }
 
-/* ─── Main layout ────────────────────────── */
+/* ─── More drawer (mobile) ───────────────────────────────────────── */
+function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
+  const drawerRef = useRef(null);
+
+  // Close on escape
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  // Lock body scroll when open
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
+  const iconColors = {
+    dashboard: 'bg-cyan-50 text-cyan-600',
+    sales:     'bg-emerald-50 text-emerald-600',
+    purchases: 'bg-blue-50 text-blue-600',
+    gst:       'bg-amber-50 text-amber-600',
+    udhaar:    'bg-rose-50 text-rose-600',
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden="true"
+      />
+
+      {/* Sheet — slides up from bottom */}
+      <div
+        ref={drawerRef}
+        role="dialog"
+        aria-label="More options"
+        className={`fixed bottom-0 left-0 right-0 z-50 lg:hidden transition-transform duration-300 ease-out ${
+          open ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        <div className="bg-white rounded-t-3xl shadow-2xl shadow-slate-900/20 border-t border-slate-100 max-h-[85dvh] overflow-y-auto">
+
+          {/* Handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-slate-200" />
+          </div>
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-3 pb-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Quick Access</p>
+              <h2 className="text-[18px] font-black text-slate-900 mt-0.5">और विकल्प</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+            >
+              <Glyph name="close" size={16} stroke={2} />
+            </button>
+          </div>
+
+          {/* Nav items grid */}
+          <div className="px-4 pb-3 grid grid-cols-1 gap-2">
+            {MORE_DRAWER_ITEMS.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all ${
+                    isActive
+                      ? 'border-cyan-200 bg-cyan-50'
+                      : 'border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    isActive ? 'bg-cyan-500 text-white' : iconColors[item.key] || 'bg-slate-100 text-slate-600'
+                  }`}>
+                    <Glyph name={item.icon} size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[15px] font-black leading-tight ${isActive ? 'text-cyan-700' : 'text-slate-900'}`}>
+                      {item.label}
+                    </div>
+                    <div className="text-[12px] text-slate-400 mt-0.5">{item.sublabel}</div>
+                  </div>
+                  {isActive && (
+                    <span className="w-2 h-2 rounded-full bg-cyan-500 flex-shrink-0" />
+                  )}
+                  {!isActive && (
+                    <span className="text-slate-300 flex-shrink-0">
+                      <Glyph name="close" size={12} stroke={2} />
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="mx-4 my-2 h-px bg-slate-100" />
+
+          {/* Extra links */}
+          <div className="px-4 pb-3 flex flex-col gap-2">
+            <Link href="/product" onClick={onClose}
+              className="flex items-center gap-4 px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white transition-all"
+            >
+              <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center flex-shrink-0">
+                <Glyph name="products" size={18} />
+              </div>
+              <div className="flex-1">
+                <div className="text-[15px] font-black text-slate-900">Stock</div>
+                <div className="text-[12px] text-slate-400">Products & Inventory</div>
+              </div>
+            </Link>
+
+            <Link href="/profile" onClick={onClose}
+              className="flex items-center gap-4 px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white transition-all"
+            >
+              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0">
+                <Glyph name="profile" size={18} />
+              </div>
+              <div className="flex-1">
+                <div className="text-[15px] font-black text-slate-900">Profile</div>
+                <div className="text-[12px] text-slate-400">दुकान की जानकारी</div>
+              </div>
+            </Link>
+
+            <Link href="/pricing" onClick={onClose}
+              className="flex items-center gap-4 px-4 py-3 rounded-2xl border border-amber-100 bg-amber-50 hover:bg-amber-100 transition-all"
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+                <Glyph name="pricing" size={18} />
+              </div>
+              <div className="flex-1">
+                <div className="text-[15px] font-black text-amber-900">
+                  {subscription?.isPro ? 'Manage Plan' : 'Upgrade करें'}
+                </div>
+                <div className="text-[12px] text-amber-600">
+                  {subscription?.isPro ? 'Pro plan active ✓' : 'Pro features unlock करें'}
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Logout */}
+          <div className="px-4 pb-6 pt-1">
+            <button
+              type="button"
+              onClick={() => { onClose(); onLogout(); }}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl border border-rose-100 bg-rose-50 text-[14px] font-black text-rose-600 hover:bg-rose-100 transition-colors"
+            >
+              <Glyph name="logout" size={16} /> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── Main layout ────────────────────────────────────────────────── */
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
-  const [user, setUser]                   = useState(() => readStoredUser());
-  const [subscription, setSubscription]   = useState(() => readStoredSubscription());
-  const [plans, setPlans]                 = useState(FALLBACK_PLANS);
-  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [user, setUser]                     = useState(() => readStoredUser());
+  const [subscription, setSubscription]     = useState(() => readStoredSubscription());
+  const [plans, setPlans]                   = useState(FALLBACK_PLANS);
+  const [razorpayKeyId, setRazorpayKeyId]   = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [paywallPlan, setPaywallPlan]     = useState('weekly');
-  const [scrolled, setScrolled]           = useState(false);
-  const [dropdownOpen, setDropdownOpen]   = useState(false);
-  const [mobileDropOpen, setMobileDropOpen] = useState(false);
+  const [paywallPlan, setPaywallPlan]       = useState('weekly');
+  const [scrolled, setScrolled]             = useState(false);
+  const [dropdownOpen, setDropdownOpen]     = useState(false);
+  const [moreOpen, setMoreOpen]             = useState(false);  // ← new More drawer
 
-  const dropdownRef   = useRef(null);
-  const mobileDropRef = useRef(null);
-  const mobileDrawerRef = useRef(null);
-  const router   = useRouter();
-  const pathname = usePathname();
+  const dropdownRef    = useRef(null);
+  const router         = useRouter();
+  const pathname       = usePathname();
 
-  /* ── Auth & subscription ─────────────── */
+  /* ── Auth & subscription ──────────────────────────────────────── */
   const refreshSubscription = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) return false;
@@ -145,7 +329,6 @@ function LayoutInner({ children }) {
         return false;
       }
       if (!res.ok) return false;
-
       const data = await res.json();
       if (data.user) { setUser(data.user); localStorage.setItem('user', JSON.stringify(data.user)); }
       setSubscription(data.subscription || null);
@@ -160,14 +343,12 @@ function LayoutInner({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
-    if (!shouldRefreshSubscriptionCache()) {
-      return undefined;
-    }
+    if (!shouldRefreshSubscriptionCache()) return;
     const id = window.setTimeout(refreshSubscription, 0);
     return () => window.clearTimeout(id);
   }, [refreshSubscription, router]);
 
-  /* ── Scroll ──────────────────────────── */
+  /* ── Scroll ───────────────────────────────────────────────────── */
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -175,47 +356,28 @@ function LayoutInner({ children }) {
   }, []);
 
   useEffect(() => {
-    PREFETCH_ROUTES.forEach((href) => {
-      router.prefetch(href);
-    });
+    PREFETCH_ROUTES.forEach((href) => router.prefetch(href));
   }, [router]);
 
-  /* ── Click-outside dropdowns ─────────── */
+  /* ── Click-outside desktop dropdown ──────────────────────────── */
   useEffect(() => {
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))     setDropdownOpen(false);
-      if (
-        mobileDropRef.current &&
-        !mobileDropRef.current.contains(e.target) &&
-        mobileDrawerRef.current &&
-        !mobileDrawerRef.current.contains(e.target)
-      ) {
-        setMobileDropOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  useEffect(() => {
-    if (!mobileDropOpen) return undefined;
-    const onEscape = (e) => {
-      if (e.key === 'Escape') setMobileDropOpen(false);
-    };
-    document.addEventListener('keydown', onEscape);
-    return () => document.removeEventListener('keydown', onEscape);
-  }, [mobileDropOpen]);
-
-  /* ── Route guards ────────────────────── */
+  /* ── Route guards ─────────────────────────────────────────────── */
   useEffect(() => {
     if (!pathname || ['/pricing', '/welcome', '/trial-status'].includes(pathname)) return;
     if (hasWelcomePending()) { router.replace('/welcome'); return; }
     if (subscription && !subscription.isPro && !hasTrialGateSeen()) router.replace('/trial-status');
   }, [pathname, router, subscription]);
 
-  /* ── Actions ─────────────────────────── */
+  /* ── Actions ──────────────────────────────────────────────────── */
   const logout = () => {
-    setDropdownOpen(false); setMobileDropOpen(false);
+    setDropdownOpen(false); setMoreOpen(false);
     localStorage.removeItem('token'); localStorage.removeItem('user');
     clearTrialGateSeen();
     setWelcomePending(false);
@@ -223,7 +385,7 @@ function LayoutInner({ children }) {
   };
 
   const goToProfile = () => {
-    setDropdownOpen(false); setMobileDropOpen(false);
+    setDropdownOpen(false);
     router.push('/profile');
   };
 
@@ -234,37 +396,32 @@ function LayoutInner({ children }) {
     await refreshSubscription();
   };
 
-  /* ── Derived ─────────────────────────── */
-  const initial   = user?.name?.charAt(0)?.toUpperCase() || '?';
+  /* ── Derived ──────────────────────────────────────────────────── */
+  const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
+
   const bilingualLabels = useMemo(() => ({
     dashboard: 'होम / Dashboard',
-    products: 'स्टॉक / Products',
-    sales: 'बेचिए / Sales',
+    products:  'स्टॉक / Products',
+    sales:     'बेचिए / Sales',
     purchases: 'खरीदिए / Purchases',
-    udhaar: 'उधार / Credit',
-    gst: 'GST / Tax',
-    reports: 'रिपोर्ट / Hisaab',
+    udhaar:    'उधार / Credit',
+    gst:       'GST / Tax',
+    reports:   'रिपोर्ट / Hisaab',
   }), []);
+
   const translatedNav = useMemo(
     () => NAV_ITEMS.map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
     [bilingualLabels, t]
   );
-  const mobileBottomNav = useMemo(() => MOBILE_BOTTOM_NAV_ITEMS.map(item => ({ ...item, label: item.shortLabel })), []);
-  const upgradeLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
-  const mobileMenuItems = useMemo(() => [
-    { href: '/profile', key: 'profile', label: 'Profile / दुकान' },
-    { href: '/pricing', key: 'pricing', label: upgradeLabel },
-    { href: '/product', key: 'products', label: 'स्टॉक / Products' },
-    { href: '/udhaar', key: 'udhaar', label: 'उधार / Credit' },
-    { href: '/gst', key: 'gst', label: 'GST / Tax' },
-    { href: '/reports', key: 'reports', label: 'रिपोर्ट / Hisaab' },
-  ], [upgradeLabel]);
 
+  const upgradeLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
+
+  /* ════════════════════════════════════════════════════════════════ */
   return (
     <div className="app-shell-root rr-workspace-premium">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
 
-        {/* ── Desktop sidebar ───────────────────── */}
+        {/* ══ Desktop sidebar (unchanged) ═══════════════════════════ */}
         <aside className={`desktop-sidebar premium-sidebar${locale === 'hi' ? ' sidebar-locale-hi' : ''}`}>
           <div className="sidebar-panel">
             <div className="sidebar-orb sidebar-orb-top" />
@@ -301,7 +458,6 @@ function LayoutInner({ children }) {
 
             <div className="sidebar-section-label">{t('mainMenu')}</div>
 
-            {/* Nav */}
             <nav className="sidebar-nav">
               {translatedNav.map(item => (
                 <Link key={item.href} href={item.href}
@@ -318,7 +474,7 @@ function LayoutInner({ children }) {
           </div>
         </aside>
 
-        {/* ── Mobile top bar ────────────────────── */}
+        {/* ══ Mobile top bar ════════════════════════════════════════ */}
         <div className={`mobile-topbar premium-topbar${scrolled ? ' is-scrolled' : ''}`}>
           <div className="mobile-topbar-brand">
             <Logo size="sm" />
@@ -328,88 +484,86 @@ function LayoutInner({ children }) {
             </div>
           </div>
 
-          <div className="mobile-topbar-actions">
-            <div ref={mobileDropRef} className="relative">
-              <button
-                type="button"
-                className={`mobile-hamburger-btn${mobileDropOpen ? ' is-open' : ''}`}
-                aria-label="Open app menu"
-                aria-expanded={mobileDropOpen}
-                onClick={() => setMobileDropOpen(v => !v)}>
-                <Glyph name="menu" size={20} />
-              </button>
-            </div>
+          {/* Right side: upgrade badge + profile avatar */}
+          <div className="flex items-center gap-2">
+            {!subscription?.isPro && (
+              <Link href="/pricing"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-black text-amber-700 hover:bg-amber-100 transition-colors"
+              >
+                ⚡ Upgrade
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={goToProfile}
+              className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-[13px] shadow-md hover:shadow-lg hover:-translate-y-px transition-all"
+            >
+              {initial}
+            </button>
           </div>
         </div>
 
-        {mobileDropOpen && (
-          <div className="mobile-nav-drawer-shell" aria-hidden={!mobileDropOpen}>
-            <button
-              type="button"
-              className="mobile-nav-drawer-backdrop"
-              aria-label="Close menu"
-              onClick={() => setMobileDropOpen(false)}
-            />
-            <aside ref={mobileDrawerRef} className="mobile-nav-drawer" role="dialog" aria-label="App menu">
-              <div className="mobile-nav-drawer-header">
-                <div className="mobile-topbar-brand">
-                  <Logo size="sm" />
-                  <div className="mobile-brand-copy">
-                    <div className="mobile-brand-title">रखरखाव</div>
-                    <div className="mobile-brand-subtitle">Simple business app</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="mobile-hamburger-btn"
-                  aria-label="Close app menu"
-                  onClick={() => setMobileDropOpen(false)}>
-                  <Glyph name="menu" size={20} />
-                </button>
-              </div>
-              <nav className="mobile-nav-drawer-menu">
-                {mobileMenuItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={pathname === item.href ? 'is-active' : ''}
-                    onClick={() => setMobileDropOpen(false)}>
-                    <Glyph name={item.key} size={17} /> {item.label}
-                  </Link>
-                ))}
-              </nav>
-              <button type="button" onClick={logout} className="mobile-nav-drawer-logout">
-                <Glyph name="logout" size={17} /> Logout
-              </button>
-            </aside>
-          </div>
-        )}
-
         <SyncStatusBar />
 
-        {/* ── Main content ──────────────────────── */}
+        {/* ══ More drawer ════════════════════════════════════════════ */}
+        <MoreDrawer
+          open={moreOpen}
+          onClose={() => setMoreOpen(false)}
+          pathname={pathname}
+          onLogout={logout}
+          subscription={subscription}
+        />
+
+        {/* ══ Main content ══════════════════════════════════════════ */}
         <main className="main-content premium-main-content">
           <div className="content-container">{children}</div>
         </main>
 
-        {/* ── Mobile bottom nav ─────────────────── */}
+        {/* ══ Mobile bottom nav — 5 items ═══════════════════════════ */}
         <nav className="mobile-bottom-nav premium-bottom-nav">
           <div className="mobile-bottom-nav-card">
-            {mobileBottomNav.map(item => (
-              <Link key={item.href} href={item.href}
-                className={`mobile-nav-link mobile-nav-tone-${item.tone}${pathname === item.href ? ' is-active' : ''}`}>
-                <span className="mobile-nav-icon-wrap">
-                  <span className="mobile-nav-glow" />
-                  <Glyph name={item.key} size={18} />
-                </span>
-                <span className="mobile-nav-label">{item.label}</span>
-              </Link>
-            ))}
+
+            {/* First 4 items */}
+            {MOBILE_BOTTOM_NAV.map(item => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`mobile-nav-link mobile-nav-tone-${item.key}${isActive ? ' is-active' : ''}`}
+                >
+                  <span className="mobile-nav-icon-wrap">
+                    <span className="mobile-nav-glow" />
+                    <Glyph name={item.icon} size={20} />
+                  </span>
+                  <span className="mobile-nav-label">{item.shortLabel}</span>
+                </Link>
+              );
+            })}
+
+            {/* 5th item — More button */}
+            <button
+              type="button"
+              onClick={() => setMoreOpen(v => !v)}
+              className={`mobile-nav-link${moreOpen ? ' is-active' : ''}`}
+              aria-label="More options"
+              aria-expanded={moreOpen}
+            >
+              <span className="mobile-nav-icon-wrap">
+                <span className="mobile-nav-glow" />
+                {moreOpen
+                  ? <Glyph name="close" size={20} stroke={2} />
+                  : <Glyph name="menu" size={20} />
+                }
+              </span>
+              <span className="mobile-nav-label">और</span>
+            </button>
+
           </div>
         </nav>
       </div>
 
-      {/* ── Overlays ──────────────────────────── */}
+      {/* ══ Overlays (unchanged) ═══════════════════════════════════ */}
       <ReadOnlyOverlay
         visible={Boolean(subscription?.isReadOnly)}
         plans={plans} selectedPlan={paywallPlan}
