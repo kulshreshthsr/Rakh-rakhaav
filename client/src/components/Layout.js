@@ -117,9 +117,9 @@ function Logo({ size = 'md' }) {
 }
 
 /* ─── User dropdown (desktop) ────────────────────────────────────── */
-function UserDropdown({ onProfile, onLogout, extraItems }) {
+function UserDropdown({ onProfile, onLogout, extraItems, className = '' }) {
   return (
-    <div className="sidebar-user-menu">
+    <div className={`sidebar-user-menu${className ? ` ${className}` : ''}`}>
       <button type="button" onClick={onProfile}><Glyph name="profile" size={16} /> Profile</button>
       {extraItems}
       <button type="button" onClick={onLogout} className="danger"><Glyph name="logout" size={16} /> Logout</button>
@@ -307,9 +307,11 @@ function LayoutInner({ children }) {
   const [paywallPlan, setPaywallPlan]       = useState('weekly');
   const [scrolled, setScrolled]             = useState(false);
   const [dropdownOpen, setDropdownOpen]     = useState(false);
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [moreOpen, setMoreOpen]             = useState(false);  // ← new More drawer
 
   const dropdownRef    = useRef(null);
+  const mobileProfileRef = useRef(null);
   const router         = useRouter();
   const pathname       = usePathname();
 
@@ -364,6 +366,7 @@ function LayoutInner({ children }) {
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
+      if (mobileProfileRef.current && !mobileProfileRef.current.contains(e.target)) setMobileProfileOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -378,7 +381,7 @@ function LayoutInner({ children }) {
 
   /* ── Actions ──────────────────────────────────────────────────── */
   const logout = () => {
-    setDropdownOpen(false); setMoreOpen(false);
+    setDropdownOpen(false); setMobileProfileOpen(false); setMoreOpen(false);
     localStorage.removeItem('token'); localStorage.removeItem('user');
     clearTrialGateSeen();
     setWelcomePending(false);
@@ -387,6 +390,7 @@ function LayoutInner({ children }) {
 
   const goToProfile = () => {
     setDropdownOpen(false);
+    setMobileProfileOpen(false);
     router.push('/profile');
   };
 
@@ -486,7 +490,7 @@ function LayoutInner({ children }) {
           </div>
 
           {/* Right side: upgrade badge + profile avatar */}
-          <div className="flex items-center gap-2">
+          <div className="relative flex items-center gap-2" ref={mobileProfileRef}>
             {!subscription?.isPro && (
               <Link href="/pricing"
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-black text-amber-700 hover:bg-amber-100 transition-colors"
@@ -496,11 +500,21 @@ function LayoutInner({ children }) {
             )}
             <button
               type="button"
-              onClick={goToProfile}
+              onClick={() => setMobileProfileOpen((v) => !v)}
               className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-[13px] shadow-md hover:shadow-lg hover:-translate-y-px transition-all"
+              aria-label="Open profile menu"
+              aria-haspopup="menu"
+              aria-expanded={mobileProfileOpen}
             >
               {initial}
             </button>
+            {mobileProfileOpen && (
+              <UserDropdown
+                onProfile={goToProfile}
+                onLogout={logout}
+                className="mobile-user-menu"
+              />
+            )}
           </div>
         </div>
 

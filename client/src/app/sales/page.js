@@ -1072,6 +1072,7 @@ const buildTaxSummaryRows = (saleItems, isIGST) => {
 
 function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
   const INR = '&#8377;';
+  const shopDisplayName = shop?.name?.trim() || 'My Shop';
   const roundedBill = getRoundedBillValues(sale.total_amount);
   const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{ product_name: sale.product_name, hsn_code: sale.hsn_code, quantity: sale.quantity, price_per_unit: sale.price_per_unit, gst_rate: sale.gst_rate, taxable_amount: sale.taxable_amount, cgst_amount: sale.cgst_amount, sgst_amount: sale.sgst_amount, igst_amount: sale.igst_amount, gst_type: sale.gst_type, total_amount: sale.total_amount }];
   const isIGST   = sale.gst_type === 'IGST' || saleItems.some(i => i.gst_type === 'IGST');
@@ -1118,8 +1119,7 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '.invoice{max-width:820px;margin:0 auto;padding:18px;border:2px solid #111827}'
     + '.header{display:grid;grid-template-columns:1.45fr .95fr;border:1.5px solid #111827}'
     + '.header-left,.header-right{padding:14px 16px;min-height:120px}.header-left{border-right:1.5px solid #111827}'
-    + '.brand-tag{display:inline-block;padding:8px 16px;border:1.5px solid #111827;font-size:22px;font-weight:900;letter-spacing:0;color:#3B82F6;background:#f8fafc;margin-bottom:12px;line-height:1;font-family:"Noto Sans Devanagari","Mangal","Segoe UI",Arial,sans-serif}'
-    + '.seller-name{font-size:17px;font-weight:800;color:#111827;margin-top:4px}'
+    + '.brand-tag{display:inline-block;max-width:100%;padding:8px 14px;border:1.5px solid #111827;font-size:20px;font-weight:900;letter-spacing:0;color:#111827;background:#f8fafc;margin-bottom:10px;line-height:1.2;word-break:break-word;font-family:"Segoe UI",Arial,sans-serif}'
     + '.shop-line{font-size:11px;line-height:1.55;color:#374151;margin-top:8px}'
     + '.invoice-title{font-size:22px;font-weight:900;letter-spacing:.16em;text-align:center;color:#111827;text-transform:uppercase;margin-top:4px}'
     + '.invoice-copy{font-size:10px;letter-spacing:.12em;text-align:center;color:#6b7280;text-transform:uppercase;margin-top:6px}'
@@ -1146,19 +1146,19 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '.signature-block{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:right}'
     + '.signature-space{height:48px}.signature-line{font-size:11px;font-weight:800;color:#111827}.signature-note{font-size:10px;line-height:1.5;color:#6b7280;margin-top:6px}'
     + '.terms-box{border:1.5px solid #111827;border-top:none;padding:10px 14px;font-size:10px;line-height:1.6;color:#374151}'
-    + '.footer-mark{margin-top:10px;text-align:center;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6b7280}'
+    + '.footer-mark{margin-top:10px;text-align:center;font-size:10px;letter-spacing:.02em;color:#6b7280;font-family:"Noto Sans Devanagari","Mangal","Segoe UI",Arial,sans-serif}'
     + '@media print{.pdf-banner{display:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}'
     + '</style></head><body>'
     + '<div class="pdf-banner" style="max-width:820px;margin:0 auto 0;">' + pdfBanner + '</div>'
     + '<div class="invoice">'
-    + '<div class="header"><div class="header-left"><div class="brand-tag">रखरखाव</div><div class="seller-name">' + (shop.name || 'My Shop') + '</div>'
+    + '<div class="header"><div class="header-left"><div class="brand-tag">' + shopDisplayName + '</div>'
     + (shop.address ? '<div class="shop-line">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
     + ((shop.phone || shop.email) ? '<div class="shop-line">' + (shop.phone ? 'Phone: ' + shop.phone : '') + (shop.phone && shop.email ? ' | ' : '') + (shop.email ? 'Email: ' + shop.email : '') + '</div>' : '')
     + (shop.gstin ? '<div class="shop-line"><strong>GSTIN:</strong> ' + shop.gstin + '</div>' : '')
     + (shop.state ? '<div class="shop-line"><strong>State Code:</strong> ' + (sellerStateCode || 'N/A') + '</div>' : '')
     + '</div><div class="header-right"><div class="invoice-title">Invoice</div><div class="invoice-copy">Original For Recipient</div><div style="text-align:center"><span class="pay-chip" style="background:' + payBg + ';color:' + payColor + '">' + payLabel + '</span></div></div></div>'
     + '<div class="info-grid"><div class="info-cell"><div class="label">Invoice No</div><div class="value">' + sale.invoice_number + '</div></div><div class="info-cell"><div class="label">Invoice Date</div><div class="value">' + saleDate + '</div></div><div class="info-cell"><div class="label">Invoice Type</div><div class="value">' + (sale.invoice_type || 'B2C') + ' / ' + (isIGST ? 'IGST' : 'CGST + SGST') + '</div></div><div class="info-cell"><div class="label">Place Of Supply</div><div class="value">' + placeOfSupplyLabel + '</div></div></div>'
-    + '<div class="party-grid"><div class="party-box"><div class="label">Bill From</div><div class="party-name">' + (shop.name || 'RakhRakhaav') + '</div>'
+    + '<div class="party-grid"><div class="party-box"><div class="label">Bill From</div><div class="party-name">' + shopDisplayName + '</div>'
     + (shop.address ? '<div class="party-detail">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
     + (shop.phone ? '<div class="party-detail">Phone: ' + shop.phone + '</div>' : '')
     + (shop.gstin ? '<div class="party-detail">GSTIN: ' + shop.gstin + '</div>' : '')
@@ -1181,9 +1181,9 @@ function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
     + '<tr class="amount-rounded"><td>Rounded Total</td><td>' + INR + fmt(roundedBill.roundedTotal) + '</td></tr>'
     + '</table></div></div>'
     + '<div class="footer-grid"><div class="footer-box">' + bankHTML + '</div>'
-    + '<div class="footer-box"><div class="signature-block"><div style="font-size:12px;font-weight:700;margin-bottom:10px">For <strong>' + (shop.name || 'RakhRakhaav') + '</strong></div><div class="signature-space"></div><div class="signature-line">Authorised Signatory</div><div class="signature-note">Computer generated invoice. Signature not required.</div></div></div></div>'
+    + '<div class="footer-box"><div class="signature-block"><div style="font-size:12px;font-weight:700;margin-bottom:10px">For <strong>' + shopDisplayName + '</strong></div><div class="signature-space"></div><div class="signature-line">Authorised Signatory</div><div class="signature-note">Computer generated invoice. Signature not required.</div></div></div></div>'
     + termsHTML
-    + '<div class="footer-mark">Rakh-Rakhaav Business Manager</div>'
+    + '<div class="footer-mark">Grow your business with - रखरखाव</div>'
     + '</div>'
     + (autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : '')
     + '</body></html>';
