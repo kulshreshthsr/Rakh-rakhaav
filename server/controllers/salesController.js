@@ -6,6 +6,7 @@ const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Udhaar   = require('../models/udhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
+const { generateGSTComplianceReport } = require('../utils/gstReportGenerator');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -993,6 +994,57 @@ const getGSTSummary = async (req, res) => {
   }
 };
 
+const getGSTComplianceReport = async (req, res) => {
+  try {
+    const shop = await getOrCreateShop(req.user.id);
+    const { month, year, from, to } = req.query;
+    const filter = { shop: shop._id };
+
+    if (from || to) {
+      if (!from || !to) {
+        return res.status(400).json({ message: 'Both from and to dates are required' });
+      }
+
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid date range' });
+      }
+
+      filter.createdAt = {
+        $gte: fromDate,
+        $lte: toDate,
+      };
+    } else {
+      const monthNumber = Number(month);
+      const yearNumber = Number(year);
+      if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12 || !Number.isInteger(yearNumber) || yearNumber < 2000) {
+        return res.status(400).json({ message: 'Valid month and year are required' });
+      }
+
+      filter.createdAt = {
+        $gte: new Date(yearNumber, monthNumber - 1, 1),
+        $lte: new Date(yearNumber, monthNumber, 0, 23, 59, 59, 999),
+      };
+    }
+
+    const [sales, purchases] = await Promise.all([
+      Sale.find(filter).sort({ createdAt: 1 }).lean(),
+      Purchase.find({ shop: shop._id, createdAt: filter.createdAt }).sort({ createdAt: 1 }).lean(),
+    ]);
+
+    const report = generateGSTComplianceReport({
+      title: 'GST Report',
+      sales,
+      purchases,
+    });
+
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -1001,5 +1053,6 @@ module.exports = {
   updateSale,
   deleteSale,
   getGSTSummary,
+  getGSTComplianceReport,
   getProfitSummary,
 };

@@ -34,12 +34,10 @@ const MOBILE_BOTTOM_NAV = [
 
 // ── More drawer items ──
 const MORE_DRAWER_ITEMS = [
-  { href: '/dashboard', key: 'dashboard', label: 'होम',       sublabel: 'Dashboard',  icon: 'dashboard' },
-  { href: '/sales',     key: 'sales',     label: 'बेचिए',     sublabel: 'Sale',       icon: 'sales'     },
-  { href: '/purchases', key: 'purchases', label: 'खरीदिए',    sublabel: 'Purchase',   icon: 'purchases' },
-  { href: '/reports',   key: 'reports',   label: 'रिपोर्ट',   sublabel: 'Reports',    icon: 'reports'   },
-  { href: '/gst',       key: 'gst',       label: 'GST',        sublabel: 'Tax Filing', icon: 'gst'       },
-  { href: '/udhaar',    key: 'udhaar',    label: 'उधार',       sublabel: 'Udhaar',     icon: 'udhaar'    },
+  { href: '/product',   key: 'products',  label: 'Stock',     sublabel: 'Products & Inventory', icon: 'products' },
+  { href: '/gst',       key: 'gst',       label: 'GST',       sublabel: 'Tax Filing',           icon: 'gst'      },
+  { href: '/reports',   key: 'reports',   label: 'रिपोर्ट',   sublabel: 'Reports',              icon: 'reports'  },
+  { href: '/profile',   key: 'profile',   label: 'Profile',   sublabel: 'दुकान की जानकारी',     icon: 'profile'  },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
@@ -146,12 +144,10 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
   }, [open]);
 
   const iconColors = {
-    dashboard: 'bg-cyan-50 text-cyan-600',
-    sales:     'bg-emerald-50 text-emerald-600',
-    purchases: 'bg-blue-50 text-blue-600',
+    products:  'bg-violet-50 text-violet-600',
     reports:   'bg-violet-50 text-violet-600',
     gst:       'bg-amber-50 text-amber-600',
-    udhaar:    'bg-rose-50 text-rose-600',
+    profile:   'bg-slate-100 text-slate-600',
   };
 
   return (
@@ -235,48 +231,25 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
             })}
           </div>
 
-          {/* Divider */}
-          <div className="mx-4 my-2 h-px bg-slate-100" />
-
-          {/* Extra links */}
-          <div className="px-4 pb-3 flex flex-col gap-2">
-            <Link href="/product" onClick={onClose}
-              className="flex items-center gap-4 px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white transition-all"
-            >
-              <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center flex-shrink-0">
-                <Glyph name="products" size={18} />
-              </div>
-              <div className="flex-1">
-                <div className="text-[15px] font-black text-slate-900">Stock</div>
-                <div className="text-[12px] text-slate-400">Products & Inventory</div>
-              </div>
-            </Link>
-
-            <Link href="/profile" onClick={onClose}
-              className="flex items-center gap-4 px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white transition-all"
-            >
-              <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0">
-                <Glyph name="profile" size={18} />
-              </div>
-              <div className="flex-1">
-                <div className="text-[15px] font-black text-slate-900">Profile</div>
-                <div className="text-[12px] text-slate-400">दुकान की जानकारी</div>
-              </div>
-            </Link>
-
+          {/* Upgrade card */}
+          <div className="px-4 pb-3 pt-2">
             <Link href="/pricing" onClick={onClose}
-              className="flex items-center gap-4 px-4 py-3 rounded-2xl border border-amber-100 bg-amber-50 hover:bg-amber-100 transition-all"
+              className="relative flex items-center gap-4 overflow-hidden rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-200/70"
             >
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+              <div className="pointer-events-none absolute inset-y-0 -left-1 w-24 bg-gradient-to-r from-white/70 via-white/20 to-transparent skew-x-[-18deg] animate-[premiumShine_2.7s_ease-in-out_infinite]" />
+              <div className="relative z-10 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Glyph name="pricing" size={18} />
               </div>
-              <div className="flex-1">
+              <div className="relative z-10 flex-1">
                 <div className="text-[15px] font-black text-amber-900">
                   {subscription?.isPro ? 'Manage Plan' : 'Upgrade करें'}
                 </div>
                 <div className="text-[12px] text-amber-600">
                   {subscription?.isPro ? 'Pro plan active ✓' : 'Pro features unlock करें'}
                 </div>
+              </div>
+              <div className="relative z-10 text-amber-500">
+                <Glyph name="pricing" size={16} />
               </div>
             </Link>
           </div>

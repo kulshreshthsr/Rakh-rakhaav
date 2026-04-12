@@ -8,11 +8,13 @@ const {
   updateSale,
   deleteSale,
   getGSTSummary,
+  getGSTComplianceReport,
   getProfitSummary,
 } = require('../controllers/salesController');
 
 router.get('/profit-summary', protect, getProfitSummary);
 router.get('/gst-summary', protect, getGSTSummary);
+router.get('/gst-report', protect, getGSTComplianceReport);
 
 router.get('/', protect, getSales);
 router.post('/', protect, checkSubscriptionStatus, createSale);

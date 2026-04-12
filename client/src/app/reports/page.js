@@ -50,15 +50,15 @@ function Icon({ name, size = 16 }) {
 /* ─── Reusable section card ─────────────────────────────────────── */
 function SectionCard({ title, eyebrow, badge, action, children, accentColor = '#06b6d4' }) {
   return (
-    <div className="card" style={{ borderRadius: 22, padding: '22px 20px', position: 'relative', overflow: 'hidden' }}>
+    <div className="card reports-section-card">
       {/* Top accent line */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: accentColor, borderRadius: '22px 22px 0 0' }} />
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+      <div className="reports-section-accent" style={{ background: accentColor }} />
+      <div className="reports-section-head">
         <div>
-          {eyebrow && <p className="rr-page-eyebrow" style={{ marginBottom: 4 }}>{eyebrow}</p>}
-          <h2 className="section-title" style={{ fontSize: 16 }}>{title}</h2>
+          {eyebrow && <p className="rr-page-eyebrow reports-section-eyebrow">{eyebrow}</p>}
+          <h2 className="section-title reports-section-title">{title}</h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div className="reports-section-actions">
           {badge && <span className="badge">{badge}</span>}
           {action}
         </div>
@@ -89,21 +89,21 @@ function KpiCard({ label, value, sub, barColor, valueColor, icon, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="metric-card"
-      style={{ cursor: onClick ? 'pointer' : 'default', textAlign: 'left', background: 'none', border: 'none', padding: 0, borderRadius: 20, overflow: 'hidden', width: '100%' }}
+      className="metric-card reports-kpi-card"
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: barColor, borderRadius: '20px 20px 0 0' }} />
-      <div style={{ padding: '18px 16px 14px', display: 'flex', flexDirection: 'column', gap: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <p className="metric-label" style={{ marginTop: 2 }}>{label}</p>
+      <div className="reports-kpi-bar" style={{ background: barColor }} />
+      <div className="reports-kpi-body">
+        <div className="reports-kpi-top">
+          <p className="metric-label reports-kpi-label">{label}</p>
           {icon && (
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(100,116,139,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+            <div className="reports-kpi-icon">
               <Icon name={icon} size={15} />
             </div>
           )}
         </div>
-        <p className="metric-value" style={{ color: valueColor, fontSize: 24 }}>{value}</p>
-        {sub && <p className="page-subtitle" style={{ marginTop: 8, fontSize: 11 }}>{sub}</p>}
+        <p className="metric-value reports-kpi-value" style={{ color: valueColor }}>{value}</p>
+        {sub && <p className="page-subtitle reports-kpi-sub">{sub}</p>}
       </div>
     </button>
   );
@@ -116,10 +116,12 @@ export default function ReportsPage() {
   const router = useRouter();
   const [filter,       setFilter]       = useState('month');
   const [loading,      setLoading]      = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [sales,        setSales]        = useState([]);
   const [purchases,    setPurchases]    = useState([]);
   const [customers,    setCustomers]    = useState([]);
   const [summary,      setSummary]      = useState({});
+  const [gstReport,    setGstReport]    = useState(null);
   const [isOnline,     setIsOnline]     = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheLoaded,  setCacheLoaded]  = useState(false);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
@@ -193,6 +195,10 @@ export default function ReportsPage() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
+  useEffect(() => {
+    setGstReport(null);
+  }, [filter]);
+
   /* ── Derived data (ALL UNCHANGED) ── */
   const topProducts = (() => {
     const map = {};
@@ -257,6 +263,81 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadFile = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const fetchGSTReport = async () => {
+    const { from, to } = getRange(filter);
+    if (!from || !to) return null;
+
+    setReportLoading(true);
+    try {
+      const res = await fetch(
+        apiUrl(`/api/sales/gst-report?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      if (res.status === 401) { router.push('/login'); return null; }
+      if (!res.ok) throw new Error('GST report fetch failed');
+      const data = await res.json();
+      setGstReport(data);
+      return data;
+    } catch (err) {
+      console.error(err);
+      alert('GST report load nahi ho paaya. Please try again.');
+      return null;
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const ensureGSTReport = async () => gstReport || await fetchGSTReport();
+
+  const exportGSTJson = async () => {
+    const report = await ensureGSTReport();
+    if (!report) return;
+    downloadFile(JSON.stringify(report, null, 2), `GST_Report_${filter}.json`, 'application/json');
+  };
+
+  const exportGSTCsv = async (type) => {
+    const report = await ensureGSTReport();
+    if (!report) return;
+
+    const csv = type === 'gstr1'
+      ? report?.gstr1?.csv
+      : type === 'sales_register'
+        ? report?.sales_register?.csv
+        : report?.purchase_register?.csv;
+
+    if (!csv) {
+      alert('CSV data available nahi hai.');
+      return;
+    }
+
+    const filenameMap = {
+      gstr1: `GSTR1_${filter}.csv`,
+      sales_register: `Sales_Register_${filter}.csv`,
+      purchase_register: `Purchase_Register_${filter}.csv`,
+    };
+
+    downloadFile(csv, filenameMap[type], 'text/csv;charset=utf-8;');
+  };
+
+  const exportPDFReady = async () => {
+    const report = await ensureGSTReport();
+    if (!report?.pdf_data) {
+      alert('PDF-ready data available nahi hai.');
+      return;
+    }
+    downloadFile(JSON.stringify(report.pdf_data, null, 2), `GST_PDF_Data_${filter}.json`, 'application/json');
+  };
+
   /* ── Derived display values ── */
   const { label } = getRange(filter);
   const marginPct   = Math.min(100, Math.abs(summary.margin || 0));
@@ -297,18 +378,18 @@ export default function ReportsPage() {
             HERO
         ══════════════════════════════════════════════════════════ */}
         <div className="hero-panel reports-hero">
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div className="reports-hero-header">
             {/* Left */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="reports-hero-copy">
               <p className="rr-page-eyebrow">Business analytics</p>
-              <h1 className="page-title" style={{ marginTop: 6 }}>Reports / हिसाब</h1>
-              <p style={{ marginTop: 8, fontSize: 13, color: '#475569', lineHeight: 1.6, maxWidth: 440 }}>
+              <h1 className="page-title reports-hero-title">Reports / हिसाब</h1>
+              <p className="reports-hero-subtitle">
                 {label.toLowerCase()} ke liye revenue, profit, GST aur customer trends ek clean view mein.
               </p>
               {!isOnline ? (
-                <p className="rr-meta-line is-warn" style={{ marginTop: 8 }}>Offline snapshot · {cacheLabel || 'no network'}</p>
+                <p className="rr-meta-line is-warn reports-hero-meta">Offline snapshot · {cacheLabel || 'no network'}</p>
               ) : cacheLoaded && cacheLabel ? (
-                <p className="rr-meta-line" style={{ marginTop: 8 }}>
+                <p className="rr-meta-line reports-hero-meta">
                   <span className="status-dot is-green" style={{ marginRight: 6 }} />
                   Last synced {cacheLabel}
                 </p>
@@ -316,27 +397,34 @@ export default function ReportsPage() {
             </div>
 
             {/* Period filter pills */}
-            <div
-              className="reports-filter-pills"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 5, borderRadius: 14, background: 'rgba(241,245,249,0.95)', border: '1px solid rgba(148,163,184,0.32)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)', flexShrink: 0 }}
-            >
+            <div className="reports-filter-pills">
               {FILTERS.map((f) => (
                 <button
                   key={f.val}
                   type="button"
                   onClick={() => setFilter(f.val)}
-                  style={{
-                    border: 0, cursor: 'pointer', padding: '8px 18px', borderRadius: 10,
-                    fontSize: 13, fontWeight: 700,
-                    color: filter === f.val ? '#0c1222' : '#64748b',
-                    background: filter === f.val ? '#ffffff' : 'transparent',
-                    boxShadow: filter === f.val ? '0 2px 10px rgba(15,23,42,0.08), 0 0 0 1px rgba(13,148,136,0.12)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
+                  className={`filter-pill${filter === f.val ? ' is-active' : ''}`}
                 >
                   {f.label}
                 </button>
               ))}
+            </div>
+          </div>
+          <div className="reports-hero-summary">
+            <div className="reports-hero-summary-card">
+              <span className="reports-hero-summary-label">Revenue Snapshot</span>
+              <strong className="reports-hero-summary-value">₹{fmtN(summary.totalRevenue)}</strong>
+              <span className="reports-hero-summary-note">{summary.salesCount || 0} invoices tracked</span>
+            </div>
+            <div className="reports-hero-summary-card">
+              <span className="reports-hero-summary-label">Net Profit</span>
+              <strong className="reports-hero-summary-value is-emerald">₹{fmtN(summary.grossProfit)}</strong>
+              <span className="reports-hero-summary-note">Margin {fmt(summary.margin)}%</span>
+            </div>
+            <div className="reports-hero-summary-card">
+              <span className="reports-hero-summary-label">GST Position</span>
+              <strong className="reports-hero-summary-value is-amber">₹{fmtN(summary.netGST)}</strong>
+              <span className="reports-hero-summary-note">Payable after ITC</span>
             </div>
           </div>
         </div>
@@ -345,7 +433,7 @@ export default function ReportsPage() {
             KPI STRIP — 4 cards
         ══════════════════════════════════════════════════════════ */}
         {!loading && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12 }}>
+          <div className="reports-kpi-grid">
             <KpiCard
               label="Revenue"
               value={`₹${fmtN(summary.totalRevenue)}`}
@@ -383,7 +471,7 @@ export default function ReportsPage() {
 
         {/* Loading state */}
         {loading && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12 }}>
+          <div className="reports-kpi-grid">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="skeleton" style={{ height: 110, borderRadius: 20 }} />
             ))}
@@ -402,7 +490,7 @@ export default function ReportsPage() {
               action={<CsvBtn onClick={() => exportCSV('profit')} label="Export CSV" />}
             >
               {/* Two-column breakdown grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div className="reports-breakdown-grid">
                 {[
                   { l: 'Total Revenue',    v: summary.totalRevenue,                                      color: '#0e7490',  bg: '#ecfeff' },
                   { l: 'GST Collected',    v: summary.totalGST,                                          color: '#92400e',  bg: '#fffbeb' },
@@ -413,26 +501,26 @@ export default function ReportsPage() {
                 ].map(item => (
                   <div
                     key={item.l}
-                    className="dashboard-breakdown-card"
-                    style={{ borderRadius: 14, padding: '14px 14px', background: item.bg, border: `1px solid ${item.bg}` }}
+                    className="dashboard-breakdown-card reports-breakdown-card"
+                    style={{ background: item.bg, borderColor: item.bg }}
                   >
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', margin: 0 }}>{item.l}</p>
-                    <p style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.05em', color: item.color, margin: '8px 0 0' }}>₹{fmtN(item.v)}</p>
+                    <p className="reports-breakdown-label">{item.l}</p>
+                    <p className="reports-breakdown-value" style={{ color: item.color }}>₹{fmtN(item.v)}</p>
                   </div>
                 ))}
               </div>
 
               {/* Margin progress bar */}
               {(summary.totalRevenue || 0) > 0 && (
-                <div style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(241,245,249,0.8)', border: '1px solid rgba(148,163,184,0.2)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, marginBottom: 10 }}>
-                    <span style={{ color: '#475569', fontWeight: 600 }}>Profit Margin Progress</span>
+                <div className="reports-margin-card">
+                  <div className="reports-margin-head">
+                    <span className="reports-margin-title">Profit Margin Progress</span>
                     <strong style={{ color: marginColor, fontSize: 15 }}>{fmt(summary.margin)}%</strong>
                   </div>
-                  <div style={{ height: 10, borderRadius: 99, background: 'rgba(148,163,184,0.2)', overflow: 'hidden' }}>
+                  <div className="reports-margin-track">
                     <div style={{ height: '100%', borderRadius: 99, width: `${marginPct}%`, background: `linear-gradient(90deg,${marginColor},${marginColor}aa)`, transition: 'width 600ms ease' }} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
+                  <div className="reports-margin-foot">
                     <span>0%</span>
                     <span style={{ color: marginColor, fontWeight: 700 }}>
                       {summary.margin >= 20 ? '✓ Healthy margin' : summary.margin >= 10 ? '⚡ Improving' : '↗ Needs attention'}
@@ -443,13 +531,55 @@ export default function ReportsPage() {
               )}
 
               {/* Net GST payable highlight */}
-              <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg,#0f172a,#1e293b)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div className="reports-gst-highlight">
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Net GST Payable</p>
-                  <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>GST Collected − Input Tax Credit</p>
+                  <p className="reports-gst-highlight-label">Net GST Payable</p>
+                  <p className="reports-gst-highlight-note">GST Collected − Input Tax Credit</p>
                 </div>
-                <p style={{ fontSize: 26, fontWeight: 900, color: '#ffffff', letterSpacing: '-0.05em', margin: 0 }}>₹{fmtN(summary.netGST)}</p>
+                <p className="reports-gst-highlight-value">₹{fmtN(summary.netGST)}</p>
               </div>
+            </SectionCard>
+
+            <SectionCard
+              title="GST Compliance Exports"
+              eyebrow={`${label} · Filing-ready formats`}
+              badge={gstReport?.errors?.length ? `${gstReport.errors.length} validation issues` : 'Validated output'}
+              accentColor="linear-gradient(90deg,#f59e0b,#ef4444)"
+              action={<CsvBtn onClick={fetchGSTReport} label={reportLoading ? 'Loading...' : 'Refresh GST'} />}
+            >
+              <div className="reports-breakdown-grid" style={{ marginBottom: 16 }}>
+                {[
+                  { l: 'GSTR-1 CSV', v: gstReport?.gstr1?.json?.total_invoices ?? sales.length, color: '#92400e', bg: '#fffbeb', hint: 'sales invoices' },
+                  { l: 'Sales Register', v: gstReport?.sales_register?.json?.length ?? sales.length, color: '#0e7490', bg: '#ecfeff', hint: 'rows ready' },
+                  { l: 'Purchase Register', v: gstReport?.purchase_register?.json?.length ?? purchases.length, color: '#6d28d9', bg: '#f5f3ff', hint: 'rows ready' },
+                  { l: 'Validation Errors', v: gstReport?.errors?.length ?? 0, color: (gstReport?.errors?.length ?? 0) > 0 ? '#9f1239' : '#065f46', bg: (gstReport?.errors?.length ?? 0) > 0 ? '#fff1f2' : '#f0fdf4', hint: 'must review' },
+                ].map((item) => (
+                  <div
+                    key={item.l}
+                    className="dashboard-breakdown-card reports-breakdown-card"
+                    style={{ background: item.bg, borderColor: item.bg }}
+                  >
+                    <p className="reports-breakdown-label">{item.l}</p>
+                    <p className="reports-breakdown-value" style={{ color: item.color }}>{fmtN(item.v)}</p>
+                    <p className="page-subtitle" style={{ marginTop: 4 }}>{item.hint}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="reports-section-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+                <CsvBtn onClick={() => exportGSTCsv('gstr1')} label="GSTR-1 CSV" />
+                <CsvBtn onClick={() => exportGSTCsv('sales_register')} label="Sales CSV" />
+                <CsvBtn onClick={() => exportGSTCsv('purchase_register')} label="Purchase CSV" />
+                <CsvBtn onClick={exportGSTJson} label="GST JSON" />
+                <CsvBtn onClick={exportPDFReady} label="PDF Data" />
+              </div>
+
+              {(gstReport?.errors?.length ?? 0) > 0 && (
+                <div className="rr-banner-warn" role="status" style={{ marginTop: 16 }}>
+                  <strong>Validation issues found</strong>
+                  {`: ${gstReport.errors.slice(0, 3).map((error) => `${error.identifier} ${error.message}`).join(' · ')}`}
+                </div>
+              )}
             </SectionCard>
 
             {/* ══════════════════════════════════════════════════════
@@ -504,10 +634,7 @@ export default function ReportsPage() {
             {/* ══════════════════════════════════════════════════════
                 TWO-COLUMN: Top Products + Top Customers
             ══════════════════════════════════════════════════════ */}
-            <div
-              className="reports-two-col"
-              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, alignItems: 'start' }}
-            >
+            <div className="reports-two-col reports-split-grid">
               {/* Top Products */}
               <SectionCard
                 title="Top Products"
@@ -523,26 +650,26 @@ export default function ReportsPage() {
                     <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi sale nahi mili</p>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div className="reports-stack-list">
                     {topProducts.map((p, i) => (
                       <div
                         key={i}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 14, background: i === 0 ? 'rgba(6,182,212,0.05)' : 'rgba(241,245,249,0.6)', border: '1px solid rgba(148,163,184,0.18)', transition: 'all 0.15s ease' }}
-                        className="dashboard-top-card"
+                        className="dashboard-top-card stack-row reports-stack-row"
+                        style={{ background: i === 0 ? 'rgba(6,182,212,0.05)' : undefined }}
                       >
                         {/* Rank */}
-                        <div style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, background: rankBg[i % rankBg.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#fff', boxShadow: '0 3px 8px rgba(0,0,0,0.15)' }}>
+                        <div className="reports-rank-badge" style={{ background: rankBg[i % rankBg.length] }}>
                           {i + 1}
                         </div>
                         {/* Name + meta */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</p>
-                          <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{p.qty} units · {p.count} orders</p>
+                        <div className="reports-stack-copy">
+                          <p className="reports-stack-title">{p.name}</p>
+                          <p className="reports-stack-meta">{p.qty} units · {p.count} orders</p>
                         </div>
                         {/* Revenue + profit */}
-                        <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                          <p style={{ fontSize: 14, fontWeight: 900, color: '#059669', margin: 0 }}>₹{fmtN(p.revenue)}</p>
-                          <p style={{ fontSize: 11, color: '#0891b2', margin: '2px 0 0' }}>₹{fmtN(p.profit)} profit</p>
+                        <div className="reports-stack-metrics">
+                          <p className="reports-stack-value">₹{fmtN(p.revenue)}</p>
+                          <p className="reports-stack-note">₹{fmtN(p.profit)} profit</p>
                         </div>
                       </div>
                     ))}
@@ -565,27 +692,27 @@ export default function ReportsPage() {
                     <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi named sale nahi mili</p>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div className="reports-stack-list">
                     {topCustomers.map((c, i) => (
                       <div
                         key={i}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 14, background: i === 0 ? 'rgba(139,92,246,0.05)' : 'rgba(241,245,249,0.6)', border: '1px solid rgba(148,163,184,0.18)', transition: 'all 0.15s ease' }}
-                        className="dashboard-top-card"
+                        className="dashboard-top-card stack-row reports-stack-row"
+                        style={{ background: i === 0 ? 'rgba(139,92,246,0.05)' : undefined }}
                       >
                         {/* Avatar with initial */}
-                        <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: rankBg[i % rankBg.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: '#fff', boxShadow: '0 3px 8px rgba(0,0,0,0.15)' }}>
+                        <div className="reports-customer-avatar" style={{ background: rankBg[i % rankBg.length] }}>
                           {c.name.charAt(0).toUpperCase()}
                         </div>
                         {/* Name + meta */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</p>
-                          <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{c.count} orders{c.phone ? ` · ${c.phone}` : ''}</p>
+                        <div className="reports-stack-copy">
+                          <p className="reports-stack-title">{c.name}</p>
+                          <p className="reports-stack-meta">{c.count} orders{c.phone ? ` · ${c.phone}` : ''}</p>
                         </div>
                         {/* Revenue + udhaar */}
-                        <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                          <p style={{ fontSize: 14, fontWeight: 900, color: '#059669', margin: 0 }}>₹{fmtN(c.revenue)}</p>
+                        <div className="reports-stack-metrics">
+                          <p className="reports-stack-value">₹{fmtN(c.revenue)}</p>
                           {c.udhaar > 0 && (
-                            <p style={{ fontSize: 11, color: '#e11d48', margin: '2px 0 0' }}>₹{fmtN(c.udhaar)} due</p>
+                            <p className="reports-stack-note reports-stack-note-danger">₹{fmtN(c.udhaar)} due</p>
                           )}
                         </div>
                       </div>
@@ -607,15 +734,6 @@ export default function ReportsPage() {
         )}
       </div>
 
-      <style>{`
-        @media (max-width: 900px) {
-          .reports-two-col { grid-template-columns: 1fr !important; }
-        }
-        @media (max-width: 640px) {
-          .reports-two-col { grid-template-columns: 1fr !important; gap: 12px !important; }
-          .reports-kpi-grid { grid-template-columns: repeat(2,1fr) !important; }
-        }
-      `}</style>
     </Layout>
   );
 }
