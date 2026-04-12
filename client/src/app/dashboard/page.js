@@ -49,6 +49,7 @@ export default function DashboardPage() {
 
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [shopName, setShopName] = useState('');
   const [userName, setUserName] = useState('');
   const [greeting] = useState(getGreeting);
@@ -59,6 +60,7 @@ export default function DashboardPage() {
     const token = getToken();
     if (!token) { router.push('/login'); return; }
     try {
+      setError('');
       const [dashRes, shopRes] = await Promise.all([
         fetch(apiUrl('/api/dashboard/summary'), { headers: { Authorization: `Bearer ${token}` } }),
         fetch(apiUrl('/api/auth/shop'),  { headers: { Authorization: `Bearer ${token}` } }),
@@ -69,7 +71,10 @@ export default function DashboardPage() {
       const shopData = await shopRes.json();
       setData(dashData);
       setShopName(shopData.name || 'मेरी दुकान');
-    } catch { /* silent */ }
+    } catch (err) {
+      setData(null);
+      setError(err.message || 'Dashboard data load nahi ho paya.');
+    }
     finally { setLoading(false); }
   }, [router]);
 
@@ -108,6 +113,26 @@ export default function DashboardPage() {
             <div key={i} className={`h-${h === 80 ? '20' : h === 120 ? '28' : h === 160 ? '36' : '28'} rounded-2xl bg-white border border-slate-200 animate-pulse`}
               style={{ height: h }} />
           ))}
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4">
+            <p className="text-[15px] font-black text-rose-900">Dashboard data load nahi ho paya.</p>
+            <p className="mt-1 text-[12px] text-rose-700">{error}</p>
+            <button
+              type="button"
+              onClick={fetchDashboard}
+              className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-[12px] font-black text-white hover:bg-rose-700 transition-colors"
+            >
+              Dobara load karo
+            </button>
+          </div>
         </div>
       </Layout>
     );

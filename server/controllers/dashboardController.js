@@ -166,7 +166,7 @@ const getDashboardSummary = async (req, res) => {
       gst: {
         collected: round2(monthSalesSummary.totalGSTCollected),
         itc: round2(monthPurchaseSummary.totalITC),
-        netPayable,
+        netPayable: netGSTPayable,
       },
       stock: {
         lowStockCount: lowStockProducts.length,
