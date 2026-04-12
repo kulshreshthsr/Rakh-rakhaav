@@ -60,10 +60,11 @@ export default function DashboardPage() {
     if (!token) { router.push('/login'); return; }
     try {
       const [dashRes, shopRes] = await Promise.all([
-        fetch(apiUrl('/api/dashboard'), { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(apiUrl('/api/dashboard/summary'), { headers: { Authorization: `Bearer ${token}` } }),
         fetch(apiUrl('/api/auth/shop'),  { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-      if (dashRes.status === 401) { router.push('/login'); return; }
+      if (dashRes.status === 401 || shopRes.status === 401) { router.push('/login'); return; }
+      if (!dashRes.ok || !shopRes.ok) throw new Error('Failed to load dashboard');
       const dashData = await dashRes.json();
       const shopData = await shopRes.json();
       setData(dashData);

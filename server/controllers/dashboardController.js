@@ -19,55 +19,81 @@ const getDateRange = (month, year) => {
   return { $gte: start, $lte: end };
 };
 
+const getTodayRange = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  return { $gte: start, $lte: end };
+};
+
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { $gte: start, $lte: end };
+};
+
+const round2 = (value) => Number(Number(value || 0).toFixed(2));
+
+const aggregateSalesSummary = async (match) => {
+  const result = await Sale.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: '$total_amount' },
+        totalTaxable: { $sum: '$taxable_amount' },
+        totalGSTCollected: { $sum: '$total_gst' },
+        totalCOGS: { $sum: '$total_cost' },
+        totalGrossProfit: { $sum: '$gross_profit' },
+        salesCount: { $sum: 1 },
+      },
+    },
+  ]);
+
+  return result[0] || {
+    totalRevenue: 0,
+    totalTaxable: 0,
+    totalGSTCollected: 0,
+    totalCOGS: 0,
+    totalGrossProfit: 0,
+    salesCount: 0,
+  };
+};
+
+const aggregatePurchaseSummary = async (match) => {
+  const result = await Purchase.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: null,
+        totalSpent: { $sum: '$total_amount' },
+        totalITC: { $sum: '$total_gst' },
+        purchasesCount: { $sum: 1 },
+      },
+    },
+  ]);
+
+  return result[0] || { totalSpent: 0, totalITC: 0, purchasesCount: 0 };
+};
+
 const getDashboardSummary = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
     const { month, year } = req.query;
-    const createdAt = getDateRange(month, year);
+    const requestedRange = getDateRange(month, year);
+    const monthRange = requestedRange || getCurrentMonthRange();
+    const todayRange = getTodayRange();
 
-    const salesFilter = { shop: shop._id, ...(createdAt ? { createdAt } : {}) };
-    const purchaseFilter = { shop: shop._id, ...(createdAt ? { createdAt } : {}) };
-
-    const [sales, products, customers, purchasesAgg, salesAgg] = await Promise.all([
-      Sale.find(salesFilter).select('items product_name quantity total_amount createdAt taxable_amount total_gst total_cost gross_profit'),
-      Product.find({ shop: shop._id }).select('name quantity stock is_low_stock'),
-      Customer.find({ shop: shop._id }).select('totalUdhaar'),
-      Purchase.aggregate([
-        { $match: purchaseFilter },
-        {
-          $group: {
-            _id: null,
-            totalSpent: { $sum: '$total_amount' },
-            totalITC: { $sum: '$total_gst' },
-            purchasesCount: { $sum: 1 },
-          },
-        },
-      ]),
-      Sale.aggregate([
-        { $match: salesFilter },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: '$total_amount' },
-            totalTaxable: { $sum: '$taxable_amount' },
-            totalGSTCollected: { $sum: '$total_gst' },
-            totalCOGS: { $sum: '$total_cost' },
-            totalGrossProfit: { $sum: '$gross_profit' },
-            salesCount: { $sum: 1 },
-          },
-        },
-      ]),
+    const [sales, products, customers, todaySalesSummary, monthSalesSummary, monthPurchaseSummary] = await Promise.all([
+      Sale.find({ shop: shop._id }).select('items product_name quantity total_amount createdAt taxable_amount total_gst total_cost gross_profit'),
+      Product.find({ shop: shop._id }).select('name quantity stock low_stock_threshold is_low_stock'),
+      Customer.find({ shop: shop._id }).select('name phone totalUdhaar').sort({ totalUdhaar: -1 }),
+      aggregateSalesSummary({ shop: shop._id, createdAt: todayRange }),
+      aggregateSalesSummary({ shop: shop._id, createdAt: monthRange }),
+      aggregatePurchaseSummary({ shop: shop._id, createdAt: monthRange }),
     ]);
-
-    const purchaseSummary = purchasesAgg[0] || { totalSpent: 0, totalITC: 0, purchasesCount: 0 };
-    const salesSummary = salesAgg[0] || {
-      totalRevenue: 0,
-      totalTaxable: 0,
-      totalGSTCollected: 0,
-      totalCOGS: 0,
-      totalGrossProfit: 0,
-      salesCount: 0,
-    };
 
     const productSalesMap = {};
     sales.forEach((sale) => {
@@ -94,8 +120,14 @@ const getDashboardSummary = async (req, res) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
-    const lowStockProducts = products
-      .filter((product) => (product.quantity ?? product.stock ?? 0) <= 5)
+    const outOfStockProducts = products.filter((product) => (product.quantity ?? product.stock ?? 0) <= 0);
+    const lowStockProducts = products.filter((product) => {
+      const quantity = product.quantity ?? product.stock ?? 0;
+      const threshold = product.low_stock_threshold ?? 5;
+      return quantity > 0 && quantity <= threshold;
+    });
+
+    const stockAlertItems = [...outOfStockProducts, ...lowStockProducts]
       .sort((a, b) => (a.quantity ?? a.stock ?? 0) - (b.quantity ?? b.stock ?? 0))
       .slice(0, 6)
       .map((product) => ({
@@ -105,26 +137,60 @@ const getDashboardSummary = async (req, res) => {
       }));
 
     const totalCustomerUdhaar = customers.reduce((sum, customer) => sum + (customer.totalUdhaar || 0), 0);
-    const netGSTPayable = Number((salesSummary.totalGSTCollected - purchaseSummary.totalITC).toFixed(2));
+    const pendingCustomers = customers.filter((customer) => Number(customer.totalUdhaar || 0) > 0);
+    const topCustomers = pendingCustomers.slice(0, 5).map((customer) => ({
+      _id: customer._id,
+      name: customer.name,
+      phone: customer.phone,
+      due: round2(customer.totalUdhaar),
+    }));
+    const netGSTPayable = round2(monthSalesSummary.totalGSTCollected - monthPurchaseSummary.totalITC);
 
     res.json({
+      today: {
+        revenue: round2(todaySalesSummary.totalRevenue),
+        bills: todaySalesSummary.salesCount || 0,
+        profit: round2(todaySalesSummary.totalGrossProfit),
+      },
+      month: {
+        revenue: round2(monthSalesSummary.totalRevenue),
+        profit: round2(monthSalesSummary.totalGrossProfit),
+        purchases: round2(monthPurchaseSummary.totalSpent),
+        purchasesCount: monthPurchaseSummary.purchasesCount || 0,
+      },
+      udhaar: {
+        totalDue: round2(totalCustomerUdhaar),
+        pendingCount: pendingCustomers.length,
+        topCustomers,
+      },
+      gst: {
+        collected: round2(monthSalesSummary.totalGSTCollected),
+        itc: round2(monthPurchaseSummary.totalITC),
+        netPayable,
+      },
+      stock: {
+        lowStockCount: lowStockProducts.length,
+        outOfStockCount: outOfStockProducts.length,
+        lowStockItems: stockAlertItems,
+      },
       stats: {
-        totalRevenue: Number((salesSummary.totalRevenue || 0).toFixed(2)),
-        totalTaxable: Number((salesSummary.totalTaxable || 0).toFixed(2)),
-        salesCount: salesSummary.salesCount || 0,
-        totalCOGS: Number((salesSummary.totalCOGS || 0).toFixed(2)),
-        grossProfit: Number((salesSummary.totalGrossProfit || 0).toFixed(2)),
-        netProfit: Number((salesSummary.totalGrossProfit || 0).toFixed(2)),
-        gstCollected: Number((salesSummary.totalGSTCollected || 0).toFixed(2)),
-        gstITC: Number((purchaseSummary.totalITC || 0).toFixed(2)),
+        totalRevenue: round2(monthSalesSummary.totalRevenue),
+        totalTaxable: round2(monthSalesSummary.totalTaxable),
+        salesCount: monthSalesSummary.salesCount || 0,
+        totalCOGS: round2(monthSalesSummary.totalCOGS),
+        grossProfit: round2(monthSalesSummary.totalGrossProfit),
+        netProfit: round2(monthSalesSummary.totalGrossProfit),
+        gstCollected: round2(monthSalesSummary.totalGSTCollected),
+        gstITC: round2(monthPurchaseSummary.totalITC),
         netGSTPayable,
-        totalSpent: Number((purchaseSummary.totalSpent || 0).toFixed(2)),
-        purchasesCount: purchaseSummary.purchasesCount || 0,
+        totalSpent: round2(monthPurchaseSummary.totalSpent),
+        purchasesCount: monthPurchaseSummary.purchasesCount || 0,
       },
       topProducts,
-      lowStockProducts,
+      lowStockProducts: stockAlertItems,
       lowStockCount: lowStockProducts.length,
-      totalCustomerUdhaar: Number(totalCustomerUdhaar.toFixed(2)),
+      outOfStockCount: outOfStockProducts.length,
+      totalCustomerUdhaar: round2(totalCustomerUdhaar),
       fetchedAt: new Date().toISOString(),
     });
   } catch (error) {
