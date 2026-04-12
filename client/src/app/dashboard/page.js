@@ -1,490 +1,412 @@
 ﻿'use client';
-
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import { StatCard, StatusBadge } from '../../components/ui/AppUI';
 import { apiUrl } from '../../lib/api';
-import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const DASHBOARD_CACHE_PREFIX = 'dashboard-summary-v3';
 
 const getToken = () => localStorage.getItem('token');
-const getUserCacheNamespace = () => {
-  try {
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-    return storedUser?.username || storedUser?.id || 'anonymous';
-  } catch {
-    return 'anonymous';
-  }
-};
-const getCacheKey = (month, year) => `${DASHBOARD_CACHE_PREFIX}:${getUserCacheNamespace()}:${year}:${month}`;
+const fmt  = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmtD = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const readDashboardCache = (month, year) => readPageCache(getCacheKey(month, year));
-
-const writeDashboardCache = (month, year, value) => {
-  writePageCache(getCacheKey(month, year), value);
-};
-
-function QuickActionGlyph({ name }) {
-  const common = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.9,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': true,
-  };
-
-  switch (name) {
-    case 'sales':
-      return <svg {...common}><path d="M12 2v20" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></svg>;
-    case 'purchase':
-      return <svg {...common}><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7" /></svg>;
-    case 'credit':
-      return <svg {...common}><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3" /><path d="M6 3.5v20" /><path d="M9 7.5h6" /><path d="M9 11.5h6" /><path d="M9 15.5h4" /></svg>;
-    case 'stock':
-      return <svg {...common}><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></svg>;
-    case 'gst':
-      return <svg {...common}><path d="M7 4.5h10" /><path d="M7 9.5h10" /><path d="M7 14.5h5" /><path d="M16.5 13v7" /><path d="M13.5 16h6" /><rect x="4" y="3" width="16" height="18" rx="2.5" /></svg>;
-    default:
-      return <svg {...common}><path d="m12 3.5 2.5 5 5.5.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.5-.8L12 3.5Z" /></svg>;
-  }
+/* ── Greeting based on time ── */
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'शुभ प्रभात 🌅';
+  if (h < 17) return 'नमस्ते 🙏';
+  if (h < 20) return 'शुभ संध्या 🌇';
+  return 'शुभ रात्रि 🌙';
 }
 
-const DashboardSkeleton = () => (
-  <div className="page-shell">
-    <section className="card">
-      <div className="page-toolbar">
-        <div>
-          <div className="skeleton mb-2 h-4 w-[110px]" />
-          <div className="skeleton h-7 w-[180px]" />
-        </div>
-        <div className="grid w-full max-w-[260px] grid-cols-2 gap-2">
-          <div className="skeleton h-11" />
-          <div className="skeleton h-11" />
-        </div>
-      </div>
-    </section>
+/* ── Hindi day/date ── */
+function getTodayLabel() {
+  return new Date().toLocaleDateString('hi-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+}
 
-    <section className="metric-grid">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="card min-h-[138px]">
-          <div className="skeleton mb-4 h-3 w-24" />
-          <div className="skeleton mb-3 h-[34px] w-[120px]" />
-          <div className="skeleton h-3 w-[140px]" />
-        </div>
-      ))}
-    </section>
+/* ── WhatsApp reminder message ── */
+function buildUdhaarReminder(customer, shopName) {
+  return `Namaste ${customer.name} ji 🙏\n\nHamari dukaan *${shopName || 'Rakh-Rakhaav'}* se aapka udhaar baaki hai:\n\n*₹${fmtD(customer.due)}*\n\nKripya jald se jald payment karein.\n\nDhanyawad 🙏`;
+}
 
-    <section className="card">
-      <div className="skeleton mb-2.5 h-4 w-[180px]" />
-      <div className="skeleton mb-[18px] h-3 w-[240px]" />
-      <div className="quick-actions-row grid grid-cols-3 gap-[10px]">
-        <div className="skeleton h-11" />
-        <div className="skeleton h-11" />
-      </div>
-    </section>
-  </div>
-);
+/* ── Quick action card ── */
+function QuickAction({ href, emoji, label, sublabel, color }) {
+  return (
+    <Link href={href}
+      className={`flex flex-col items-center justify-center gap-1.5 p-4 rounded-2xl border-2 ${color} text-center hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95`}
+    >
+      <span className="text-3xl">{emoji}</span>
+      <span className="text-[14px] font-black text-slate-900 leading-tight">{label}</span>
+      {sublabel && <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{sublabel}</span>}
+    </Link>
+  );
+}
 
+/* ════════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
   const router = useRouter();
-  const now = new Date();
 
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [stats, setStats] = useState(null);
-  const [topProducts, setTopProducts] = useState([]);
-  const [lowStockProducts, setLowStockProducts] = useState([]);
-  const [totalCustomerUdhaar, setTotalCustomerUdhaar] = useState(0);
+  const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [cacheLoaded, setCacheLoaded] = useState(false);
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
-  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
+  const [shopName, setShopName] = useState('');
+  const [userName, setUserName] = useState('');
+  const [greeting] = useState(getGreeting);
+  const [today]    = useState(getTodayLabel);
+
+  /* ── Fetch dashboard data ── */
+  const fetchDashboard = useCallback(async () => {
+    const token = getToken();
+    if (!token) { router.push('/login'); return; }
+    try {
+      const [dashRes, shopRes] = await Promise.all([
+        fetch(apiUrl('/api/dashboard'), { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(apiUrl('/api/auth/shop'),  { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (dashRes.status === 401) { router.push('/login'); return; }
+      const dashData = await dashRes.json();
+      const shopData = await shopRes.json();
+      setData(dashData);
+      setShopName(shopData.name || 'मेरी दुकान');
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  }, [router]);
 
   useEffect(() => {
     const token = getToken();
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+    if (!token) { router.push('/login'); return; }
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserName(user.name || '');
+    fetchDashboard();
+  }, [fetchDashboard, router]);
 
-    const cached = readDashboardCache(selectedMonth, selectedYear);
-    if (cached) {
-      setStats(cached.stats || null);
-      setTopProducts(cached.topProducts || []);
-      setLowStockProducts(cached.lowStockProducts || []);
-      setTotalCustomerUdhaar(cached.totalCustomerUdhaar || 0);
-      setCacheUpdatedAt(cached.cachedAt || null);
-      setLoading(false);
-      setCacheLoaded(true);
-    } else {
-      setLoading(true);
-      setCacheLoaded(false);
-    }
+  /* ── Derived values ── */
+  const today_sales   = data?.today?.revenue        || 0;
+  const today_bills   = data?.today?.bills           || 0;
+  const today_profit  = data?.today?.profit          || 0;
+  const month_sales   = data?.month?.revenue         || 0;
+  const month_profit  = data?.month?.profit          || 0;
+  const total_udhaar  = data?.udhaar?.totalDue       || 0;
+  const udhaar_count  = data?.udhaar?.pendingCount   || 0;
+  const gst_payable   = data?.gst?.netPayable        || 0;
+  const low_stock     = data?.stock?.lowStockCount   || 0;
+  const out_of_stock  = data?.stock?.outOfStockCount || 0;
 
-    const controller = new AbortController();
-    const idleId = scheduleDeferred(async () => {
-      try {
-        setRefreshing(Boolean(cached));
-        const params = `?month=${selectedMonth}&year=${selectedYear}`;
-        const res = await fetch(apiUrl(`/api/dashboard/summary${params}`), {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        });
+  /* Top udhaar customers (people who owe YOU money) */
+  const topUdhaarCustomers = (data?.udhaar?.topCustomers || []).slice(0, 5);
 
-        if (!res.ok) {
-          if (res.status === 401) router.push('/login');
-          return;
-        }
+  /* Low stock items */
+  const lowStockItems = (data?.stock?.lowStockItems || []).slice(0, 4);
 
-        const data = await res.json();
-        setStats(data.stats || null);
-        setTopProducts(data.topProducts || []);
-        setLowStockProducts(data.lowStockProducts || []);
-        setTotalCustomerUdhaar(data.totalCustomerUdhaar || 0);
-        setLoading(false);
-        setCacheLoaded(true);
-        writeDashboardCache(selectedMonth, selectedYear, data);
-        setCacheUpdatedAt(new Date().toISOString());
-      } catch (error) {
-        if (error.name !== 'AbortError' && !cached) {
-          setLoading(false);
-        }
-      } finally {
-        setRefreshing(false);
-      }
-    });
-
-    return () => {
-      controller.abort();
-      cancelDeferred(idleId);
-    };
-  }, [router, selectedMonth, selectedYear]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const fmt = (n) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n || 0);
-  const cacheLabel = cacheUpdatedAt
-    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
-
-  if (loading && !cacheLoaded) {
+  /* ── Skeleton loader ── */
+  if (loading) {
     return (
       <Layout>
-        <DashboardSkeleton />
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+          {[80, 120, 160, 120].map((h, i) => (
+            <div key={i} className={`h-${h === 80 ? '20' : h === 120 ? '28' : h === 160 ? '36' : '28'} rounded-2xl bg-white border border-slate-200 animate-pulse`}
+              style={{ height: h }} />
+          ))}
+        </div>
       </Layout>
     );
   }
 
-  const netGST = stats?.netGSTPayable ?? 0;
-  const profit = stats?.grossProfit ?? 0;
-  const revenue = stats?.totalRevenue || 0;
-  const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0.0';
-  const lowStockCount = lowStockProducts.length;
-  const statCards = [
-    {
-      label: 'महीने की बिक्री',
-      value: `₹${fmt(stats?.totalRevenue)}`,
-      note: `${stats?.salesCount || 0} bill इस महीने`,
-      tone: 'secondary',
-      href: '/sales',
-    },
-    {
-      label: 'मुनाफा',
-      value: `${profit >= 0 ? '+' : ''}₹${fmt(profit)}`,
-      note: revenue > 0 ? `Margin ${margin}%` : 'रिपोर्ट देखें',
-      tone: profit >= 0 ? 'secondary' : 'danger',
-      href: '/reports',
-    },
-    {
-      label: 'उधार',
-      value: `₹${fmt(totalCustomerUdhaar)}`,
-      note: totalCustomerUdhaar > 0 ? 'कलेक्शन बाकी है' : 'सब clear है',
-      tone: totalCustomerUdhaar > 0 ? 'danger' : 'money',
-      href: '/udhaar',
-    },
-    {
-      label: 'GST Due',
-      value: `₹${fmt(Math.abs(netGST))}`,
-      note: netGST >= 0 ? 'Tax जमा करना है' : 'Refund side',
-      tone: 'warning',
-      href: '/gst',
-    },
-  ];
-
-  const quickActions = [
-    { href: '/sales', icon: 'sales', hi: 'बेचिए', en: 'Sale', sub: 'नया bill बनाएं', semantic: 'sales', iconClass: 'bg-blue-600/10 text-blue-700' },
-    { href: '/purchases', icon: 'purchase', hi: 'खरीदिए', en: 'Purchase', sub: 'नया purchase लिखें', semantic: 'purchase', iconClass: 'bg-sky-500/10 text-sky-700' },
-    { href: '/udhaar', icon: 'credit', hi: 'उधार', en: 'Credit', sub: 'बाकी हिसाब देखें', semantic: 'credit', iconClass: 'bg-rose-500/10 text-rose-600' },
-    { href: '/product', icon: 'stock', hi: 'स्टॉक', en: 'Product', sub: 'माल update करें', semantic: 'stock', iconClass: 'bg-indigo-500/10 text-indigo-700' },
-    { href: '/gst', icon: 'gst', hi: 'GST', en: 'Tax', sub: 'Tax summary खोलें', semantic: 'gst', iconClass: 'bg-cyan-600/10 text-cyan-700' },
-    { href: '/pricing', icon: 'premium', hi: 'प्रो', en: 'Premium', sub: 'और tools unlock करें', semantic: 'premium', iconClass: 'bg-blue-500/10 text-blue-700' },
-  ];
-  const focusPills = [
-    `${stats?.salesCount || 0} bill`,
-    `₹${fmt(totalCustomerUdhaar)} उधार`,
-    `${lowStockCount} low stock`,
-    `${margin}% margin`,
-  ];
-  const progressPct = Math.min(100, Math.abs((profit / (revenue || 1)) * 100));
-  const progressWidthClass = progressPct >= 100 ? 'w-full'
-    : progressPct >= 90 ? 'w-[90%]'
-      : progressPct >= 80 ? 'w-[80%]'
-        : progressPct >= 70 ? 'w-[70%]'
-          : progressPct >= 60 ? 'w-[60%]'
-            : progressPct >= 50 ? 'w-1/2'
-              : progressPct >= 40 ? 'w-[40%]'
-                : progressPct >= 30 ? 'w-[30%]'
-                  : progressPct >= 20 ? 'w-1/5'
-                    : progressPct >= 10 ? 'w-[10%]'
-                      : progressPct > 0 ? 'w-[5%]'
-                        : 'w-0';
-  const topProductRankClass = [
-    'bg-gradient-to-br from-blue-700 to-blue-500',
-    'bg-gradient-to-br from-sky-600 to-cyan-400',
-    'bg-gradient-to-br from-indigo-600 to-blue-400',
-    'bg-gradient-to-br from-violet-600 to-indigo-400',
-    'bg-gradient-to-br from-slate-700 to-blue-400',
-  ];
+  const hasUrgent = udhaar_count > 0 || low_stock > 0 || out_of_stock > 0;
 
   return (
     <Layout>
-      <div className="page-shell dashboard-shell">
-        <Link href="/udhaar" className="dashboard-udhaar-float" aria-label="उधार page खोलें">
-          <span className="dashboard-udhaar-float-kicker">Quick Access</span>
-          <strong>उधार</strong>
-        </Link>
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
-        <section className="hero-panel dashboard-hero">
-          <div className="page-toolbar dashboard-toolbar items-start gap-3 sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="rr-page-eyebrow">Monthly business snapshot</p>
-              <div className="page-title leading-tight">नमस्ते, इस महीने का दुकान dashboard</div>
-              {refreshing ? (
-                <p className="rr-meta-line">Latest numbers refresh हो रहे हैं...</p>
-              ) : !isOnline ? (
-                <p className="rr-meta-line is-warn">
-                  Offline snapshot active{cacheLabel ? ` · last sync ${cacheLabel}` : ''}
-                </p>
-              ) : cacheLoaded && cacheLabel ? (
-                <p className="rr-meta-line">Last synced {cacheLabel} · सबसे ज़रूरी चीजें नीचे ready हैं</p>
-              ) : null}
-            </div>
+        {/* ══════════════════════════════════════
+            1. GREETING HEADER
+        ══════════════════════════════════════ */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-5 py-5">
+          {/* Decorative orbs */}
+          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-cyan-500/15 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-blue-500/10 blur-2xl" />
 
-            <div className="dashboard-period-controls dashboard-period-shell flex w-[108px] shrink-0 flex-col gap-1.5 sm:w-[118px]">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="form-input h-9 min-w-0 px-2 text-[12px]"
-              >
-                {MONTHS.map((month, index) => (
-                  <option key={month} value={index + 1}>{month}</option>
-                ))}
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="form-input h-9 min-w-0 px-2 text-[12px]"
-              >
-                {[2023, 2024, 2025, 2026].map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
+          <div className="relative z-10">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{today}</p>
+            <h1 className="text-[22px] font-black text-white leading-tight">
+              {greeting}
+            </h1>
+            {userName && (
+              <p className="text-[14px] text-slate-300 mt-0.5">
+                {userName} — <span className="text-cyan-400 font-bold">{shopName}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════
+            2. आज का हाल  (Today's snapshot)
+        ══════════════════════════════════════ */}
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2.5 px-1">
+            आज का हाल
+          </p>
+
+          {/* Big today revenue card */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 p-5 mb-3 shadow-lg shadow-cyan-500/20">
+            <div className="pointer-events-none absolute -top-8 right-4 w-32 h-32 rounded-full bg-white/10" />
+            <div className="relative z-10">
+              <p className="text-[12px] font-bold text-white/70 uppercase tracking-wider mb-1">आज की कमाई</p>
+              <p className="text-[38px] font-black text-white leading-none tracking-tight">
+                ₹{fmt(today_sales)}
+              </p>
+              <div className="flex items-center gap-4 mt-3">
+                <div>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wider">Bills</p>
+                  <p className="text-[18px] font-black text-white">{today_bills}</p>
+                </div>
+                <div className="w-px h-8 bg-white/20" />
+                <div>
+                  <p className="text-[10px] text-white/60 uppercase tracking-wider">मुनाफा</p>
+                  <p className="text-[18px] font-black text-white">₹{fmt(today_profit)}</p>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2.5">
-            {focusPills.map((pill) => (
-              <StatusBadge key={pill} tone="secondary" className="rounded-full px-3 py-1.5">
-                {pill}
-              </StatusBadge>
+
+          {/* Secondary stats row */}
+          <div className="grid grid-cols-3 gap-2.5">
+            {[
+              {
+                label: 'उधार बाकी',
+                value: `₹${fmt(total_udhaar)}`,
+                sub: `${udhaar_count} ग्राहक`,
+                bg: 'bg-rose-50 border-rose-200',
+                val: 'text-rose-700',
+                href: '/udhaar',
+              },
+              {
+                label: 'GST देना है',
+                value: `₹${fmt(gst_payable)}`,
+                sub: 'इस महीने',
+                bg: 'bg-amber-50 border-amber-200',
+                val: 'text-amber-700',
+                href: '/gst',
+              },
+              {
+                label: 'इस महीने',
+                value: `₹${fmt(month_sales)}`,
+                sub: `₹${fmt(month_profit)} profit`,
+                bg: 'bg-emerald-50 border-emerald-200',
+                val: 'text-emerald-700',
+                href: '/reports',
+              },
+            ].map((s) => (
+              <Link key={s.label} href={s.href}
+                className={`${s.bg} border rounded-2xl p-3 hover:-translate-y-0.5 hover:shadow-md transition-all`}
+              >
+                <p className={`text-[17px] font-black leading-none ${s.val}`}>{s.value}</p>
+                <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wide leading-tight">{s.label}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{s.sub}</p>
+              </Link>
             ))}
           </div>
-        </section>
+        </div>
 
-        {!isOnline ? (
-          <section className="rr-banner-warn" role="status">
-            <strong>Offline mode on</strong>
-            <div>
-              अभी saved snapshot दिख रहा है. Internet आते ही live sales, GST, stock और उधार numbers फिर से update हो जाएंगे.
-            </div>
-          </section>
-        ) : null}
-
-        <section className="metric-grid">
-          {statCards.map((card) => (
-            <StatCard
-              key={card.label}
-              className="dashboard-stat-card"
-              tone={card.tone}
-              label={card.label}
-              value={card.value}
-              note={card.note}
-              onClick={() => router.push(card.href)}
+        {/* ══════════════════════════════════════
+            3. जल्दी काम  (Quick Actions)
+        ══════════════════════════════════════ */}
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2.5 px-1">
+            जल्दी काम
+          </p>
+          <div className="grid grid-cols-3 gap-2.5">
+            <QuickAction
+              href="/sales?open=1&payment=cash"
+              emoji="🧾"
+              label="बिल बनाओ"
+              sublabel="Cash Sale"
+              color="border-cyan-200 bg-cyan-50"
             />
-          ))}
-        </section>
-
-        {revenue > 0 && (
-          <section className="card dashboard-section-card">
-            <div className="mb-[18px] flex flex-wrap justify-between gap-[14px]">
-              <div>
-                <div className="section-title">पैसों का हिसाब</div>
-                <div className="section-subtitle">बिक्री, मुनाफा और GST एक simple view में</div>
-              </div>
-              <StatusBadge tone="secondary">Margin {margin}%</StatusBadge>
-            </div>
-
-            <div className="metric-grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
-              {[
-                { label: 'Bikri', value: stats?.totalRevenue, valueClass: 'text-blue-700', prefix: '' },
-                { label: 'Munafa', value: profit, valueClass: profit >= 0 ? 'text-blue-600' : 'text-red-600', prefix: profit >= 0 ? '+' : '' },
-                { label: 'GST Mila', value: stats?.gstCollected, valueClass: 'text-blue-500', prefix: '' },
-                { label: 'ITC', value: stats?.gstITC, valueClass: 'text-cyan-600', prefix: '-' },
-                { label: 'Net GST', value: netGST, valueClass: netGST >= 0 ? 'text-blue-700' : 'text-emerald-500', prefix: '' },
-              ].map((item) => (
-                <div key={item.label} className="dashboard-breakdown-card rounded-[18px] p-[14px]">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-600">
-                      {item.label}
-                    </div>
-                  <div className={`mt-2 text-[24px] font-extrabold tracking-[-0.05em] ${item.valueClass}`}>
-                    {item.prefix}₹{fmt(item.value)}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-5">
-              <div className="mb-1.5 flex justify-between gap-3 text-[12px] text-slate-600">
-                <span>Profit Margin</span>
-                <strong className={profit >= 0 ? 'text-blue-600' : 'text-red-600'}>{margin}%</strong>
-              </div>
-              <div className="dashboard-progress-track h-2.5 overflow-hidden rounded-full">
-                <div
-                  className={`dashboard-progress-fill h-full rounded-full ${progressWidthClass} ${profit >= 0 ? 'bg-gradient-to-r from-blue-700 to-cyan-500' : 'bg-gradient-to-r from-red-600 to-rose-500'}`}
-                />
-              </div>
-            </div>
-          </section>
-        )}
-
-        {lowStockCount > 0 && (
-          <section
-            className="card dashboard-section-card dashboard-warning-card cursor-pointer"
-            onClick={() => router.push('/product')}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <div className="section-title text-blue-700">Low Stock Alert</div>
-                <div className="section-subtitle text-slate-600">
-                  {lowStockCount} item{lowStockCount > 1 ? 's hain' : ' hai'} jo jaldi khatam ho sakte hain
-                </div>
-                <div className="mt-[14px] flex flex-wrap gap-2">
-                  {lowStockProducts.slice(0, 5).map((product) => (
-                    <span
-                      key={product._id}
-                      className="dashboard-chip-warning px-[11px] py-[7px]"
-                    >
-                      {product.name} ({product.quantity ?? 0})
-                    </span>
-                  ))}
-                  {lowStockCount > 5 && <StatusBadge tone="warning">+{lowStockCount - 5} more</StatusBadge>}
-                </div>
-              </div>
-              <div className="btn-primary w-auto">स्टॉक खोलो</div>
-            </div>
-          </section>
-        )}
-
-        <section className="card dashboard-section-card pb-[18px]">
-          <div className="mb-[14px] flex flex-wrap items-center justify-between gap-[14px]">
-            <div>
-              <div className="section-title">जल्दी काम</div>
-              <div className="section-subtitle">रोज़ के सबसे useful shortcuts</div>
-            </div>
-            <StatusBadge tone="neutral">{quickActions.length} shortcuts</StatusBadge>
+            <QuickAction
+              href="/sales?open=1&payment=credit"
+              emoji="📒"
+              label="उधार दो"
+              sublabel="Credit Sale"
+              color="border-rose-200 bg-rose-50"
+            />
+            <QuickAction
+              href="/purchases"
+              emoji="🛒"
+              label="माल खरीदो"
+              sublabel="Purchase"
+              color="border-amber-200 bg-amber-50"
+            />
+            <QuickAction
+              href="/product"
+              emoji="📦"
+              label="स्टॉक देखो"
+              sublabel="Inventory"
+              color="border-emerald-200 bg-emerald-50"
+            />
+            <QuickAction
+              href="/udhaar"
+              emoji="💸"
+              label="पैसे लो"
+              sublabel="Collect"
+              color="border-purple-200 bg-purple-50"
+            />
+            <QuickAction
+              href="/reports"
+              emoji="📊"
+              label="हिसाब देखो"
+              sublabel="Reports"
+              color="border-slate-200 bg-slate-50"
+            />
           </div>
-          <div className="quick-actions-carousel">
-            <div className="quick-actions-row grid grid-cols-3 gap-[10px]">
-              {quickActions.map((action) => (
-                <Link
-                  key={action.href}
-                  href={action.href}
-                  className={`dashboard-quick-card dashboard-quick-card-${action.semantic} min-h-[94px] rounded-[18px] px-3 py-[14px] no-underline`}
-                >
-                  <div className="grid justify-items-start gap-[10px]">
-                    <div className={`dashboard-quick-icon flex h-10 min-w-10 shrink-0 items-center justify-center rounded-[10px] ${action.iconClass}`}><QuickActionGlyph name={action.icon} /></div>
-                    <div>
-                      <div className="text-[13px] font-extrabold leading-[1.3] text-slate-900">{action.hi}</div>
-                      <div className="mt-0.5 text-[11px] leading-[1.45] text-slate-600">{action.sub}</div>
-                    </div>
-                  </div>
+        </div>
+
+        {/* ══════════════════════════════════════
+            4. ज़रूरी काम  (Urgent tasks)
+            Only shown when there's something
+        ══════════════════════════════════════ */}
+        {hasUrgent && (
+          <div>
+            <div className="flex items-center justify-between mb-2.5 px-1">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                ज़रूरी काम
+              </p>
+              {(low_stock > 0 || out_of_stock > 0) && (
+                <Link href="/product" className="text-[11px] font-bold text-amber-600 hover:underline">
+                  सभी देखें →
                 </Link>
-              ))}
+              )}
             </div>
-            <div className="quick-actions-fade" aria-hidden="true" />
-            <div className="quick-actions-chevron" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-        </section>
 
-        <section className="card dashboard-section-card">
-          <div className="mb-4">
-            <div className="section-title">Top Products</div>
-            <div className="section-subtitle">{MONTHS[selectedMonth - 1]} {selectedYear} mein sabse zyada bikne wale items</div>
-          </div>
-          {topProducts.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">PK</div>
-              <div>Is period ke liye abhi top products data nahi mila.</div>
-            </div>
-          ) : (
-            <div className="top-products-row grid grid-cols-4 gap-[10px]">
-              {topProducts.map((product, index) => (
-                <div
-                  key={product.name}
-                  className="dashboard-top-card flex min-w-0 items-center gap-[10px] rounded-[18px] p-[14px]"
-                >
-                  <div className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[14px] font-extrabold text-white ${topProductRankClass[index] || topProductRankClass[0]}`}>
-                    {index + 1}
+            <div className="space-y-2.5">
+              {/* Stock alert */}
+              {(low_stock > 0 || out_of_stock > 0) && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-3 border-b border-amber-100">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <p className="text-[13px] font-black text-amber-900">
+                        {out_of_stock > 0 ? `${out_of_stock} product खत्म हो गया` : `${low_stock} product कम हो रहा है`}
+                      </p>
+                      <p className="text-[11px] text-amber-700">
+                        {out_of_stock > 0 && low_stock > 0
+                          ? `${out_of_stock} खत्म • ${low_stock} कम`
+                          : out_of_stock > 0
+                            ? 'Stock zero है — अभी order करो'
+                            : 'जल्दी माल मंगाओ'}
+                      </p>
+                    </div>
+                    <Link href="/product"
+                      className="ml-auto px-3 py-1.5 rounded-xl bg-amber-200 text-[11px] font-black text-amber-900 hover:bg-amber-300 transition-colors flex-shrink-0"
+                    >देखो</Link>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate whitespace-nowrap text-[14px] font-bold text-sl5te-900">{product.name}</div>
-                    <div className="text-[12px] text-slate-600">{product.qty} units sold</div>
-                  </div>
-                  <div className="shrink-0 text-[15px] font-extrabold text-emerald-600">₹{fmt(product.revenue)}</div>
+
+                  {/* Low stock items preview */}
+                  {lowStockItems.length > 0 && (
+                    <div className="divide-y divide-amber-100">
+                      {lowStockItems.map((item, i) => (
+                        <div key={item._id || i} className="flex items-center justify-between px-4 py-2.5">
+                          <span className="text-[13px] font-semibold text-slate-800">{item.name}</span>
+                          <span className={`text-[12px] font-black px-2 py-0.5 rounded-lg ${
+                            item.quantity === 0
+                              ? 'bg-rose-100 text-rose-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {item.quantity === 0 ? 'खत्म' : `${item.quantity} बचा`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
+
+              {/* Udhaar collection */}
+              {udhaar_count > 0 && (
+                <div className="rounded-2xl border border-rose-200 bg-white overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-3 border-b border-rose-100 bg-rose-50">
+                    <span className="text-2xl">💸</span>
+                    <div>
+                      <p className="text-[13px] font-black text-rose-900">
+                        {udhaar_count} ग्राहक से पैसे लेने हैं
+                      </p>
+                      <p className="text-[11px] text-rose-700">
+                        कुल ₹{fmtD(total_udhaar)} बाकी है
+                      </p>
+                    </div>
+                    <Link href="/udhaar"
+                      className="ml-auto px-3 py-1.5 rounded-xl bg-rose-100 text-[11px] font-black text-rose-800 hover:bg-rose-200 transition-colors flex-shrink-0"
+                    >सब देखो</Link>
+                  </div>
+
+                  {topUdhaarCustomers.length > 0 && (
+                    <div className="divide-y divide-slate-100">
+                      {topUdhaarCustomers.map((c, i) => {
+                        const phone = c.phone ? c.phone.replace(/\D/g, '') : '';
+                        const msg   = buildUdhaarReminder(c, shopName);
+                        const waUrl = phone
+                          ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`
+                          : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                        return (
+                          <div key={c._id || i} className="flex items-center gap-3 px-4 py-3">
+                            {/* Avatar */}
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center text-white font-black text-[13px] flex-shrink-0">
+                              {c.name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-bold text-slate-900 truncate">{c.name}</p>
+                              {c.phone && <p className="text-[11px] text-slate-400">{c.phone}</p>}
+                            </div>
+                            {/* Due amount */}
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-[14px] font-black text-rose-600">₹{fmtD(c.due)}</p>
+                            </div>
+                            {/* WhatsApp button */}
+                            <a href={waUrl} target="_blank" rel="noreferrer"
+                              className="flex-shrink-0 w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-[16px] hover:bg-emerald-600 hover:scale-105 transition-all shadow-md shadow-emerald-500/25"
+                              title={`WhatsApp reminder to ${c.name}`}
+                            >
+                              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.122 1.524 5.861L.057 23.57l5.866-1.54A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.034-1.385l-.361-.214-3.482.914.93-3.393-.235-.373A9.82 9.82 0 012.182 12C2.182 6.566 6.566 2.182 12 2.182S21.818 6.566 21.818 12 17.434 21.818 12 21.818z"/>
+                              </svg>
+                            </a>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-        </section>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
+            5. MOTIVATIONAL FOOTER STRIP
+            Small but powerful — builds habit
+        ══════════════════════════════════════ */}
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[12px] font-black text-slate-800">
+              {today_bills === 0
+                ? 'आज का पहला bill बनाओ 💪'
+                : today_bills === 1
+                  ? 'एक bill हो गया, और करो! 🔥'
+                  : `आज ${today_bills} bill बन गए — बढ़िया! 🎯`}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {shopName} — रखरखाव के साथ
+            </p>
+          </div>
+          <Link href="/sales"
+            className="flex-shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-[12px] font-black text-white shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
+          >
+            बिल बनाओ →
+          </Link>
+        </div>
+
       </div>
     </Layout>
   );
