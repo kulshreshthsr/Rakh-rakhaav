@@ -37,7 +37,7 @@ const MORE_DRAWER_ITEMS = [
   { href: '/dashboard', key: 'dashboard', label: 'होम',       sublabel: 'Dashboard',  icon: 'dashboard' },
   { href: '/sales',     key: 'sales',     label: 'बेचिए',     sublabel: 'Sale',       icon: 'sales'     },
   { href: '/purchases', key: 'purchases', label: 'खरीदिए',    sublabel: 'Purchase',   icon: 'purchases' },
-  { href: '/reports',   key: 'reports',   shortLabel: 'Reports', icon: 'reports'   },
+  { href: '/reports',   key: 'reports',   label: 'रिपोर्ट',   sublabel: 'Reports',    icon: 'reports'   },
   { href: '/gst',       key: 'gst',       label: 'GST',        sublabel: 'Tax Filing', icon: 'gst'       },
   { href: '/udhaar',    key: 'udhaar',    label: 'उधार',       sublabel: 'Udhaar',     icon: 'udhaar'    },
 ];
@@ -149,6 +149,7 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
     dashboard: 'bg-cyan-50 text-cyan-600',
     sales:     'bg-emerald-50 text-emerald-600',
     purchases: 'bg-blue-50 text-blue-600',
+    reports:   'bg-violet-50 text-violet-600',
     gst:       'bg-amber-50 text-amber-600',
     udhaar:    'bg-rose-50 text-rose-600',
   };
