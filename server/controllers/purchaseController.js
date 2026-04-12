@@ -5,6 +5,7 @@ const Shop = require('../models/shopModel');
 const Supplier = require('../models/supplierModel');
 const SupplierUdhaar = require('../models/supplierUdhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
+const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers
@@ -264,6 +265,7 @@ const syncSupplierLedgerForPurchase = async (shopId, purchase, itemNames = [], s
       type: 'credit',
       amount: paid,
       running_balance: supplier.totalUdhaar,
+      payment_mode: purchase.amount_paid_mode || '',
       note: `Advance payment at time of purchase (${invoiceNumber})`,
       date: new Date(),
       reference_id: invoiceNumber,
@@ -280,6 +282,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
     supplier_address, supplier_state,
     payment_type = 'cash',
     amount_paid = 0,
+    amount_paid_mode = '',
     purchase_date,
     notes,
   } = payload;
@@ -388,6 +391,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
       total_amount: grandTotal,
       payment_type,
       amount_paid: paid,
+      amount_paid_mode: payment_type === 'credit' ? (amount_paid_mode || '') : payment_type,
       supplier_name: supplier_name || '',
       supplier_phone: supplier_phone || '',
       supplier_gstin: normalizedSupplierGstin,
@@ -447,10 +451,12 @@ const createPurchase = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let createdPurchaseId;
+    let auditShopId = null;
     const offlineOperationId = normalizeOfflineOperationId(req.body?.offline_operation_id);
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      auditShopId = shop._id;
       if (offlineOperationId) {
         const existingPurchase = await Purchase.findOne({
           shop: shop._id,
@@ -485,6 +491,15 @@ const createPurchase = async (req, res) => {
     });
 
     const hydratedPurchase = await Purchase.findById(createdPurchaseId).populate('supplier', 'name phone gstin');
+    await logAuditEvent({
+      shopId: auditShopId || hydratedPurchase?.shop,
+      userId: req.user.id,
+      actionType: 'create',
+      entity: 'purchase',
+      entityId: hydratedPurchase._id,
+      referenceId: hydratedPurchase.invoice_number,
+      afterValue: hydratedPurchase,
+    });
     return res.status(201).json(hydratedPurchase);
 
     const {
@@ -704,11 +719,15 @@ const updatePurchase = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let purchaseId;
+    let beforeValue = null;
+    let auditShopId = null;
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      auditShopId = shop._id;
       const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!purchase) throw new Error('Purchase not found');
+      beforeValue = cloneForAudit(purchase);
 
       const { data, itemNames } = await buildPurchaseRecordData({
         shop,
@@ -728,6 +747,16 @@ const updatePurchase = async (req, res) => {
     });
 
     const hydratedPurchase = await Purchase.findById(purchaseId).populate('supplier', 'name phone gstin');
+    await logAuditEvent({
+      shopId: auditShopId || hydratedPurchase?.shop,
+      userId: req.user.id,
+      actionType: 'update',
+      entity: 'purchase',
+      entityId: hydratedPurchase._id,
+      referenceId: hydratedPurchase.invoice_number,
+      beforeValue,
+      afterValue: hydratedPurchase,
+    });
     res.json(hydratedPurchase);
   } catch (err) {
     console.error('updatePurchase error:', err);
@@ -746,10 +775,14 @@ const updatePurchase = async (req, res) => {
 const deletePurchase = async (req, res) => {
   const session = await mongoose.startSession();
   try {
+    let deletedPurchase = null;
+    let auditShopId = null;
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      auditShopId = shop._id;
       const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!purchase) throw new Error('Purchase not found');
+      deletedPurchase = cloneForAudit(purchase);
 
       if (purchase.items && purchase.items.length > 0) {
         for (const item of purchase.items) {
@@ -762,6 +795,18 @@ const deletePurchase = async (req, res) => {
       await reverseSupplierLedgerForPurchase(purchase, session);
       await Purchase.findOneAndDelete({ _id: req.params.id, shop: shop._id }, { session });
     });
+
+    if (deletedPurchase) {
+      await logAuditEvent({
+        shopId: auditShopId || deletedPurchase.shop,
+        userId: req.user.id,
+        actionType: 'delete',
+        entity: 'purchase',
+        entityId: deletedPurchase._id,
+        referenceId: deletedPurchase.invoice_number,
+        beforeValue: deletedPurchase,
+      });
+    }
 
     res.json({ message: 'Purchase deleted and stock reversed' });
   } catch (err) {

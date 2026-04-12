@@ -12,6 +12,7 @@ const fmt  = (n) => parseFloat(n || 0).toFixed(2);
 const fmtN = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
 const formatShortReportDate = (value) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(value));
 const getReportsCacheKey = (filter) => `${REPORTS_CACHE_PREFIX}:${filter}`;
+const getTodayInputValue = () => new Date().toISOString().slice(0, 10);
 
 const getRange = (filter) => {
   const now   = new Date();
@@ -69,16 +70,17 @@ function SectionCard({ title, eyebrow, badge, action, children, accentColor = '#
 }
 
 /* ─── CSV export button ─────────────────────────────────────────── */
-function CsvBtn({ onClick, label = 'CSV' }) {
+function CsvBtn({ onClick, label = 'CSV', busy = false, disabled = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={busy || disabled}
       className="btn-ghost"
-      style={{ minHeight: 34, padding: '0 12px', fontSize: 12, borderRadius: 10, gap: 6 }}
+      style={{ minHeight: 34, padding: '0 12px', fontSize: 12, borderRadius: 10, gap: 6, opacity: busy || disabled ? 0.7 : 1, cursor: busy || disabled ? 'not-allowed' : 'pointer' }}
     >
       <Icon name="download" size={13} />
-      {label}
+      {busy ? 'Preparing...' : label}
     </button>
   );
 }
@@ -122,6 +124,20 @@ export default function ReportsPage() {
   const [customers,    setCustomers]    = useState([]);
   const [summary,      setSummary]      = useState({});
   const [gstReport,    setGstReport]    = useState(null);
+  const [accounting,   setAccounting]   = useState(null);
+  const [downloadState, setDownloadState] = useState({ active: false, tone: 'info', message: '', key: '' });
+  const [entrySubmitting, setEntrySubmitting] = useState(false);
+  const [entryForm, setEntryForm] = useState({
+    kind: 'expense',
+    amount: '',
+    date: getTodayInputValue(),
+    category: 'rent',
+    source: '',
+    entry_type: 'deposit',
+    payment_mode: 'cash',
+    reference_id: '',
+    note: '',
+  });
   const [isOnline,     setIsOnline]     = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheLoaded,  setCacheLoaded]  = useState(false);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
@@ -132,6 +148,7 @@ export default function ReportsPage() {
     setPurchases(cached?.purchases || []);
     setCustomers(cached?.customers || []);
     setSummary(cached?.summary || {});
+    setAccounting(cached?.accounting || null);
     setCacheUpdatedAt(cached?.cachedAt || null);
     setCacheLoaded(Boolean(cached));
   };
@@ -142,21 +159,23 @@ export default function ReportsPage() {
     const headers = { Authorization: `Bearer ${getToken()}` };
     const params  = from ? `?from=${from}&to=${to}` : '';
     try {
-      const [sRes, pRes, cRes, profitRes] = await Promise.all([
+      const [sRes, pRes, cRes, profitRes, accountingRes] = await Promise.all([
         fetch(apiUrl(`/api/sales${params}`), { headers }),
         fetch(apiUrl(`/api/purchases${params}`), { headers }),
         fetch(apiUrl('/api/customers'), { headers }),
         fetch(apiUrl(`/api/sales/profit-summary${params}`), { headers }),
+        fetch(apiUrl(`/api/accounting/summary${params}`), { headers }),
       ]);
-      if ([sRes.status, pRes.status, cRes.status, profitRes.status].includes(401)) { router.push('/login'); return; }
+      if ([sRes.status, pRes.status, cRes.status, profitRes.status, accountingRes.status].includes(401)) { router.push('/login'); return; }
       const sData      = sRes.ok      ? await sRes.json()      : { sales: [] };
       const pData      = pRes.ok      ? await pRes.json()      : { purchases: [] };
       const cData      = cRes.ok      ? await cRes.json()      : [];
       const profitData = profitRes.ok ? await profitRes.json() : {};
+      const accountingData = accountingRes.ok ? await accountingRes.json() : null;
       const salesList      = sData.sales      || (Array.isArray(sData) ? sData : []);
       const purchasesList  = pData.purchases  || (Array.isArray(pData) ? pData : []);
       const customersList  = Array.isArray(cData) ? cData : [];
-      setSales(salesList); setPurchases(purchasesList); setCustomers(customersList);
+      setSales(salesList); setPurchases(purchasesList); setCustomers(customersList); setAccounting(accountingData);
       const totalRevenue  = profitData.totalRevenue  ?? salesList.reduce((s, x) => s + (x.total_amount || 0), 0);
       const totalGST      = profitData.gstCollected  ?? salesList.reduce((s, x) => s + (x.total_gst || 0), 0);
       const grossProfit   = profitData.grossProfit   ?? salesList.reduce((s, x) => s + (x.gross_profit || 0), 0);
@@ -167,12 +186,12 @@ export default function ReportsPage() {
       const margin        = taxableRev > 0 ? ((grossProfit / taxableRev) * 100) : 0;
       const nextSummary   = { totalRevenue, totalGST, grossProfit, totalPurchase, totalITC, totalUdhaar, margin, salesCount: profitData.salesCount ?? salesList.length, netGST: profitData.netGSTPayable ?? (totalGST - totalITC) };
       setSummary(nextSummary);
-      writePageCache(getReportsCacheKey(filter), { sales: salesList, purchases: purchasesList, customers: customersList, summary: nextSummary });
+      writePageCache(getReportsCacheKey(filter), { sales: salesList, purchases: purchasesList, customers: customersList, summary: nextSummary, accounting: accountingData });
       setCacheUpdatedAt(new Date().toISOString());
       setCacheLoaded(true);
     } catch (err) {
       console.error(err);
-      if (!hasCachedSnapshot) { setSales([]); setPurchases([]); setCustomers([]); setSummary({}); }
+      if (!hasCachedSnapshot) { setSales([]); setPurchases([]); setCustomers([]); setSummary({}); setAccounting(null); }
     }
     setLoading(false);
   };
@@ -198,6 +217,14 @@ export default function ReportsPage() {
   useEffect(() => {
     setGstReport(null);
   }, [filter]);
+
+  useEffect(() => {
+    if (!downloadState.active || downloadState.tone === 'info') return undefined;
+    const timeoutId = setTimeout(() => {
+      setDownloadState((current) => ({ ...current, active: false }));
+    }, 2600);
+    return () => clearTimeout(timeoutId);
+  }, [downloadState]);
 
   /* ── Derived data (ALL UNCHANGED) ── */
   const topProducts = (() => {
@@ -237,6 +264,18 @@ export default function ReportsPage() {
     return Object.values(map).sort((a, b) => b.sortValue - a.sortValue);
   })();
 
+  const markDownloadStarted = (message, key = 'download') => {
+    setDownloadState({ active: true, tone: 'info', message, key });
+  };
+
+  const markDownloadDone = (message, key = 'download') => {
+    setDownloadState({ active: true, tone: 'success', message, key });
+  };
+
+  const markDownloadFailed = (message, key = 'download') => {
+    setDownloadState({ active: true, tone: 'error', message, key });
+  };
+
   const exportCSV = (type) => {
     const { label } = getRange(filter);
     let rows = []; let filename = '';
@@ -257,20 +296,28 @@ export default function ReportsPage() {
       filename = `Top_Customers_${label.replace(' ', '_')}.csv`;
     }
     const csv  = rows.map((row) => row.map((v) => `"${v}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a'); a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
+    markDownloadStarted(`Preparing ${filename}...`, type);
+    setTimeout(() => {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+      markDownloadDone(`${filename} download started.`, type);
+    }, 180);
   };
 
-  const downloadFile = (content, filename, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadFile = (content, filename, mimeType, key = 'download') => {
+    markDownloadStarted(`Preparing ${filename}...`, key);
+    setTimeout(() => {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      markDownloadDone(`${filename} download started.`, key);
+    }, 180);
   };
 
   const fetchGSTReport = async () => {
@@ -279,6 +326,7 @@ export default function ReportsPage() {
 
     setReportLoading(true);
     try {
+      markDownloadStarted('Preparing GST compliance report...', 'gst-fetch');
       const res = await fetch(
         apiUrl(`/api/sales/gst-report?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
         { headers: { Authorization: `Bearer ${getToken()}` } }
@@ -290,6 +338,7 @@ export default function ReportsPage() {
       return data;
     } catch (err) {
       console.error(err);
+      markDownloadFailed('GST report load nahi ho paaya. Please try again.', 'gst-fetch');
       alert('GST report load nahi ho paaya. Please try again.');
       return null;
     } finally {
@@ -302,7 +351,7 @@ export default function ReportsPage() {
   const exportGSTJson = async () => {
     const report = await ensureGSTReport();
     if (!report) return;
-    downloadFile(JSON.stringify(report, null, 2), `GST_Report_${filter}.json`, 'application/json');
+    downloadFile(JSON.stringify(report, null, 2), `GST_Report_${filter}.json`, 'application/json', 'gst-json');
   };
 
   const exportGSTCsv = async (type) => {
@@ -316,6 +365,7 @@ export default function ReportsPage() {
         : report?.purchase_register?.csv;
 
     if (!csv) {
+      markDownloadFailed('CSV data available nahi hai.', type);
       alert('CSV data available nahi hai.');
       return;
     }
@@ -326,23 +376,96 @@ export default function ReportsPage() {
       purchase_register: `Purchase_Register_${filter}.csv`,
     };
 
-    downloadFile(csv, filenameMap[type], 'text/csv;charset=utf-8;');
+    downloadFile(csv, filenameMap[type], 'text/csv;charset=utf-8;', type);
   };
 
   const exportPDFReady = async () => {
     const report = await ensureGSTReport();
     if (!report?.pdf_data) {
+      markDownloadFailed('PDF-ready data available nahi hai.', 'pdf-data');
       alert('PDF-ready data available nahi hai.');
       return;
     }
-    downloadFile(JSON.stringify(report.pdf_data, null, 2), `GST_PDF_Data_${filter}.json`, 'application/json');
+    downloadFile(JSON.stringify(report.pdf_data, null, 2), `GST_PDF_Data_${filter}.json`, 'application/json', 'pdf-data');
+  };
+
+  const submitAccountingEntry = async (e) => {
+    e.preventDefault();
+    if (!isOnline) {
+      markDownloadFailed('Offline mode me accounting entry save nahi hogi.', 'accounting-entry');
+      return;
+    }
+    setEntrySubmitting(true);
+    try {
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` };
+      const endpoint = entryForm.kind === 'expense'
+        ? '/api/expenses'
+        : entryForm.kind === 'income'
+          ? '/api/income'
+          : '/api/bank-entries';
+      const payload = entryForm.kind === 'expense'
+        ? {
+            category: entryForm.category,
+            amount: Number(entryForm.amount || 0),
+            payment_mode: entryForm.payment_mode,
+            reference_id: entryForm.reference_id,
+            note: entryForm.note,
+            date: entryForm.date,
+          }
+        : entryForm.kind === 'income'
+          ? {
+              source: entryForm.source,
+              category: entryForm.category,
+              amount: Number(entryForm.amount || 0),
+              payment_mode: entryForm.payment_mode,
+              reference_id: entryForm.reference_id,
+              note: entryForm.note,
+              date: entryForm.date,
+            }
+          : {
+              entry_type: entryForm.entry_type,
+              amount: Number(entryForm.amount || 0),
+              reference_id: entryForm.reference_id,
+              note: entryForm.note,
+              date: entryForm.date,
+            };
+
+      const res = await fetch(apiUrl(endpoint), { method: 'POST', headers, body: JSON.stringify(payload) });
+      if (res.status === 401) { router.push('/login'); return; }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Entry save failed');
+
+      markDownloadDone(`${entryForm.kind} entry saved.`, 'accounting-entry');
+      setEntryForm((current) => ({
+        ...current,
+        amount: '',
+        reference_id: '',
+        note: '',
+        source: current.kind === 'income' ? current.source : '',
+      }));
+      await fetchAll(true);
+    } catch (err) {
+      markDownloadFailed(err.message || 'Accounting entry save nahi hui.', 'accounting-entry');
+    } finally {
+      setEntrySubmitting(false);
+    }
   };
 
   /* ── Derived display values ── */
+  const partyLedgers = accounting?.party_ledgers || [];
+  const customerLedgers = partyLedgers.filter((entry) => entry.type === 'customer');
+  const supplierLedgers = partyLedgers.filter((entry) => entry.type === 'supplier');
+  const accountingErrors = accounting?.errors || [];
+  const auditTrail = accounting?.audit_trail || [];
+  const expensesList = accounting?.expenses || [];
+  const incomeList = accounting?.income || [];
   const { label } = getRange(filter);
   const marginPct   = Math.min(100, Math.abs(summary.margin || 0));
   const marginColor = summary.margin >= 20 ? '#10b981' : summary.margin >= 10 ? '#f59e0b' : '#f43f5e';
   const cacheLabel  = cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+  const topPartyLedgers = [...partyLedgers]
+    .sort((a, b) => Math.abs(b.closing_balance || 0) - Math.abs(a.closing_balance || 0))
+    .slice(0, 6);
 
   const FILTERS = [
     { val: 'today', label: 'Today' },
@@ -371,6 +494,40 @@ export default function ReportsPage() {
           <div className="rr-banner-warn" role="status">
             <strong>Offline reports view</strong>
             Saved snapshot dikh raha hai{cacheLabel ? ` · last updated ${cacheLabel}` : ''}. Internet aane par fresh data load hoga.
+          </div>
+        )}
+
+        {downloadState.active && (
+          <div
+            role="status"
+            style={{
+              position: 'fixed',
+              top: 20,
+              right: 20,
+              zIndex: 60,
+              maxWidth: 360,
+              padding: '12px 14px',
+              borderRadius: 16,
+              boxShadow: '0 18px 50px rgba(15, 23, 42, 0.16)',
+              border: downloadState.tone === 'success'
+                ? '1px solid #bbf7d0'
+                : downloadState.tone === 'info'
+                  ? '1px solid #bfdbfe'
+                  : '1px solid #fecaca',
+              background: downloadState.tone === 'success'
+                ? '#ecfdf5'
+                : downloadState.tone === 'info'
+                  ? '#eff6ff'
+                  : '#fff1f2',
+              color: downloadState.tone === 'success'
+                ? '#166534'
+                : downloadState.tone === 'info'
+                  ? '#1d4ed8'
+                  : '#be123c',
+            }}
+          >
+            <strong>{downloadState.tone === 'success' ? 'Download' : downloadState.tone === 'info' ? 'Preparing' : 'Issue'}</strong>
+            {` · ${downloadState.message}`}
           </div>
         )}
 
@@ -487,7 +644,7 @@ export default function ReportsPage() {
               title="Profit Breakdown"
               eyebrow={`${label} · Financial Summary`}
               accentColor="linear-gradient(90deg,#10b981,#06b6d4)"
-              action={<CsvBtn onClick={() => exportCSV('profit')} label="Export CSV" />}
+              action={<CsvBtn onClick={() => exportCSV('profit')} label="Export CSV" busy={downloadState.active && downloadState.key === 'profit'} />}
             >
               {/* Two-column breakdown grid */}
               <div className="reports-breakdown-grid">
@@ -545,7 +702,7 @@ export default function ReportsPage() {
               eyebrow={`${label} · Filing-ready formats`}
               badge={gstReport?.errors?.length ? `${gstReport.errors.length} validation issues` : 'Validated output'}
               accentColor="linear-gradient(90deg,#f59e0b,#ef4444)"
-              action={<CsvBtn onClick={fetchGSTReport} label={reportLoading ? 'Loading...' : 'Refresh GST'} />}
+              action={<CsvBtn onClick={fetchGSTReport} label={reportLoading ? 'Loading...' : 'Refresh GST'} busy={reportLoading || (downloadState.active && downloadState.key === 'gst-fetch')} />}
             >
               <div className="reports-breakdown-grid" style={{ marginBottom: 16 }}>
                 {[
@@ -567,11 +724,11 @@ export default function ReportsPage() {
               </div>
 
               <div className="reports-section-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
-                <CsvBtn onClick={() => exportGSTCsv('gstr1')} label="GSTR-1 CSV" />
-                <CsvBtn onClick={() => exportGSTCsv('sales_register')} label="Sales CSV" />
-                <CsvBtn onClick={() => exportGSTCsv('purchase_register')} label="Purchase CSV" />
-                <CsvBtn onClick={exportGSTJson} label="GST JSON" />
-                <CsvBtn onClick={exportPDFReady} label="PDF Data" />
+                <CsvBtn onClick={() => exportGSTCsv('gstr1')} label="GSTR-1 CSV" busy={downloadState.active && downloadState.key === 'gstr1'} />
+                <CsvBtn onClick={() => exportGSTCsv('sales_register')} label="Sales CSV" busy={downloadState.active && downloadState.key === 'sales_register'} />
+                <CsvBtn onClick={() => exportGSTCsv('purchase_register')} label="Purchase CSV" busy={downloadState.active && downloadState.key === 'purchase_register'} />
+                <CsvBtn onClick={exportGSTJson} label="GST JSON" busy={downloadState.active && downloadState.key === 'gst-json'} />
+                <CsvBtn onClick={exportPDFReady} label="PDF Data" busy={downloadState.active && downloadState.key === 'pdf-data'} />
               </div>
 
               {(gstReport?.errors?.length ?? 0) > 0 && (
@@ -582,6 +739,250 @@ export default function ReportsPage() {
               )}
             </SectionCard>
 
+            <SectionCard
+              title="Accounting Overview"
+              eyebrow={`${label} · Double-entry ledger view`}
+              badge={accountingErrors.length ? `${accountingErrors.length} issues` : 'Reconciled'}
+              accentColor="linear-gradient(90deg,#0f766e,#2563eb)"
+              action={<CsvBtn onClick={() => fetchAll(true)} label="Refresh" busy={entrySubmitting || (downloadState.active && downloadState.key === 'accounting-entry')} />}
+            >
+              <form onSubmit={submitAccountingEntry} style={{ marginBottom: 18 }}>
+                <div className="reports-section-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                  {[
+                    { value: 'expense', label: 'Add Expense' },
+                    { value: 'income', label: 'Add Income' },
+                    { value: 'bank', label: 'Add Bank Entry' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setEntryForm((current) => ({ ...current, kind: option.value }))}
+                      className="btn-ghost"
+                      style={{
+                        minHeight: 34,
+                        padding: '0 12px',
+                        borderRadius: 10,
+                        background: entryForm.kind === option.value ? '#e0f2fe' : undefined,
+                        color: entryForm.kind === option.value ? '#0c4a6e' : undefined,
+                        borderColor: entryForm.kind === option.value ? '#7dd3fc' : undefined,
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="reports-breakdown-grid" style={{ marginBottom: 12 }}>
+                  <div className="dashboard-breakdown-card reports-breakdown-card" style={{ background: '#f8fafc' }}>
+                    <p className="reports-breakdown-label">Amount</p>
+                    <input
+                      className="form-input"
+                      type="number"
+                      step="0.01"
+                      value={entryForm.amount}
+                      onChange={(e) => setEntryForm((current) => ({ ...current, amount: e.target.value }))}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div className="dashboard-breakdown-card reports-breakdown-card" style={{ background: '#f8fafc' }}>
+                    <p className="reports-breakdown-label">Date</p>
+                    <input
+                      className="form-input"
+                      type="date"
+                      value={entryForm.date}
+                      onChange={(e) => setEntryForm((current) => ({ ...current, date: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="dashboard-breakdown-card reports-breakdown-card" style={{ background: '#f8fafc' }}>
+                    <p className="reports-breakdown-label">{entryForm.kind === 'income' ? 'Source / Category' : entryForm.kind === 'expense' ? 'Expense Category' : 'Bank Entry Type'}</p>
+                    {entryForm.kind === 'bank' ? (
+                      <select className="form-input" value={entryForm.entry_type} onChange={(e) => setEntryForm((current) => ({ ...current, entry_type: e.target.value }))}>
+                        <option value="deposit">Deposit</option>
+                        <option value="withdrawal">Withdrawal</option>
+                        <option value="charge">Bank Charge</option>
+                        <option value="interest">Interest</option>
+                        <option value="transfer_in">Transfer In</option>
+                        <option value="transfer_out">Transfer Out</option>
+                      </select>
+                    ) : (
+                      <input
+                        className="form-input"
+                        value={entryForm.kind === 'income' ? entryForm.source : entryForm.category}
+                        onChange={(e) => setEntryForm((current) => entryForm.kind === 'income'
+                          ? { ...current, source: e.target.value }
+                          : { ...current, category: e.target.value }
+                        )}
+                        placeholder={entryForm.kind === 'income' ? 'Interest / Commission / Rent' : 'Rent / Salary / Misc'}
+                        required
+                      />
+                    )}
+                  </div>
+                  <div className="dashboard-breakdown-card reports-breakdown-card" style={{ background: '#f8fafc' }}>
+                    <p className="reports-breakdown-label">{entryForm.kind === 'bank' ? 'Reference ID' : 'Payment Mode'}</p>
+                    {entryForm.kind === 'bank' ? (
+                      <input
+                        className="form-input"
+                        value={entryForm.reference_id}
+                        onChange={(e) => setEntryForm((current) => ({ ...current, reference_id: e.target.value }))}
+                        placeholder="Bank ref / cheque no."
+                      />
+                    ) : (
+                      <select className="form-input" value={entryForm.payment_mode} onChange={(e) => setEntryForm((current) => ({ ...current, payment_mode: e.target.value }))}>
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="bank">Bank</option>
+                      </select>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10 }}>
+                  <input
+                    className="form-input"
+                    value={entryForm.note}
+                    onChange={(e) => setEntryForm((current) => ({ ...current, note: e.target.value }))}
+                    placeholder="Note / narration"
+                  />
+                  <button type="submit" className="btn-primary" disabled={entrySubmitting || !entryForm.amount} style={{ width: 'auto', minHeight: 42, padding: '0 18px' }}>
+                    {entrySubmitting ? 'Saving...' : 'Save Entry'}
+                  </button>
+                </div>
+              </form>
+
+            </SectionCard>
+
+            <SectionCard
+              title="Ledger Snapshot"
+              eyebrow={`${label} · Closing positions`}
+              badge={partyLedgers.length ? `${partyLedgers.length} ledgers` : 'No activity'}
+              accentColor="linear-gradient(90deg,#0f766e,#2563eb)"
+            >
+              <div className="reports-breakdown-grid" style={{ marginBottom: 16 }}>
+                {[
+                  { l: 'Cash Closing', v: accounting?.cash_account?.closing_balance ?? 0, color: '#065f46', bg: '#f0fdf4', hint: `Opening ₹${fmtN(accounting?.cash_account?.opening_balance ?? 0)}` },
+                  { l: 'Bank Closing', v: accounting?.bank_account?.closing_balance ?? 0, color: '#1d4ed8', bg: '#eff6ff', hint: `Opening ₹${fmtN(accounting?.bank_account?.opening_balance ?? 0)}` },
+                  { l: 'Customer Ledgers', v: customerLedgers.length, color: '#9f1239', bg: '#fff1f2', hint: 'parties tracked' },
+                  { l: 'Supplier Ledgers', v: supplierLedgers.length, color: '#92400e', bg: '#fffbeb', hint: 'parties tracked' },
+                ].map((item) => (
+                  <div
+                    key={item.l}
+                    className="dashboard-breakdown-card reports-breakdown-card"
+                    style={{ background: item.bg, borderColor: item.bg }}
+                  >
+                    <p className="reports-breakdown-label">{item.l}</p>
+                    <p className="reports-breakdown-value" style={{ color: item.color }}>{typeof item.v === 'number' && item.l.includes('Ledgers') ? fmtN(item.v) : `₹${fmtN(item.v)}`}</p>
+                    <p className="page-subtitle" style={{ marginTop: 4 }}>{item.hint}</p>
+                  </div>
+                ))}
+              </div>
+
+              {topPartyLedgers.length > 0 && (
+                <div className="reports-stack-list">
+                  {topPartyLedgers.map((party) => (
+                    <div key={`${party.type}-${party.party_id}`} className="dashboard-top-card stack-row reports-stack-row">
+                      <div className="reports-customer-avatar" style={{ background: party.type === 'customer' ? 'linear-gradient(135deg,#fb7185,#f43f5e)' : 'linear-gradient(135deg,#f59e0b,#f97316)' }}>
+                        {party.party_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="reports-stack-copy">
+                        <p className="reports-stack-title">{party.party_name}</p>
+                        <p className="reports-stack-meta">Opening ₹{fmtN(party.opening_balance)} · {party.transactions.length} entries</p>
+                      </div>
+                      <div className="reports-stack-metrics">
+                        <p className="reports-stack-value">₹{fmtN(party.closing_balance)}</p>
+                        <p className="reports-stack-note">{party.type}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {accountingErrors.length > 0 && (
+                <div className="rr-banner-warn" role="status" style={{ marginTop: 16 }}>
+                  <strong>Accounting validation</strong>
+                  {`: ${accountingErrors.slice(0, 3).map((error) => error.message).join(' · ')}`}
+                </div>
+              )}
+            </SectionCard>
+
+            <div className="reports-two-col reports-split-grid">
+              <SectionCard
+                title="Expenses"
+                eyebrow={`${label} · Categorized outflow`}
+                badge={`${expensesList.length} entries`}
+                accentColor="linear-gradient(90deg,#ef4444,#f97316)"
+                action={<CsvBtn onClick={() => router.push('/expenses')} label="Open Expenses" />}
+              >
+                {expensesList.length === 0 ? (
+                  <div className="empty-state" style={{ padding: '32px 16px' }}>
+                    <p style={{ fontWeight: 700, color: '#334155' }}>No expenses recorded</p>
+                  </div>
+                ) : (
+                  <div className="reports-stack-list">
+                    {expensesList.slice(0, 6).map((expense) => (
+                      <div key={expense.id} className="dashboard-top-card stack-row reports-stack-row">
+                        <div className="reports-rank-badge" style={{ background: 'linear-gradient(135deg,#f97316,#ef4444)' }}>₹</div>
+                        <div className="reports-stack-copy">
+                          <p className="reports-stack-title">{expense.category}</p>
+                          <p className="reports-stack-meta">{new Date(expense.date).toLocaleDateString('en-IN')} · {expense.payment_mode || 'mode missing'}</p>
+                        </div>
+                        <div className="reports-stack-metrics">
+                          <p className="reports-stack-value">₹{fmtN(expense.amount)}</p>
+                          <p className="reports-stack-note">{expense.reference_id || 'manual'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </SectionCard>
+
+              <SectionCard
+                title="Other Income & Audit"
+                eyebrow={`${label} · Non-sales + change history`}
+                badge={`${auditTrail.length} audit rows`}
+                accentColor="linear-gradient(90deg,#2563eb,#7c3aed)"
+              >
+                <div className="reports-stack-list" style={{ marginBottom: 14 }}>
+                  {incomeList.length === 0 ? (
+                    <div className="dashboard-top-card stack-row reports-stack-row">
+                      <div className="reports-rank-badge" style={{ background: 'linear-gradient(135deg,#2563eb,#7c3aed)' }}>i</div>
+                      <div className="reports-stack-copy">
+                        <p className="reports-stack-title">No non-sales income</p>
+                        <p className="reports-stack-meta">Interest, rent, commission ya other receipts yahan aayenge</p>
+                      </div>
+                    </div>
+                  ) : incomeList.slice(0, 4).map((entry) => (
+                    <div key={entry.id} className="dashboard-top-card stack-row reports-stack-row">
+                      <div className="reports-rank-badge" style={{ background: 'linear-gradient(135deg,#2563eb,#7c3aed)' }}>+</div>
+                      <div className="reports-stack-copy">
+                        <p className="reports-stack-title">{entry.source}</p>
+                        <p className="reports-stack-meta">{entry.category} · {entry.payment_mode}</p>
+                      </div>
+                      <div className="reports-stack-metrics">
+                        <p className="reports-stack-value">₹{fmtN(entry.amount)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="reports-stack-list">
+                  {auditTrail.slice(0, 5).map((entry, index) => (
+                    <div key={`${entry.entity}-${entry.entity_id}-${index}`} className="dashboard-top-card stack-row reports-stack-row">
+                      <div className="reports-rank-badge" style={{ background: 'linear-gradient(135deg,#cbd5e1,#94a3b8)', color: '#0f172a' }}>{entry.action_type.charAt(0).toUpperCase()}</div>
+                      <div className="reports-stack-copy">
+                        <p className="reports-stack-title">{entry.entity}</p>
+                        <p className="reports-stack-meta">{new Date(entry.timestamp).toLocaleString('en-IN')} · user {String(entry.user_id).slice(-6)}</p>
+                      </div>
+                      <div className="reports-stack-metrics">
+                        <p className="reports-stack-note">{entry.reference_id || entry.entity_id}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+
             {/* ══════════════════════════════════════════════════════
                 DAILY SALES TABLE
             ══════════════════════════════════════════════════════ */}
@@ -591,7 +992,7 @@ export default function ReportsPage() {
                 eyebrow={`${label} · Day-by-day`}
                 badge={`${dailySales.length} days`}
                 accentColor="linear-gradient(90deg,#6366f1,#8b5cf6)"
-                action={<CsvBtn onClick={() => exportCSV('sales')} label="Sales CSV" />}
+                action={<CsvBtn onClick={() => exportCSV('sales')} label="Sales CSV" busy={downloadState.active && downloadState.key === 'sales'} />}
               >
                 <div className="ui-table-wrap">
                   <table className="ui-table">
@@ -641,7 +1042,7 @@ export default function ReportsPage() {
                 eyebrow={`${label} · Most sold`}
                 badge={topProducts.length > 0 ? `${topProducts.length} items` : null}
                 accentColor="linear-gradient(90deg,#06b6d4,#10b981)"
-                action={<CsvBtn onClick={() => exportCSV('products')} />}
+                action={<CsvBtn onClick={() => exportCSV('products')} busy={downloadState.active && downloadState.key === 'products'} />}
               >
                 {topProducts.length === 0 ? (
                   <div className="empty-state" style={{ padding: '32px 16px' }}>
@@ -683,7 +1084,7 @@ export default function ReportsPage() {
                 eyebrow={`${label} · Best buyers`}
                 badge={topCustomers.length > 0 ? `${topCustomers.length} customers` : null}
                 accentColor="linear-gradient(90deg,#8b5cf6,#ec4899)"
-                action={<CsvBtn onClick={() => exportCSV('customers')} />}
+                action={<CsvBtn onClick={() => exportCSV('customers')} busy={downloadState.active && downloadState.key === 'customers'} />}
               >
                 {topCustomers.length === 0 ? (
                   <div className="empty-state" style={{ padding: '32px 16px' }}>

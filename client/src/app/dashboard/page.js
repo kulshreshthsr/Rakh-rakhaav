@@ -287,6 +287,13 @@ export default function DashboardPage() {
               color="border-emerald-200 bg-emerald-50"
             />
             <QuickAction
+              href="/expenses"
+              emoji="🧾"
+              label="खर्च लिखो"
+              sublabel="Expenses"
+              color="border-orange-200 bg-orange-50"
+            />
+            <QuickAction
               href="/udhaar"
               emoji="💸"
               label="पैसे लो"

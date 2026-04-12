@@ -9,11 +9,13 @@ import { apiUrl } from '../../../lib/api';
 const SALES_CACHE_KEY = 'sales-page';
 const getToken = () => localStorage.getItem('token');
 const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
+const getInitialSalesCache = () => (typeof window === 'undefined' ? null : readPageCache(SALES_CACHE_KEY));
 
 export default function CustomersDirectoryPage() {
   const router = useRouter();
-  const [sales, setSales] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCache = getInitialSalesCache();
+  const [sales, setSales] = useState(() => initialCache?.sales || []);
+  const [loading, setLoading] = useState(() => !Boolean(initialCache?.sales));
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
@@ -40,21 +42,15 @@ export default function CustomersDirectoryPage() {
     hasBootstrappedRef.current = true;
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
 
-    const cached = readPageCache(SALES_CACHE_KEY);
-    if (cached?.sales) {
-      setSales(cached.sales);
-      setLoading(false);
-    }
-
     const deferredId = scheduleDeferred(async () => {
-      setRefreshing(Boolean(cached?.sales));
+      setRefreshing(Boolean(initialCache?.sales));
       await fetchSales();
       setLoading(false);
       setRefreshing(false);
     });
 
     return () => cancelDeferred(deferredId);
-  }, [fetchSales, router]);
+  }, [fetchSales, initialCache?.sales, router]);
 
   const customers = useMemo(() => {
     const map = new Map();

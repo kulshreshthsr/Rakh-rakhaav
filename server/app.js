@@ -15,6 +15,10 @@ const salesRoutes = require('./routes/salesRoutes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
+const incomeRoutes = require('./routes/incomeRoutes');
+const bankEntryRoutes = require('./routes/bankEntryRoutes');
+const accountingRoutes = require('./routes/accountingRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -79,6 +83,10 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/suppliers', supplierRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/income', incomeRoutes);
+app.use('/api/bank-entries', bankEntryRoutes);
+app.use('/api/accounting', accountingRoutes);
 
 app.use(errorHandler);
 

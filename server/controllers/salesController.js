@@ -7,6 +7,7 @@ const Customer = require('../models/customerModel');
 const Udhaar   = require('../models/udhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
 const { generateGSTComplianceReport } = require('../utils/gstReportGenerator');
+const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -314,6 +315,7 @@ const syncCustomerLedgerForSale = async (shopId, saleDoc, itemNames = [], sessio
       type: 'credit',
       amount: saleDoc.amount_paid,
       running_balance: customer.totalUdhaar,
+      payment_mode: saleDoc.amount_paid_mode || '',
       note: `Advance payment at time of sale (${saleDoc.invoice_number})`,
       date: saleDoc.createdAt || new Date(),
       reference_id: saleDoc.invoice_number,
@@ -355,6 +357,7 @@ const buildSaleRecordData = async ({
     buyer_address, buyer_state,
     payment_type = 'cash',
     amount_paid = 0,
+    amount_paid_mode = '',
     notes,
     sale_date,
   } = payload;
@@ -478,6 +481,7 @@ const buildSaleRecordData = async ({
       gross_profit: grossProfit,
       payment_type,
       amount_paid: paid,
+      amount_paid_mode: payment_type === 'credit' ? (amount_paid_mode || '') : payment_type,
       buyer_name: buyer_name || (invoice_type === 'B2C' ? 'Walk-in Customer' : ''),
       buyer_phone,
       buyer_gstin: normalizedBuyerGstin,
@@ -532,10 +536,12 @@ const createSale = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let createdSaleId;
+    let auditShopId = null;
     const offlineOperationId = normalizeOfflineOperationId(req.body?.offline_operation_id);
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      auditShopId = shop._id;
       if (offlineOperationId) {
         const existingSale = await Sale.findOne({
           shop: shop._id,
@@ -567,6 +573,15 @@ const createSale = async (req, res) => {
     });
 
     const hydratedSale = await Sale.findById(createdSaleId).populate('customer', 'name phone gstin');
+    await logAuditEvent({
+      shopId: auditShopId || hydratedSale?.shop,
+      userId: req.user.id,
+      actionType: 'create',
+      entity: 'sale',
+      entityId: hydratedSale._id,
+      referenceId: hydratedSale.invoice_number,
+      afterValue: hydratedSale,
+    });
     return res.status(201).json(hydratedSale);
 
     const {
@@ -755,11 +770,15 @@ const updateSale = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let saleId;
+    let beforeValue = null;
+    let auditShopId = null;
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      auditShopId = shop._id;
       const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!sale) throw new Error('Sale not found');
+      beforeValue = cloneForAudit(sale);
 
       const { data, itemNames } = await buildSaleRecordData({
         shop,
@@ -791,6 +810,16 @@ const updateSale = async (req, res) => {
     });
 
     const hydratedSale = await Sale.findById(saleId).populate('customer', 'name phone gstin');
+    await logAuditEvent({
+      shopId: auditShopId || hydratedSale?.shop,
+      userId: req.user.id,
+      actionType: 'update',
+      entity: 'sale',
+      entityId: hydratedSale._id,
+      referenceId: hydratedSale.invoice_number,
+      beforeValue,
+      afterValue: hydratedSale,
+    });
     res.json(hydratedSale);
   } catch (err) {
     console.error('updateSale error:', err);
@@ -809,10 +838,14 @@ const updateSale = async (req, res) => {
 const deleteSale = async (req, res) => {
   const session = await mongoose.startSession();
   try {
+    let deletedSale = null;
+    let auditShopId = null;
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      auditShopId = shop._id;
       const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!sale) throw new Error('Sale not found');
+      deletedSale = cloneForAudit(sale);
 
       if (sale.items && sale.items.length > 0) {
         for (const item of sale.items) {
@@ -825,6 +858,18 @@ const deleteSale = async (req, res) => {
       await reverseCustomerLedgerForSale(sale, session);
       await Sale.findOneAndDelete({ _id: req.params.id, shop: shop._id }, { session });
     });
+
+    if (deletedSale) {
+      await logAuditEvent({
+        shopId: auditShopId || deletedSale.shop,
+        userId: req.user.id,
+        actionType: 'delete',
+        entity: 'sale',
+        entityId: deletedSale._id,
+        referenceId: deletedSale.invoice_number,
+        beforeValue: deletedSale,
+      });
+    }
 
     res.json({ message: 'Sale deleted and stock reversed' });
   } catch (err) {

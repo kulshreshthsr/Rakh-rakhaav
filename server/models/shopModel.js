@@ -14,6 +14,8 @@ const shopSchema = new mongoose.Schema({
   bank_account: { type: String },
   bank_ifsc: { type: String },
   bank_branch: { type: String },
+  cash_opening_balance: { type: Number, default: 0 },
+  bank_opening_balance: { type: Number, default: 0 },
   owner_photo: { type: String, default: '' },
   terms: { type: String, default: 'Goods once sold will not be taken back.\nSubject to local jurisdiction.' },
 }, { timestamps: true });

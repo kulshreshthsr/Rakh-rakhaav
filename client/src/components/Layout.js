@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: '/product',   key: 'products',  shortLabel: 'Stock',    tone: 'stock'    },
   { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales'    },
   { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase' },
+  { href: '/expenses',  key: 'expenses',  shortLabel: 'Expense',  tone: 'reports'  },
   { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit'   },
   { href: '/gst',       key: 'gst',       shortLabel: 'GST',      tone: 'gst'      },
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports',  tone: 'reports'  },
@@ -35,13 +36,16 @@ const MOBILE_BOTTOM_NAV = [
 // ── More drawer items ──
 const MORE_DRAWER_ITEMS = [
   { href: '/product',   key: 'products',  label: 'Stock',     sublabel: 'Products & Inventory', icon: 'products' },
+  { href: '/expenses',  key: 'expenses',  label: 'Expenses',  sublabel: 'Kharch Register',      icon: 'expenses' },
+  { href: '/income',    key: 'income',    label: 'Income',    sublabel: 'Other Income',         icon: 'income'   },
+  { href: '/bank-entries', key: 'bank',   label: 'Bank',      sublabel: 'Bank Register',        icon: 'bank'     },
   { href: '/gst',       key: 'gst',       label: 'GST',       sublabel: 'Tax Filing',           icon: 'gst'      },
   { href: '/reports',   key: 'reports',   label: 'रिपोर्ट',   sublabel: 'Reports',              icon: 'reports'  },
   { href: '/profile',   key: 'profile',   label: 'Profile',   sublabel: 'दुकान की जानकारी',     icon: 'profile'  },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
-const PREFETCH_ROUTES = [...new Set([...NAV_ITEMS.map((i) => i.href), '/pricing', '/reports', '/profile'])];
+const PREFETCH_ROUTES = [...new Set([...NAV_ITEMS.map((i) => i.href), '/pricing', '/reports', '/profile', '/expenses', '/income', '/bank-entries'])];
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 function readStoredUser() {
@@ -73,6 +77,9 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
     products:   <><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z" /><path d="M4 7.5V16.5L12 21l8-4.5V7.5" /><path d="M12 12v9" /></>,
     sales:      <><path d="M12 2v20" /><path d="M16.5 6.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" /></>,
     purchases:  <><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" /><path d="M3 5h2l2.2 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H7" /></>,
+    expenses:   <><path d="M6 4.5h12" /><path d="M6 9.5h12" /><path d="M6 14.5h7" /><path d="M17 14v6" /><path d="M14 17h6" /><rect x="4" y="3" width="16" height="18" rx="2.5" /></>,
+    income:     <><path d="M12 20V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></>,
+    bank:       <><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M3 10h18" /><path d="M7 15h4" /></>,
     udhaar:     <><path d="M6 3.5h9a3 3 0 0 1 3 3V20.5H9a3 3 0 0 0-3 3" /><path d="M6 3.5v20" /><path d="M9 7.5h6" /><path d="M9 11.5h6" /><path d="M9 15.5h4" /></>,
     gst:        <><path d="M7 4.5h10" /><path d="M7 9.5h10" /><path d="M7 14.5h5" /><path d="M16.5 13v7" /><path d="M13.5 16h6" /><rect x="4" y="3" width="16" height="18" rx="2.5" /></>,
     reports:    <><path d="M5 19.5V10.5" /><path d="M12 19.5V5.5" /><path d="M19 19.5V13.5" /><path d="M3.5 19.5h17" /></>,
@@ -145,6 +152,9 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
 
   const iconColors = {
     products:  'bg-violet-50 text-violet-600',
+    expenses:  'bg-rose-50 text-rose-600',
+    income:    'bg-emerald-50 text-emerald-600',
+    bank:      'bg-cyan-50 text-cyan-600',
     reports:   'bg-violet-50 text-violet-600',
     gst:       'bg-amber-50 text-amber-600',
     profile:   'bg-slate-100 text-slate-600',
@@ -383,6 +393,7 @@ function LayoutInner({ children }) {
     products:  'स्टॉक / Products',
     sales:     'बेचिए / Sales',
     purchases: 'खरीदिए / Purchases',
+    expenses:  'खर्च / Expenses',
     udhaar:    'उधार / Credit',
     gst:       'GST / Tax',
     reports:   'रिपोर्ट / Hisaab',

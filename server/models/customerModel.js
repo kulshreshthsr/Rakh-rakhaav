@@ -12,6 +12,7 @@ const customerSchema = new mongoose.Schema({
   totalSales: { type: Number, default: 0 },      // lifetime credit sales to this customer
   totalPaid: { type: Number, default: 0 },       // total payments received
   totalUdhaar: { type: Number, default: 0 },     // balance still owed = totalSales - totalPaid
+  opening_balance: { type: Number, default: 0 },
 
   isActive: { type: Boolean, default: true },
   notes: { type: String },

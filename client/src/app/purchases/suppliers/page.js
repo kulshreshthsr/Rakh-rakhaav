@@ -9,6 +9,7 @@ import { apiUrl } from '../../../lib/api';
 const PURCHASES_CACHE_KEY = 'purchases-page';
 const getToken = () => localStorage.getItem('token');
 const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
+const getInitialPurchasesCache = () => (typeof window === 'undefined' ? null : readPageCache(PURCHASES_CACHE_KEY));
 
 const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   day: '2-digit',
@@ -51,8 +52,9 @@ const buildPurchaseWhatsAppMessage = (purchase) => {
 
 export default function SupplierDirectoryPage() {
   const router = useRouter();
-  const [purchases, setPurchases] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialCache = getInitialPurchasesCache();
+  const [purchases, setPurchases] = useState(() => initialCache?.purchases || []);
+  const [loading, setLoading] = useState(() => !Boolean(initialCache?.purchases));
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
@@ -88,21 +90,15 @@ export default function SupplierDirectoryPage() {
       return undefined;
     }
 
-    const cached = readPageCache(PURCHASES_CACHE_KEY);
-    if (cached?.purchases) {
-      setPurchases(cached.purchases);
-      setLoading(false);
-    }
-
     const deferredId = scheduleDeferred(async () => {
-      setRefreshing(Boolean(cached?.purchases));
+      setRefreshing(Boolean(initialCache?.purchases));
       await fetchPurchases();
       setLoading(false);
       setRefreshing(false);
     });
 
     return () => cancelDeferred(deferredId);
-  }, [fetchPurchases, router]);
+  }, [fetchPurchases, initialCache?.purchases, router]);
 
   const suppliers = useMemo(() => {
     const map = new Map();
@@ -143,24 +139,14 @@ export default function SupplierDirectoryPage() {
       || supplier.phone.includes(cleanPhone(normalizedSupplierSearch));
   });
 
-  const selectedSupplier = suppliers.find((supplier) => supplier.key === selectedSupplierKey)
+  const resolvedSelectedSupplierKey = selectedSupplierKey && suppliers.some((supplier) => supplier.key === selectedSupplierKey)
+    ? selectedSupplierKey
+    : suppliers[0]?.key || '';
+  const selectedSupplier = suppliers.find((supplier) => supplier.key === resolvedSelectedSupplierKey)
     || suppliers[0]
     || null;
 
   const selectedLatestPurchase = selectedSupplier?.purchases?.[0] || null;
-
-  useEffect(() => {
-    if (selectedSupplierKey || suppliers.length === 0) return;
-    setSelectedSupplierKey(suppliers[0].key);
-  }, [selectedSupplierKey, suppliers]);
-
-  useEffect(() => {
-    if (!selectedSupplierKey) return;
-    const stillExists = suppliers.some((supplier) => supplier.key === selectedSupplierKey);
-    if (!stillExists) {
-      setSelectedSupplierKey(suppliers[0]?.key || '');
-    }
-  }, [selectedSupplierKey, suppliers]);
 
   return (
     <Layout>

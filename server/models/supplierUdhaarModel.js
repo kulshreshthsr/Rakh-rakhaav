@@ -14,6 +14,11 @@ const supplierUdhaarSchema = new mongoose.Schema({
 
   amount: { type: Number, required: true },
   running_balance: { type: Number, default: 0 }, // ← NEW: balance after this entry (for ledger statement)
+  payment_mode: {
+    type: String,
+    enum: ['cash', 'bank', 'upi', ''],
+    default: '',
+  },
   note: { type: String },
   date: { type: Date, default: Date.now },
   reference_id: { type: String },   // invoice_number

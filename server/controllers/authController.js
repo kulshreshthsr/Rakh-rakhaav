@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const Shop = require('../models/shopModel');
+const { logAuditEvent, cloneForAudit } = require('../utils/auditTrail');
 const {
   TRIAL_DAYS,
   ensureTrialDates,
@@ -120,18 +121,40 @@ const getShop = async (req, res) => {
 };
 
 const updateShop = async (req, res) => {
-  const { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, owner_photo, terms } = req.body;
+  const {
+    name, address, city, state, pincode, gstin, phone, email,
+    bank_name, bank_account, bank_ifsc, bank_branch,
+    cash_opening_balance, bank_opening_balance,
+    owner_photo, terms,
+  } = req.body;
   try {
     if (!isValidOwnerPhoto(owner_photo)) {
       return res.status(400).json({ message: 'Owner photo must be a PNG, JPG, JPEG, or WEBP image up to 5MB.' });
     }
 
     const shop = await getOrCreateShop(req.user.id);
+    const beforeValue = cloneForAudit(shop);
     const updated = await Shop.findByIdAndUpdate(
       shop._id,
-      { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, owner_photo, terms },
+      {
+        name, address, city, state, pincode, gstin, phone, email,
+        bank_name, bank_account, bank_ifsc, bank_branch,
+        cash_opening_balance: Number(cash_opening_balance || 0),
+        bank_opening_balance: Number(bank_opening_balance || 0),
+        owner_photo,
+        terms,
+      },
       { new: true }
     );
+    await logAuditEvent({
+      shopId: updated._id,
+      userId: req.user.id,
+      actionType: 'update',
+      entity: 'shop',
+      entityId: updated._id,
+      beforeValue,
+      afterValue: updated,
+    });
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: err.message });

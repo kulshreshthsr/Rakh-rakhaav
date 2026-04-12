@@ -20,7 +20,8 @@ const GST_STATE_CODE_MAP = {
 
 const emptyShopForm = {
   name:'', address:'', city:'', state:'', pincode:'', gstin:'',
-  phone:'', email:'', bank_name:'', bank_account:'', bank_ifsc:'', bank_branch:'', owner_photo:'', terms:'',
+  phone:'', email:'', bank_name:'', bank_account:'', bank_ifsc:'', bank_branch:'',
+  cash_opening_balance:'0', bank_opening_balance:'0', owner_photo:'', terms:'',
 };
 
 const normalizeGstin = (value = '') => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, GSTIN_LENGTH);
@@ -108,6 +109,8 @@ export default function ProfilePage() {
       bank_account: data?.bank_account || '',
       bank_ifsc:    data?.bank_ifsc    || '',
       bank_branch:  data?.bank_branch  || '',
+      cash_opening_balance: String(data?.cash_opening_balance ?? 0),
+      bank_opening_balance: String(data?.bank_opening_balance ?? 0),
       owner_photo:  data?.owner_photo  || '',
       terms:        data?.terms        || '',
     });
@@ -209,7 +212,7 @@ export default function ProfilePage() {
 
   /* ── Profile completeness (NEW) ── */
   const completeness = useMemo(() => {
-    const fields = [shopForm.name, shopForm.phone, shopForm.gstin, shopForm.state, shopForm.address, shopForm.bank_name, shopForm.bank_account, shopForm.bank_ifsc];
+    const fields = [shopForm.name, shopForm.phone, shopForm.gstin, shopForm.state, shopForm.address, shopForm.bank_name, shopForm.bank_account, shopForm.bank_ifsc, shopForm.cash_opening_balance, shopForm.bank_opening_balance];
     const filled  = fields.filter(Boolean).length;
     return Math.round((filled / fields.length) * 100);
   }, [shopForm]);
@@ -549,6 +552,48 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+            </Section>
+
+            <Section
+              icon="📒"
+              title="Accounting Setup"
+              subtitle="Opening balances yahin se carry forward honge"
+              badge="Ledger"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Cash Opening Balance" hint="Cash book ka brought forward amount">
+                  <input
+                    className={INPUT}
+                    type="number"
+                    step="0.01"
+                    value={shopForm.cash_opening_balance}
+                    onChange={(e) => patch({ cash_opening_balance: e.target.value })}
+                  />
+                </Field>
+                <Field label="Bank Opening Balance" hint="Bank ledger ka opening amount">
+                  <input
+                    className={INPUT}
+                    type="number"
+                    step="0.01"
+                    value={shopForm.bank_opening_balance}
+                    onChange={(e) => patch({ bank_opening_balance: e.target.value })}
+                  />
+                </Field>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Accounting Preview</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-white border border-slate-200 px-3 py-2">
+                    <div className="text-[11px] text-slate-400">Cash</div>
+                    <div className="text-[16px] font-black text-emerald-600">₹{Number(shopForm.cash_opening_balance || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="rounded-xl bg-white border border-slate-200 px-3 py-2">
+                    <div className="text-[11px] text-slate-400">Bank</div>
+                    <div className="text-[16px] font-black text-blue-600">₹{Number(shopForm.bank_opening_balance || 0).toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
             </Section>
 
             {/* ══ TERMS & CONDITIONS ══════════════════════════════ */}

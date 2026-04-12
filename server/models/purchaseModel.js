@@ -44,6 +44,7 @@ const purchaseSchema = new mongoose.Schema({
   // ── Payment ───────────────────────────────────────────────────
   payment_type: { type: String, enum: ['cash', 'credit', 'upi', 'bank'], default: 'cash' },
   amount_paid: { type: Number, default: 0 },   // how much paid at time of purchase
+  amount_paid_mode: { type: String, enum: ['cash', 'bank', 'upi', ''], default: '' },
   balance_due: { type: Number, default: 0 },   // total_amount - amount_paid
   payment_status: { type: String, enum: ['paid', 'partial', 'unpaid'], default: 'paid' },
 

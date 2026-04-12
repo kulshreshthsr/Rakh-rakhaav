@@ -52,6 +52,7 @@ const saleSchema = new mongoose.Schema({
     default: 'cash'
   },
   amount_paid: { type: Number, default: 0 },
+  amount_paid_mode: { type: String, enum: ['cash', 'bank', 'upi', ''], default: '' },
   balance_due: { type: Number, default: 0 },
   payment_status: { type: String, enum: ['paid', 'partial', 'unpaid'], default: 'paid' },
 

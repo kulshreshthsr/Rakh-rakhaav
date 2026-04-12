@@ -129,7 +129,7 @@ export default function LoginPage() {
         <div className="relative z-10 mt-10">
           <div className="px-4 py-4 rounded-2xl bg-white/5 border border-white/8">
             <p className="text-[13px] leading-relaxed text-slate-300 italic">
-              "पहले हाथ से सब लिखते थे, अब रखरखाव से सब clear है।"
+              &quot;पहले हाथ से सब लिखते थे, अब रखरखाव से सब clear है।&quot;
             </p>
             <p className="mt-2 text-[11px] font-bold text-slate-500">— Kirana store owner, Kanpur</p>
           </div>

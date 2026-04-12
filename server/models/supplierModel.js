@@ -13,6 +13,7 @@ const supplierSchema = new mongoose.Schema({
   totalPurchased: { type: Number, default: 0 }, // total credit purchases
   totalPaid: { type: Number, default: 0 },      // total payments made
   totalUdhaar: { type: Number, default: 0 },    // balance still owed = totalPurchased - totalPaid
+  opening_balance: { type: Number, default: 0 },
 
   isActive: { type: Boolean, default: true },
   notes: { type: String },

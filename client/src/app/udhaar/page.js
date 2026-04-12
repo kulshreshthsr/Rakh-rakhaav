@@ -24,6 +24,18 @@ const getMonthFilterValue = (value) => {
 };
 const getLedgerEntryText = (entry) => [entry.note, entry.reference_id, entry.type].join(' ').toLowerCase();
 const getLedgerDetailCacheKey = (kind, id) => `${LEDGER_CACHE_KEY}:${kind}:${id}`;
+const getEmptyPartyForm = (kind = 'customer') => ({
+  name: '',
+  phone: '',
+  gstin: '',
+  email: '',
+  address: '',
+  state: '',
+  companyName: '',
+  notes: '',
+  opening_balance: '0',
+  kind,
+});
 
 /* ─── Small UI helpers ───────────────────────────────────────────── */
 const INPUT_CLS = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 focus:border-rose-400 transition-all';
@@ -100,6 +112,7 @@ export default function UdhaarPage() {
   const [showSettle,      setShowSettle]      = useState(false);
   const [settleAmount,    setSettleAmount]    = useState('');
   const [settleNote,      setSettleNote]      = useState('');
+  const [settlePaymentMode, setSettlePaymentMode] = useState('cash');
   const [settleLoading,   setSettleLoading]   = useState(false);
   const [error,           setError]           = useState('');
   const [success,         setSuccess]         = useState('');
@@ -109,6 +122,10 @@ export default function UdhaarPage() {
   const [isOnline,        setIsOnline]        = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheLoaded,     setCacheLoaded]     = useState(false);
   const [cacheUpdatedAt,  setCacheUpdatedAt]  = useState(null);
+  const [showPartyModal,  setShowPartyModal]  = useState(false);
+  const [partyMode,       setPartyMode]       = useState('create');
+  const [partySaving,     setPartySaving]     = useState(false);
+  const [partyForm,       setPartyForm]       = useState(() => getEmptyPartyForm('customer'));
 
   /* ── NEW: sort + filter state ── */
   const [sortBy,     setSortBy]     = useState('due_desc'); // due_desc | due_asc | name_asc | recent
@@ -154,6 +171,40 @@ export default function UdhaarPage() {
     setActiveTab(nextTab); setSelected(null); setLedger([]);
     setLedgerSearch(''); setLedgerMonth(''); setError(''); setSuccess('');
     setPartySearch('');
+  };
+
+  const closePartyModal = () => {
+    setShowPartyModal(false);
+    setPartySaving(false);
+    setPartyMode('create');
+    setPartyForm(getEmptyPartyForm(activeTab === 'customers' ? 'customer' : 'supplier'));
+  };
+
+  const openCreatePartyModal = () => {
+    setError('');
+    setSuccess('');
+    setPartyMode('create');
+    setPartyForm(getEmptyPartyForm(activeTab === 'customers' ? 'customer' : 'supplier'));
+    setShowPartyModal(true);
+  };
+
+  const openEditPartyModal = (party) => {
+    setError('');
+    setSuccess('');
+    setPartyMode('edit');
+    setPartyForm({
+      name: party?.name || '',
+      phone: party?.phone || '',
+      gstin: party?.gstin || '',
+      email: party?.email || '',
+      address: party?.address || '',
+      state: party?.state || '',
+      companyName: party?.companyName || '',
+      notes: party?.notes || '',
+      opening_balance: String(party?.opening_balance ?? 0),
+      kind: activeTab === 'customers' ? 'customer' : 'supplier',
+    });
+    setShowPartyModal(true);
   };
 
   const fetchCustomerLedgerEntries = async (customerId) => {
@@ -235,12 +286,12 @@ export default function UdhaarPage() {
       const res = await fetch(apiUrl(`/api/${base}/${selected._id}/settle`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ amount: settleAmount, note: settleNote }),
+        body: JSON.stringify({ amount: settleAmount, note: settleNote, payment_mode: settlePaymentMode }),
       });
       const data = await res.json();
       if (res.ok) {
         setSuccess(`₹${settleAmount} payment recorded ✓`);
-        setShowSettle(false); setSettleAmount(''); setSettleNote('');
+        setShowSettle(false); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash');
         await fetchAll();
         if (data.customer) setSelected(data.customer);
         else if (data.balanceDue !== undefined) setSelected((prev) => ({ ...prev, totalUdhaar: data.balanceDue }));
@@ -251,6 +302,66 @@ export default function UdhaarPage() {
       } else { setError(data.message || 'Payment failed'); }
     } catch { setError('Server error'); }
     setSettleLoading(false);
+  };
+
+  const handlePartySubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    if (!isOnline) { setError('Offline mode me party save nahi hogi.'); return; }
+    if (!partyForm.name.trim()) { setError(`${partyForm.kind === 'customer' ? 'Customer' : 'Supplier'} name required hai.`); return; }
+    setPartySaving(true);
+    try {
+      const isCustomerParty = partyForm.kind === 'customer';
+      const base = isCustomerParty ? 'customers' : 'suppliers';
+      const payload = isCustomerParty
+        ? {
+            name: partyForm.name.trim(),
+            phone: partyForm.phone.trim(),
+            gstin: partyForm.gstin.trim(),
+            email: partyForm.email.trim(),
+            address: partyForm.address.trim(),
+            notes: partyForm.notes.trim(),
+            opening_balance: Number(partyForm.opening_balance || 0),
+          }
+        : {
+            name: partyForm.name.trim(),
+            phone: partyForm.phone.trim(),
+            gstin: partyForm.gstin.trim(),
+            address: partyForm.address.trim(),
+            state: partyForm.state.trim(),
+            companyName: partyForm.companyName.trim(),
+            notes: partyForm.notes.trim(),
+            opening_balance: Number(partyForm.opening_balance || 0),
+          };
+      const targetId = partyMode === 'edit' ? selected?._id : '';
+      const res = await fetch(apiUrl(`/api/${base}${targetId ? `/${targetId}` : ''}`), {
+        method: partyMode === 'edit' ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || 'Party save nahi hui');
+        setPartySaving(false);
+        return;
+      }
+      await fetchAll();
+      if (partyMode === 'edit' && data?._id) {
+        setSelected(data);
+        const ledgerBase = partyForm.kind === 'customer' ? 'customers' : 'suppliers';
+        const ledgerRes = await fetch(apiUrl(`/api/${ledgerBase}/${data._id}/udhaar`), {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const ledgerData = await ledgerRes.json();
+        setLedger(ledgerData.entries || ledgerData.ledger || (Array.isArray(ledgerData) ? ledgerData : []));
+      }
+      closePartyModal();
+      setSuccess(`${isCustomerParty ? 'Customer' : 'Supplier'} ${partyMode === 'edit' ? 'updated' : 'created'} ✓`);
+    } catch {
+      setError('Server error');
+      setPartySaving(false);
+    }
   };
 
   /* ── Derived ── */
@@ -420,6 +531,17 @@ export default function UdhaarPage() {
                 title={isCustomer ? 'Customers / ग्राहक' : 'Suppliers / आपूर्तिकर्ता'}
                 subtitle={isCustomer ? 'Tap to open ledger & record payment' : 'Tap to view transactions & pay dues'}
                 badge={`${processedList.length} shown`}
+                right={(
+                  <button
+                    type="button"
+                    onClick={openCreatePartyModal}
+                    className={`px-3 py-2 rounded-xl text-[11px] font-black transition-colors ${
+                      isCustomer ? 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100' : 'bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100'
+                    }`}
+                  >
+                    + Add {isCustomer ? 'Customer' : 'Supplier'}
+                  </button>
+                )}
               />
 
               {/* Search + Sort + Filter controls */}
@@ -564,16 +686,18 @@ export default function UdhaarPage() {
                               </div>
 
                               {/* Balance breakdown */}
-                              <div className="grid grid-cols-3 gap-2.5 mb-4">
-                                {isCustomer ? [
-                                  { label: 'Total Sales',  val: `₹${fmt(item.totalSales)}`,  color: 'text-slate-700',   bg: 'bg-white' },
-                                  { label: 'Received',     val: `₹${fmt(item.totalPaid)}`,   color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                  { label: 'Due',          val: `₹${fmt(item.totalUdhaar)}`, color: item.totalUdhaar > 0 ? 'text-rose-600' : 'text-emerald-600', bg: item.totalUdhaar > 0 ? 'bg-rose-50' : 'bg-emerald-50' },
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+                                {(isCustomer ? [
+                                  { label: 'Opening',      val: `₹${fmt(item.opening_balance)}`, color: 'text-cyan-700', bg: 'bg-cyan-50' },
+                                  { label: 'Total Sales',  val: `₹${fmt(item.totalSales)}`,      color: 'text-slate-700', bg: 'bg-white' },
+                                  { label: 'Received',     val: `₹${fmt(item.totalPaid)}`,       color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                                  { label: 'Due',          val: `₹${fmt(item.totalUdhaar)}`,     color: item.totalUdhaar > 0 ? 'text-rose-600' : 'text-emerald-600', bg: item.totalUdhaar > 0 ? 'bg-rose-50' : 'bg-emerald-50' },
                                 ] : [
-                                  { label: 'Purchased',    val: `₹${fmt(item.totalPurchased)}`, color: 'text-slate-700', bg: 'bg-white' },
-                                  { label: 'Paid',         val: `₹${fmt(item.totalPaid)}`,      color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                  { label: 'Due',          val: `₹${fmt(item.totalUdhaar)}`,    color: item.totalUdhaar > 0 ? 'text-amber-600' : 'text-emerald-600', bg: item.totalUdhaar > 0 ? 'bg-amber-50' : 'bg-emerald-50' },
-                                ].map((s) => (
+                                  { label: 'Opening',      val: `₹${fmt(item.opening_balance)}`, color: 'text-cyan-700', bg: 'bg-cyan-50' },
+                                  { label: 'Purchased',    val: `₹${fmt(item.totalPurchased)}`,  color: 'text-slate-700', bg: 'bg-white' },
+                                  { label: 'Paid',         val: `₹${fmt(item.totalPaid)}`,       color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                                  { label: 'Due',          val: `₹${fmt(item.totalUdhaar)}`,     color: item.totalUdhaar > 0 ? 'text-amber-600' : 'text-emerald-600', bg: item.totalUdhaar > 0 ? 'bg-amber-50' : 'bg-emerald-50' },
+                                ]).map((s) => (
                                   <div key={s.label} className={`${s.bg} rounded-xl border border-slate-100 p-2.5 text-center`}>
                                     <div className={`text-[16px] font-black leading-none ${s.color}`}>{s.val}</div>
                                     <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">{s.label}</div>
@@ -599,6 +723,11 @@ export default function UdhaarPage() {
                                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-all"
                                   >📲 WhatsApp Reminder</button>
                                 )}
+                                <button
+                                  type="button"
+                                  onClick={() => openEditPartyModal(item)}
+                                  className="px-4 py-2.5 rounded-xl text-[13px] font-bold text-cyan-700 border border-cyan-200 bg-cyan-50 hover:bg-cyan-100 transition-colors"
+                                >Edit Party</button>
                                 <button
                                   type="button"
                                   onClick={() => { setSelected(null); setLedger([]); }}
@@ -813,7 +942,7 @@ export default function UdhaarPage() {
           SETTLE PAYMENT MODAL
       ════════════════════════════════════════════════════════════ */}
       <div className={`fixed inset-0 z-[70] transition-opacity duration-300 ${showSettle ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
-        <button type="button" onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); }}
+        <button type="button" onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash'); }}
           className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         />
         <div className={`absolute inset-x-0 bottom-0 rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] md:rounded-3xl ${showSettle ? 'translate-y-0' : 'translate-y-full md:translate-y-[-40%] md:opacity-0'}`}>
@@ -836,7 +965,7 @@ export default function UdhaarPage() {
                 <p className="text-[12px] text-slate-400 mt-1">{selected?.name}</p>
               </div>
               <button type="button"
-                onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); }}
+                onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash'); }}
                 className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
               >✕</button>
             </div>
@@ -901,6 +1030,30 @@ export default function UdhaarPage() {
                 />
               </div>
 
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Payment Mode *</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'upi', label: 'UPI' },
+                    { value: 'bank', label: 'Bank' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setSettlePaymentMode(option.value)}
+                      className={`rounded-xl border px-3 py-2 text-[12px] font-black transition-colors ${
+                        settlePaymentMode === option.value
+                          ? 'border-cyan-300 bg-cyan-50 text-cyan-700'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Submit */}
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={settleLoading}
@@ -913,7 +1066,101 @@ export default function UdhaarPage() {
                   {settleLoading ? 'Processing...' : 'Confirm Payment'}
                 </button>
                 <button type="button"
-                  onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); }}
+                  onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash'); }}
+                  className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                >Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div className={`fixed inset-0 z-[75] transition-opacity duration-300 ${showPartyModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+        <button
+          type="button"
+          onClick={closePartyModal}
+          className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        />
+        <div className={`absolute inset-x-0 bottom-0 rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 md:inset-auto md:top-1/2 md:left-1/2 md:w-[520px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl ${showPartyModal ? 'translate-y-0' : 'translate-y-full md:translate-y-[-40%] md:opacity-0'}`}>
+          <div className="flex justify-center pt-3 pb-1 md:hidden">
+            <div className="w-10 h-1 rounded-full bg-slate-200" />
+          </div>
+          <div className="px-6 pt-5 pb-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                  {partyForm.kind === 'customer' ? 'Customer Ledger Setup' : 'Supplier Ledger Setup'}
+                </p>
+                <h3 className="text-[20px] font-black text-slate-900 mt-0.5">
+                  {partyMode === 'edit' ? 'Edit party details' : `Add ${partyForm.kind}`}
+                </h3>
+                <p className="text-[12px] text-slate-400 mt-1">Opening balance yahin se ledger me carry forward hoga.</p>
+              </div>
+              <button
+                type="button"
+                onClick={closePartyModal}
+                className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+              >✕</button>
+            </div>
+
+            <form onSubmit={handlePartySubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Name *</p>
+                  <input className={INPUT_CLS} value={partyForm.name} onChange={(e) => setPartyForm((current) => ({ ...current, name: e.target.value }))} placeholder={partyForm.kind === 'customer' ? 'Customer name' : 'Supplier name'} required />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Phone</p>
+                  <input className={INPUT_CLS} value={partyForm.phone} onChange={(e) => setPartyForm((current) => ({ ...current, phone: e.target.value }))} placeholder="Mobile number" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">GSTIN</p>
+                  <input className={INPUT_CLS} value={partyForm.gstin} onChange={(e) => setPartyForm((current) => ({ ...current, gstin: e.target.value.toUpperCase() }))} placeholder="GSTIN" maxLength={15} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Opening Balance</p>
+                  <input className={INPUT_CLS} type="number" step="0.01" min="0" value={partyForm.opening_balance} onChange={(e) => setPartyForm((current) => ({ ...current, opening_balance: e.target.value }))} placeholder="0.00" />
+                </div>
+                {partyForm.kind === 'customer' ? (
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Email</p>
+                    <input className={INPUT_CLS} type="email" value={partyForm.email} onChange={(e) => setPartyForm((current) => ({ ...current, email: e.target.value }))} placeholder="customer@email.com" />
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Company</p>
+                    <input className={INPUT_CLS} value={partyForm.companyName} onChange={(e) => setPartyForm((current) => ({ ...current, companyName: e.target.value }))} placeholder="Firm / company name" />
+                  </div>
+                )}
+                {partyForm.kind === 'supplier' && (
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">State</p>
+                    <input className={INPUT_CLS} value={partyForm.state} onChange={(e) => setPartyForm((current) => ({ ...current, state: e.target.value }))} placeholder="State" />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Address</p>
+                <textarea className={`${INPUT_CLS} min-h-[88px] py-3`} value={partyForm.address} onChange={(e) => setPartyForm((current) => ({ ...current, address: e.target.value }))} placeholder="Address" />
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Notes</p>
+                <textarea className={`${INPUT_CLS} min-h-[88px] py-3`} value={partyForm.notes} onChange={(e) => setPartyForm((current) => ({ ...current, notes: e.target.value }))} placeholder="Extra notes / narration" />
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={partySaving}
+                  className="flex-1 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+                >
+                  {partySaving ? 'Saving...' : partyMode === 'edit' ? 'Update Party' : 'Create Party'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closePartyModal}
                   className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                 >Cancel</button>
               </div>
