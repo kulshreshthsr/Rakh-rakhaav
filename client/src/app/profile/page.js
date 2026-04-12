@@ -20,7 +20,7 @@ const GST_STATE_CODE_MAP = {
 
 const emptyShopForm = {
   name:'', address:'', city:'', state:'', pincode:'', gstin:'',
-  phone:'', email:'', bank_name:'', bank_account:'', bank_ifsc:'', bank_branch:'', terms:'',
+  phone:'', email:'', bank_name:'', bank_account:'', bank_ifsc:'', bank_branch:'', owner_photo:'', terms:'',
 };
 
 const normalizeGstin = (value = '') => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, GSTIN_LENGTH);
@@ -86,6 +86,7 @@ export default function ProfilePage() {
   const [shopMsg,    setShopMsg]    = useState('');
   const [shopError,  setShopError]  = useState('');
   const [savingShop, setSavingShop] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const router = useRouter();
 
   /* ── NEW: track which section is "dirty" so save button highlights ── */
@@ -107,6 +108,7 @@ export default function ProfilePage() {
       bank_account: data?.bank_account || '',
       bank_ifsc:    data?.bank_ifsc    || '',
       bank_branch:  data?.bank_branch  || '',
+      owner_photo:  data?.owner_photo  || '',
       terms:        data?.terms        || '',
     });
     setIsDirty(false);
@@ -169,6 +171,42 @@ export default function ProfilePage() {
 
   const resetShopForm = () => { loadShopIntoForm(shop || emptyShopForm); setShopMsg(''); setShopError(''); };
 
+  const handleOwnerPhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setShopError('Please select an image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setShopError('Photo size should be 5MB or less.');
+      return;
+    }
+
+    setPhotoUploading(true);
+    setShopError('');
+    setShopMsg('');
+
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('Image read failed'));
+        reader.readAsDataURL(file);
+      });
+
+      patch({ owner_photo: dataUrl });
+      setShopMsg('Photo selected. Save changes to update dashboard.');
+    } catch {
+      setShopError('Photo upload nahi ho paaya.');
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   /* ── Profile completeness (NEW) ── */
   const completeness = useMemo(() => {
     const fields = [shopForm.name, shopForm.phone, shopForm.gstin, shopForm.state, shopForm.address, shopForm.bank_name, shopForm.bank_account, shopForm.bank_ifsc];
@@ -195,9 +233,17 @@ export default function ProfilePage() {
 
             <div className="relative flex items-start gap-4">
               {/* Avatar */}
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[22px] shadow-lg flex-shrink-0`}>
-                {user?.name?.charAt(0)?.toUpperCase() || '?'}
-              </div>
+              {shopForm.owner_photo ? (
+                <img
+                  src={shopForm.owner_photo}
+                  alt={user?.name || 'Shopkeeper'}
+                  className="w-16 h-16 rounded-2xl object-cover shadow-lg flex-shrink-0 border border-white/60"
+                />
+              ) : (
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[22px] shadow-lg flex-shrink-0`}>
+                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
 
               {/* Info */}
               <div className="flex-1 min-w-0">
@@ -294,6 +340,38 @@ export default function ProfilePage() {
 
             {/* ══ SHOP DETAILS ════════════════════════════════════ */}
             <Section icon="🏪" title="Shop Details" subtitle="GST, billing identity और printed invoice information">
+
+              <Field label="Shopkeeper Photo" hint="Dashboard ke Namaste card par yahi photo dikhegi">
+                <div className="flex items-center gap-4 flex-wrap">
+                  {shopForm.owner_photo ? (
+                    <img
+                      src={shopForm.owner_photo}
+                      alt={user?.name || 'Shopkeeper'}
+                      className="w-20 h-20 rounded-2xl object-cover border border-slate-200 shadow-sm"
+                    />
+                  ) : (
+                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[28px] shadow-sm`}>
+                      {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-2">
+                    <label className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-bold cursor-pointer hover:bg-slate-800 transition-colors">
+                      {photoUploading ? 'Uploading...' : 'Upload Photo'}
+                      <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={handleOwnerPhotoChange} />
+                    </label>
+                    {shopForm.owner_photo && (
+                      <button
+                        type="button"
+                        onClick={() => patch({ owner_photo: '' })}
+                        className="px-4 py-2 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-600 bg-white hover:bg-slate-50 transition-colors"
+                      >
+                        Remove Photo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Field>
 
               {/* Shop name */}
               <Field label="Shop Name" required>

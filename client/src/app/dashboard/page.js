@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shopName, setShopName] = useState('');
+  const [ownerPhoto, setOwnerPhoto] = useState('');
   const [userName, setUserName] = useState('');
   const [greeting] = useState(getGreeting);
   const [today]    = useState(getTodayLabel);
@@ -71,6 +72,7 @@ export default function DashboardPage() {
       const shopData = await shopRes.json();
       setData(dashData);
       setShopName(shopData.name || 'मेरी दुकान');
+      setOwnerPhoto(shopData.owner_photo || '');
     } catch (err) {
       setData(null);
       setError(err.message || 'Dashboard data load nahi ho paya.');
@@ -152,15 +154,29 @@ export default function DashboardPage() {
           <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-cyan-500/15 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-blue-500/10 blur-2xl" />
 
-          <div className="relative z-10">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{today}</p>
-            <h1 className="text-[22px] font-black text-white leading-tight">
-              {greeting}
-            </h1>
-            {userName && (
-              <p className="text-[14px] text-slate-300 mt-0.5">
-                {userName} — <span className="text-cyan-400 font-bold">{shopName}</span>
-              </p>
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{today}</p>
+              <h1 className="text-[22px] font-black text-white leading-tight">
+                {greeting}
+              </h1>
+              {userName && (
+                <p className="text-[14px] text-slate-300 mt-0.5">
+                  {userName} — <span className="text-cyan-400 font-bold">{shopName}</span>
+                </p>
+              )}
+            </div>
+
+            {ownerPhoto ? (
+              <img
+                src={ownerPhoto}
+                alt={userName || 'Shopkeeper'}
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-white/15 shadow-lg shadow-cyan-500/10 flex-shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white text-[24px] font-black flex-shrink-0">
+                {(userName || shopName || '?').charAt(0).toUpperCase()}
+              </div>
             )}
           </div>
         </div>

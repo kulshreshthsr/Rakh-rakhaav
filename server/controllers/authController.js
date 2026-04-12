@@ -11,6 +11,19 @@ const {
 } = require('../services/subscriptionService');
 
 const AUTH_TOKEN_TTL = '365d';
+const MAX_OWNER_PHOTO_SIZE = 5 * 1024 * 1024;
+
+const isValidOwnerPhoto = (value = '') => {
+  if (!value) return true;
+  if (typeof value !== 'string') return false;
+  if (!/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(value)) return false;
+
+  const base64 = value.split(',')[1] || '';
+  const normalized = base64.replace(/\s/g, '');
+  const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
+  const sizeInBytes = Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
+  return sizeInBytes <= MAX_OWNER_PHOTO_SIZE;
+};
 
 const getOrCreateShop = async (userId) => {
   let shop = await Shop.findOne({ owner: userId });
@@ -107,12 +120,16 @@ const getShop = async (req, res) => {
 };
 
 const updateShop = async (req, res) => {
-  const { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, terms } = req.body;
+  const { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, owner_photo, terms } = req.body;
   try {
+    if (!isValidOwnerPhoto(owner_photo)) {
+      return res.status(400).json({ message: 'Owner photo must be a PNG, JPG, JPEG, or WEBP image up to 5MB.' });
+    }
+
     const shop = await getOrCreateShop(req.user.id);
     const updated = await Shop.findByIdAndUpdate(
       shop._id,
-      { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, terms },
+      { name, address, city, state, pincode, gstin, phone, email, bank_name, bank_account, bank_ifsc, bank_branch, owner_photo, terms },
       { new: true }
     );
     res.json(updated);
