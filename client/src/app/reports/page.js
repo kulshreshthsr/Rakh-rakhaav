@@ -2,61 +2,129 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import { ActionButton, Card, DataRow, StatCard, StatusBadge } from '../../components/ui/AppUI';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 
+/* ─── Helpers (ALL UNCHANGED) ───────────────────────────────────── */
 const getToken = () => localStorage.getItem('token');
 const REPORTS_CACHE_PREFIX = 'reports-page-v1';
-const fmt = (n) => parseFloat(n || 0).toFixed(2);
+const fmt  = (n) => parseFloat(n || 0).toFixed(2);
 const fmtN = (n) => new Intl.NumberFormat('en-IN').format(Math.round(n || 0));
-const formatShortReportDate = (value) => new Intl.DateTimeFormat('en-IN', {
-  day: 'numeric',
-  month: 'short',
-}).format(new Date(value));
+const formatShortReportDate = (value) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(value));
 const getReportsCacheKey = (filter) => `${REPORTS_CACHE_PREFIX}:${filter}`;
 
 const getRange = (filter) => {
-  const now = new Date();
+  const now   = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  if (filter === 'today') {
-    return {
-      from: today.toISOString(),
-      to: new Date(today.getTime() + 86400000 - 1).toISOString(),
-      label: 'Today',
-    };
-  }
+  if (filter === 'today') return { from: today.toISOString(), to: new Date(today.getTime() + 86400000 - 1).toISOString(), label: 'Today' };
   if (filter === 'week') {
-    const start = new Date(today);
-    start.setDate(today.getDate() - today.getDay());
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(today); start.setDate(today.getDate() - today.getDay());
+    const end   = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999);
     return { from: start.toISOString(), to: end.toISOString(), label: 'This Week' };
   }
   if (filter === 'month') {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
     return { from: start.toISOString(), to: end.toISOString(), label: 'This Month' };
   }
   return { from: null, to: null, label: 'All Time' };
 };
 
+/* ─── Tiny icon ─────────────────────────────────────────────────── */
+function Icon({ name, size = 16 }) {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  const icons = {
+    download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+    trend_up: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>,
+    bar:      <><path d="M5 19.5V10.5"/><path d="M12 19.5V5.5"/><path d="M19 19.5V13.5"/><path d="M3.5 19.5h17"/></>,
+    alert:    <><path d="M10.3 3.3 1.5 18a2 2 0 0 0 1.7 3h17.6a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>,
+    gst:      <><path d="M7 4.5h10"/><path d="M7 9.5h10"/><path d="M7 14.5h5"/><path d="M16.5 13v7"/><path d="M13.5 16h6"/><rect x="4" y="3" width="16" height="18" rx="2.5"/></>,
+    users:    <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+    package:  <><path d="M12 3 20 7.5 12 12 4 7.5 12 3Z"/><path d="M4 7.5V16.5L12 21l8-4.5V7.5"/><path d="M12 12v9"/></>,
+    calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></>,
+    rupee:    <><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3a4 4 0 0 0 0-8"/></>,
+  };
+  return <svg {...p}>{icons[name]}</svg>;
+}
+
+/* ─── Reusable section card ─────────────────────────────────────── */
+function SectionCard({ title, eyebrow, badge, action, children, accentColor = '#06b6d4' }) {
+  return (
+    <div className="card" style={{ borderRadius: 22, padding: '22px 20px', position: 'relative', overflow: 'hidden' }}>
+      {/* Top accent line */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: accentColor, borderRadius: '22px 22px 0 0' }} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+        <div>
+          {eyebrow && <p className="rr-page-eyebrow" style={{ marginBottom: 4 }}>{eyebrow}</p>}
+          <h2 className="section-title" style={{ fontSize: 16 }}>{title}</h2>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {badge && <span className="badge">{badge}</span>}
+          {action}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ─── CSV export button ─────────────────────────────────────────── */
+function CsvBtn({ onClick, label = 'CSV' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="btn-ghost"
+      style={{ minHeight: 34, padding: '0 12px', fontSize: 12, borderRadius: 10, gap: 6 }}
+    >
+      <Icon name="download" size={13} />
+      {label}
+    </button>
+  );
+}
+
+/* ─── Metric mini-card ──────────────────────────────────────────── */
+function KpiCard({ label, value, sub, barColor, valueColor, icon, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="metric-card"
+      style={{ cursor: onClick ? 'pointer' : 'default', textAlign: 'left', background: 'none', border: 'none', padding: 0, borderRadius: 20, overflow: 'hidden', width: '100%' }}
+    >
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: barColor, borderRadius: '20px 20px 0 0' }} />
+      <div style={{ padding: '18px 16px 14px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <p className="metric-label" style={{ marginTop: 2 }}>{label}</p>
+          {icon && (
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(100,116,139,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+              <Icon name={icon} size={15} />
+            </div>
+          )}
+        </div>
+        <p className="metric-value" style={{ color: valueColor, fontSize: 24 }}>{value}</p>
+        {sub && <p className="page-subtitle" style={{ marginTop: 8, fontSize: 11 }}>{sub}</p>}
+      </div>
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN PAGE
+═══════════════════════════════════════════════════════════════════ */
 export default function ReportsPage() {
   const router = useRouter();
-  const [filter, setFilter] = useState('month');
-  const [loading, setLoading] = useState(false);
-  const [sales, setSales] = useState([]);
-  const [purchases, setPurchases] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [summary, setSummary] = useState({});
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
-  const [cacheLoaded, setCacheLoaded] = useState(false);
+  const [filter,       setFilter]       = useState('month');
+  const [loading,      setLoading]      = useState(false);
+  const [sales,        setSales]        = useState([]);
+  const [purchases,    setPurchases]    = useState([]);
+  const [customers,    setCustomers]    = useState([]);
+  const [summary,      setSummary]      = useState({});
+  const [isOnline,     setIsOnline]     = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [cacheLoaded,  setCacheLoaded]  = useState(false);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
+  /* ── ALL LOGIC UNCHANGED ── */
   const applyCachedSnapshot = (cached) => {
     setSales(cached?.sales || []);
     setPurchases(cached?.purchases || []);
@@ -70,8 +138,7 @@ export default function ReportsPage() {
     setLoading(!hasCachedSnapshot);
     const { from, to } = getRange(filter);
     const headers = { Authorization: `Bearer ${getToken()}` };
-    const params = from ? `?from=${from}&to=${to}` : '';
-
+    const params  = from ? `?from=${from}&to=${to}` : '';
     try {
       const [sRes, pRes, cRes, profitRes] = await Promise.all([
         fetch(apiUrl(`/api/sales${params}`), { headers }),
@@ -79,118 +146,63 @@ export default function ReportsPage() {
         fetch(apiUrl('/api/customers'), { headers }),
         fetch(apiUrl(`/api/sales/profit-summary${params}`), { headers }),
       ]);
-
-      if ([sRes.status, pRes.status, cRes.status, profitRes.status].includes(401)) {
-        router.push('/login');
-        return;
-      }
-
-      const sData = sRes.ok ? await sRes.json() : { sales: [] };
-      const pData = pRes.ok ? await pRes.json() : { purchases: [] };
-      const cData = cRes.ok ? await cRes.json() : [];
+      if ([sRes.status, pRes.status, cRes.status, profitRes.status].includes(401)) { router.push('/login'); return; }
+      const sData      = sRes.ok      ? await sRes.json()      : { sales: [] };
+      const pData      = pRes.ok      ? await pRes.json()      : { purchases: [] };
+      const cData      = cRes.ok      ? await cRes.json()      : [];
       const profitData = profitRes.ok ? await profitRes.json() : {};
-
-      const salesList = sData.sales || (Array.isArray(sData) ? sData : []);
-      const purchasesList = pData.purchases || (Array.isArray(pData) ? pData : []);
-      const customersList = Array.isArray(cData) ? cData : [];
-
-      setSales(salesList);
-      setPurchases(purchasesList);
-      setCustomers(customersList);
-
-      const totalRevenue = profitData.totalRevenue ?? salesList.reduce((s, x) => s + (x.total_amount || 0), 0);
-      const totalGST = profitData.gstCollected ?? salesList.reduce((s, x) => s + (x.total_gst || 0), 0);
-      const grossProfit = profitData.grossProfit ?? salesList.reduce((s, x) => s + (x.gross_profit || 0), 0);
-      const totalPurchase = profitData.totalSpent ?? purchasesList.reduce((s, x) => s + (x.total_amount || 0), 0);
-      const totalITC = profitData.gstITC ?? purchasesList.reduce((s, x) => s + (x.total_gst || 0), 0);
-      const totalUdhaar = customersList.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
-      const taxableRev = profitData.totalTaxable ?? (totalRevenue - totalGST);
-      const margin = taxableRev > 0 ? ((grossProfit / taxableRev) * 100) : 0;
-
-      const nextSummary = {
-        totalRevenue,
-        totalGST,
-        grossProfit,
-        totalPurchase,
-        totalITC,
-        totalUdhaar,
-        margin,
-        salesCount: profitData.salesCount ?? salesList.length,
-        netGST: profitData.netGSTPayable ?? (totalGST - totalITC),
-      };
-
+      const salesList      = sData.sales      || (Array.isArray(sData) ? sData : []);
+      const purchasesList  = pData.purchases  || (Array.isArray(pData) ? pData : []);
+      const customersList  = Array.isArray(cData) ? cData : [];
+      setSales(salesList); setPurchases(purchasesList); setCustomers(customersList);
+      const totalRevenue  = profitData.totalRevenue  ?? salesList.reduce((s, x) => s + (x.total_amount || 0), 0);
+      const totalGST      = profitData.gstCollected  ?? salesList.reduce((s, x) => s + (x.total_gst || 0), 0);
+      const grossProfit   = profitData.grossProfit   ?? salesList.reduce((s, x) => s + (x.gross_profit || 0), 0);
+      const totalPurchase = profitData.totalSpent    ?? purchasesList.reduce((s, x) => s + (x.total_amount || 0), 0);
+      const totalITC      = profitData.gstITC        ?? purchasesList.reduce((s, x) => s + (x.total_gst || 0), 0);
+      const totalUdhaar   = customersList.reduce((s, c) => s + (c.totalUdhaar || 0), 0);
+      const taxableRev    = profitData.totalTaxable  ?? (totalRevenue - totalGST);
+      const margin        = taxableRev > 0 ? ((grossProfit / taxableRev) * 100) : 0;
+      const nextSummary   = { totalRevenue, totalGST, grossProfit, totalPurchase, totalITC, totalUdhaar, margin, salesCount: profitData.salesCount ?? salesList.length, netGST: profitData.netGSTPayable ?? (totalGST - totalITC) };
       setSummary(nextSummary);
-      writePageCache(getReportsCacheKey(filter), {
-        sales: salesList,
-        purchases: purchasesList,
-        customers: customersList,
-        summary: nextSummary,
-      });
+      writePageCache(getReportsCacheKey(filter), { sales: salesList, purchases: purchasesList, customers: customersList, summary: nextSummary });
       setCacheUpdatedAt(new Date().toISOString());
       setCacheLoaded(true);
     } catch (err) {
       console.error(err);
-      if (!hasCachedSnapshot) {
-        setSales([]);
-        setPurchases([]);
-        setCustomers([]);
-        setSummary({});
-      }
+      if (!hasCachedSnapshot) { setSales([]); setPurchases([]); setCustomers([]); setSummary({}); }
     }
     setLoading(false);
   };
 
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(getReportsCacheKey(filter));
-    if (cached) {
-      applyCachedSnapshot(cached);
-      setLoading(false);
-    } else {
-      setCacheLoaded(false);
-      setLoading(true);
-    }
-
+    if (cached) { applyCachedSnapshot(cached); setLoading(false); } else { setCacheLoaded(false); setLoading(true); }
     const deferredId = scheduleDeferred(() => fetchAll(Boolean(cached)));
     return () => cancelDeferred(deferredId);
   }, [filter, router]);
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    if (typeof window === 'undefined') return;
+    const on  = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener('online', on); window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
+  /* ── Derived data (ALL UNCHANGED) ── */
   const topProducts = (() => {
     const map = {};
     sales.forEach((sale) => {
-      const items = sale.items?.length > 0 ? sale.items : [{
-        product_name: sale.product_name,
-        quantity: sale.quantity || 0,
-        total_amount: sale.total_amount || 0,
-        gross_profit: sale.gross_profit || 0,
-        taxable_amount: sale.taxable_amount || 0,
-        cost_price: sale.cost_price || 0,
-      }];
+      const items = sale.items?.length > 0 ? sale.items : [{ product_name: sale.product_name, quantity: sale.quantity || 0, total_amount: sale.total_amount || 0, gross_profit: sale.gross_profit || 0, taxable_amount: sale.taxable_amount || 0, cost_price: sale.cost_price || 0 }];
       items.forEach((item) => {
-        const key = item.product_name;
-        if (!key) return;
+        const key = item.product_name; if (!key) return;
         if (!map[key]) map[key] = { name: key, qty: 0, revenue: 0, profit: 0, count: 0 };
-        const itemProfit = item.gross_profit != null
-          ? item.gross_profit
-          : (item.taxable_amount || 0) - ((item.cost_price || 0) * (item.quantity || 0));
-        map[key].qty += item.quantity || 0;
-        map[key].revenue += item.total_amount || 0;
-        map[key].profit += itemProfit || 0;
-        map[key].count += 1;
+        const itemProfit = item.gross_profit != null ? item.gross_profit : (item.taxable_amount || 0) - ((item.cost_price || 0) * (item.quantity || 0));
+        map[key].qty += item.quantity || 0; map[key].revenue += item.total_amount || 0; map[key].profit += itemProfit || 0; map[key].count += 1;
       });
     });
     return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
@@ -202,246 +214,283 @@ export default function ReportsPage() {
       if (!sale.buyer_name || sale.buyer_name === 'Walk-in Customer') return;
       const key = sale.buyer_name;
       if (!map[key]) map[key] = { name: key, phone: sale.buyer_phone || '', revenue: 0, count: 0, udhaar: 0 };
-      map[key].revenue += sale.total_amount || 0;
-      map[key].count += 1;
+      map[key].revenue += sale.total_amount || 0; map[key].count += 1;
     });
-    customers.forEach((customer) => {
-      if (map[customer.name]) map[customer.name].udhaar = customer.totalUdhaar || 0;
-    });
+    customers.forEach((c) => { if (map[c.name]) map[c.name].udhaar = c.totalUdhaar || 0; });
     return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
   })();
 
   const dailySales = (() => {
     const map = {};
     sales.forEach((sale) => {
-      const sourceDate = sale.createdAt || sale.sold_at;
-      const dateKey = new Date(sourceDate).toISOString().slice(0, 10);
-      if (!map[dateKey]) {
-        map[dateKey] = {
-          date: formatShortReportDate(sourceDate),
-          sortValue: new Date(sourceDate).getTime(),
-          revenue: 0,
-          profit: 0,
-          count: 0,
-        };
-      }
-      map[dateKey].revenue += sale.total_amount || 0;
-      map[dateKey].profit += sale.gross_profit || 0;
-      map[dateKey].count += 1;
+      const src     = sale.createdAt || sale.sold_at;
+      const dateKey = new Date(src).toISOString().slice(0, 10);
+      if (!map[dateKey]) map[dateKey] = { date: formatShortReportDate(src), sortValue: new Date(src).getTime(), revenue: 0, profit: 0, count: 0 };
+      map[dateKey].revenue += sale.total_amount || 0; map[dateKey].profit += sale.gross_profit || 0; map[dateKey].count += 1;
     });
     return Object.values(map).sort((a, b) => b.sortValue - a.sortValue);
   })();
 
   const exportCSV = (type) => {
     const { label } = getRange(filter);
-    let rows = [];
-    let filename = '';
-
+    let rows = []; let filename = '';
     if (type === 'sales') {
-      rows = [
-        [`Sales Report - ${label}`],
-        ['Invoice No', 'Date', 'Product', 'Buyer', 'Taxable', 'GST', 'Total', 'Profit', 'Payment'],
-        ...sales.map((sale) => [
-          sale.invoice_number,
-          new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN'),
-          sale.items?.length > 1 ? `${sale.items.length} items` : sale.product_name,
-          sale.buyer_name || 'Walk-in',
-          fmt(sale.taxable_amount),
-          fmt(sale.total_gst),
-          fmt(sale.total_amount),
-          fmt(sale.gross_profit),
-          sale.payment_type,
-        ]),
-      ];
+      rows = [['Sales Report - ' + label], ['Invoice No','Date','Product','Buyer','Taxable','GST','Total','Profit','Payment'], ...sales.map((s) => [s.invoice_number, new Date(s.createdAt || s.sold_at).toLocaleDateString('en-IN'), s.items?.length > 1 ? `${s.items.length} items` : s.product_name, s.buyer_name || 'Walk-in', fmt(s.taxable_amount), fmt(s.total_gst), fmt(s.total_amount), fmt(s.gross_profit), s.payment_type])];
       filename = `Sales_Report_${label.replace(' ', '_')}.csv`;
     }
-
     if (type === 'profit') {
-      rows = [
-        [`Profit Report - ${label}`],
-        ['Metric', 'Amount'],
-        ['Total Revenue', `₹${fmt(summary.totalRevenue)}`],
-        ['Total GST Collected', `₹${fmt(summary.totalGST)}`],
-        ['Net Revenue (Taxable)', `₹${fmt((summary.totalRevenue || 0) - (summary.totalGST || 0))}`],
-        ['Profit', `₹${fmt(summary.grossProfit)}`],
-        ['Profit Margin', `${fmt(summary.margin)}%`],
-        ['Total Purchases', `₹${fmt(summary.totalPurchase)}`],
-        ['GST Input Credit (ITC)', `₹${fmt(summary.totalITC)}`],
-        ['Net GST Payable', `₹${fmt(summary.netGST)}`],
-      ];
+      rows = [['Profit Report - ' + label], ['Metric','Amount'], ['Total Revenue', `₹${fmt(summary.totalRevenue)}`], ['Total GST Collected', `₹${fmt(summary.totalGST)}`], ['Net Revenue (Taxable)', `₹${fmt((summary.totalRevenue || 0) - (summary.totalGST || 0))}`], ['Profit', `₹${fmt(summary.grossProfit)}`], ['Profit Margin', `${fmt(summary.margin)}%`], ['Total Purchases', `₹${fmt(summary.totalPurchase)}`], ['GST Input Credit (ITC)', `₹${fmt(summary.totalITC)}`], ['Net GST Payable', `₹${fmt(summary.netGST)}`]];
       filename = `Profit_Report_${label.replace(' ', '_')}.csv`;
     }
-
     if (type === 'products') {
-      rows = [
-        [`Top Products - ${label}`],
-        ['Product', 'Units Sold', 'Revenue', 'Profit', 'Orders'],
-        ...topProducts.map((product) => [product.name, product.qty, fmt(product.revenue), fmt(product.profit), product.count]),
-      ];
+      rows = [['Top Products - ' + label], ['Product','Units Sold','Revenue','Profit','Orders'], ...topProducts.map((p) => [p.name, p.qty, fmt(p.revenue), fmt(p.profit), p.count])];
       filename = `Top_Products_${label.replace(' ', '_')}.csv`;
     }
-
     if (type === 'customers') {
-      rows = [
-        [`Top Customers - ${label}`],
-        ['Customer', 'Phone', 'Orders', 'Total Spent', 'Udhaar Pending'],
-        ...topCustomers.map((customer) => [customer.name, customer.phone, customer.count, fmt(customer.revenue), fmt(customer.udhaar)]),
-      ];
+      rows = [['Top Customers - ' + label], ['Customer','Phone','Orders','Total Spent','Udhaar Pending'], ...topCustomers.map((c) => [c.name, c.phone, c.count, fmt(c.revenue), fmt(c.udhaar)])];
       filename = `Top_Customers_${label.replace(' ', '_')}.csv`;
     }
-
-    const csv = rows.map((row) => row.map((value) => `"${value}"`).join(',')).join('\n');
+    const csv  = rows.map((row) => row.map((v) => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a'); a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   };
 
+  /* ── Derived display values ── */
   const { label } = getRange(filter);
-  const marginTextClass = summary.margin >= 20 ? 'text-green-500' : summary.margin >= 10 ? 'text-amber-500' : 'text-red-500';
-  const marginBarClass = summary.margin >= 20 ? 'bg-green-500' : summary.margin >= 10 ? 'bg-amber-500' : 'bg-red-500';
-  const summaryMarginPct = Math.min(100, Math.abs(summary.margin || 0));
-  const summaryMarginWidthClass = summaryMarginPct >= 100 ? 'w-full'
-    : summaryMarginPct >= 90 ? 'w-[90%]'
-      : summaryMarginPct >= 80 ? 'w-[80%]'
-        : summaryMarginPct >= 70 ? 'w-[70%]'
-          : summaryMarginPct >= 60 ? 'w-[60%]'
-            : summaryMarginPct >= 50 ? 'w-1/2'
-              : summaryMarginPct >= 40 ? 'w-[40%]'
-                : summaryMarginPct >= 30 ? 'w-[30%]'
-                  : summaryMarginPct >= 20 ? 'w-1/5'
-                    : summaryMarginPct >= 10 ? 'w-[10%]'
-                      : summaryMarginPct > 0 ? 'w-[5%]'
-                        : 'w-0';
-  const cacheLabel = cacheUpdatedAt
-    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
-  const reportFilters = [
+  const marginPct   = Math.min(100, Math.abs(summary.margin || 0));
+  const marginColor = summary.margin >= 20 ? '#10b981' : summary.margin >= 10 ? '#f59e0b' : '#f43f5e';
+  const cacheLabel  = cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+
+  const FILTERS = [
     { val: 'today', label: 'Today' },
-    { val: 'week', label: 'Week' },
+    { val: 'week',  label: 'Week'  },
     { val: 'month', label: 'Month' },
   ];
 
+  /* ── Rank gradient backgrounds ── */
+  const rankBg = [
+    'linear-gradient(135deg,#06b6d4,#6366f1)',
+    'linear-gradient(135deg,#10b981,#06b6d4)',
+    'linear-gradient(135deg,#f59e0b,#f97316)',
+    'linear-gradient(135deg,#8b5cf6,#ec4899)',
+    'linear-gradient(135deg,#64748b,#475569)',
+  ];
+
+  /* ════════════════════════════════════════════════════════════════
+     RENDER
+  ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
       <div className="page-shell reports-shell">
-        <section className="hero-panel reports-hero">
-          <div className="mb-1 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
+
+        {/* ── OFFLINE BANNER ── */}
+        {!isOnline && (
+          <div className="rr-banner-warn" role="status">
+            <strong>Offline reports view</strong>
+            Saved snapshot dikh raha hai{cacheLabel ? ` · last updated ${cacheLabel}` : ''}. Internet aane par fresh data load hoga.
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════
+            HERO
+        ══════════════════════════════════════════════════════════ */}
+        <div className="hero-panel reports-hero">
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            {/* Left */}
+            <div style={{ flex: 1, minWidth: 0 }}>
               <p className="rr-page-eyebrow">Business analytics</p>
-              <div className="page-title">Reports / हिसाब</div>
-              <p className="mt-2 max-w-md text-[13px] leading-relaxed text-slate-600">
+              <h1 className="page-title" style={{ marginTop: 6 }}>Reports / हिसाब</h1>
+              <p style={{ marginTop: 8, fontSize: 13, color: '#475569', lineHeight: 1.6, maxWidth: 440 }}>
                 {label.toLowerCase()} ke liye revenue, profit, GST aur customer trends ek clean view mein.
               </p>
               {!isOnline ? (
-                <p className="rr-meta-line is-warn mt-2">
-                  Offline snapshot active{cacheLabel ? ` · last updated ${cacheLabel}` : ''}
-                </p>
+                <p className="rr-meta-line is-warn" style={{ marginTop: 8 }}>Offline snapshot · {cacheLabel || 'no network'}</p>
               ) : cacheLoaded && cacheLabel ? (
-                <p className="rr-meta-line mt-2">Last synced {cacheLabel}</p>
+                <p className="rr-meta-line" style={{ marginTop: 8 }}>
+                  <span className="status-dot is-green" style={{ marginRight: 6 }} />
+                  Last synced {cacheLabel}
+                </p>
               ) : null}
             </div>
-            <div className="filter-pills reports-filter-pills shrink-0">
-              {reportFilters.map((option) => (
+
+            {/* Period filter pills */}
+            <div
+              className="reports-filter-pills"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 5, borderRadius: 14, background: 'rgba(241,245,249,0.95)', border: '1px solid rgba(148,163,184,0.32)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75)', flexShrink: 0 }}
+            >
+              {FILTERS.map((f) => (
                 <button
-                  key={option.val}
+                  key={f.val}
                   type="button"
-                  onClick={() => setFilter(option.val)}
-                  className={`filter-pill${filter === option.val ? ' is-active' : ''}`}
+                  onClick={() => setFilter(f.val)}
+                  style={{
+                    border: 0, cursor: 'pointer', padding: '8px 18px', borderRadius: 10,
+                    fontSize: 13, fontWeight: 700,
+                    color: filter === f.val ? '#0c1222' : '#64748b',
+                    background: filter === f.val ? '#ffffff' : 'transparent',
+                    boxShadow: filter === f.val ? '0 2px 10px rgba(15,23,42,0.08), 0 0 0 1px rgba(13,148,136,0.12)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
-                  {option.label}
+                  {f.label}
                 </button>
               ))}
             </div>
           </div>
-        </section>
+        </div>
 
-        {!isOnline ? (
-          <div className="rr-banner-warn" role="status">
-            <strong>Offline reports view</strong>
-            <div>
-              Reports offline snapshot dikh raha hai. Fresh server data internet aane par update hoga.
-            </div>
+        {/* ══════════════════════════════════════════════════════════
+            KPI STRIP — 4 cards
+        ══════════════════════════════════════════════════════════ */}
+        {!loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12 }}>
+            <KpiCard
+              label="Revenue"
+              value={`₹${fmtN(summary.totalRevenue)}`}
+              sub={`${summary.salesCount || 0} invoices`}
+              barColor="linear-gradient(90deg,#06b6d4,#6366f1)"
+              valueColor="#0e7490"
+              icon="rupee"
+            />
+            <KpiCard
+              label="Profit"
+              value={`₹${fmtN(summary.grossProfit)}`}
+              sub={`Margin ${fmt(summary.margin)}%`}
+              barColor={summary.grossProfit >= 0 ? 'linear-gradient(90deg,#10b981,#06b6d4)' : 'linear-gradient(90deg,#f43f5e,#fb923c)'}
+              valueColor={summary.grossProfit >= 0 ? '#065f46' : '#9f1239'}
+              icon="trend_up"
+            />
+            <KpiCard
+              label="GST Payable"
+              value={`₹${fmtN(summary.netGST)}`}
+              sub={`ITC ₹${fmtN(summary.totalITC)}`}
+              barColor="linear-gradient(90deg,#f59e0b,#f97316)"
+              valueColor="#92400e"
+              icon="gst"
+            />
+            <KpiCard
+              label="Udhaar Pending"
+              value={`₹${fmtN(summary.totalUdhaar)}`}
+              sub="Collection बाकी"
+              barColor={summary.totalUdhaar > 0 ? 'linear-gradient(90deg,#f43f5e,#fb7185)' : 'linear-gradient(90deg,#10b981,#34d399)'}
+              valueColor={summary.totalUdhaar > 0 ? '#9f1239' : '#065f46'}
+              icon="users"
+            />
           </div>
-        ) : null}
+        )}
 
-        {!loading ? (
-          <section className="metric-grid reports-stats-grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
-            <StatCard label="Revenue" value={`₹${fmtN(summary.totalRevenue)}`} note={`${summary.salesCount || 0} invoices`} tone="money" />
-            <StatCard label="Profit" value={`₹${fmtN(summary.grossProfit)}`} note={`Margin ${fmt(summary.margin)}%`} tone={summary.grossProfit >= 0 ? 'secondary' : 'danger'} />
-            <StatCard label="GST Payable" value={`₹${fmtN(summary.netGST)}`} note={`ITC ₹${fmtN(summary.totalITC)}`} tone="warning" />
-            <StatCard label="Udhaar" value={`₹${fmtN(summary.totalUdhaar)}`} note="Pending collection" tone="danger" />
-          </section>
-        ) : null}
-
-        {loading ? (
-          <div className="ui-empty">
-            <div className="mb-3 text-[32px]">Loading</div>
-            <div>Reports are loading...</div>
+        {/* Loading state */}
+        {loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12 }}>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 110, borderRadius: 20 }} />
+            ))}
           </div>
-        ) : (
+        )}
+
+        {!loading && (
           <>
-            <Card
-              className="reports-profit-card"
+            {/* ══════════════════════════════════════════════════════
+                PROFIT BREAKDOWN — full width premium card
+            ══════════════════════════════════════════════════════ */}
+            <SectionCard
               title="Profit Breakdown"
-              subtitle="Revenue, GST and profit in one clear stack"
-              actions={<ActionButton variant="secondary" onClick={() => exportCSV('profit')}>CSV Download</ActionButton>}
+              eyebrow={`${label} · Financial Summary`}
+              accentColor="linear-gradient(90deg,#10b981,#06b6d4)"
+              action={<CsvBtn onClick={() => exportCSV('profit')} label="Export CSV" />}
             >
-              <DataRow label="Total Revenue" value={`₹${fmtN(summary.totalRevenue)}`} valueTone="ui-value-money" />
-              <DataRow label="GST Collected" note="Tax collected on behalf of the government" prefix="-" value={`₹${fmtN(summary.totalGST)}`} valueTone="ui-value-secondary" />
-              <DataRow label="Taxable Revenue (Revenue - GST)" prefix="=" value={`₹${fmtN((summary.totalRevenue || 0) - (summary.totalGST || 0))}`} />
-              <DataRow label="Profit" prefix="=" value={`₹${fmtN(summary.grossProfit)}`} valueTone={summary.grossProfit >= 0 ? 'ui-value-money' : 'ui-value-danger'} tone={summary.grossProfit >= 0 ? 'success' : 'danger'} />
-
-              {(summary.totalRevenue || 0) > 0 && (
-                <div className="mt-4">
-                  <div className="mb-2 flex justify-between gap-3 text-[12px] text-slate-500">
-                    <span>Profit Margin</span>
-                    <strong className={marginTextClass}>{fmt(summary.margin)}%</strong>
+              {/* Two-column breakdown grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                {[
+                  { l: 'Total Revenue',    v: summary.totalRevenue,                                      color: '#0e7490',  bg: '#ecfeff' },
+                  { l: 'GST Collected',    v: summary.totalGST,                                          color: '#92400e',  bg: '#fffbeb' },
+                  { l: 'Taxable Revenue',  v: (summary.totalRevenue || 0) - (summary.totalGST || 0),     color: '#1e40af',  bg: '#eff6ff' },
+                  { l: 'Gross Profit',     v: summary.grossProfit,                                        color: summary.grossProfit >= 0 ? '#065f46' : '#9f1239', bg: summary.grossProfit >= 0 ? '#f0fdf4' : '#fff1f2' },
+                  { l: 'Total Purchase',   v: summary.totalPurchase,                                     color: '#6d28d9',  bg: '#f5f3ff' },
+                  { l: 'Input Tax Credit', v: summary.totalITC,                                          color: '#0891b2',  bg: '#ecfeff' },
+                ].map(item => (
+                  <div
+                    key={item.l}
+                    className="dashboard-breakdown-card"
+                    style={{ borderRadius: 14, padding: '14px 14px', background: item.bg, border: `1px solid ${item.bg}` }}
+                  >
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', margin: 0 }}>{item.l}</p>
+                    <p style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.05em', color: item.color, margin: '8px 0 0' }}>₹{fmtN(item.v)}</p>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-400/15">
-                    <div className={`h-full rounded-full ${summaryMarginWidthClass} ${marginBarClass}`} />
+                ))}
+              </div>
+
+              {/* Margin progress bar */}
+              {(summary.totalRevenue || 0) > 0 && (
+                <div style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(241,245,249,0.8)', border: '1px solid rgba(148,163,184,0.2)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, marginBottom: 10 }}>
+                    <span style={{ color: '#475569', fontWeight: 600 }}>Profit Margin Progress</span>
+                    <strong style={{ color: marginColor, fontSize: 15 }}>{fmt(summary.margin)}%</strong>
+                  </div>
+                  <div style={{ height: 10, borderRadius: 99, background: 'rgba(148,163,184,0.2)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: 99, width: `${marginPct}%`, background: `linear-gradient(90deg,${marginColor},${marginColor}aa)`, transition: 'width 600ms ease' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
+                    <span>0%</span>
+                    <span style={{ color: marginColor, fontWeight: 700 }}>
+                      {summary.margin >= 20 ? '✓ Healthy margin' : summary.margin >= 10 ? '⚡ Improving' : '↗ Needs attention'}
+                    </span>
+                    <span>100%</span>
                   </div>
                 </div>
               )}
-            </Card>
 
+              {/* Net GST payable highlight */}
+              <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg,#0f172a,#1e293b)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Net GST Payable</p>
+                  <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>GST Collected − Input Tax Credit</p>
+                </div>
+                <p style={{ fontSize: 26, fontWeight: 900, color: '#ffffff', letterSpacing: '-0.05em', margin: 0 }}>₹{fmtN(summary.netGST)}</p>
+              </div>
+            </SectionCard>
+
+            {/* ══════════════════════════════════════════════════════
+                DAILY SALES TABLE
+            ══════════════════════════════════════════════════════ */}
             {dailySales.length > 0 && (
-              <Card
-                title="Daily Sales"
-                actions={<ActionButton variant="secondary" onClick={() => exportCSV('sales')}>Sales CSV</ActionButton>}
+              <SectionCard
+                title="Daily Sales Breakdown"
+                eyebrow={`${label} · Day-by-day`}
+                badge={`${dailySales.length} days`}
+                accentColor="linear-gradient(90deg,#6366f1,#8b5cf6)"
+                action={<CsvBtn onClick={() => exportCSV('sales')} label="Sales CSV" />}
               >
                 <div className="ui-table-wrap">
                   <table className="ui-table">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Orders</th>
+                        <th style={{ width: 90 }}>Date</th>
+                        <th style={{ width: 70 }}>Orders</th>
                         <th>Revenue</th>
                         <th>Profit</th>
-                        <th>Margin</th>
+                        <th style={{ width: 90 }}>Margin</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dailySales.map((day, index) => {
-                        const currentMargin = day.revenue > 0 ? (day.profit / day.revenue) * 100 : 0;
+                      {dailySales.map((day, i) => {
+                        const dm = day.revenue > 0 ? (day.profit / day.revenue) * 100 : 0;
+                        const mc = dm >= 20 ? '#065f46' : dm >= 10 ? '#92400e' : '#9f1239';
+                        const mb = dm >= 20 ? '#ecfdf5' : dm >= 10 ? '#fffbeb' : '#fff1f2';
                         return (
-                          <tr key={index}>
-                            <td>{day.date}</td>
-                            <td>{day.count}</td>
-                            <td className="ui-value-money">₹{fmtN(day.revenue)}</td>
-                            <td className={day.profit >= 0 ? 'ui-value-secondary' : 'ui-value-danger'}>₹{fmtN(day.profit)}</td>
+                          <tr key={i}>
+                            <td style={{ fontWeight: 700, color: '#0f172a' }}>{day.date}</td>
                             <td>
-                              <StatusBadge tone={currentMargin >= 20 ? 'success' : currentMargin >= 10 ? 'warning' : 'danger'}>
-                                {currentMargin.toFixed(1)}%
-                              </StatusBadge>
+                              <span className="badge" style={{ fontSize: 11 }}>{day.count}</span>
+                            </td>
+                            <td style={{ fontWeight: 800, color: '#0e7490' }}>₹{fmtN(day.revenue)}</td>
+                            <td style={{ fontWeight: 800, color: day.profit >= 0 ? '#065f46' : '#9f1239' }}>₹{fmtN(day.profit)}</td>
+                            <td>
+                              <span style={{ padding: '3px 9px', borderRadius: 7, fontSize: 11, fontWeight: 800, background: mb, color: mc }}>
+                                {dm.toFixed(1)}%
+                              </span>
                             </td>
                           </tr>
                         );
@@ -449,70 +498,124 @@ export default function ReportsPage() {
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </SectionCard>
             )}
 
-            <div className="split-grid reports-split-grid mb-5">
-              <Card title="Top Products" actions={<ActionButton variant="secondary" onClick={() => exportCSV('products')}>CSV</ActionButton>}>
+            {/* ══════════════════════════════════════════════════════
+                TWO-COLUMN: Top Products + Top Customers
+            ══════════════════════════════════════════════════════ */}
+            <div
+              className="reports-two-col"
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, alignItems: 'start' }}
+            >
+              {/* Top Products */}
+              <SectionCard
+                title="Top Products"
+                eyebrow={`${label} · Most sold`}
+                badge={topProducts.length > 0 ? `${topProducts.length} items` : null}
+                accentColor="linear-gradient(90deg,#06b6d4,#10b981)"
+                action={<CsvBtn onClick={() => exportCSV('products')} />}
+              >
                 {topProducts.length === 0 ? (
-                  <div className="ui-empty">No data</div>
+                  <div className="empty-state" style={{ padding: '32px 16px' }}>
+                    <div className="empty-state-icon" style={{ fontSize: 28 }}>📦</div>
+                    <p style={{ fontWeight: 700, color: '#334155' }}>No product data</p>
+                    <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi sale nahi mili</p>
+                  </div>
                 ) : (
-                  <div className="stack-list">
-                    {topProducts.map((product, index) => (
-                      <div key={index} className="stack-row">
-                        <div className={`stack-row-rank ${['bg-green-500', 'bg-cyan-500', 'bg-amber-500', 'bg-red-500', 'bg-blue-500'][index % 5]}`}>
-                          {index + 1}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {topProducts.map((p, i) => (
+                      <div
+                        key={i}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 14, background: i === 0 ? 'rgba(6,182,212,0.05)' : 'rgba(241,245,249,0.6)', border: '1px solid rgba(148,163,184,0.18)', transition: 'all 0.15s ease' }}
+                        className="dashboard-top-card"
+                      >
+                        {/* Rank */}
+                        <div style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, background: rankBg[i % rankBg.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#fff', boxShadow: '0 3px 8px rgba(0,0,0,0.15)' }}>
+                          {i + 1}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="stack-row-title truncate whitespace-nowrap">{product.name}</div>
-                          <div className="text-[11px] text-slate-400">{product.qty} units • {product.count} orders</div>
+                        {/* Name + meta */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</p>
+                          <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{p.qty} units · {p.count} orders</p>
                         </div>
-                        <div className="shrink-0 text-right">
-                          <div className="ui-value-money text-[13px]">₹{fmtN(product.revenue)}</div>
-                          <div className="ui-value-secondary text-[11px]">₹{fmtN(product.profit)} profit</div>
+                        {/* Revenue + profit */}
+                        <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                          <p style={{ fontSize: 14, fontWeight: 900, color: '#059669', margin: 0 }}>₹{fmtN(p.revenue)}</p>
+                          <p style={{ fontSize: 11, color: '#0891b2', margin: '2px 0 0' }}>₹{fmtN(p.profit)} profit</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </Card>
+              </SectionCard>
 
-              <Card title="Top Customers" actions={<ActionButton variant="secondary" onClick={() => exportCSV('customers')}>CSV</ActionButton>}>
+              {/* Top Customers */}
+              <SectionCard
+                title="Top Customers"
+                eyebrow={`${label} · Best buyers`}
+                badge={topCustomers.length > 0 ? `${topCustomers.length} customers` : null}
+                accentColor="linear-gradient(90deg,#8b5cf6,#ec4899)"
+                action={<CsvBtn onClick={() => exportCSV('customers')} />}
+              >
                 {topCustomers.length === 0 ? (
-                  <div className="ui-empty">No data</div>
+                  <div className="empty-state" style={{ padding: '32px 16px' }}>
+                    <div className="empty-state-icon" style={{ fontSize: 28 }}>👥</div>
+                    <p style={{ fontWeight: 700, color: '#334155' }}>No customer data</p>
+                    <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi named sale nahi mili</p>
+                  </div>
                 ) : (
-                  <div className="stack-list">
-                    {topCustomers.map((customer, index) => (
-                      <div key={index} className="stack-row">
-                        <div className={`stack-row-rank ${['bg-red-500', 'bg-amber-500', 'bg-green-500', 'bg-cyan-500', 'bg-cyan-600'][index % 5]}`}>
-                          {customer.name.charAt(0).toUpperCase()}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {topCustomers.map((c, i) => (
+                      <div
+                        key={i}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', borderRadius: 14, background: i === 0 ? 'rgba(139,92,246,0.05)' : 'rgba(241,245,249,0.6)', border: '1px solid rgba(148,163,184,0.18)', transition: 'all 0.15s ease' }}
+                        className="dashboard-top-card"
+                      >
+                        {/* Avatar with initial */}
+                        <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: rankBg[i % rankBg.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: '#fff', boxShadow: '0 3px 8px rgba(0,0,0,0.15)' }}>
+                          {c.name.charAt(0).toUpperCase()}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="stack-row-title truncate whitespace-nowrap">{customer.name}</div>
-                          <div className="text-[11px] text-slate-400">{customer.count} orders{customer.phone ? ` • ${customer.phone}` : ''}</div>
+                        {/* Name + meta */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</p>
+                          <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{c.count} orders{c.phone ? ` · ${c.phone}` : ''}</p>
                         </div>
-                        <div className="shrink-0 text-right">
-                          <div className="ui-value-money text-[13px]">₹{fmtN(customer.revenue)}</div>
-                          {customer.udhaar > 0 ? <div className="ui-value-danger text-[11px]">₹{fmtN(customer.udhaar)} due</div> : null}
+                        {/* Revenue + udhaar */}
+                        <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                          <p style={{ fontSize: 14, fontWeight: 900, color: '#059669', margin: 0 }}>₹{fmtN(c.revenue)}</p>
+                          {c.udhaar > 0 && (
+                            <p style={{ fontSize: 11, color: '#e11d48', margin: '2px 0 0' }}>₹{fmtN(c.udhaar)} due</p>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </Card>
+              </SectionCard>
             </div>
 
+            {/* Empty state */}
             {sales.length === 0 && purchases.length === 0 && (
-              <div className="ui-empty">
-                <div className="mb-3 text-[40px]">Chart</div>
-                <div className="mb-1 text-[15px] font-bold">No data</div>
-                <div className="text-[13px]">No sales or purchases found for this period.</div>
+              <div className="empty-state">
+                <div className="empty-state-icon">📊</div>
+                <p style={{ fontWeight: 800, color: '#334155', fontSize: 15, marginBottom: 6 }}>Is period mein koi data nahi</p>
+                <p className="page-subtitle">Sales ya purchases record karo — reports yahan dikhenge</p>
               </div>
             )}
           </>
         )}
       </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .reports-two-col { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 640px) {
+          .reports-two-col { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .reports-kpi-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
+      `}</style>
     </Layout>
   );
 }
-
