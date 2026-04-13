@@ -650,7 +650,6 @@ export default function GSTPage() {
                   <div className="flex flex-wrap gap-2">
                     <ExportBtn onClick={() => exportCSV('gstr1')} variant="primary">📄 GSTR-1 CSV</ExportBtn>
                     <ExportBtn onClick={() => exportCSV('gstr3b')} variant="blue">📄 GSTR-3B CSV</ExportBtn>
-                    <ExportBtn onClick={exportJSON} variant="dark">{ }</ExportBtn>
                     <ExportBtn onClick={exportJSON} variant="dark">🗂 JSON</ExportBtn>
                   </div>
                 </div>
