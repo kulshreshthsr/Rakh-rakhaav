@@ -20,9 +20,9 @@ export default function AppSplash() {
     if (!visible) return undefined;
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const showFor = reducedMotion ? 700 : 1450;
+    const showFor = reducedMotion ? 120 : 260;
     const closeTimer = window.setTimeout(() => setClosing(true), showFor);
-    const hideTimer = window.setTimeout(() => setVisible(false), showFor + 420);
+    const hideTimer = window.setTimeout(() => setVisible(false), showFor + 180);
 
     return () => {
       window.clearTimeout(closeTimer);
@@ -48,7 +48,7 @@ export default function AppSplash() {
             className="app-splash-logo"
           />
         </div>
-        <div className="app-splash-title">रखरखाव</div>
+        <div className="app-splash-title">{'\u0930\u0916\u0930\u0916\u093e\u0935'}</div>
         <div className="app-splash-subtitle">Maintenance Solutions</div>
         <div className="app-splash-loader">
           <span />

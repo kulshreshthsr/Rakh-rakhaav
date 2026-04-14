@@ -45,7 +45,6 @@ const MORE_DRAWER_ITEMS = [
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
-const PREFETCH_ROUTES = [...new Set([...NAV_ITEMS.map((i) => i.href), '/pricing', '/reports', '/profile', '/expenses', '/income', '/bank-entries'])];
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 function readStoredUser() {
@@ -341,10 +340,6 @@ function LayoutInner({ children }) {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  useEffect(() => {
-    PREFETCH_ROUTES.forEach((href) => router.prefetch(href));
-  }, [router]);
 
   /* ── Click-outside desktop dropdown ──────────────────────────── */
   useEffect(() => {

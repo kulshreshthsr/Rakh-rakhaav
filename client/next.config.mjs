@@ -46,21 +46,6 @@ const withPWA = withPWAInit({
           },
         },
       },
-      {
-        urlPattern: /^https:\/\/rakh-rakhaav-3v1l\.vercel\.app\/.*$/i,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'app-pages',
-          networkTimeoutSeconds: 3,
-          expiration: {
-            maxEntries: 32,
-            maxAgeSeconds: 60 * 60 * 24 * 7,
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
     ],
   },
   fallbacks: {
