@@ -45,6 +45,9 @@ productSchema.virtual('is_low_stock').get(function () {
   return this.quantity <= this.low_stock_threshold;
 });
 
+productSchema.index({ shop: 1 });
+productSchema.index({ shop: 1, quantity: 1 });
+
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });
 

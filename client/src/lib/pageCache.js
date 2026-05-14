@@ -34,17 +34,10 @@ export function writePageCache(key, value) {
   } catch {}
 }
 
-export function scheduleDeferred(callback, delay = 120) {
-  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    return window.requestIdleCallback(callback, { timeout: 1000 });
-  }
+export function scheduleDeferred(callback, delay = 0) {
   return window.setTimeout(callback, delay);
 }
 
 export function cancelDeferred(id) {
-  if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
-    window.cancelIdleCallback(id);
-    return;
-  }
   clearTimeout(id);
 }

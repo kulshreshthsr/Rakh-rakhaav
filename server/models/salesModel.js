@@ -73,6 +73,8 @@ const saleSchema = new mongoose.Schema({
 
 saleSchema.path('createdAt').immutable(false);
 
+saleSchema.index({ shop: 1, createdAt: -1 });
+
 saleSchema.index(
   { shop: 1, invoice_number: 1 },
   { unique: true }

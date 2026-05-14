@@ -85,66 +85,72 @@ const getDashboardSummary = async (req, res) => {
     const requestedRange = getDateRange(month, year);
     const monthRange = requestedRange || getCurrentMonthRange();
     const todayRange = getTodayRange();
+    const shopId = shop._id;
 
-    const [sales, products, customers, todaySalesSummary, monthSalesSummary, monthPurchaseSummary] = await Promise.all([
-      Sale.find({ shop: shop._id }).select('items product_name quantity total_amount createdAt taxable_amount total_gst total_cost gross_profit'),
-      Product.find({ shop: shop._id }).select('name quantity stock low_stock_threshold is_low_stock'),
-      Customer.find({ shop: shop._id }).select('name phone totalUdhaar').sort({ totalUdhaar: -1 }),
-      aggregateSalesSummary({ shop: shop._id, createdAt: todayRange }),
-      aggregateSalesSummary({ shop: shop._id, createdAt: monthRange }),
-      aggregatePurchaseSummary({ shop: shop._id, createdAt: monthRange }),
+    const [
+      todaySalesSummary,
+      monthSalesSummary,
+      monthPurchaseSummary,
+      topProductsAgg,
+      stockAlertItems,
+      udhaarSummary,
+      topCustomers,
+    ] = await Promise.all([
+      aggregateSalesSummary({ shop: shopId, createdAt: todayRange }),
+      aggregateSalesSummary({ shop: shopId, createdAt: monthRange }),
+      aggregatePurchaseSummary({ shop: shopId, createdAt: monthRange }),
+      Sale.aggregate([
+        { $match: { shop: shopId } },
+        {
+          $facet: {
+            fromItems: [
+              { $unwind: { path: '$items', preserveNullAndEmptyArrays: false } },
+              { $match: { 'items.product_name': { $nin: [null, ''] } } },
+              { $group: { _id: '$items.product_name', qty: { $sum: '$items.quantity' }, revenue: { $sum: '$items.total_amount' } } },
+            ],
+            fromLegacy: [
+              { $match: { $expr: { $eq: [{ $size: { $ifNull: ['$items', []] } }, 0] }, product_name: { $nin: [null, ''] } } },
+              { $group: { _id: '$product_name', qty: { $sum: '$quantity' }, revenue: { $sum: '$total_amount' } } },
+            ],
+          },
+        },
+        { $project: { combined: { $concatArrays: ['$fromItems', '$fromLegacy'] } } },
+        { $unwind: '$combined' },
+        { $group: { _id: '$combined._id', qty: { $sum: '$combined.qty' }, revenue: { $sum: '$combined.revenue' } } },
+        { $sort: { revenue: -1 } },
+        { $limit: 5 },
+        { $project: { _id: 0, name: '$_id', qty: 1, revenue: 1 } },
+      ]),
+      Product.find({
+        shop: shopId,
+        $expr: { $lte: ['$quantity', '$low_stock_threshold'] },
+      })
+        .select('name quantity')
+        .sort({ quantity: 1 })
+        .limit(6)
+        .lean(),
+      Customer.aggregate([
+        { $match: { shop: shopId } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalUdhaar' },
+            pendingCount: { $sum: { $cond: [{ $gt: ['$totalUdhaar', 0] }, 1, 0] } },
+          },
+        },
+      ]),
+      Customer.find({ shop: shopId, totalUdhaar: { $gt: 0 } })
+        .select('name phone totalUdhaar')
+        .sort({ totalUdhaar: -1 })
+        .limit(5)
+        .lean(),
     ]);
 
-    const productSalesMap = {};
-    sales.forEach((sale) => {
-      const items = sale.items?.length
-        ? sale.items
-        : [{
-            product_name: sale.product_name,
-            quantity: sale.quantity,
-            total_amount: sale.total_amount,
-          }];
-
-      items.forEach((item) => {
-        const key = item.product_name;
-        if (!key) return;
-        if (!productSalesMap[key]) {
-          productSalesMap[key] = { name: key, qty: 0, revenue: 0 };
-        }
-        productSalesMap[key].qty += item.quantity || 0;
-        productSalesMap[key].revenue += item.total_amount || 0;
-      });
-    });
-
-    const topProducts = Object.values(productSalesMap)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-
-    const outOfStockProducts = products.filter((product) => (product.quantity ?? product.stock ?? 0) <= 0);
-    const lowStockProducts = products.filter((product) => {
-      const quantity = product.quantity ?? product.stock ?? 0;
-      const threshold = product.low_stock_threshold ?? 5;
-      return quantity > 0 && quantity <= threshold;
-    });
-
-    const stockAlertItems = [...outOfStockProducts, ...lowStockProducts]
-      .sort((a, b) => (a.quantity ?? a.stock ?? 0) - (b.quantity ?? b.stock ?? 0))
-      .slice(0, 6)
-      .map((product) => ({
-        _id: product._id,
-        name: product.name,
-        quantity: product.quantity ?? product.stock ?? 0,
-      }));
-
-    const totalCustomerUdhaar = customers.reduce((sum, customer) => sum + (customer.totalUdhaar || 0), 0);
-    const pendingCustomers = customers.filter((customer) => Number(customer.totalUdhaar || 0) > 0);
-    const topCustomers = pendingCustomers.slice(0, 5).map((customer) => ({
-      _id: customer._id,
-      name: customer.name,
-      phone: customer.phone,
-      due: round2(customer.totalUdhaar),
-    }));
+    const totalCustomerUdhaar = udhaarSummary[0]?.total || 0;
+    const pendingCount = udhaarSummary[0]?.pendingCount || 0;
     const netGSTPayable = round2(monthSalesSummary.totalGSTCollected - monthPurchaseSummary.totalITC);
+    const outOfStockCount = stockAlertItems.filter((p) => (p.quantity ?? 0) <= 0).length;
+    const lowStockCount = stockAlertItems.filter((p) => (p.quantity ?? 0) > 0).length;
 
     res.json({
       today: {
@@ -160,8 +166,13 @@ const getDashboardSummary = async (req, res) => {
       },
       udhaar: {
         totalDue: round2(totalCustomerUdhaar),
-        pendingCount: pendingCustomers.length,
-        topCustomers,
+        pendingCount,
+        topCustomers: topCustomers.map((c) => ({
+          _id: c._id,
+          name: c.name,
+          phone: c.phone,
+          due: round2(c.totalUdhaar),
+        })),
       },
       gst: {
         collected: round2(monthSalesSummary.totalGSTCollected),
@@ -169,8 +180,8 @@ const getDashboardSummary = async (req, res) => {
         netPayable: netGSTPayable,
       },
       stock: {
-        lowStockCount: lowStockProducts.length,
-        outOfStockCount: outOfStockProducts.length,
+        lowStockCount,
+        outOfStockCount,
         lowStockItems: stockAlertItems,
       },
       stats: {
@@ -186,10 +197,10 @@ const getDashboardSummary = async (req, res) => {
         totalSpent: round2(monthPurchaseSummary.totalSpent),
         purchasesCount: monthPurchaseSummary.purchasesCount || 0,
       },
-      topProducts,
+      topProducts: topProductsAgg,
       lowStockProducts: stockAlertItems,
-      lowStockCount: lowStockProducts.length,
-      outOfStockCount: outOfStockProducts.length,
+      lowStockCount,
+      outOfStockCount,
       totalCustomerUdhaar: round2(totalCustomerUdhaar),
       fetchedAt: new Date().toISOString(),
     });
