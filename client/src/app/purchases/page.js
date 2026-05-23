@@ -160,10 +160,10 @@ const getOfflineBadgeMeta = (status) => {
 const PAY_BADGE = {
   cash: { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Cash' },
   credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200', label: 'Credit' },
-  upi: { cls: 'bg-cyan-50 text-cyan-700 border-cyan-200', label: 'UPI' },
+  upi: { cls: 'bg-green-50 text-green-700 border-green-200', label: 'UPI' },
   bank: { cls: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Bank' },
 };
-const INPUT = 'h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all';
+const INPUT = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 const buildOfflinePurchaseItems = (rawItems, products) => (
   (rawItems || []).map((item) => {
@@ -804,31 +804,34 @@ export default function PurchasesPage() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
-        <div className="relative overflow-hidden mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/40 p-5 shadow-sm">
-          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-cyan-200/30 blur-3xl" />
-          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative overflow-hidden mb-5 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-white via-green-50/40 to-emerald-50/40 p-6 shadow-lg hover:shadow-xl transition-shadow">
+          {/* Green decorative orbs */}
+          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-green-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
+          
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700">
-                Purchase Hub
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
+                📦 खरीद • Purchase
               </span>
-              <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight tracking-tight">
+              <h1 className="mt-3 text-[26px] font-black text-slate-900">
                 Purchases / खरीदिए
               </h1>
-              <p className="mt-1 text-[13px] text-slate-500">
-                Supplier bills, ITC, and payable balance in the same visual flow as sales.
+              <p className="mt-2 text-[14px] text-slate-600 font-medium">
+                Supplier bills, ITC, and payable balance
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-3">
               <Link
                 href="/purchases/suppliers"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-sm hover:-translate-y-px hover:shadow-md transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-[13px] font-bold text-slate-700 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
               >
                 सप्लायर लिस्ट
               </Link>
               <button
                 type="button"
                 onClick={() => { resetModal(); setShowModal(true); }}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
               >
                 + New Purchase
               </button>
@@ -850,17 +853,18 @@ export default function PurchasesPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2.5 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            { label: 'Total Spend', value: `₹${fmt(totalSpendDisplay)}`, cls: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-            { label: 'Input GST', value: `₹${fmt(totalItcDisplay)}`, cls: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
-            { label: 'Balance Due', value: `₹${fmt(totalDueDisplay)}`, cls: totalDueDisplay > 0 ? 'text-rose-700' : 'text-emerald-700', bg: totalDueDisplay > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200' },
+            { label: 'Spend', value: `₹${fmt(totalSpendDisplay)}`, gradient: 'from-amber-50 to-orange-100', text: 'text-amber-800', icon: '💸', border: 'border-amber-200' },
+            { label: 'ITC', value: `₹${fmt(totalItcDisplay)}`, gradient: 'from-blue-50 to-sky-100', text: 'text-blue-800', icon: '📊', border: 'border-blue-200' },
+            { label: 'Due', value: `₹${fmt(totalDueDisplay)}`, gradient: totalDueDisplay > 0 ? 'from-rose-50 to-red-100' : 'from-emerald-50 to-green-100', text: totalDueDisplay > 0 ? 'text-rose-800' : 'text-emerald-800', icon: totalDueDisplay > 0 ? '⚠️' : '✅', border: totalDueDisplay > 0 ? 'border-rose-200' : 'border-emerald-200' },
           ].map((k) => (
-            <div key={k.label} className={`${k.bg} border rounded-2xl p-3 shadow-sm`}>
-              <div className={`text-[18px] sm:text-[20px] font-black leading-none ${k.cls}`}>{k.value}</div>
-              <div className="mt-1 text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wide">{k.label}</div>
-              {k.label === 'Balance Due' && totalDueDisplay > 0 && (
-                <button type="button" onClick={focusPendingPurchase} className="mt-2 text-[11px] font-black text-cyan-600 hover:text-cyan-700">
+            <div key={k.label} className={`relative overflow-hidden bg-gradient-to-br ${k.gradient} border-2 ${k.border} rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
+              <div className="absolute top-2 right-2 text-3xl opacity-10">{k.icon}</div>
+              <div className={`text-[24px] font-black ${k.text}`}>{k.value}</div>
+              <div className="text-[11px] font-bold text-slate-600 uppercase">{k.label}</div>
+              {k.label === 'Due' && totalDueDisplay > 0 && (
+                <button type="button" onClick={focusPendingPurchase} className="mt-2 text-[11px] font-black text-green-700 hover:text-green-800">
                   Pay Now
                 </button>
               )}
@@ -868,16 +872,16 @@ export default function PurchasesPage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm mb-4">
-          <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md mb-5">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <input
-              className="flex-1 h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
-              placeholder="Search bill, supplier, phone or product..."
+              className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
+              placeholder="🔍 Search bill, supplier, phone or product..."
               value={billSearch}
               onChange={(e) => setBillSearch(e.target.value)}
             />
             <input
-              className="h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all sm:w-40"
+              className="h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all sm:w-40"
               type="month"
               value={billMonth}
               onChange={(e) => setBillMonth(e.target.value)}
@@ -886,7 +890,7 @@ export default function PurchasesPage() {
               <button
                 type="button"
                 onClick={() => { setBillSearch(''); setBillMonth(''); }}
-                className="h-10 px-4 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+                className="h-11 px-4 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
               >
                 Clear
               </button>
@@ -920,7 +924,7 @@ export default function PurchasesPage() {
               <button
                 type="button"
                 onClick={() => { resetModal(); setShowModal(true); }}
-                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg transition-all"
+                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
               >
                 Record Purchase
               </button>
@@ -938,8 +942,11 @@ export default function PurchasesPage() {
                 <div
                   key={p._id}
                   data-purchase-anchor={p._id}
-                  className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${p._isOffline ? 'border-amber-200' : 'border-slate-200'} ${isHighlighted ? 'ring-2 ring-cyan-300 shadow-lg shadow-cyan-100/70' : 'hover:shadow-md'}`}
+                  className={`group relative overflow-hidden rounded-2xl border-2 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 transition-all ${p._isOffline ? 'border-amber-200' : 'border-slate-200 hover:border-green-300'} ${isHighlighted ? 'ring-2 ring-green-400 shadow-lg shadow-green-100/70' : ''}`}
                 >
+                  {/* Gradient overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />
+                  
                   {meta && (
                     <div className={`flex items-center gap-2 px-4 py-2 border-b text-[11px] font-black ${meta.color}`}>
                       <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
@@ -948,37 +955,38 @@ export default function PurchasesPage() {
                     </div>
                   )}
 
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
+                  <div className="relative p-5">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="min-w-0">
-                        <div className="text-[14px] font-black text-slate-900 truncate">{itemLabel}</div>
-                        <div className="font-mono text-[11px] text-cyan-600 mt-0.5">{p.invoice_number}</div>
+                        <span className="font-mono text-[13px] font-black text-green-700">{p.invoice_number}</span>
+                        <p className="text-[15px] font-bold text-slate-700 truncate mt-0.5">{itemLabel}</p>
                       </div>
-                      <div className="text-right ml-3">
-                        <div className="text-[18px] font-black text-slate-900">₹{fmt(p.total_amount)}</div>
-                        <div className="mt-0.5"><PayBadge type={p.payment_type} /></div>
-                      </div>
+                      <div className="text-[22px] font-black text-green-700 ml-3">₹{fmt(p.total_amount)}</div>
                     </div>
 
-                    <div className="text-[12px] text-slate-500 mb-3">
-                      {p.supplier_name ? `Supplier: ${p.supplier_name}` : 'Supplier not added'}
-                      {' • '}
-                      {formatFullDateTime(p.createdAt || p.purchased_at)}
+                    <div className="flex gap-2 mb-4 text-[12px]">
+                      <span className="text-slate-500">
+                        {p.supplier_name ? `${p.supplier_name}` : 'Supplier not added'}
+                      </span>
+                      <PayBadge type={p.payment_type} />
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 mb-3">
+                    <div className="flex flex-wrap gap-1.5 mb-4">
                       <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-500">
                         {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
                       </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-[11px] font-semibold text-blue-600">
+                      <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-[11px] font-semibold text-emerald-700">
                         ITC ₹{fmt(p.total_gst)}
                       </span>
                       <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${(p.balance_due || 0) > 0 ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
                         {(p.balance_due || 0) > 0 ? `Due ₹${fmt(p.balance_due)}` : 'Paid'}
                       </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] text-slate-400">
+                        {formatFullDateTime(p.createdAt || p.purchased_at)}
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                       <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
                         <div className="text-slate-400">Taxable</div>
                         <div className="font-black text-slate-900">₹{fmt(p.taxable_amount)}</div>
@@ -989,7 +997,7 @@ export default function PurchasesPage() {
                       </div>
                       <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
                         <div className="text-slate-400">GST</div>
-                        <div className="font-black text-blue-600">₹{fmt(p.total_gst)}</div>
+                        <div className="font-black text-emerald-700">₹{fmt(p.total_gst)}</div>
                       </div>
                       <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
                         <div className="text-slate-400">Items</div>
@@ -1002,24 +1010,24 @@ export default function PurchasesPage() {
                         type="button"
                         onClick={() => sendPurchaseWhatsApp(p)}
                         disabled={!p.supplier_phone}
-                        className="py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+                        className="py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
                       >
-                        WhatsApp
+                        📤 WA
                       </button>
                       <button
                         type="button"
                         onClick={() => startEditPurchase(p)}
                         disabled={Boolean(p._isOffline)}
-                        className="py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                        className="py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
                       >
-                        Edit
+                        ✏️ Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(p)}
-                        className="py-2 rounded-xl border border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors"
+                        className="py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
                       >
-                        {p._isOffline ? 'Remove' : 'Delete'}
+                        {p._isOffline ? '✕' : '🗑️'}
                       </button>
                     </div>
                   </div>
@@ -1059,16 +1067,16 @@ export default function PurchasesPage() {
                 ×
               </button>
             </div>
-            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl">
               {[
-                { type: 'cash', label: 'Cash', active: 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' },
-                { type: 'credit', label: 'Credit', active: 'bg-rose-500 text-white shadow-md shadow-rose-500/20' },
+                { type: 'cash', label: '💵 Cash', active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg' },
+                { type: 'credit', label: '📒 Credit', active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg' },
               ].map((opt) => (
                 <button
                   key={opt.type}
                   type="button"
                   onClick={() => updateForm({ payment_type: opt.type, amount_paid: opt.type === 'credit' ? form.amount_paid : '' })}
-                  className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 py-3 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-600 hover:text-slate-700'}`}
                 >
                   {opt.label}
                 </button>
@@ -1133,7 +1141,7 @@ export default function PurchasesPage() {
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Item {index + 1}</span>
                         <div className="flex justify-end gap-1.5">
-                          <button type="button" onClick={() => openInlineProductForm(index)} className="px-2.5 py-1 rounded-lg border border-cyan-200 bg-cyan-50 text-[10px] text-cyan-700 hover:bg-cyan-100 transition-colors">+ New Product</button>
+                          <button type="button" onClick={() => openInlineProductForm(index)} className="px-2.5 py-1 rounded-lg border border-green-200 bg-green-50 text-[10px] text-green-700 hover:bg-green-100 transition-colors">+ New Product</button>
                           {items.length > 1 && (
                             <button type="button" onClick={() => removeItem(index)} className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] text-rose-600 hover:bg-rose-100 transition-colors">Remove</button>
                           )}
@@ -1146,8 +1154,8 @@ export default function PurchasesPage() {
                       </div>
 
                       {showInlineProductForm && inlineProductRowIndex === index && (
-                        <div className="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-4 space-y-3">
-                          <p className="text-[13px] font-black text-cyan-700">Naya product yahin add karein</p>
+                        <div className="rounded-2xl border border-green-200 bg-green-50/50 p-4 space-y-3">
+                          <p className="text-[13px] font-black text-green-700">Naya product yahin add karein</p>
                           <input className={INPUT} placeholder="Jaise: New Chips 45g" value={newProductForm.name} onChange={(e) => updateNewProductForm({ name: e.target.value })} />
                           <div className="grid grid-cols-2 gap-3">
                             <input className={INPUT} type="number" min="0" step="0.01" placeholder="MRP / selling price" value={newProductForm.price} onChange={(e) => updateNewProductForm({ price: e.target.value })} />
@@ -1160,7 +1168,7 @@ export default function PurchasesPage() {
                             <input className={INPUT} placeholder="Optional HSN" value={newProductForm.hsn_code} onChange={(e) => updateNewProductForm({ hsn_code: e.target.value })} />
                           </div>
                           <div className="flex gap-3">
-                            <button type="button" onClick={createInlineProduct} disabled={creatingProduct} className="flex-1 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg disabled:opacity-60 transition-all">{creatingProduct ? 'Adding...' : 'Save Product'}</button>
+                            <button type="button" onClick={createInlineProduct} disabled={creatingProduct} className="flex-1 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg disabled:opacity-60 transition-all">{creatingProduct ? 'Adding...' : 'Save Product'}</button>
                             <button type="button" onClick={resetInlineProductForm} disabled={creatingProduct} className="px-4 py-3 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white transition-colors">Cancel</button>
                           </div>
                         </div>
@@ -1190,7 +1198,7 @@ export default function PurchasesPage() {
                 })}
               </div>
 
-              <button type="button" onClick={addItem} className="w-full mt-3 py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-cyan-600 hover:bg-cyan-50/40 transition-all">
+              <button type="button" onClick={addItem} className="w-full mt-3 py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-green-700 hover:bg-green-50/40 transition-all">
                 + Add Another Product
               </button>
             </div>
@@ -1216,7 +1224,7 @@ export default function PurchasesPage() {
                 </div>
                 <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
                   <span className="text-[14px] font-black">Grand Total</span>
-                  <span className="text-[24px] font-black text-cyan-400">₹{fmt(billTotals.total)}</span>
+                  <span className="text-[24px] font-black text-green-600">₹{fmt(billTotals.total)}</span>
                 </div>
                 {form.payment_type === 'credit' && (
                   <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
@@ -1231,7 +1239,7 @@ export default function PurchasesPage() {
 
           <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
             <div className="flex gap-3">
-              <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all">
+              <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all">
                 {submitting ? 'Saving...' : !isOnline ? 'Offline Save' : editingPurchaseId ? 'Update Purchase' : form.payment_type === 'credit' ? 'Credit Purchase' : 'Record Purchase'}
               </button>
               <button type="button" onClick={resetModal} className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">

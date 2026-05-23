@@ -137,7 +137,7 @@ const buildWhatsAppShareMessage = (sale, shopName) => {
 const PAY_BADGE = {
   cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: '💵 Cash' },
   credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200',          label: '📒 उधार' },
-  upi:    { cls: 'bg-cyan-50 text-cyan-700 border-cyan-200',           label: '📱 UPI'  },
+  upi:    { cls: 'bg-green-50 text-green-700 border-green-200',           label: '📱 UPI'  },
   bank:   { cls: 'bg-blue-50 text-blue-700 border-blue-200',           label: '🏦 Bank' },
 };
 const PayBadge = ({ type }) => {
@@ -146,7 +146,7 @@ const PayBadge = ({ type }) => {
 };
 
 /* ── Reusable input class ── */
-const INPUT = 'h-11 w-full px-4 rounded-xl border border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-400 transition-all';
+const INPUT = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 /* ══════════════════════════════════════════════════════════════════ */
 export default function SalesPage() {
@@ -532,30 +532,33 @@ export default function SalesPage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
 
         {/* ── Page header ── */}
-        <div className="relative overflow-hidden mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/40 p-5 shadow-sm">
-          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-cyan-200/30 blur-3xl" />
-          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative overflow-hidden mb-5 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-white via-green-50/40 to-emerald-50/40 p-6 shadow-lg hover:shadow-xl transition-shadow">
+          {/* Green decorative orbs */}
+          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-green-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
+          
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700">
-                बिक्री • Sales
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
+                🧾 बिक्री • Sales
               </span>
-              <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight tracking-tight">
+              <h1 className="mt-3 text-[26px] font-black text-slate-900">
                 Sales / बेचिए
               </h1>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <p className="mt-2 text-[14px] text-slate-600 font-medium">
                 Billing, invoice और customer payment flow
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-3">
               <Link href="/sales/customers"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-sm hover:-translate-y-px hover:shadow-md transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-[13px] font-bold text-slate-700 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
               >
                 👥 Customers
               </Link>
               <button
                 type="button"
                 onClick={() => { resetForm(); setShowModal(true); }}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
               >
                 + New Sale
               </button>
@@ -575,36 +578,37 @@ export default function SalesPage() {
         )}
 
         {/* ── KPI strip ── */}
-        <div className="grid grid-cols-3 gap-2.5 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            { label: 'Revenue',       value: `₹${fmt(revenueDisplay)}`, cls: 'text-cyan-700',   bg: 'bg-cyan-50 border-cyan-100' },
-            { label: 'GST Collected', value: `₹${fmt(gstDisplay)}`,     cls: 'text-amber-700',  bg: 'bg-amber-50 border-amber-100' },
-            { label: 'Invoices',      value: filteredSales.length,       cls: 'text-slate-700',  bg: 'bg-white border-slate-200' },
+            { label: 'Revenue', value: `₹${fmt(revenueDisplay)}`, gradient: 'from-green-50 to-emerald-100', text: 'text-green-800', icon: '💰', border: 'border-green-200' },
+            { label: 'GST', value: `₹${fmt(gstDisplay)}`, gradient: 'from-amber-50 to-orange-100', text: 'text-amber-800', icon: '📊', border: 'border-amber-200' },
+            { label: 'Invoices', value: filteredSales.length, gradient: 'from-slate-50 to-gray-100', text: 'text-slate-800', icon: '🧾', border: 'border-slate-200' },
           ].map((k) => (
-            <div key={k.label} className={`${k.bg} border rounded-2xl p-3 shadow-sm`}>
-              <div className={`text-[18px] sm:text-[20px] font-black leading-none ${k.cls}`}>{k.value}</div>
-              <div className="mt-1 text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wide">{k.label}</div>
+            <div key={k.label} className={`relative overflow-hidden bg-gradient-to-br ${k.gradient} border-2 ${k.border} rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
+              <div className="absolute top-2 right-2 text-3xl opacity-10">{k.icon}</div>
+              <div className={`text-[24px] font-black ${k.text}`}>{k.value}</div>
+              <div className="text-[11px] font-bold text-slate-600 uppercase">{k.label}</div>
             </div>
           ))}
         </div>
 
         {/* ── Filters ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm mb-4">
-          <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md mb-5">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <input
-              className="flex-1 h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
+              className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
               placeholder="🔍 Search invoice, customer, product..."
               value={billSearch}
               onChange={(e) => setBillSearch(e.target.value)}
             />
             <input
-              className="h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all sm:w-40"
+              className="h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all sm:w-40"
               type="month" value={billMonth}
               onChange={(e) => setBillMonth(e.target.value)}
             />
             {hasBillFilters && (
               <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); }}
-                className="h-10 px-4 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+                className="h-11 px-4 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
               >Clear</button>
             )}
           </div>
@@ -629,7 +633,7 @@ export default function SalesPage() {
             {!hasBillFilters && (
               <button
                 onClick={() => { resetForm(); setShowModal(true); }}
-                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg transition-all"
+                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
               >
                 + पहला Bill बनाएं
               </button>
@@ -640,7 +644,10 @@ export default function SalesPage() {
             {filteredSales.map((s) => {
               const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
               return (
-                <div key={s._id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all ${s._isOffline ? 'border-amber-200' : 'border-slate-200'}`}>
+                <div key={s._id} className={`group relative overflow-hidden rounded-2xl border-2 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 transition-all ${s._isOffline ? 'border-amber-200' : 'border-slate-200 hover:border-green-300'}`}>
+                  {/* Gradient overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />
+                  
                   {/* Offline banner */}
                   {s._isOffline && (
                     <div className={`flex items-center gap-2 px-4 py-2 border-b text-[11px] font-black ${meta.color}`}>
@@ -650,30 +657,30 @@ export default function SalesPage() {
                     </div>
                   )}
 
-                  <div className="p-4">
+                  <div className="relative p-5">
                     {/* Top row */}
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start justify-between mb-3">
                       <div>
-                        <div className="text-[14px] font-black text-slate-900">
+                        <span className="font-mono text-[13px] font-black text-green-700">{s.invoice_number}</span>
+                        <p className="text-[15px] font-bold text-slate-700 mt-0.5">
                           {s.buyer_name || 'Walk-in Customer'}
-                        </div>
-                        <div className="font-mono text-[11px] text-cyan-600 mt-0.5">{s.invoice_number}</div>
+                        </p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[18px] font-black text-slate-900">₹{fmt(s.total_amount)}</div>
-                        <div className="mt-0.5"><PayBadge type={s.payment_type} /></div>
-                      </div>
+                      <div className="text-[22px] font-black text-green-700">₹{fmt(s.total_amount)}</div>
                     </div>
 
-                    {/* Items summary */}
-                    <div className="text-[12px] text-slate-500 mb-3">
-                      {s.items && s.items.length > 1
-                        ? `${s.items.length} items`
-                        : s.product_name || s.items?.[0]?.product_name || '—'}
+                    {/* Items summary + payment badge */}
+                    <div className="flex gap-2 mb-4 text-[12px]">
+                      <span className="text-slate-500">
+                        {s.items && s.items.length > 1
+                          ? `${s.items.length} items`
+                          : s.product_name || s.items?.[0]?.product_name || '—'}
+                      </span>
+                      <PayBadge type={s.payment_type} />
                     </div>
 
                     {/* Info chips */}
-                    <div className="flex flex-wrap gap-1.5 mb-3">
+                    <div className="flex flex-wrap gap-1.5 mb-4">
                       <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-500">
                         Taxable ₹{fmt(s.taxable_amount)}
                       </span>
@@ -688,17 +695,17 @@ export default function SalesPage() {
                     {/* Action buttons */}
                     <div className="grid grid-cols-4 gap-2">
                       <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)}
-                        className="py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                        className="py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
                       >✏️ Edit</button>
                       <button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)}
-                        className="py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                        className="py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
                       >🖨️ Print</button>
                       <button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)}
-                        className="py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-colors"
-                      >📲 WA</button>
+                        className="py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
+                      >📤 Send</button>
                       <button onClick={() => handleDelete(s)}
-                        className="py-2 rounded-xl border border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors"
-                      >{s._isOffline ? '✕ Remove' : '🗑️ Del'}</button>
+                        className="py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
+                      >{s._isOffline ? '✕' : '🗑️'}</button>
                     </div>
                   </div>
                 </div>
@@ -749,13 +756,13 @@ export default function SalesPage() {
             </div>
 
             {/* Cash / Udhaar toggle */}
-            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl">
               {[
-                { type: 'cash',   label: '💵 कैश',  active: 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20', onSelect: () => { updateForm({ payment_type: 'cash', amount_paid: '' }); setShowCustomerInfo(false); } },
-                { type: 'credit', label: '📒 उधार', active: 'bg-rose-500 text-white shadow-md shadow-rose-500/20',     onSelect: () => { updateForm({ payment_type: 'credit' }); setShowCustomerInfo(true); } },
+                { type: 'cash',   label: '💵 कैश',  active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg', onSelect: () => { updateForm({ payment_type: 'cash', amount_paid: '' }); setShowCustomerInfo(false); } },
+                { type: 'credit', label: '📒 उधार', active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg',     onSelect: () => { updateForm({ payment_type: 'credit' }); setShowCustomerInfo(true); } },
               ].map((opt) => (
                 <button key={opt.type} type="button" onClick={opt.onSelect}
-                  className={`flex-1 py-2.5 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 py-3 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-600 hover:text-slate-700'}`}
                 >{opt.label}</button>
               ))}
             </div>
@@ -776,13 +783,13 @@ export default function SalesPage() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Invoice No.</p>
                 <div className="flex items-center h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 gap-2">
-                  <span className="font-mono text-[11px] text-cyan-600 truncate flex-1">{invoicePreview}</span>
+                  <span className="font-mono text-[11px] text-green-700 truncate flex-1">{invoicePreview}</span>
                   <button type="button" onClick={() => navigator?.clipboard?.writeText(invoicePreview)} className="text-slate-400 hover:text-slate-600 flex-shrink-0 text-xs">📋</button>
                 </div>
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Date</p>
-                <input className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
+                <input className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
                   type="date" ref={saleDateInputRef} value={form.sale_date}
                   onChange={(e) => updateForm({ sale_date: e.target.value })}
                 />
@@ -800,7 +807,7 @@ export default function SalesPage() {
                 </div>
                 {form.payment_type === 'credit'
                   ? <span className="px-2.5 py-1 rounded-full bg-rose-100 text-[10px] font-black text-rose-700 border border-rose-200">Required *</span>
-                  : <button type="button" onClick={() => setShowCustomerInfo(v => !v)} className="text-[12px] font-bold text-cyan-600 hover:text-cyan-700">{customerInfoVisible ? '▴ Hide' : '▾ Add'}</button>
+                  : <button type="button" onClick={() => setShowCustomerInfo(v => !v)} className="text-[12px] font-bold text-green-700 hover:text-green-700">{customerInfoVisible ? '▴ Hide' : '▾ Add'}</button>
                 }
               </div>
 
@@ -866,7 +873,7 @@ export default function SalesPage() {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[13px] font-black text-slate-900">Items</p>
                 <button type="button" onClick={() => setShowBarcodeScanner(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-200 bg-cyan-50 text-[11px] font-bold text-cyan-700 hover:bg-cyan-100 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-colors"
                 >📷 Scan Barcode</button>
               </div>
 
@@ -923,7 +930,7 @@ export default function SalesPage() {
                           <div className="flex gap-1 mt-1.5">
                             {QUICK_QUANTITY_OPTIONS.map((qty) => (
                               <button key={qty} type="button" onClick={() => applyQuickQuantity(index, qty)}
-                                className={`flex-1 py-1 rounded-lg text-[10px] font-black border transition-colors ${Number(item.quantity) === qty ? 'bg-cyan-500 border-cyan-500 text-white' : 'border-slate-200 text-slate-500 hover:border-cyan-300 hover:text-cyan-600'}`}
+                                className={`flex-1 py-1 rounded-lg text-[10px] font-black border transition-colors ${Number(item.quantity) === qty ? 'bg-green-600 border-green-600 text-white' : 'border-slate-200 text-slate-500 hover:border-cyan-300 hover:text-green-700'}`}
                               >{qty}</button>
                             ))}
                           </div>
@@ -933,7 +940,7 @@ export default function SalesPage() {
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Price (₹)</p>
                           <input
-                            className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
+                            className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
                             type="number" step="0.01" placeholder="0.00"
                             value={item.price_per_unit}
                             onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)}
@@ -953,7 +960,7 @@ export default function SalesPage() {
                 })}
 
                 <button type="button" onClick={addItem}
-                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-cyan-600 hover:bg-cyan-50/40 transition-all"
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-green-700 hover:bg-green-50/40 transition-all"
                 >+ Item जोड़ें <span className="text-[10px] opacity-60">(Alt+A)</span></button>
               </div>
             </div>
@@ -1001,7 +1008,7 @@ export default function SalesPage() {
               </div>
               <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
                 <span className="text-[14px] font-black">Grand Total</span>
-                <span className="text-[24px] font-black text-cyan-400">₹{fmt(billTotals.total)}</span>
+                <span className="text-[24px] font-black text-green-600">₹{fmt(billTotals.total)}</span>
               </div>
               {form.payment_type === 'credit' && (
                 <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
@@ -1016,7 +1023,7 @@ export default function SalesPage() {
           <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
             <div className="flex gap-3">
               <button type="button" onClick={handleSubmit} disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
               >
                 {submitting ? (
                   <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
