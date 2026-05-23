@@ -6,10 +6,9 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 
 const getToken = () => localStorage.getItem('token');
-const fmt  = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const fmt = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtD = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/* ── Greeting based on time ── */
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'शुभ प्रभात 🌅';
@@ -18,45 +17,60 @@ function getGreeting() {
   return 'शुभ रात्रि 🌙';
 }
 
-/* ── Hindi day/date ── */
 function getTodayLabel() {
   return new Date().toLocaleDateString('hi-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 }
 
-/* ── WhatsApp reminder message ── */
 function buildUdhaarReminder(customer, shopName) {
   return `Namaste ${customer.name} ji 🙏\n\nHamari dukaan *${shopName || 'Rakh-Rakhaav'}* se aapka udhaar baaki hai:\n\n*₹${fmtD(customer.due)}*\n\nKripya jald se jald payment karein.\n\nDhanyawad 🙏`;
 }
 
-/* ── Quick action card ── */
-function QuickAction({ href, emoji, label, sublabel, color }) {
+/* Enhanced Quick Action Card with Green Theme */
+function QuickAction({ href, emoji, label, sublabel, gradient, hover }) {
   return (
     <Link href={href}
-      className={`flex flex-col items-center justify-center gap-1.5 p-4 rounded-2xl border-2 ${color} text-center hover:-translate-y-1 hover:shadow-lg transition-all active:scale-95`}
+      className={`group relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br ${gradient} border-2 border-transparent text-center hover:border-green-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 active:scale-95`}
     >
-      <span className="text-3xl">{emoji}</span>
-      <span className="text-[14px] font-black text-slate-900 leading-tight">{label}</span>
-      {sublabel && <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{sublabel}</span>}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <span className="relative text-3xl transform group-hover:scale-110 transition-transform">{emoji}</span>
+      <div className="relative">
+        <span className="block text-[14px] font-black text-slate-900 leading-tight">{label}</span>
+        {sublabel && <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mt-0.5">{sublabel}</span>}
+      </div>
     </Link>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════ */
+/* Stat Card Component */
+function StatCard({ label, value, sub, gradient, icon, href }) {
+  return (
+    <Link href={href}
+      className={`group relative overflow-hidden bg-gradient-to-br ${gradient} border-2 border-white/50 rounded-2xl p-4 hover:border-green-300 hover:-translate-y-1 hover:shadow-lg transition-all duration-300`}
+    >
+      <div className="absolute top-2 right-2 text-3xl opacity-10 group-hover:opacity-20 transition-opacity">
+        {icon}
+      </div>
+      <p className="relative text-[18px] font-black leading-none text-slate-900 mb-1">{value}</p>
+      <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide leading-tight">{label}</p>
+      <p className="text-[10px] text-slate-500 mt-0.5">{sub}</p>
+    </Link>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
 
-  const [data,    setData]    = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shopName, setShopName] = useState('');
   const [ownerPhoto, setOwnerPhoto] = useState('');
   const [userName, setUserName] = useState('');
   const [greeting] = useState(getGreeting);
-  const [today]    = useState(getTodayLabel);
+  const [today] = useState(getTodayLabel);
 
-  /* ── Fetch dashboard data ── */
   const fetchDashboard = useCallback(async () => {
     const token = getToken();
     if (!token) { router.push('/login'); return; }
@@ -64,7 +78,7 @@ export default function DashboardPage() {
       setError('');
       const [dashRes, shopRes] = await Promise.all([
         fetch(apiUrl('/api/dashboard/summary'), { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(apiUrl('/api/auth/shop'),  { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (dashRes.status === 401 || shopRes.status === 401) { router.push('/login'); return; }
       if (!dashRes.ok || !shopRes.ok) throw new Error('Failed to load dashboard');
@@ -88,31 +102,27 @@ export default function DashboardPage() {
     fetchDashboard();
   }, [fetchDashboard, router]);
 
-  /* ── Derived values ── */
-  const today_sales   = data?.today?.revenue        || 0;
-  const today_bills   = data?.today?.bills           || 0;
-  const today_profit  = data?.today?.profit          || 0;
-  const month_sales   = data?.month?.revenue         || 0;
-  const month_profit  = data?.month?.profit          || 0;
-  const total_udhaar  = data?.udhaar?.totalDue       || 0;
-  const udhaar_count  = data?.udhaar?.pendingCount   || 0;
-  const gst_payable   = data?.gst?.netPayable        || 0;
-  const low_stock     = data?.stock?.lowStockCount   || 0;
-  const out_of_stock  = data?.stock?.outOfStockCount || 0;
+  const today_sales = data?.today?.revenue || 0;
+  const today_bills = data?.today?.bills || 0;
+  const today_profit = data?.today?.profit || 0;
+  const month_sales = data?.month?.revenue || 0;
+  const month_profit = data?.month?.profit || 0;
+  const total_udhaar = data?.udhaar?.totalDue || 0;
+  const udhaar_count = data?.udhaar?.pendingCount || 0;
+  const gst_payable = data?.gst?.netPayable || 0;
+  const low_stock = data?.stock?.lowStockCount || 0;
+  const out_of_stock = data?.stock?.outOfStockCount || 0;
 
-  /* Top udhaar customers (people who owe YOU money) */
   const topUdhaarCustomers = (data?.udhaar?.topCustomers || []).slice(0, 5);
-
-  /* Low stock items */
   const lowStockItems = (data?.stock?.lowStockItems || []).slice(0, 4);
 
-  /* ── Skeleton loader ── */
+  /* Skeleton loader with green theme */
   if (loading) {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
-          {[80, 120, 160, 120].map((h, i) => (
-            <div key={i} className={`h-${h === 80 ? '20' : h === 120 ? '28' : h === 160 ? '36' : '28'} rounded-2xl bg-white border border-slate-200 animate-pulse`}
+          {[80, 140, 180, 120].map((h, i) => (
+            <div key={i} className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200/50 animate-pulse"
               style={{ height: h }} />
           ))}
         </div>
@@ -124,13 +134,13 @@ export default function DashboardPage() {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4">
-            <p className="text-[15px] font-black text-rose-900">Dashboard data load nahi ho paya.</p>
-            <p className="mt-1 text-[12px] text-rose-700">{error}</p>
+          <div className="rounded-2xl border-2 border-red-200 bg-red-50 px-5 py-5">
+            <p className="text-[16px] font-black text-red-900">Dashboard data load nahi ho paya.</p>
+            <p className="mt-2 text-[13px] text-red-700">{error}</p>
             <button
               type="button"
               onClick={fetchDashboard}
-              className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-[12px] font-black text-white hover:bg-rose-700 transition-colors"
+              className="mt-4 rounded-xl bg-red-600 px-5 py-2.5 text-[13px] font-black text-white hover:bg-red-700 shadow-lg hover:shadow-xl transition-all"
             >
               Dobara load karo
             </button>
@@ -144,25 +154,29 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-5">
 
         {/* ══════════════════════════════════════
-            1. GREETING HEADER
+            1. GREETING HEADER - Enhanced Green Theme
         ══════════════════════════════════════ */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-5 py-5">
-          {/* Decorative orbs */}
-          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-cyan-500/15 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-blue-500/10 blur-2xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-5 py-6 shadow-xl">
+          {/* Decorative green orbs */}
+          <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-green-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-500/10 blur-3xl" />
 
           <div className="relative z-10 flex items-center justify-between gap-4">
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{today}</p>
-              <h1 className="text-[22px] font-black text-white leading-tight">
+              <h1 className="text-[24px] sm:text-[26px] font-black text-white leading-tight">
                 {greeting}
               </h1>
               {userName && (
-                <p className="text-[14px] text-slate-300 mt-0.5">
-                  {userName} — <span className="text-cyan-400 font-bold">{shopName}</span>
+                <p className="text-[14px] text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
+                  <span>{userName}</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 font-bold">
+                    {shopName}
+                  </span>
                 </p>
               )}
             </div>
@@ -171,10 +185,10 @@ export default function DashboardPage() {
               <img
                 src={ownerPhoto}
                 alt={userName || 'Shopkeeper'}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-white/15 shadow-lg shadow-cyan-500/10 flex-shrink-0"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-green-500/30 shadow-lg shadow-green-500/20 flex-shrink-0 hover:scale-105 transition-transform"
               />
             ) : (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white text-[24px] font-black flex-shrink-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-700 border-2 border-green-400/30 flex items-center justify-center text-white text-[28px] font-black flex-shrink-0 shadow-lg shadow-green-500/20 hover:scale-105 transition-transform">
                 {(userName || shopName || '?').charAt(0).toUpperCase()}
               </div>
             )}
@@ -182,162 +196,170 @@ export default function DashboardPage() {
         </div>
 
         {/* ══════════════════════════════════════
-            2. आज का हाल  (Today's snapshot)
+            2. आज का हाल - Today's Performance with Green Gradient
         ══════════════════════════════════════ */}
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2.5 px-1">
-            आज का हाल
-          </p>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+              आज का हाल
+            </p>
+            <Link href="/sales" className="text-[11px] font-bold text-green-700 hover:text-green-800 hover:underline">
+              सभी bills →
+            </Link>
+          </div>
 
-          {/* Big today revenue card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 p-5 mb-3 shadow-lg shadow-cyan-500/20">
-            <div className="pointer-events-none absolute -top-8 right-4 w-32 h-32 rounded-full bg-white/10" />
+          {/* Big today revenue card - Green gradient */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-green-600 via-green-700 to-emerald-700 p-6 mb-3 shadow-2xl shadow-green-500/30 hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all">
+            <div className="pointer-events-none absolute -top-8 right-4 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-12 -left-8 w-32 h-32 rounded-full bg-emerald-400/20 blur-2xl" />
+            
             <div className="relative z-10">
-              <p className="text-[12px] font-bold text-white/70 uppercase tracking-wider mb-1">आज की कमाई</p>
-              <p className="text-[38px] font-black text-white leading-none tracking-tight">
+              <p className="text-[12px] font-bold text-white/80 uppercase tracking-wider mb-2">आज की कमाई</p>
+              <p className="text-[42px] sm:text-[48px] font-black text-white leading-none tracking-tight mb-4">
                 ₹{fmt(today_sales)}
               </p>
-              <div className="flex items-center gap-4 mt-3">
-                <div>
-                  <p className="text-[10px] text-white/60 uppercase tracking-wider">Bills</p>
-                  <p className="text-[18px] font-black text-white">{today_bills}</p>
+              <div className="flex items-center gap-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <span className="text-xl">🧾</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/70 uppercase tracking-wider">Bills</p>
+                    <p className="text-[20px] font-black text-white">{today_bills}</p>
+                  </div>
                 </div>
-                <div className="w-px h-8 bg-white/20" />
-                <div>
-                  <p className="text-[10px] text-white/60 uppercase tracking-wider">मुनाफा</p>
-                  <p className="text-[18px] font-black text-white">₹{fmt(today_profit)}</p>
+                <div className="w-px h-12 bg-white/20" />
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <span className="text-xl">💰</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/70 uppercase tracking-wider">मुनाफा</p>
+                    <p className="text-[20px] font-black text-white">₹{fmt(today_profit)}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Secondary stats row */}
-          <div className="grid grid-cols-3 gap-2.5">
-            {[
-              {
-                label: 'उधार बाकी',
-                value: `₹${fmt(total_udhaar)}`,
-                sub: `${udhaar_count} ग्राहक`,
-                bg: 'bg-rose-50 border-rose-200',
-                val: 'text-rose-700',
-                href: '/udhaar',
-              },
-              {
-                label: 'GST देना है',
-                value: `₹${fmt(gst_payable)}`,
-                sub: 'इस महीने',
-                bg: 'bg-amber-50 border-amber-200',
-                val: 'text-amber-700',
-                href: '/gst',
-              },
-              {
-                label: 'इस महीने',
-                value: `₹${fmt(month_sales)}`,
-                sub: `₹${fmt(month_profit)} profit`,
-                bg: 'bg-emerald-50 border-emerald-200',
-                val: 'text-emerald-700',
-                href: '/reports',
-              },
-            ].map((s) => (
-              <Link key={s.label} href={s.href}
-                className={`${s.bg} border rounded-2xl p-3 hover:-translate-y-0.5 hover:shadow-md transition-all`}
-              >
-                <p className={`text-[17px] font-black leading-none ${s.val}`}>{s.value}</p>
-                <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wide leading-tight">{s.label}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">{s.sub}</p>
-              </Link>
-            ))}
+          {/* Secondary stats row - Enhanced with gradients */}
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard
+              label="उधार बाकी"
+              value={`₹${fmt(total_udhaar)}`}
+              sub={`${udhaar_count} ग्राहक`}
+              gradient="from-red-50 to-rose-100"
+              icon="💸"
+              href="/udhaar"
+            />
+            <StatCard
+              label="GST देना है"
+              value={`₹${fmt(gst_payable)}`}
+              sub="इस महीने"
+              gradient="from-amber-50 to-orange-100"
+              icon="📊"
+              href="/gst"
+            />
+            <StatCard
+              label="इस महीने"
+              value={`₹${fmt(month_sales)}`}
+              sub={`₹${fmt(month_profit)} profit`}
+              gradient="from-green-50 to-emerald-100"
+              icon="📈"
+              href="/reports"
+            />
           </div>
         </div>
 
         {/* ══════════════════════════════════════
-            3. जल्दी काम  (Quick Actions)
+            3. जल्दी काम - Quick Actions with Beautiful Gradients
         ══════════════════════════════════════ */}
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2.5 px-1">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">
             जल्दी काम
           </p>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 gap-3">
             <QuickAction
               href="/sales?open=1&payment=cash"
               emoji="🧾"
               label="बिल बनाओ"
               sublabel="Cash Sale"
-              color="border-cyan-200 bg-cyan-50"
+              gradient="from-green-50 to-emerald-100"
             />
             <QuickAction
               href="/sales?open=1&payment=credit"
               emoji="📒"
               label="उधार दो"
-              sublabel="Credit Sale"
-              color="border-rose-200 bg-rose-50"
+              sublabel="Credit"
+              gradient="from-rose-50 to-red-100"
             />
             <QuickAction
               href="/purchases"
               emoji="🛒"
               label="माल खरीदो"
               sublabel="Purchase"
-              color="border-amber-200 bg-amber-50"
+              gradient="from-amber-50 to-orange-100"
             />
             <QuickAction
               href="/product"
               emoji="📦"
               label="स्टॉक देखो"
               sublabel="Inventory"
-              color="border-emerald-200 bg-emerald-50"
+              gradient="from-blue-50 to-cyan-100"
             />
             <QuickAction
               href="/expenses"
-              emoji="🧾"
+              emoji="💳"
               label="खर्च लिखो"
               sublabel="Expenses"
-              color="border-orange-200 bg-orange-50"
+              gradient="from-purple-50 to-violet-100"
             />
             <QuickAction
               href="/udhaar"
               emoji="💸"
               label="पैसे लो"
               sublabel="Collect"
-              color="border-purple-200 bg-purple-50"
+              gradient="from-pink-50 to-rose-100"
             />
             <QuickAction
               href="/reports"
               emoji="📊"
               label="हिसाब देखो"
               sublabel="Reports"
-              color="border-slate-200 bg-slate-50"
+              gradient="from-slate-50 to-gray-100"
             />
           </div>
         </div>
 
         {/* ══════════════════════════════════════
-            4. ज़रूरी काम  (Urgent tasks)
-            Only shown when there's something
+            4. ज़रूरी काम - Urgent Tasks Enhanced
         ══════════════════════════════════════ */}
         {hasUrgent && (
           <div>
-            <div className="flex items-center justify-between mb-2.5 px-1">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                ज़रूरी काम
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                ⚠️ ज़रूरी काम
               </p>
               {(low_stock > 0 || out_of_stock > 0) && (
-                <Link href="/product" className="text-[11px] font-bold text-amber-600 hover:underline">
+                <Link href="/product" className="text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline">
                   सभी देखें →
                 </Link>
               )}
             </div>
 
-            <div className="space-y-2.5">
-              {/* Stock alert */}
+            <div className="space-y-3">
+              {/* Stock alert - Enhanced */}
               {(low_stock > 0 || out_of_stock > 0) && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
-                  <div className="flex items-center gap-3 px-4 py-3 border-b border-amber-100">
-                    <span className="text-2xl">⚠️</span>
-                    <div>
-                      <p className="text-[13px] font-black text-amber-900">
+                <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+                  <div className="flex items-center gap-3 px-4 py-4 border-b border-amber-200/50 bg-white/50">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
+                      ⚠️
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[14px] font-black text-amber-900">
                         {out_of_stock > 0 ? `${out_of_stock} product खत्म हो गया` : `${low_stock} product कम हो रहा है`}
                       </p>
-                      <p className="text-[11px] text-amber-700">
+                      <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
                         {out_of_stock > 0 && low_stock > 0
                           ? `${out_of_stock} खत्म • ${low_stock} कम`
                           : out_of_stock > 0
@@ -346,20 +368,19 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <Link href="/product"
-                      className="ml-auto px-3 py-1.5 rounded-xl bg-amber-200 text-[11px] font-black text-amber-900 hover:bg-amber-300 transition-colors flex-shrink-0"
+                      className="flex-shrink-0 px-4 py-2 rounded-xl bg-amber-600 text-[11px] font-black text-white hover:bg-amber-700 transition-colors shadow-md"
                     >देखो</Link>
                   </div>
 
-                  {/* Low stock items preview */}
                   {lowStockItems.length > 0 && (
                     <div className="divide-y divide-amber-100">
                       {lowStockItems.map((item, i) => (
-                        <div key={item._id || i} className="flex items-center justify-between px-4 py-2.5">
-                          <span className="text-[13px] font-semibold text-slate-800">{item.name}</span>
-                          <span className={`text-[12px] font-black px-2 py-0.5 rounded-lg ${
+                        <div key={item._id || i} className="flex items-center justify-between px-4 py-3 hover:bg-white/50 transition-colors">
+                          <span className="text-[13px] font-bold text-slate-800">{item.name}</span>
+                          <span className={`text-[12px] font-black px-3 py-1 rounded-lg shadow-sm ${
                             item.quantity === 0
-                              ? 'bg-rose-100 text-rose-700'
-                              : 'bg-amber-100 text-amber-700'
+                              ? 'bg-red-600 text-white'
+                              : 'bg-amber-600 text-white'
                           }`}>
                             {item.quantity === 0 ? 'खत्म' : `${item.quantity} बचा`}
                           </span>
@@ -370,21 +391,23 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Udhaar collection */}
+              {/* Udhaar collection - Enhanced */}
               {udhaar_count > 0 && (
-                <div className="rounded-2xl border border-rose-200 bg-white overflow-hidden">
-                  <div className="flex items-center gap-3 px-4 py-3 border-b border-rose-100 bg-rose-50">
-                    <span className="text-2xl">💸</span>
-                    <div>
-                      <p className="text-[13px] font-black text-rose-900">
+                <div className="rounded-2xl border-2 border-rose-200 bg-white overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+                  <div className="flex items-center gap-3 px-4 py-4 border-b border-rose-100 bg-gradient-to-br from-rose-50 to-red-50">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-400 to-red-500 flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
+                      💸
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[14px] font-black text-rose-900">
                         {udhaar_count} ग्राहक से पैसे लेने हैं
                       </p>
-                      <p className="text-[11px] text-rose-700">
+                      <p className="text-[11px] text-rose-700 font-semibold mt-0.5">
                         कुल ₹{fmtD(total_udhaar)} बाकी है
                       </p>
                     </div>
                     <Link href="/udhaar"
-                      className="ml-auto px-3 py-1.5 rounded-xl bg-rose-100 text-[11px] font-black text-rose-800 hover:bg-rose-200 transition-colors flex-shrink-0"
+                      className="flex-shrink-0 px-4 py-2 rounded-xl bg-rose-600 text-[11px] font-black text-white hover:bg-rose-700 transition-colors shadow-md"
                     >सब देखो</Link>
                   </div>
 
@@ -392,28 +415,28 @@ export default function DashboardPage() {
                     <div className="divide-y divide-slate-100">
                       {topUdhaarCustomers.map((c, i) => {
                         const phone = c.phone ? c.phone.replace(/\D/g, '') : '';
-                        const msg   = buildUdhaarReminder(c, shopName);
+                        const msg = buildUdhaarReminder(c, shopName);
                         const waUrl = phone
                           ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`
                           : `https://wa.me/?text=${encodeURIComponent(msg)}`;
                         return (
-                          <div key={c._id || i} className="flex items-center gap-3 px-4 py-3">
-                            {/* Avatar */}
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center text-white font-black text-[13px] flex-shrink-0">
+                          <div key={c._id || i} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors">
+                            {/* Avatar with gradient */}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-red-600 flex items-center justify-center text-white font-black text-[14px] flex-shrink-0 shadow-md">
                               {c.name?.charAt(0)?.toUpperCase() || '?'}
                             </div>
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <p className="text-[13px] font-bold text-slate-900 truncate">{c.name}</p>
-                              {c.phone && <p className="text-[11px] text-slate-400">{c.phone}</p>}
+                              {c.phone && <p className="text-[11px] text-slate-500 font-medium">{c.phone}</p>}
                             </div>
                             {/* Due amount */}
                             <div className="text-right flex-shrink-0">
-                              <p className="text-[14px] font-black text-rose-600">₹{fmtD(c.due)}</p>
+                              <p className="text-[15px] font-black text-rose-600">₹{fmtD(c.due)}</p>
                             </div>
                             {/* WhatsApp button */}
                             <a href={waUrl} target="_blank" rel="noreferrer"
-                              className="flex-shrink-0 w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-[16px] hover:bg-emerald-600 hover:scale-105 transition-all shadow-md shadow-emerald-500/25"
+                              className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white text-[16px] hover:scale-110 transition-all shadow-lg shadow-emerald-500/30"
                               title={`WhatsApp reminder to ${c.name}`}
                             >
                               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
@@ -433,24 +456,24 @@ export default function DashboardPage() {
         )}
 
         {/* ══════════════════════════════════════
-            5. MOTIVATIONAL FOOTER STRIP
-            Small but powerful — builds habit
+            5. MOTIVATIONAL FOOTER - Enhanced Green Theme
         ══════════════════════════════════════ */}
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-black text-slate-800">
+        <div className="relative overflow-hidden rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 px-5 py-4 flex items-center justify-between gap-4 shadow-lg hover:shadow-xl transition-shadow">
+          <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-green-300/20 blur-2xl" />
+          <div className="relative z-10 flex-1">
+            <p className="text-[13px] font-black text-slate-800">
               {today_bills === 0
                 ? 'आज का पहला bill बनाओ 💪'
                 : today_bills === 1
                   ? 'एक bill हो गया, और करो! 🔥'
                   : `आज ${today_bills} bill बन गए — बढ़िया! 🎯`}
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-1 font-semibold">
               {shopName} — रखरखाव के साथ
             </p>
           </div>
           <Link href="/sales"
-            className="flex-shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-[12px] font-black text-white shadow-md hover:-translate-y-px hover:shadow-lg transition-all"
+            className="relative z-10 flex-shrink-0 px-5 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-[13px] font-black text-white shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:-translate-y-px transition-all"
           >
             बिल बनाओ →
           </Link>
