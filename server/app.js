@@ -69,7 +69,6 @@ const corsOptions = {
 connectDB();
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 app.use(helmet());
 app.use(hpp());
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
