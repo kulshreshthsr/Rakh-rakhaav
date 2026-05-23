@@ -38,12 +38,12 @@ const getEmptyPartyForm = (kind = 'customer') => ({
 });
 
 /* ─── Small UI helpers ───────────────────────────────────────────── */
-const INPUT_CLS = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 focus:border-rose-400 transition-all';
+const INPUT_CLS = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 /* Avatar with gradient based on name */
 function Avatar({ name, size = 'md' }) {
   const colors = [
-    'from-cyan-500 to-blue-600', 'from-rose-500 to-pink-600',
+    'from-green-600 to-emerald-700', 'from-rose-500 to-pink-600',
     'from-emerald-500 to-teal-600', 'from-violet-500 to-purple-600',
     'from-amber-500 to-orange-600', 'from-blue-500 to-indigo-600',
   ];
@@ -416,18 +416,20 @@ export default function UdhaarPage() {
       <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28 space-y-5">
 
         {/* ══ HERO HEADER ════════════════════════════════════════════ */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-rose-50/40 to-orange-50/30 border border-slate-200 p-5 lg:p-6 shadow-sm">
-          <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-rose-200/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 lg:p-7 shadow-lg hover:shadow-xl transition-shadow">
+          {/* Green decorative orbs */}
+          <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-green-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
+          
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-[10px] font-bold uppercase tracking-widest text-rose-700">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
                 💸 Credit Ledger
               </span>
-              <h1 className="mt-2.5 text-[24px] lg:text-[28px] font-black text-slate-900 leading-tight tracking-tight">
+              <h1 className="mt-3 text-[26px] lg:text-[28px] font-black text-slate-900 leading-tight tracking-tight">
                 उधार — Parties & Dues
               </h1>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <p className="mt-2 text-[14px] text-slate-600 font-medium">
                 Customer और Supplier का पूरा हिसाब — collect, pay, remind — सब यहाँ
               </p>
               {!isOnline
@@ -441,7 +443,7 @@ export default function UdhaarPage() {
               <button
                 type="button"
                 onClick={() => router.push('/sales?open=1&payment=credit')}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-[12px] font-black text-rose-700 hover:bg-rose-100 transition-all hover:-translate-y-px"
+                className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-green-200 bg-green-50 text-[13px] font-black text-green-700 shadow-md hover:bg-green-100 transition-all hover:-translate-y-0.5"
               >
                 + Credit Sale
               </button>
@@ -688,12 +690,12 @@ export default function UdhaarPage() {
                               {/* Balance breakdown */}
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
                                 {(isCustomer ? [
-                                  { label: 'Opening',      val: `₹${fmt(item.opening_balance)}`, color: 'text-cyan-700', bg: 'bg-cyan-50' },
+                                  { label: 'Opening',      val: `₹${fmt(item.opening_balance)}`, color: 'text-green-700', bg: 'bg-green-50' },
                                   { label: 'Total Sales',  val: `₹${fmt(item.totalSales)}`,      color: 'text-slate-700', bg: 'bg-white' },
                                   { label: 'Received',     val: `₹${fmt(item.totalPaid)}`,       color: 'text-emerald-600', bg: 'bg-emerald-50' },
                                   { label: 'Due',          val: `₹${fmt(item.totalUdhaar)}`,     color: item.totalUdhaar > 0 ? 'text-rose-600' : 'text-emerald-600', bg: item.totalUdhaar > 0 ? 'bg-rose-50' : 'bg-emerald-50' },
                                 ] : [
-                                  { label: 'Opening',      val: `₹${fmt(item.opening_balance)}`, color: 'text-cyan-700', bg: 'bg-cyan-50' },
+                                  { label: 'Opening',      val: `₹${fmt(item.opening_balance)}`, color: 'text-green-700', bg: 'bg-green-50' },
                                   { label: 'Purchased',    val: `₹${fmt(item.totalPurchased)}`,  color: 'text-slate-700', bg: 'bg-white' },
                                   { label: 'Paid',         val: `₹${fmt(item.totalPaid)}`,       color: 'text-emerald-600', bg: 'bg-emerald-50' },
                                   { label: 'Due',          val: `₹${fmt(item.totalUdhaar)}`,     color: item.totalUdhaar > 0 ? 'text-amber-600' : 'text-emerald-600', bg: item.totalUdhaar > 0 ? 'bg-amber-50' : 'bg-emerald-50' },
@@ -726,7 +728,7 @@ export default function UdhaarPage() {
                                 <button
                                   type="button"
                                   onClick={() => openEditPartyModal(item)}
-                                  className="px-4 py-2.5 rounded-xl text-[13px] font-bold text-cyan-700 border border-cyan-200 bg-cyan-50 hover:bg-cyan-100 transition-colors"
+                                  className="px-4 py-2.5 rounded-xl text-[13px] font-bold text-green-700 border border-green-200 bg-green-50 hover:bg-green-100 transition-colors"
                                 >Edit Party</button>
                                 <button
                                   type="button"
@@ -1044,7 +1046,7 @@ export default function UdhaarPage() {
                       onClick={() => setSettlePaymentMode(option.value)}
                       className={`rounded-xl border px-3 py-2 text-[12px] font-black transition-colors ${
                         settlePaymentMode === option.value
-                          ? 'border-cyan-300 bg-cyan-50 text-cyan-700'
+                          ? 'border-cyan-300 bg-green-50 text-green-700'
                           : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                     >
@@ -1154,7 +1156,7 @@ export default function UdhaarPage() {
                 <button
                   type="submit"
                   disabled={partySaving}
-                  className="flex-1 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+                  className="flex-1 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/25 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
                 >
                   {partySaving ? 'Saving...' : partyMode === 'edit' ? 'Update Party' : 'Create Party'}
                 </button>

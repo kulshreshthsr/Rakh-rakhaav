@@ -108,7 +108,7 @@ const buildLocalGSTSummary = (sales = [], purchases = [], month, year) => {
 };
 
 /* ─── Small reusable UI pieces ───────────────────────────────────── */
-const INPUT_CLS = 'h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all';
+const INPUT_CLS = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 function SectionCard({ children, className = '' }) {
   return (
@@ -148,7 +148,7 @@ function ExportBtn({ onClick, disabled, children, variant = 'default' }) {
     primary:  'border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100',
     blue:     'border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100',
     dark:     'border border-slate-300 bg-slate-800 text-white hover:bg-slate-700',
-    zip:      'border border-cyan-200 bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-md shadow-cyan-500/20',
+    zip:      'border border-green-200 bg-gradient-to-r from-green-600 to-emerald-700 text-white hover:opacity-90 shadow-md shadow-green-600/20',
   }[variant];
   return (
     <button onClick={onClick} disabled={disabled}
@@ -310,11 +310,11 @@ export default function GSTPage() {
           <tbody className="divide-y divide-slate-50">
             {drillData.map((item, i) => (
               <tr key={i} className="hover:bg-slate-50 transition-colors">
-                <td className="px-4 py-2.5 font-mono text-[11px] text-cyan-600">{safeText(item.invoice_number)}</td>
+                <td className="px-4 py-2.5 font-mono text-[11px] text-green-700">{safeText(item.invoice_number)}</td>
                 <td className="px-4 py-2.5 text-slate-700">{safeText(item.product_name||(item.items?.length>1?`${item.items.length} items`:item.items?.[0]?.product_name))}</td>
                 <td className="px-4 py-2.5 text-slate-600">{safeText(item.buyer_name||item.supplier_name||'-')}</td>
                 <td className="px-4 py-2.5 font-semibold text-slate-800">₹{fmt(item.taxable_amount)}</td>
-                <td className={`px-4 py-2.5 font-bold ${type==='sales'?'text-emerald-600':'text-cyan-600'}`}>₹{fmt(item.total_gst)}</td>
+                <td className={`px-4 py-2.5 font-bold ${type==='sales'?'text-emerald-600':'text-green-700'}`}>₹{fmt(item.total_gst)}</td>
                 <td className="px-4 py-2.5 font-black text-slate-900">₹{fmt(item.total_amount)}</td>
               </tr>
             ))}
@@ -332,15 +332,18 @@ export default function GSTPage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Page header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-amber-50/40 to-orange-50/30 border border-slate-200 p-5 shadow-sm">
-          <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-amber-200/30 blur-3xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
+          {/* Green decorative orbs */}
+          <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-green-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
+          
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-bold uppercase tracking-widest text-amber-700">
-                Tax & Compliance
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
+                📊 Tax & Compliance
               </span>
-              <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight">GST / Tax Summary</h1>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">GST / Tax Summary</h1>
+              <p className="mt-2 text-[14px] text-slate-600 font-medium">
                 GST collect किया, ITC क्लेम किया, filing-ready exports — सब यहाँ
               </p>
               {!isOnline
@@ -394,7 +397,7 @@ export default function GSTPage() {
             {/* ══════════════════════════════════════
                 BLOCK 1 — GST POSITION (TOP CARD)
             ══════════════════════════════════════ */}
-            <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${isPayable ? 'bg-gradient-to-br from-rose-50 to-orange-50 border-rose-200' : 'bg-gradient-to-br from-emerald-50 to-cyan-50 border-emerald-200'}`}>
+            <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${isPayable ? 'bg-gradient-to-br from-rose-50 to-orange-50 border-rose-200' : 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200'}`}>
               <div className="pointer-events-none absolute -top-8 -right-8 w-32 h-32 rounded-full blur-2xl opacity-50"
                 style={{ background: isPayable ? '#fca5a5' : '#6ee7b7' }} />
               <div className="relative">
@@ -418,7 +421,7 @@ export default function GSTPage() {
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: 'Output GST', sublabel: 'Sales से collect हुआ', value: `₹${fmt(gstCollected)}`, color: 'text-slate-800' },
-                    { label: 'Input ITC',  sublabel: 'Purchase से credit',   value: `₹${fmt(gstITC)}`,       color: 'text-cyan-700'  },
+                    { label: 'Input ITC',  sublabel: 'Purchase से credit',   value: `₹${fmt(gstITC)}`,       color: 'text-green-700'  },
                     { label: isPayable ? 'Payable' : 'Excess ITC', sublabel: 'After set-off', value: `₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`, color: isPayable ? 'text-rose-700' : 'text-emerald-700' },
                   ].map((s) => (
                     <div key={s.label} className="bg-white/70 rounded-xl p-3 border border-white">
@@ -446,7 +449,7 @@ export default function GSTPage() {
               />
               <div className="px-5 pb-3">
                 <button onClick={() => openDrill('sales')}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-black transition-all border ${drillType==='sales' ? 'bg-cyan-500 border-cyan-500 text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-black transition-all border ${drillType==='sales' ? 'bg-green-600 border-green-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
                 >
                   {drillType === 'sales' ? '▴ Sales छुपाओ' : '▾ Sales देखो'}
                 </button>
@@ -462,7 +465,7 @@ export default function GSTPage() {
                 label="GST Input Credit (ITC)"
                 note={`Purchases से। CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}
                 value={`₹${fmt(gstITC)}`}
-                valueColor="text-cyan-600"
+                valueColor="text-green-700"
               />
               {gstITC === 0 && (
                 <div className="px-5 pb-3">
@@ -474,7 +477,7 @@ export default function GSTPage() {
               )}
               <div className="px-5 pb-3">
                 <button onClick={() => openDrill('purchases')}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-black transition-all border ${drillType==='purchases' ? 'bg-cyan-500 border-cyan-500 text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-black transition-all border ${drillType==='purchases' ? 'bg-green-600 border-green-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
                 >
                   {drillType === 'purchases' ? '▴ Purchases छुपाओ' : '▾ Purchases देखो'}
                 </button>
@@ -524,7 +527,7 @@ export default function GSTPage() {
                       <td className="px-4 py-3 text-slate-800">₹{fmt(summary.purchases.cgst)}</td>
                       <td className="px-4 py-3 text-slate-800">₹{fmt(summary.purchases.sgst)}</td>
                       <td className="px-4 py-3 text-slate-800">₹{fmt(summary.purchases.igst)}</td>
-                      <td className="px-4 py-3 font-black text-cyan-600">₹{fmt(summary.purchases.total_gst)}</td>
+                      <td className="px-4 py-3 font-black text-green-700">₹{fmt(summary.purchases.total_gst)}</td>
                     </tr>
                     <tr className={isPayable ? 'bg-rose-50' : 'bg-emerald-50'}>
                       <td className="px-4 py-3 font-black text-slate-900">{isPayable ? 'Payable After ITC' : 'Unused ITC / Nil'}</td>
@@ -544,7 +547,7 @@ export default function GSTPage() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'B2B Invoices', count: summary.sales.b2b_count, taxable: summary.sales.b2b_taxable, color: 'bg-blue-50 border-blue-200', tc: 'text-blue-700', note: 'Business customers (GSTIN)' },
-                { label: 'B2C Invoices', count: summary.sales.b2c_count, taxable: summary.sales.b2c_taxable, color: 'bg-cyan-50 border-cyan-200',  tc: 'text-cyan-700',  note: 'Regular customers' },
+                { label: 'B2C Invoices', count: summary.sales.b2c_count, taxable: summary.sales.b2c_taxable, color: 'bg-green-50 border-green-200',  tc: 'text-green-700',  note: 'Regular customers' },
               ].map((s) => (
                 <div key={s.label} className={`${s.color} border rounded-2xl p-4 shadow-sm`}>
                   <p className={`text-[28px] font-black leading-none ${s.tc}`}>{s.count}</p>
@@ -586,7 +589,7 @@ export default function GSTPage() {
                     <tbody className="divide-y divide-slate-50">
                       {summary.gstr1.b2b_invoices.map((inv, i) => (
                         <tr key={i} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-2.5 font-mono text-[11px] text-cyan-600">{safeText(inv.invoice_number)}</td>
+                          <td className="px-4 py-2.5 font-mono text-[11px] text-green-700">{safeText(inv.invoice_number)}</td>
                           <td className="px-4 py-2.5 font-semibold text-slate-800">{safeText(inv.buyer_name||'-')}</td>
                           <td className="px-4 py-2.5 font-mono text-[10px] text-slate-500">{safeText(inv.buyer_gstin)}</td>
                           <td className="px-4 py-2.5 text-slate-700">₹{fmt(inv.taxable_amount)}</td>
@@ -603,7 +606,7 @@ export default function GSTPage() {
                   {summary.gstr1.b2b_invoices.map((inv, i) => (
                     <div key={i} className="px-4 py-3">
                       <div className="flex items-start justify-between mb-1">
-                        <span className="font-mono text-[11px] text-cyan-600">{safeText(inv.invoice_number)}</span>
+                        <span className="font-mono text-[11px] text-green-700">{safeText(inv.invoice_number)}</span>
                         <span className="font-black text-emerald-600">₹{fmt(inv.total)}</span>
                       </div>
                       <p className="text-[13px] font-bold text-slate-900">{safeText(inv.buyer_name)}</p>
