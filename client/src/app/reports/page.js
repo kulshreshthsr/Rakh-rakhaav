@@ -49,7 +49,7 @@ function Icon({ name, size = 16 }) {
 }
 
 /* ─── Reusable section card ─────────────────────────────────────── */
-function SectionCard({ title, eyebrow, badge, action, children, accentColor = '#06b6d4' }) {
+function SectionCard({ title, eyebrow, badge, action, children, accentColor = '#16a34a' }) {
   return (
     <div className="card reports-section-card">
       {/* Top accent line */}
@@ -595,16 +595,16 @@ export default function ReportsPage() {
               label="Revenue"
               value={`₹${fmtN(summary.totalRevenue)}`}
               sub={`${summary.salesCount || 0} invoices`}
-              barColor="linear-gradient(90deg,#06b6d4,#6366f1)"
-              valueColor="#0e7490"
+              barColor="linear-gradient(90deg,#16a34a,#047857)"
+              valueColor="#15803d"
               icon="rupee"
             />
             <KpiCard
               label="Profit"
               value={`₹${fmtN(summary.grossProfit)}`}
               sub={`Margin ${fmt(summary.margin)}%`}
-              barColor={summary.grossProfit >= 0 ? 'linear-gradient(90deg,#10b981,#06b6d4)' : 'linear-gradient(90deg,#f43f5e,#fb923c)'}
-              valueColor={summary.grossProfit >= 0 ? '#065f46' : '#9f1239'}
+              barColor={summary.grossProfit >= 0 ? 'linear-gradient(90deg,#10b981,#047857)' : 'linear-gradient(90deg,#f43f5e,#fb923c)'}
+              valueColor={summary.grossProfit >= 0 ? '#15803d' : '#9f1239'}
               icon="trend_up"
             />
             <KpiCard
@@ -643,18 +643,18 @@ export default function ReportsPage() {
             <SectionCard
               title="Profit Breakdown"
               eyebrow={`${label} · Financial Summary`}
-              accentColor="linear-gradient(90deg,#10b981,#06b6d4)"
+              accentColor="linear-gradient(90deg,#16a34a,#047857)"
               action={<CsvBtn onClick={() => exportCSV('profit')} label="Export CSV" busy={downloadState.active && downloadState.key === 'profit'} />}
             >
               {/* Two-column breakdown grid */}
               <div className="reports-breakdown-grid">
                 {[
-                  { l: 'Total Revenue',    v: summary.totalRevenue,                                      color: '#0e7490',  bg: '#ecfeff' },
+                  { l: 'Total Revenue',    v: summary.totalRevenue,                                      color: '#15803d',  bg: '#f0fdf4' },
                   { l: 'GST Collected',    v: summary.totalGST,                                          color: '#92400e',  bg: '#fffbeb' },
-                  { l: 'Taxable Revenue',  v: (summary.totalRevenue || 0) - (summary.totalGST || 0),     color: '#1e40af',  bg: '#eff6ff' },
-                  { l: 'Gross Profit',     v: summary.grossProfit,                                        color: summary.grossProfit >= 0 ? '#065f46' : '#9f1239', bg: summary.grossProfit >= 0 ? '#f0fdf4' : '#fff1f2' },
+                  { l: 'Taxable Revenue',  v: (summary.totalRevenue || 0) - (summary.totalGST || 0),     color: '#047857',  bg: '#ecfdf5' },
+                  { l: 'Gross Profit',     v: summary.grossProfit,                                        color: summary.grossProfit >= 0 ? '#15803d' : '#9f1239', bg: summary.grossProfit >= 0 ? '#f0fdf4' : '#fff1f2' },
                   { l: 'Total Purchase',   v: summary.totalPurchase,                                     color: '#6d28d9',  bg: '#f5f3ff' },
-                  { l: 'Input Tax Credit', v: summary.totalITC,                                          color: '#0891b2',  bg: '#ecfeff' },
+                  { l: 'Input Tax Credit', v: summary.totalITC,                                          color: '#047857',  bg: '#ecfdf5' },
                 ].map(item => (
                   <div
                     key={item.l}
@@ -743,7 +743,7 @@ export default function ReportsPage() {
               title="Accounting Overview"
               eyebrow={`${label} · Double-entry ledger view`}
               badge={accountingErrors.length ? `${accountingErrors.length} issues` : 'Reconciled'}
-              accentColor="linear-gradient(90deg,#0f766e,#2563eb)"
+              accentColor="linear-gradient(90deg,#16a34a,#047857)"
               action={<CsvBtn onClick={() => fetchAll(true)} label="Refresh" busy={entrySubmitting || (downloadState.active && downloadState.key === 'accounting-entry')} />}
             >
               <form onSubmit={submitAccountingEntry} style={{ marginBottom: 18 }}>

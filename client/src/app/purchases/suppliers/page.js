@@ -267,7 +267,7 @@ export default function SupplierDirectoryPage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="font-bold text-blue-600">₹{Number(purchase.total_amount || 0).toFixed(2)}</div>
+                            <div className="font-bold text-emerald-700">₹{Number(purchase.total_amount || 0).toFixed(2)}</div>
                             {(purchase.balance_due || 0) > 0 ? (
                               <div className="text-[11px] font-bold text-rose-500">Due ₹{Number(purchase.balance_due || 0).toFixed(2)}</div>
                             ) : (

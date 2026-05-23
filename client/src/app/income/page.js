@@ -18,8 +18,8 @@ const getEmptyForm = () => ({
 });
 
 const CAT_EMOJI  = { other_income: '💰', interest: '🏦', commission: '🤝', rent: '🏠', discount: '🏷️' };
-const MODE_COLOR = { cash: 'bg-amber-100 text-amber-800', upi: 'bg-cyan-100 text-cyan-800', bank: 'bg-blue-100 text-blue-800' };
-const INP = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all';
+const MODE_COLOR = { cash: 'bg-amber-100 text-amber-800', upi: 'bg-green-100 text-green-800', bank: 'bg-blue-100 text-blue-800' };
+const INP = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 export default function IncomePage() {
   const router = useRouter();
@@ -121,7 +121,7 @@ export default function IncomePage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-emerald-50/40 to-cyan-50/30 border border-slate-200 p-5 shadow-sm">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-emerald-50/40 to-green-50/30 border border-slate-200 p-5 shadow-sm">
           <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-emerald-200/30 blur-3xl" />
           <div className="relative">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold uppercase tracking-widest text-emerald-700">
@@ -145,7 +145,7 @@ export default function IncomePage() {
         <div className="grid grid-cols-3 gap-2.5">
           {[
             { label: 'कुल आमदनी',  value: `₹${fmtShort(totalIncome)}`, sub: `${filteredEntries.length} entries`, bg: 'bg-emerald-50 border-emerald-200', vc: 'text-emerald-700' },
-            { label: 'Cash Income', value: `₹${fmtShort(cashIncome)}`,  sub: 'cash inflow',                       bg: 'bg-cyan-50 border-cyan-200',       vc: 'text-cyan-700'   },
+            { label: 'Cash Income', value: `₹${fmtShort(cashIncome)}`,  sub: 'cash inflow',                       bg: 'bg-green-50 border-green-200',       vc: 'text-green-700'   },
             { label: 'Bank / UPI',  value: `₹${fmtShort(bankIncome)}`,  sub: 'digital inflow',                    bg: 'bg-blue-50 border-blue-200',        vc: 'text-blue-700'   },
           ].map((k) => (
             <div key={k.label} className={`${k.bg} border rounded-2xl p-3 shadow-sm`}>
@@ -165,7 +165,7 @@ export default function IncomePage() {
 
         {/* ── Add / Edit form ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className={`h-1 ${editingId ? 'bg-gradient-to-r from-cyan-400 to-blue-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-500'}`} />
+          <div className={`h-1 ${editingId ? 'bg-gradient-to-r from-green-600 to-blue-500' : 'bg-gradient-to-r from-emerald-500 to-green-600'}`} />
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{editingId ? 'Edit income' : 'New income'}</p>
@@ -231,7 +231,7 @@ export default function IncomePage() {
             </div>
 
             <button type="submit" disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-emerald-500 to-cyan-500 shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 transition-all"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 transition-all"
             >
               {saving ? '⏳ Saving...' : editingId ? '✏️ Update Income' : '💾 Save Income'}
             </button>
@@ -240,7 +240,7 @@ export default function IncomePage() {
 
         {/* ── Transaction history ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-emerald-600 to-blue-600" />
+          <div className="h-1 bg-gradient-to-r from-emerald-600 to-emerald-700" />
           <div className="px-5 py-4 border-b border-slate-100">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Income Register</p>
             <h3 className="text-[14px] font-black text-slate-900 mt-0.5">Transaction History</h3>

@@ -21,7 +21,7 @@ const OUTFLOW_TYPES = ['withdrawal', 'charge', 'transfer_out'];
 const TYPE_EMOJI    = { deposit: '⬇️', withdrawal: '⬆️', charge: '💳', interest: '🏦', transfer_in: '↙️', transfer_out: '↗️' };
 const TYPE_LABEL    = { deposit: 'Deposit', withdrawal: 'Withdrawal', charge: 'Charge', interest: 'Interest', transfer_in: 'Transfer In', transfer_out: 'Transfer Out' };
 
-const INP = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all';
+const INP = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 export default function BankEntriesPage() {
   const router = useRouter();
@@ -120,7 +120,7 @@ export default function BankEntriesPage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-blue-50/40 to-cyan-50/30 border border-slate-200 p-5 shadow-sm">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-blue-50/40 to-green-50/30 border border-slate-200 p-5 shadow-sm">
           <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-blue-200/30 blur-3xl" />
           <div className="relative">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-bold uppercase tracking-widest text-blue-700">
@@ -164,7 +164,7 @@ export default function BankEntriesPage() {
 
         {/* ── Add / Edit form ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className={`h-1 ${editingId ? 'bg-gradient-to-r from-cyan-400 to-blue-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`} />
+          <div className={`h-1 ${editingId ? 'bg-gradient-to-r from-green-600 to-blue-500' : 'bg-gradient-to-r from-blue-500 to-green-600'}`} />
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{editingId ? 'Edit bank entry' : 'New bank entry'}</p>
@@ -223,7 +223,7 @@ export default function BankEntriesPage() {
             </div>
 
             <button type="submit" disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 transition-all"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-blue-500 to-green-600 shadow-lg shadow-blue-500/20 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 transition-all"
             >
               {saving ? '⏳ Saving...' : editingId ? '✏️ Update Bank Entry' : '💾 Save Bank Entry'}
             </button>
@@ -232,7 +232,7 @@ export default function BankEntriesPage() {
 
         {/* ── Transaction history ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
+          <div className="h-1 bg-gradient-to-r from-emerald-700 to-emerald-500" />
           <div className="px-5 py-4 border-b border-slate-100">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Bank Register</p>
             <h3 className="text-[14px] font-black text-slate-900 mt-0.5">Transaction History</h3>

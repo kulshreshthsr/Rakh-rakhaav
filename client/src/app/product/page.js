@@ -14,8 +14,8 @@ const normalizeBarcode = (v = '') => String(v).replace(/\s+/g, '').trim();
 const historyTypeLabel = (t) => ({ purchase:'Purchase', sale:'Sale', manual_add:'Added', manual_remove:'Removed', adjustment:'Adjusted' }[t] || t);
 
 /* ─── Shared classes ── */
-const INP = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all';
-const SEL = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all';
+const INP = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
+const SEL = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 /* ─── Stock status helpers ── */
 function stockStatus(p) {
@@ -201,7 +201,7 @@ export default function ProductsPage() {
   const STOCK_TYPES = {
     manual_add:    { label:'Stock जोड़ो',   color:'border-emerald-400 bg-emerald-50 text-emerald-800', active:'bg-emerald-500 text-white border-emerald-500' },
     manual_remove: { label:'Stock हटाओ',   color:'border-rose-400 bg-rose-50 text-rose-800',         active:'bg-rose-500 text-white border-rose-500' },
-    adjustment:    { label:'Correction',   color:'border-cyan-400 bg-cyan-50 text-cyan-800',          active:'bg-cyan-500 text-white border-cyan-500' },
+    adjustment:    { label:'Correction',   color:'border-green-600 bg-green-50 text-cyan-800',          active:'bg-green-600 text-white border-green-600' },
   };
 
   /* ════════════════════════════════════════════════════════════════
@@ -223,15 +223,18 @@ export default function ProductsPage() {
         )}
 
         {/* ── HEADER ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-cyan-50/40 to-emerald-50/30 border border-slate-200 p-5 shadow-sm">
-          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-cyan-200/30 blur-3xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
+          {/* Green decorative orbs */}
+          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-green-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-emerald-200/30 blur-3xl" />
+          
           <div className="relative flex items-start justify-between gap-3">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
                 📦 Stock Control
               </span>
-              <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight">स्टॉक / Products</h1>
-              <p className="mt-1 text-[12px] text-slate-400">
+              <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">स्टॉक / Products</h1>
+              <p className="mt-2 text-[13px] text-slate-600 font-medium">
                 {refreshing ? '🔄 Refreshing...'
                   : !isOnline ? `📶 Offline snapshot${cacheLabel ? ` · ${cacheLabel}` : ''}`
                   : cacheLabel ? `✓ Last synced ${cacheLabel}`
@@ -239,41 +242,42 @@ export default function ProductsPage() {
               </p>
             </div>
             <button onClick={openAdd} disabled={!isOnline}
-              className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:-translate-y-px hover:shadow-lg disabled:opacity-50 transition-all"
+              className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 transition-all"
             >+ Product</button>
           </div>
         </div>
 
         {/* ── KPI STRIP ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label:'Total Products',  value: products.length,                                            bg:'bg-purple-50 border-purple-200', vc:'text-purple-700' },
-            { label:'Low Stock',       value: lowStockCount,                                              bg:'bg-amber-50 border-amber-200',   vc:'text-amber-700'  },
-            { label:'Out of Stock',    value: outOfStockCount,                                            bg:'bg-rose-50 border-rose-200',     vc:'text-rose-700'   },
-            { label:'Inventory Value', value: `₹${Math.round(totalValue).toLocaleString('en-IN')}`,       bg:'bg-emerald-50 border-emerald-200', vc:'text-emerald-700' },
+            { label:'Total Products',  value: products.length,                                            gradient:'from-green-50 to-emerald-100', border:'border-green-200', vc:'text-green-800', icon:'📦' },
+            { label:'Low Stock',       value: lowStockCount,                                              gradient:'from-amber-50 to-orange-100',   border:'border-amber-200',   vc:'text-amber-800', icon:'⚠️'  },
+            { label:'Out of Stock',    value: outOfStockCount,                                            gradient:'from-rose-50 to-red-100',     border:'border-rose-200',     vc:'text-rose-800', icon:'❌'   },
+            { label:'Inventory Value', value: `₹${Math.round(totalValue).toLocaleString('en-IN')}`,       gradient:'from-emerald-50 to-green-100', border:'border-emerald-200', vc:'text-emerald-800', icon:'💰' },
           ].map(k => (
-            <div key={k.label} className={`${k.bg} border rounded-2xl p-3 shadow-sm`}>
-              <p className={`text-[20px] font-black leading-none ${k.vc}`}>{k.value}</p>
-              <p className="text-[10px] font-bold text-slate-500 mt-1.5 uppercase tracking-wide leading-tight">{k.label}</p>
+            <div key={k.label} className={`relative overflow-hidden bg-gradient-to-br ${k.gradient} border-2 ${k.border} rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
+              <div className="absolute top-2 right-2 text-2xl opacity-10">{k.icon}</div>
+              <p className={`text-[22px] font-black leading-none ${k.vc}`}>{k.value}</p>
+              <p className="text-[10px] font-bold text-slate-600 mt-1.5 uppercase tracking-wide leading-tight">{k.label}</p>
             </div>
           ))}
         </div>
 
         {/* ── TOOLBAR ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm space-y-2">
-          <input className="h-10 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 transition-all"
+        <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md space-y-3">
+          <input className="h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
             placeholder="🔍 Search name, barcode, description..."
             value={search} onChange={e => setSearch(e.target.value)}
           />
           <div className="flex gap-2">
-            <select className={`flex-1 h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none transition-all`}
+            <select className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
               value={filterStock} onChange={e => setFilterStock(e.target.value)}>
               <option value="all">All Stock</option>
               <option value="instock">In Stock</option>
               <option value="low">Low Stock</option>
               <option value="out">Out of Stock</option>
             </select>
-            <select className={`flex-1 h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none transition-all`}
+            <select className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
               value={sortBy} onChange={e => setSortBy(e.target.value)}>
               <option value="name">Sort: Name</option>
               <option value="price_asc">Price: Low → High</option>
@@ -283,7 +287,7 @@ export default function ProductsPage() {
             </select>
             {(search || filterStock !== 'all') && (
               <button onClick={() => { setSearch(''); setFilterStock('all'); }}
-                className="px-4 h-10 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
+                className="px-4 h-11 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
               >Clear</button>
             )}
           </div>
@@ -315,7 +319,7 @@ export default function ProductsPage() {
             </p>
             {!search && filterStock === 'all' && (
               <button onClick={openAdd}
-                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-md hover:shadow-lg transition-all"
+                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
               >+ पहला Product Add करो</button>
             )}
           </div>
@@ -357,7 +361,7 @@ export default function ProductsPage() {
                           { label: 'Price',  value: `₹${p.price}`,                             cls: 'text-slate-900 font-black' },
                           { label: 'Margin', value: p.margin != null ? `${p.margin}%` : '—',  cls: marginColor(p.margin) + ' font-black' },
                           { label: 'Qty',    value: `${p.quantity}`,                           cls: (p.quantity === 0 ? 'text-rose-600' : p.is_low_stock ? 'text-amber-600' : 'text-emerald-600') + ' font-black text-[16px]' },
-                          { label: 'GST',    value: p.gst_rate > 0 ? `${p.gst_rate}%` : 'NIL', cls: 'text-cyan-700 font-bold' },
+                          { label: 'GST',    value: p.gst_rate > 0 ? `${p.gst_rate}%` : 'NIL', cls: 'text-green-700 font-bold' },
                         ].map(item => (
                           <div key={item.label} className="text-center">
                             <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.label}</p>
@@ -369,7 +373,7 @@ export default function ProductsPage() {
                       {/* Action buttons */}
                       <div className="grid grid-cols-4 gap-2">
                         <button onClick={() => openStockAdjust(p)}
-                          className="py-2 rounded-xl border border-cyan-200 bg-cyan-50 text-[11px] font-bold text-cyan-700 hover:bg-cyan-100 transition-colors"
+                          className="py-2 rounded-xl border border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-colors"
                         >📦 Stock</button>
                         <button onClick={() => openHistory(p)}
                           className="py-2 rounded-xl border border-amber-200 bg-amber-50 text-[11px] font-bold text-amber-700 hover:bg-amber-100 transition-colors"
@@ -511,7 +515,7 @@ export default function ProductsPage() {
                         }}
                       />
                       {suggestedGstRate !== undefined && (
-                        <p className="text-[10px] text-cyan-600 mt-1">Suggested GST: {suggestedGstRate}%</p>
+                        <p className="text-[10px] text-green-700 mt-1">Suggested GST: {suggestedGstRate}%</p>
                       )}
                     </div>
                     <div>
@@ -526,9 +530,9 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   {form.price && form.gst_rate > 0 && (
-                    <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-cyan-50 border border-cyan-200 text-[12px]">
+                    <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-green-50 border border-green-200 text-[12px]">
                       <span className="text-slate-500">GST Preview</span>
-                      <span className="font-bold text-cyan-700">
+                      <span className="font-bold text-green-700">
                         ₹{parseFloat(form.price||0).toFixed(2)} + {form.gst_rate}% = <strong>₹{(parseFloat(form.price||0)*(1+form.gst_rate/100)).toFixed(2)}</strong>
                       </span>
                     </div>
@@ -538,7 +542,7 @@ export default function ProductsPage() {
                 {/* Submit */}
                 <div className="flex gap-3 pb-2">
                   <button type="submit"
-                    className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 hover:-translate-y-0.5 transition-all"
+                    className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 transition-all"
                   >{editProduct ? '✓ Update Product' : '+ Add Product'}</button>
                   <button type="button" onClick={() => setShowModal(false)}
                     className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
@@ -619,7 +623,7 @@ export default function ProductsPage() {
 
                 <div className="flex gap-3 pb-2">
                   <button type="submit" disabled={stockSubmitting}
-                    className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-emerald-500 to-cyan-500 shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 transition-all"
+                    className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 transition-all"
                   >{stockSubmitting ? '⏳ Saving...' : '✓ Stock Update करो'}</button>
                   <button type="button" onClick={() => { setShowStockModal(false); setError(''); }}
                     className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"

@@ -31,7 +31,7 @@ const getEffectiveMonthly = (plan) => {
 
 /* ── Border accent per plan ── */
 const PLAN_BORDER = {
-  weekly:    'border-l-cyan-400',
+  weekly:    'border-l-green-600',
   monthly:   'border-l-blue-400',
   six_month: 'border-l-indigo-500',
   yearly:    'border-l-slate-800',
@@ -39,7 +39,7 @@ const PLAN_BORDER = {
 
 /* ── Badge color per plan ── */
 const BADGE_CLS = {
-  weekly:    'bg-cyan-50 text-cyan-700 border-cyan-200',
+  weekly:    'bg-green-50 text-green-700 border-green-200',
   monthly:   'bg-blue-50 text-blue-700 border-blue-200',
   six_month: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   yearly:    'bg-slate-900 text-white border-slate-900',
@@ -91,7 +91,7 @@ export default function PricingPage() {
 
         {/* ── HERO ── */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 px-5 py-6 text-white shadow-xl">
-          <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-green-600/15 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-blue-500/10 blur-3xl" />
           <div className="relative">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-bold uppercase tracking-widest text-white/80 mb-3">
@@ -121,13 +121,13 @@ export default function PricingPage() {
                 onClick={() => setSelectedPlan(plan.id)}
                 className={`relative bg-white rounded-2xl border-2 border-l-4 ${borderCls} cursor-pointer transition-all overflow-hidden ${
                   isSelected
-                    ? 'border-cyan-400 shadow-lg shadow-cyan-500/15 -translate-y-0.5'
+                    ? 'border-green-600 shadow-lg shadow-green-600/15 -translate-y-0.5'
                     : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
                 }`}
               >
                 {/* Selected indicator bar */}
                 {isSelected && (
-                  <div className="h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500" />
+                  <div className="h-0.5 bg-gradient-to-r from-green-600 to-blue-500" />
                 )}
 
                 <div className="px-5 py-4">
@@ -160,8 +160,8 @@ export default function PricingPage() {
                   {/* Select / Selected indicator */}
                   <div className="mt-3">
                     {isSelected ? (
-                      <div className="flex items-center gap-2 text-[12px] font-black text-cyan-700">
-                        <div className="w-4 h-4 rounded-full bg-cyan-500 flex items-center justify-center text-white text-[8px]">✓</div>
+                      <div className="flex items-center gap-2 text-[12px] font-black text-green-700">
+                        <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center text-white text-[8px]">✓</div>
                         Checkout के लिए selected
                       </div>
                     ) : (
@@ -215,7 +215,7 @@ export default function PricingPage() {
 
         {/* ── CHECKOUT CARD (desktop) ── */}
         <div className="hidden sm:block bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-600" />
+          <div className="h-1 bg-gradient-to-r from-green-600 to-emerald-700" />
           <div className="px-5 py-5">
             <div className="flex items-center justify-between gap-4 mb-4">
               <div>
@@ -233,14 +233,14 @@ export default function PricingPage() {
               <button
                 type="button"
                 onClick={() => setShowUpgradeModal(true)}
-                className="w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                className="w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/25 hover:-translate-y-0.5 hover:shadow-xl transition-all"
               >
                 Checkout पर जाओ →
               </button>
             ) : (
               <Link
                 href="/register"
-                className="flex items-center justify-center w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:-translate-y-0.5 hover:shadow-xl transition-all no-underline"
+                className="flex items-center justify-center w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/25 hover:-translate-y-0.5 hover:shadow-xl transition-all no-underline"
               >
                 अभी unlock करें →
               </Link>
@@ -264,14 +264,14 @@ export default function PricingPage() {
           <button
             type="button"
             onClick={() => setShowUpgradeModal(true)}
-            className="w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 hover:shadow-xl transition-all"
+            className="w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/25 hover:shadow-xl transition-all"
           >
             Checkout पर जाओ →
           </button>
         ) : (
           <Link
             href="/register"
-            className="flex items-center justify-center w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25 transition-all no-underline"
+            className="flex items-center justify-center w-full py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/25 transition-all no-underline"
           >
             अभी unlock करें →
           </Link>

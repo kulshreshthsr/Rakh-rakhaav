@@ -19,10 +19,10 @@ const getEmptyForm = () => ({
 
 /* ── Category emoji map ── */
 const CAT_EMOJI = { rent: '🏠', salary: '👷', transport: '🚛', utility: '💡', maintenance: '🔧', misc: '📦' };
-const MODE_COLOR = { cash: 'bg-amber-100 text-amber-800', upi: 'bg-cyan-100 text-cyan-800', bank: 'bg-blue-100 text-blue-800' };
+const MODE_COLOR = { cash: 'bg-amber-100 text-amber-800', upi: 'bg-green-100 text-green-800', bank: 'bg-blue-100 text-blue-800' };
 
 /* ── Shared input class ── */
-const INP = 'h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all';
+const INP = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 export default function ExpensesPage() {
   const router = useRouter();
@@ -134,21 +134,24 @@ export default function ExpensesPage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-rose-50/40 to-orange-50/30 border border-slate-200 p-5 shadow-sm">
-          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-rose-200/30 blur-3xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
+          {/* Green decorative orbs */}
+          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-green-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-emerald-200/30 blur-3xl" />
+          
           <div className="relative">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-[10px] font-bold uppercase tracking-widest text-rose-700">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
               💸 Expense Management
             </span>
-            <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight">Expenses / खर्च</h1>
-            <p className="mt-1 text-[13px] text-slate-500">
+            <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">Expenses / खर्च</h1>
+            <p className="mt-2 text-[14px] text-slate-600 font-medium">
               Daily खर्च को category, payment mode और reference के साथ track करो।
             </p>
             {/* Nav links */}
             <div className="flex flex-wrap gap-2 mt-3">
               {[{ href: '/income', label: '📈 Income' }, { href: '/bank-entries', label: '🏦 Bank' }, { href: '/reports', label: '📊 Reports' }, { href: '/gst', label: '🧾 GST' }].map((l) => (
                 <Link key={l.href} href={l.href}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:bg-slate-50 hover:-translate-y-px transition-all shadow-sm"
+                  className="px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
                 >{l.label}</Link>
               ))}
             </div>
@@ -156,16 +159,17 @@ export default function ExpensesPage() {
         </div>
 
         {/* ── KPI strip ── */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'कुल खर्च',   value: `₹${fmtShort(totalExpense)}`, sub: `${filteredExpenses.length} entries`, bg: 'bg-rose-50 border-rose-200',   vc: 'text-rose-700'   },
-            { label: 'Cash खर्च',  value: `₹${fmtShort(cashExpense)}`,  sub: 'cash outflow',                       bg: 'bg-amber-50 border-amber-200', vc: 'text-amber-700'  },
-            { label: 'Bank / UPI', value: `₹${fmtShort(bankExpense)}`,  sub: 'digital outflow',                    bg: 'bg-cyan-50 border-cyan-200',   vc: 'text-cyan-700'   },
+            { label: 'कुल खर्च',   value: `₹${fmtShort(totalExpense)}`, sub: `${filteredExpenses.length} entries`, gradient: 'from-rose-50 to-red-100', border: 'border-rose-200',   vc: 'text-rose-800', icon: '💸'   },
+            { label: 'Cash खर्च',  value: `₹${fmtShort(cashExpense)}`,  sub: 'cash outflow',                       gradient: 'from-amber-50 to-orange-100', border: 'border-amber-200', vc: 'text-amber-800', icon: '💵'  },
+            { label: 'Bank / UPI', value: `₹${fmtShort(bankExpense)}`,  sub: 'digital outflow',                    gradient: 'from-green-50 to-emerald-100',   border: 'border-green-200',   vc: 'text-green-800', icon: '🏦'   },
           ].map((k) => (
-            <div key={k.label} className={`${k.bg} border rounded-2xl p-3 shadow-sm`}>
-              <p className={`text-[18px] font-black leading-none ${k.vc}`}>{k.value}</p>
-              <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wide leading-tight">{k.label}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{k.sub}</p>
+            <div key={k.label} className={`relative overflow-hidden bg-gradient-to-br ${k.gradient} border-2 ${k.border} rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
+              <div className="absolute top-2 right-2 text-2xl opacity-10">{k.icon}</div>
+              <p className={`text-[20px] font-black leading-none ${k.vc}`}>{k.value}</p>
+              <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-wide leading-tight">{k.label}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">{k.sub}</p>
             </div>
           ))}
         </div>
@@ -254,7 +258,7 @@ export default function ExpensesPage() {
         {/* ── Top categories ── */}
         {topCategories.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-500" />
+            <div className="h-1 bg-gradient-to-r from-green-600 to-blue-500" />
             <div className="px-5 py-4 border-b border-slate-100">
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Spend Split</p>
               <h3 className="text-[14px] font-black text-slate-900 mt-0.5">Top Categories</h3>
