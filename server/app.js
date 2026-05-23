@@ -6,7 +6,6 @@ const connectDB = require('./config/db');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 
 const authRoutes = require('./routes/authRoutes');
@@ -70,9 +69,8 @@ const corsOptions = {
 connectDB();
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-app.use(helmet());              
-app.use(mongoSanitize());       
+app.options('*', cors(corsOptions));
+app.use(helmet());
 app.use(hpp());
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
