@@ -4,8 +4,10 @@ const { register, login, updateProfile, updatePassword, getShop, updateShop, get
 const { protect } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 
-router.post('/register', register);
-router.post('/login', login);
+const { authLimiter, registrationLimiter } = require('../middleware/securityMiddleware');
+
+router.post('/register', registrationLimiter, register);  // ← Added registrationLimiter
+router.post('/login', authLimiter, login);                // ← Added authLimiter
 router.get('/subscription-status', protect, getSubscriptionStatus);
 router.put('/profile', protect, checkSubscriptionStatus, updateProfile);
 router.put('/password', protect, checkSubscriptionStatus, updatePassword);
