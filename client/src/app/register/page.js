@@ -71,7 +71,15 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, username: normalizedUsername, password }),
       });
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setError('Server is starting up. Please wait 30 seconds and try again.');
+        return;
+      }
+
       if (data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -83,7 +91,7 @@ export default function RegisterPage() {
         setError(data.message || 'Registration failed');
       }
     } catch {
-      setError('Server error. Please try again.');
+      setError('Unable to connect. Please check your internet and try again.');
     } finally {
       setLoading(false);
     }

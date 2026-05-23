@@ -37,7 +37,7 @@ const apiLimiter = rateLimit({
 // Strict limiter for registration
 const registrationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // 3 registrations per IP per hour
+  max: 10, // 10 registrations per IP per hour
   message: {
     message: 'बहुत सारे registration attempts। कृपया 1 घंटे बाद फिर try करें। / Too many registration attempts. Please try again after 1 hour.'
   },
