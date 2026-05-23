@@ -25,7 +25,6 @@ const NAV_ITEMS = [
   { href: '/reports',   key: 'reports',   shortLabel: 'Reports',  tone: 'reports'  },
 ];
 
-// ── 5-item bottom nav: Home | Sale | Reports | Udhaar | More ──
 const MOBILE_BOTTOM_NAV = [
   { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    icon: 'dashboard' },
   { href: '/sales',     key: 'sales',     shortLabel: 'Sale',    icon: 'sales'     },
@@ -33,7 +32,6 @@ const MOBILE_BOTTOM_NAV = [
   { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   icon: 'udhaar'    },
 ];
 
-// ── More drawer items ──
 const MORE_DRAWER_ITEMS = [
   { href: '/product',   key: 'products',  label: 'Stock',     sublabel: 'Products & Inventory', icon: 'products' },
   { href: '/expenses',  key: 'expenses',  label: 'Expenses',  sublabel: 'Kharch Register',      icon: 'expenses' },
@@ -92,7 +90,7 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
   return <svg {...p}>{icons[name] || <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />}</svg>;
 }
 
-/* ─── Logo ───────────────────────────────────────────────────────── */
+/* ─── Logo with Green Gradient ───────────────────────────────────── */
 function Logo({ size = 'md' }) {
   const [err, setErr] = useState(false);
   const dim = size === 'sm' ? 34 : size === 'lg' ? 58 : 46;
@@ -106,7 +104,6 @@ function Logo({ size = 'md' }) {
   if (!err) {
     return (
       <div className={`brand-logo-frame ${frameClass}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="Rakh-Rakhaav logo" width={dim} height={dim}
           className="h-full w-full object-contain"
           onError={() => setErr(true)} />
@@ -114,28 +111,31 @@ function Logo({ size = 'md' }) {
     );
   }
   return (
-    <div className={`brand-logo-fallback ${frameClass}`}>
-      <span className={fallbackTextClass}>R</span>
+    <div className={`brand-logo-fallback ${frameClass} bg-gradient-to-br from-green-600 to-emerald-700 shadow-lg shadow-green-500/30`}>
+      <span className={fallbackTextClass}>₹</span>
     </div>
   );
 }
 
-/* ─── User dropdown (desktop) ────────────────────────────────────── */
+/* ─── User dropdown (desktop) - Green themed ────────────────────── */
 function UserDropdown({ onProfile, onLogout, extraItems, className = '' }) {
   return (
     <div className={`sidebar-user-menu${className ? ` ${className}` : ''}`}>
-      <button type="button" onClick={onProfile}><Glyph name="profile" size={16} /> Profile</button>
+      <button type="button" onClick={onProfile} className="hover:bg-green-50 hover:text-green-700">
+        <Glyph name="profile" size={16} /> Profile
+      </button>
       {extraItems}
-      <button type="button" onClick={onLogout} className="danger"><Glyph name="logout" size={16} /> Logout</button>
+      <button type="button" onClick={onLogout} className="danger hover:bg-red-50 hover:text-red-700">
+        <Glyph name="logout" size={16} /> Logout
+      </button>
     </div>
   );
 }
 
-/* ─── More drawer (mobile) ───────────────────────────────────────── */
+/* ─── More drawer (mobile) - Enhanced Green Theme ───────────────── */
 function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
   const drawerRef = useRef(null);
 
-  // Close on escape
   useEffect(() => {
     if (!open) return;
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -143,28 +143,27 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
     return () => document.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  // Lock body scroll when open
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
   const iconColors = {
-    products:  'bg-violet-50 text-violet-600',
-    expenses:  'bg-rose-50 text-rose-600',
-    income:    'bg-emerald-50 text-emerald-600',
-    bank:      'bg-cyan-50 text-cyan-600',
-    reports:   'bg-violet-50 text-violet-600',
-    gst:       'bg-amber-50 text-amber-600',
-    profile:   'bg-slate-100 text-slate-600',
+    products:  'bg-emerald-50 text-emerald-700',
+    expenses:  'bg-rose-50 text-rose-700',
+    income:    'bg-green-50 text-green-700',
+    bank:      'bg-blue-50 text-blue-700',
+    reports:   'bg-purple-50 text-purple-700',
+    gst:       'bg-amber-50 text-amber-700',
+    profile:   'bg-slate-100 text-slate-700',
   };
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Enhanced backdrop with green tint */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         aria-hidden="true"
@@ -179,30 +178,30 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
-        <div className="bg-white rounded-t-3xl shadow-2xl shadow-slate-900/20 border-t border-slate-100 max-h-[85dvh] overflow-y-auto">
+        <div className="bg-white rounded-t-3xl shadow-2xl shadow-slate-900/30 border-t-2 border-green-200 max-h-[85dvh] overflow-y-auto">
 
           {/* Handle */}
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-slate-200" />
+          <div className="flex justify-center pt-4 pb-2">
+            <div className="w-12 h-1.5 rounded-full bg-green-200" />
           </div>
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-3 pb-4">
+          {/* Header - Enhanced */}
+          <div className="flex items-center justify-between px-5 pt-3 pb-5 border-b border-slate-100">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Quick Access</p>
-              <h2 className="text-[18px] font-black text-slate-900 mt-0.5">और विकल्प</h2>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-green-700">Quick Access</p>
+              <h2 className="text-[20px] font-black text-slate-900 mt-1">और विकल्प</h2>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+              className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all hover:scale-105"
             >
-              <Glyph name="close" size={16} stroke={2} />
+              <Glyph name="close" size={18} stroke={2.5} />
             </button>
           </div>
 
-          {/* Nav items grid */}
-          <div className="px-4 pb-3 grid grid-cols-1 gap-2">
+          {/* Nav items grid - Enhanced */}
+          <div className="px-4 pb-3 pt-3 grid grid-cols-1 gap-2.5">
             {MORE_DRAWER_ITEMS.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -210,67 +209,64 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all ${
+                  className={`group flex items-center gap-4 px-4 py-4 rounded-2xl border-2 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
                     isActive
-                      ? 'border-cyan-200 bg-cyan-50'
-                      : 'border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-white'
+                      ? 'border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md'
+                      : 'border-slate-200 bg-white hover:border-green-200'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    isActive ? 'bg-cyan-500 text-white' : iconColors[item.key] || 'bg-slate-100 text-slate-600'
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform ${
+                    isActive ? 'bg-gradient-to-br from-green-600 to-emerald-700 text-white shadow-green-500/30' : iconColors[item.key] || 'bg-slate-100 text-slate-600'
                   }`}>
-                    <Glyph name={item.icon} size={18} />
+                    <Glyph name={item.icon} size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-[15px] font-black leading-tight ${isActive ? 'text-cyan-700' : 'text-slate-900'}`}>
+                    <div className={`text-[16px] font-black leading-tight ${isActive ? 'text-green-800' : 'text-slate-900'}`}>
                       {item.label}
                     </div>
-                    <div className="text-[12px] text-slate-400 mt-0.5">{item.sublabel}</div>
+                    <div className={`text-[12px] font-medium mt-1 ${isActive ? 'text-green-600' : 'text-slate-500'}`}>
+                      {item.sublabel}
+                    </div>
                   </div>
                   {isActive && (
-                    <span className="w-2 h-2 rounded-full bg-cyan-500 flex-shrink-0" />
-                  )}
-                  {!isActive && (
-                    <span className="text-slate-300 flex-shrink-0">
-                      <Glyph name="close" size={12} stroke={2} />
-                    </span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-600 flex-shrink-0 shadow-lg shadow-green-500/50" />
                   )}
                 </Link>
               );
             })}
           </div>
 
-          {/* Upgrade card */}
+          {/* Upgrade card - Green themed */}
           <div className="px-4 pb-3 pt-2">
             <Link href="/pricing" onClick={onClose}
-              className="relative flex items-center gap-4 overflow-hidden rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-200/70"
+              className="relative flex items-center gap-4 overflow-hidden rounded-3xl border-2 border-green-300 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 px-5 py-4 transition-all hover:-translate-y-1 hover:border-green-400 hover:shadow-xl hover:shadow-green-500/20"
             >
-              <div className="pointer-events-none absolute inset-y-0 -left-1 w-24 bg-gradient-to-r from-white/70 via-white/20 to-transparent skew-x-[-18deg] animate-[premiumShine_2.7s_ease-in-out_infinite]" />
-              <div className="relative z-10 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <Glyph name="pricing" size={18} />
+              <div className="pointer-events-none absolute inset-y-0 -left-1 w-28 bg-gradient-to-r from-white/80 via-white/30 to-transparent skew-x-[-18deg] animate-[premiumShine_3s_ease-in-out_infinite]" />
+              <div className="relative z-10 w-12 h-12 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/30">
+                <Glyph name="pricing" size={20} />
               </div>
               <div className="relative z-10 flex-1">
-                <div className="text-[15px] font-black text-amber-900">
+                <div className="text-[16px] font-black text-green-900">
                   {subscription?.isPro ? 'Manage Plan' : 'Upgrade करें'}
                 </div>
-                <div className="text-[12px] text-amber-600">
+                <div className="text-[13px] text-green-700 font-semibold">
                   {subscription?.isPro ? 'Pro plan active ✓' : 'Pro features unlock करें'}
                 </div>
               </div>
-              <div className="relative z-10 text-amber-500">
-                <Glyph name="pricing" size={16} />
+              <div className="relative z-10 text-green-600">
+                <Glyph name="pricing" size={18} />
               </div>
             </Link>
           </div>
 
-          {/* Logout */}
-          <div className="px-4 pb-6 pt-1">
+          {/* Logout - Enhanced */}
+          <div className="px-4 pb-7 pt-2">
             <button
               type="button"
               onClick={() => { onClose(); onLogout(); }}
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl border border-rose-100 bg-rose-50 text-[14px] font-black text-rose-600 hover:bg-rose-100 transition-colors"
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl border-2 border-red-200 bg-red-50 text-[15px] font-black text-red-700 hover:bg-red-100 hover:border-red-300 transition-all shadow-md hover:shadow-lg"
             >
-              <Glyph name="logout" size={16} /> Logout
+              <Glyph name="logout" size={18} /> Logout
             </button>
           </div>
         </div>
@@ -282,23 +278,22 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
 /* ─── Main layout ────────────────────────────────────────────────── */
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
-  const [user, setUser]                     = useState(() => readStoredUser());
-  const [subscription, setSubscription]     = useState(() => readStoredSubscription());
-  const [plans, setPlans]                   = useState(FALLBACK_PLANS);
-  const [razorpayKeyId, setRazorpayKeyId]   = useState('');
+  const [user, setUser] = useState(() => readStoredUser());
+  const [subscription, setSubscription] = useState(() => readStoredSubscription());
+  const [plans, setPlans] = useState(FALLBACK_PLANS);
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [paywallPlan, setPaywallPlan]       = useState('weekly');
-  const [scrolled, setScrolled]             = useState(false);
-  const [dropdownOpen, setDropdownOpen]     = useState(false);
+  const [paywallPlan, setPaywallPlan] = useState('weekly');
+  const [scrolled, setScrolled] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
-  const [moreOpen, setMoreOpen]             = useState(false);  // ← new More drawer
+  const [moreOpen, setMoreOpen] = useState(false);
 
-  const dropdownRef    = useRef(null);
+  const dropdownRef = useRef(null);
   const mobileProfileRef = useRef(null);
-  const router         = useRouter();
-  const pathname       = usePathname();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  /* ── Auth & subscription ──────────────────────────────────────── */
   const refreshSubscription = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) return false;
@@ -334,14 +329,12 @@ function LayoutInner({ children }) {
     return () => window.clearTimeout(id);
   }, [refreshSubscription, router]);
 
-  /* ── Scroll ───────────────────────────────────────────────────── */
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  /* ── Click-outside desktop dropdown ──────────────────────────── */
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
@@ -351,14 +344,12 @@ function LayoutInner({ children }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  /* ── Route guards ─────────────────────────────────────────────── */
   useEffect(() => {
     if (!pathname || ['/pricing', '/welcome', '/trial-status'].includes(pathname)) return;
     if (hasWelcomePending()) { router.replace('/welcome'); return; }
     if (subscription && !subscription.isPro && !hasTrialGateSeen()) router.replace('/trial-status');
   }, [pathname, router, subscription]);
 
-  /* ── Actions ──────────────────────────────────────────────────── */
   const logout = () => {
     setDropdownOpen(false); setMobileProfileOpen(false); setMoreOpen(false);
     localStorage.removeItem('token'); localStorage.removeItem('user');
@@ -380,7 +371,6 @@ function LayoutInner({ children }) {
     await refreshSubscription();
   };
 
-  /* ── Derived ──────────────────────────────────────────────────── */
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
 
   const bilingualLabels = useMemo(() => ({
@@ -399,18 +389,16 @@ function LayoutInner({ children }) {
     [bilingualLabels, t]
   );
 
-  const upgradeLabel = subscription?.isPro ? 'Manage Plan' : 'Upgrade';
-
-  /* ════════════════════════════════════════════════════════════════ */
   return (
     <div className="app-shell-root rr-workspace-premium">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
 
-        {/* ══ Desktop sidebar (unchanged) ═══════════════════════════ */}
+        {/* ══ Desktop sidebar - Enhanced Green Theme ═════════════════ */}
         <aside className={`desktop-sidebar premium-sidebar${locale === 'hi' ? ' sidebar-locale-hi' : ''}`}>
           <div className="sidebar-panel">
-            <div className="sidebar-orb sidebar-orb-top" />
-            <div className="sidebar-orb sidebar-orb-bottom" />
+            {/* Green orbs instead of cyan/blue */}
+            <div className="sidebar-orb sidebar-orb-top" style={{background: 'radial-gradient(circle, rgba(34,197,94,0.15) 0%, transparent 70%)'}} />
+            <div className="sidebar-orb sidebar-orb-bottom" style={{background: 'radial-gradient(circle, rgba(5,150,105,0.12) 0%, transparent 70%)'}} />
 
             {/* Brand */}
             <div className="brand-lockup">
@@ -422,10 +410,10 @@ function LayoutInner({ children }) {
               </div>
             </div>
 
-            {/* User card */}
+            {/* User card - Enhanced */}
             <div ref={dropdownRef} className="relative">
-              <button type="button" className="sidebar-user-card" onClick={() => setDropdownOpen(v => !v)}>
-                <div className="sidebar-avatar">{initial}</div>
+              <button type="button" className="sidebar-user-card group" onClick={() => setDropdownOpen(v => !v)}>
+                <div className="sidebar-avatar bg-gradient-to-br from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 group-hover:scale-105 transition-transform">{initial}</div>
                 <div className="sidebar-user-copy">
                   <div className="sidebar-user-name">{user?.name || 'Shopkeeper'}</div>
                   <div className="sidebar-user-email">{user?.email || 'Business account'}</div>
@@ -436,7 +424,11 @@ function LayoutInner({ children }) {
                 <UserDropdown
                   onProfile={goToProfile}
                   onLogout={logout}
-                  extraItems={<Link href="/pricing"><Glyph name="pricing" size={16} /> Rakhrakhaav Pro</Link>}
+                  extraItems={
+                    <Link href="/pricing" className="hover:bg-green-50 hover:text-green-700">
+                      <Glyph name="pricing" size={16} /> Rakhrakhaav Pro
+                    </Link>
+                  }
                 />
               )}
             </div>
@@ -459,7 +451,7 @@ function LayoutInner({ children }) {
           </div>
         </aside>
 
-        {/* ══ Mobile top bar ════════════════════════════════════════ */}
+        {/* ══ Mobile top bar - Enhanced Green ════════════════════════ */}
         <div className={`mobile-topbar premium-topbar${scrolled ? ' is-scrolled' : ''}`}>
           <div className="mobile-topbar-brand">
             <Logo size="sm" />
@@ -469,11 +461,10 @@ function LayoutInner({ children }) {
             </div>
           </div>
 
-          {/* Right side: upgrade badge + profile avatar */}
           <div className="relative flex items-center gap-2" ref={mobileProfileRef}>
             {!subscription?.isPro && (
               <Link href="/pricing"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-black text-amber-700 hover:bg-amber-100 transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-50 border border-green-300 text-[11px] font-black text-green-800 hover:bg-green-100 transition-all shadow-sm hover:shadow-md"
               >
                 ⚡ Upgrade
               </Link>
@@ -481,10 +472,8 @@ function LayoutInner({ children }) {
             <button
               type="button"
               onClick={() => setMobileProfileOpen((v) => !v)}
-              className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-black text-[13px] shadow-md hover:shadow-lg hover:-translate-y-px transition-all"
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 flex items-center justify-center text-white font-black text-[14px] shadow-lg shadow-green-500/30 hover:shadow-xl hover:-translate-y-px transition-all hover:scale-105"
               aria-label="Open profile menu"
-              aria-haspopup="menu"
-              aria-expanded={mobileProfileOpen}
             >
               {initial}
             </button>
@@ -500,7 +489,6 @@ function LayoutInner({ children }) {
 
         <SyncStatusBar />
 
-        {/* ══ More drawer ════════════════════════════════════════════ */}
         <MoreDrawer
           open={moreOpen}
           onClose={() => setMoreOpen(false)}
@@ -509,56 +497,51 @@ function LayoutInner({ children }) {
           subscription={subscription}
         />
 
-        {/* ══ Main content ══════════════════════════════════════════ */}
         <main className="main-content premium-main-content">
           <div className="content-container">{children}</div>
         </main>
 
-        {/* ══ Mobile bottom nav — 5 items ═══════════════════════════ */}
+        {/* ══ Mobile bottom nav - Enhanced Green Theme ═══════════════ */}
         <nav className="mobile-bottom-nav premium-bottom-nav">
           <div className="mobile-bottom-nav-card">
 
-            {/* First 4 items */}
             {MOBILE_BOTTOM_NAV.map(item => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`mobile-nav-link mobile-nav-tone-${item.key}${isActive ? ' is-active' : ''}`}
+                  className={`mobile-nav-link mobile-nav-tone-${item.key}${isActive ? ' is-active' : ''} group`}
                 >
                   <span className="mobile-nav-icon-wrap">
-                    <span className="mobile-nav-glow" />
-                    <Glyph name={item.icon} size={20} />
+                    <span className={`mobile-nav-glow ${isActive ? 'bg-green-500/30' : ''}`} />
+                    <Glyph name={item.icon} size={21} stroke={isActive ? 2.2 : 1.8} />
                   </span>
-                  <span className="mobile-nav-label">{item.shortLabel}</span>
+                  <span className={`mobile-nav-label font-bold ${isActive ? 'text-green-700' : ''}`}>{item.shortLabel}</span>
                 </Link>
               );
             })}
 
-            {/* 5th item — More button */}
+            {/* More button - Enhanced */}
             <button
               type="button"
               onClick={() => setMoreOpen(v => !v)}
-              className={`mobile-nav-link${moreOpen ? ' is-active' : ''}`}
-              aria-label="More options"
-              aria-expanded={moreOpen}
+              className={`mobile-nav-link group${moreOpen ? ' is-active' : ''}`}
             >
               <span className="mobile-nav-icon-wrap">
-                <span className="mobile-nav-glow" />
+                <span className={`mobile-nav-glow ${moreOpen ? 'bg-green-500/30' : ''}`} />
                 {moreOpen
-                  ? <Glyph name="close" size={20} stroke={2} />
-                  : <Glyph name="menu" size={20} />
+                  ? <Glyph name="close" size={21} stroke={2.5} />
+                  : <Glyph name="menu" size={21} stroke={2} />
                 }
               </span>
-              <span className="mobile-nav-label">और</span>
+              <span className={`mobile-nav-label font-bold ${moreOpen ? 'text-green-700' : ''}`}>और</span>
             </button>
 
           </div>
         </nav>
       </div>
 
-      {/* ══ Overlays (unchanged) ═══════════════════════════════════ */}
       <ReadOnlyOverlay
         visible={Boolean(subscription?.isReadOnly)}
         plans={plans} selectedPlan={paywallPlan}
