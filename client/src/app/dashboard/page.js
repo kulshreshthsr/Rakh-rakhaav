@@ -243,7 +243,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Secondary stats row - Enhanced with gradients */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
             <StatCard
               label="उधार बाकी"
               value={`₹${fmt(total_udhaar)}`}
@@ -278,7 +278,7 @@ export default function DashboardPage() {
           <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">
             जल्दी काम
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
             <QuickAction
               href="/sales?open=1&payment=cash"
               emoji="🧾"

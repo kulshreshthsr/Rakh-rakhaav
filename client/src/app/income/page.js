@@ -190,7 +190,7 @@ export default function IncomePage() {
                     className={`flex items-center gap-1.5 px-2.5 py-2.5 rounded-xl border text-[11px] font-bold transition-all ${form.category === cat ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
                   >
                     <span>{CAT_EMOJI[cat] || '💰'}</span>
-                    <span className="truncate">{cat}</span>
+                    <span className="truncate flex-1 min-w-0">{cat}</span>
                   </button>
                 ))}
               </div>

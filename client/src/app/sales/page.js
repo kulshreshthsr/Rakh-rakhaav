@@ -578,7 +578,7 @@ export default function SalesPage() {
         )}
 
         {/* ── KPI strip ── */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3 mb-5">
           {[
             { label: 'Revenue', value: `₹${fmt(revenueDisplay)}`, gradient: 'from-green-50 to-emerald-100', text: 'text-green-800', icon: '💰', border: 'border-green-200' },
             { label: 'GST', value: `₹${fmt(gstDisplay)}`, gradient: 'from-amber-50 to-orange-100', text: 'text-amber-800', icon: '📊', border: 'border-amber-200' },
@@ -693,18 +693,18 @@ export default function SalesPage() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 min-[480px]:grid-cols-4 gap-2">
                       <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)}
-                        className="py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
                       >✏️ Edit</button>
                       <button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)}
-                        className="py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
                       >🖨️ Print</button>
                       <button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)}
-                        className="py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
                       >📤 Send</button>
                       <button onClick={() => handleDelete(s)}
-                        className="py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
                       >{s._isOffline ? '✕' : '🗑️'}</button>
                     </div>
                   </div>
@@ -783,7 +783,7 @@ export default function SalesPage() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Invoice No.</p>
                 <div className="flex items-center h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 gap-2">
-                  <span className="font-mono text-[11px] text-green-700 truncate flex-1">{invoicePreview}</span>
+                  <span className="font-mono text-[11px] text-green-700 truncate flex-1 min-w-0">{invoicePreview}</span>
                   <button type="button" onClick={() => navigator?.clipboard?.writeText(invoicePreview)} className="text-slate-400 hover:text-slate-600 flex-shrink-0 text-xs">📋</button>
                 </div>
               </div>

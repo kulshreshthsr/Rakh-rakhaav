@@ -853,7 +853,7 @@ export default function PurchasesPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3 mb-5">
           {[
             { label: 'Spend', value: `₹${fmt(totalSpendDisplay)}`, gradient: 'from-amber-50 to-orange-100', text: 'text-amber-800', icon: '💸', border: 'border-amber-200' },
             { label: 'ITC', value: `₹${fmt(totalItcDisplay)}`, gradient: 'from-blue-50 to-sky-100', text: 'text-blue-800', icon: '📊', border: 'border-blue-200' },
@@ -1010,7 +1010,7 @@ export default function PurchasesPage() {
                         type="button"
                         onClick={() => sendPurchaseWhatsApp(p)}
                         disabled={!p.supplier_phone}
-                        className="py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
                       >
                         📤 WA
                       </button>
@@ -1018,14 +1018,14 @@ export default function PurchasesPage() {
                         type="button"
                         onClick={() => startEditPurchase(p)}
                         disabled={Boolean(p._isOffline)}
-                        className="py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
                       >
                         ✏️ Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(p)}
-                        className="py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
                       >
                         {p._isOffline ? '✕' : '🗑️'}
                       </button>

@@ -191,7 +191,7 @@ export default function BankEntriesPage() {
                       }`}
                     >
                       <span>{TYPE_EMOJI[type]}</span>
-                      <span className="truncate">{TYPE_LABEL[type]}</span>
+                      <span className="truncate flex-1 min-w-0">{TYPE_LABEL[type]}</span>
                     </button>
                   );
                 })}

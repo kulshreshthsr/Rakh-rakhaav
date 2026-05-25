@@ -194,7 +194,7 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
             <button
               type="button"
               onClick={onClose}
-              className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all hover:scale-105"
+              className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all hover:scale-105"
             >
               <Glyph name="close" size={18} stroke={2.5} />
             </button>
@@ -472,7 +472,7 @@ function LayoutInner({ children }) {
             <button
               type="button"
               onClick={() => setMobileProfileOpen((v) => !v)}
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 flex items-center justify-center text-white font-black text-[14px] shadow-lg shadow-green-500/30 hover:shadow-xl hover:-translate-y-px transition-all hover:scale-105"
+              className="w-11 h-11 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 flex items-center justify-center text-white font-black text-[14px] shadow-lg shadow-green-500/30 hover:shadow-xl hover:-translate-y-px transition-all hover:scale-105"
               aria-label="Open profile menu"
             >
               {initial}

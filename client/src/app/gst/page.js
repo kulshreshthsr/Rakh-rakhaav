@@ -418,7 +418,7 @@ export default function GSTPage() {
                 </p>
 
                 {/* 3-column breakdown */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-3">
                   {[
                     { label: 'Output GST', sublabel: 'Sales से collect हुआ', value: `₹${fmt(gstCollected)}`, color: 'text-slate-800' },
                     { label: 'Input ITC',  sublabel: 'Purchase से credit',   value: `₹${fmt(gstITC)}`,       color: 'text-green-700'  },
@@ -544,7 +544,7 @@ export default function GSTPage() {
             {/* ══════════════════════════════════════
                 BLOCK 4 — B2B / B2C SPLIT
             ══════════════════════════════════════ */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
                 { label: 'B2B Invoices', count: summary.sales.b2b_count, taxable: summary.sales.b2b_taxable, color: 'bg-blue-50 border-blue-200', tc: 'text-blue-700', note: 'Business customers (GSTIN)' },
                 { label: 'B2C Invoices', count: summary.sales.b2c_count, taxable: summary.sales.b2c_taxable, color: 'bg-green-50 border-green-200',  tc: 'text-green-700',  note: 'Regular customers' },
