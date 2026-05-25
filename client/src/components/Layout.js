@@ -330,6 +330,23 @@ function LayoutInner({ children }) {
   }, [refreshSubscription, router]);
 
   useEffect(() => {
+    const PING_KEY = 'rr-last-server-ping';
+    const THROTTLE = 10 * 60 * 1000; // 10 minutes
+    function maybePing() {
+      try {
+        const last = parseInt(localStorage.getItem(PING_KEY) || '0', 10);
+        if (Date.now() - last < THROTTLE) return;
+        localStorage.setItem(PING_KEY, String(Date.now()));
+      } catch { return; }
+      fetch(`${API}/api/health`, { signal: AbortSignal.timeout(60000) }).catch(() => {});
+    }
+    maybePing();
+    const onVisible = () => { if (document.visibilityState === 'visible') maybePing(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
+  useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);

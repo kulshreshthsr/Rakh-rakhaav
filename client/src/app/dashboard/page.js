@@ -1,9 +1,12 @@
 ﻿'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
+
+const DASHBOARD_CACHE_KEY = 'dashboard-page';
 
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -62,8 +65,11 @@ function StatCard({ label, value, sub, gradient, icon, href }) {
 export default function DashboardPage() {
   const router = useRouter();
 
+  const hasBootstrappedRef = useRef(false);
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [shopName, setShopName] = useState('');
   const [ownerPhoto, setOwnerPhoto] = useState('');
@@ -71,11 +77,11 @@ export default function DashboardPage() {
   const [greeting] = useState(getGreeting);
   const [today] = useState(getTodayLabel);
 
-  const fetchDashboard = useCallback(async () => {
+  const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
     const token = getToken();
     if (!token) { router.push('/login'); return; }
     try {
-      setError('');
+      if (!silent) setError('');
       const [dashRes, shopRes] = await Promise.all([
         fetch(apiUrl('/api/dashboard/summary'), { headers: { Authorization: `Bearer ${token}` } }),
         fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${token}` } }),
@@ -84,22 +90,41 @@ export default function DashboardPage() {
       if (!dashRes.ok || !shopRes.ok) throw new Error('Failed to load dashboard');
       const dashData = await dashRes.json();
       const shopData = await shopRes.json();
+      const nextShopName = shopData.name || 'मेरी दुकान';
+      const nextOwnerPhoto = shopData.owner_photo || '';
       setData(dashData);
-      setShopName(shopData.name || 'मेरी दुकान');
-      setOwnerPhoto(shopData.owner_photo || '');
+      setShopName(nextShopName);
+      setOwnerPhoto(nextOwnerPhoto);
+      writePageCache(DASHBOARD_CACHE_KEY, { data: dashData, shopName: nextShopName, ownerPhoto: nextOwnerPhoto });
     } catch (err) {
-      setData(null);
-      setError(err.message || 'Dashboard data load nahi ho paya.');
+      if (!silent) { setData(null); setError(err.message || 'Dashboard data load nahi ho paya.'); }
+    } finally {
+      setLoading(false);
     }
-    finally { setLoading(false); }
   }, [router]);
 
   useEffect(() => {
+    if (hasBootstrappedRef.current) return undefined;
+    hasBootstrappedRef.current = true;
     const token = getToken();
     if (!token) { router.push('/login'); return; }
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setUserName(user.name || '');
-    fetchDashboard();
+
+    const cached = readPageCache(DASHBOARD_CACHE_KEY);
+    if (cached?.data) {
+      setData(cached.data);
+      setShopName(cached.shopName || 'मेरी दुकान');
+      setOwnerPhoto(cached.ownerPhoto || '');
+      setLoading(false);
+    }
+
+    const deferredId = scheduleDeferred(async () => {
+      setRefreshing(Boolean(cached?.data));
+      await fetchDashboard({ silent: Boolean(cached?.data) });
+      setRefreshing(false);
+    });
+    return () => cancelDeferred(deferredId);
   }, [fetchDashboard, router]);
 
   const today_sales = data?.today?.revenue || 0;
@@ -155,6 +180,12 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-5">
+        {refreshing && (
+          <div className="flex items-center justify-end gap-1.5 px-1 -mb-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[10px] font-semibold text-green-600 uppercase tracking-wide">Updating…</span>
+          </div>
+        )}
 
         {/* ══════════════════════════════════════
             1. GREETING HEADER - Enhanced Green Theme

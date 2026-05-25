@@ -756,7 +756,7 @@
   .mobile-topbar-actions { @apply shrink-0; }
   .mobile-brand-image { display: block; width: min(100%, 232px); height: auto; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(37,99,235,0.12)); }
   .mobile-brand-copy { @apply min-w-0; }
-  .mobile-brand-title { @apply whitespace-nowrap text-[22px] font-black leading-none; letter-spacing: -0.03em; background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 42%, #38bdf8 78%, #1e3a8a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 1px 0 rgba(255,255,255,0.5), 0 10px 22px rgba(59,130,246,0.12); position: relative; }
+  .mobile-brand-title { @apply whitespace-nowrap text-[22px] font-black leading-none; letter-spacing: -0.03em; background: linear-gradient(135deg, #166534 0%, #16a34a 42%, #4ade80 78%, #14532d 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 1px 0 rgba(255,255,255,0.5), 0 10px 22px rgba(22,163,74,0.12); position: relative; }
   .mobile-brand-subtitle { display: block; margin-top: 3px; font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #64748b; }
   .mobile-hamburger-btn {
     width: 44px;
