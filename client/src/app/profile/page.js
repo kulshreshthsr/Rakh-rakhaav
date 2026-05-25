@@ -34,8 +34,8 @@ const getStateFromGstin = (gstin = '') => {
 /* ─── Section wrapper ────────────────────────────────────────────── */
 function Section({ icon, title, subtitle, badge, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="flex items-start gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden hover:border-green-200 transition-colors">
+      <div className="flex items-start gap-3 px-5 py-4 border-b border-green-100/60 bg-green-50/30">
         {icon && (
           <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
             {icon}
@@ -44,7 +44,7 @@ function Section({ icon, title, subtitle, badge, children }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-[14px] font-black text-slate-900">{title}</p>
-            {badge && <span className="px-2 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-[10px] font-bold text-cyan-700">{badge}</span>}
+            {badge && <span className="px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-[10px] font-bold text-green-700">{badge}</span>}
           </div>
           {subtitle && <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>}
         </div>
@@ -69,7 +69,7 @@ function Field({ label, hint, error, success, required, children }) {
   );
 }
 
-const INPUT = 'h-11 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 focus:border-cyan-400 focus:bg-white transition-all';
+const INPUT = 'h-11 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/25 focus:border-green-400 focus:bg-white transition-all';
 const INPUT_ERR = 'h-11 w-full px-4 rounded-xl border border-rose-300 bg-rose-50 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all';
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -218,7 +218,7 @@ export default function ProfilePage() {
   }, [shopForm]);
 
   /* Avatar gradient */
-  const avatarColors = ['from-cyan-500 to-blue-600', 'from-violet-500 to-purple-600', 'from-emerald-500 to-teal-600', 'from-rose-500 to-pink-600'];
+  const avatarColors = ['from-green-500 to-emerald-600', 'from-violet-500 to-purple-600', 'from-teal-500 to-cyan-600', 'from-rose-500 to-pink-600'];
   const avatarGrad   = avatarColors[(user?.name?.charCodeAt(0) || 0) % avatarColors.length];
 
   /* ════════════════════════════════════════════════════════════════
@@ -230,9 +230,9 @@ export default function ProfilePage() {
         <div className="max-w-3xl mx-auto space-y-5">
 
           {/* ══ HERO HEADER ══════════════════════════════════════════ */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-slate-50/60 to-cyan-50/40 border border-slate-200 p-5 lg:p-6 shadow-sm">
-            <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-cyan-200/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-blue-200/15 blur-3xl" />
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-slate-50/60 to-green-50/40 border border-slate-200 p-5 lg:p-6 shadow-sm">
+            <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-green-200/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/15 blur-3xl" />
 
             <div className="relative flex items-start gap-4">
               {/* Avatar */}
@@ -250,7 +250,7 @@ export default function ProfilePage() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-cyan-200 text-[10px] font-bold uppercase tracking-widest text-cyan-700 mb-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-green-200 text-[10px] font-bold uppercase tracking-widest text-green-700 mb-2">
                   🏪 Shop Profile
                 </span>
                 <h1 className="text-[22px] lg:text-[26px] font-black text-slate-900 leading-tight truncate">
@@ -359,7 +359,7 @@ export default function ProfilePage() {
                   )}
 
                   <div className="flex flex-col gap-2">
-                    <label className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-bold cursor-pointer hover:bg-slate-800 transition-colors">
+                    <label className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[13px] font-bold cursor-pointer hover:from-green-700 hover:to-emerald-800 transition-all shadow-md shadow-green-500/20">
                       {photoUploading ? 'Uploading...' : 'Upload Photo'}
                       <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={handleOwnerPhotoChange} />
                     </label>
@@ -498,9 +498,9 @@ export default function ProfilePage() {
               subtitle="Invoice पर print होगा — professional billing के लिए"
               badge="Optional"
             >
-              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 -mt-1">
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-green-50 border border-green-100 -mt-1">
                 <span className="text-base flex-shrink-0">💡</span>
-                <p className="text-[12px] text-blue-700 leading-relaxed">
+                <p className="text-[12px] text-green-700 leading-relaxed">
                   Bank details add करने से customers directly आपके account में payment कर सकते हैं और invoice professional लगती है।
                 </p>
               </div>
@@ -590,7 +590,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="rounded-xl bg-white border border-slate-200 px-3 py-2">
                     <div className="text-[11px] text-slate-400">Bank</div>
-                    <div className="text-[16px] font-black text-blue-600">₹{Number(shopForm.bank_opening_balance || 0).toFixed(2)}</div>
+                    <div className="text-[16px] font-black text-green-700">₹{Number(shopForm.bank_opening_balance || 0).toFixed(2)}</div>
                   </div>
                 </div>
               </div>
@@ -630,7 +630,7 @@ export default function ProfilePage() {
             </Section>
 
             {/* ══ SAVE ACTIONS ════════════════════════════════════ */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <p className="text-[13px] font-black text-slate-900">Changes save करें</p>
@@ -652,7 +652,7 @@ export default function ProfilePage() {
                     disabled={savingShop}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[14px] font-black text-white shadow-lg hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all ${
                       isDirty
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 shadow-cyan-500/25'
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-700 shadow-green-500/25'
                         : 'bg-gradient-to-r from-slate-400 to-slate-500 shadow-slate-400/20'
                     }`}
                   >

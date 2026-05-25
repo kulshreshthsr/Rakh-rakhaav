@@ -66,7 +66,7 @@ const saleSchema = new mongoose.Schema({
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true },
-  offline_operation_id: { type: String, default: null },
+  offline_operation_id: { type: String },
   notes: { type: String },
 
 }, { timestamps: true });
@@ -82,7 +82,7 @@ saleSchema.index(
 
 saleSchema.index(
   { shop: 1, offline_operation_id: 1 },
-  { unique: true, sparse: true }
+  { unique: true, partialFilterExpression: { offline_operation_id: { $type: 'string' } } }
 );
 
 saleSchema.pre('save', async function () {
