@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
+import { hasPermission } from '../../lib/permissions';
 
 const DASHBOARD_CACHE_KEY = 'dashboard-page';
 
@@ -234,9 +235,11 @@ export default function DashboardPage() {
             <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
               आज का हाल
             </p>
-            <Link href="/sales" className="text-[11px] font-bold text-green-700 hover:text-green-800 hover:underline">
-              सभी bills →
-            </Link>
+            {hasPermission('VIEW_SALES') && (
+              <Link href="/sales" className="text-[11px] font-bold text-green-700 hover:text-green-800 hover:underline">
+                सभी bills →
+              </Link>
+            )}
           </div>
 
           {/* Big today revenue card - Green gradient */}
@@ -275,103 +278,77 @@ export default function DashboardPage() {
 
           {/* Secondary stats row - Enhanced with gradients */}
           <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
-            <StatCard
-              label="उधार बाकी"
-              value={`₹${fmt(total_udhaar)}`}
-              sub={`${udhaar_count} ग्राहक`}
-              gradient="from-red-50 to-rose-100"
-              icon="💸"
-              href="/udhaar"
-            />
-            <StatCard
-              label="GST देना है"
-              value={`₹${fmt(gst_payable)}`}
-              sub="इस महीने"
-              gradient="from-amber-50 to-orange-100"
-              icon="📊"
-              href="/gst"
-            />
-            <StatCard
-              label="इस महीने"
-              value={`₹${fmt(month_sales)}`}
-              sub={`₹${fmt(month_profit)} profit`}
-              gradient="from-green-50 to-emerald-100"
-              icon="📈"
-              href="/reports"
-            />
+            {hasPermission('VIEW_UDHAAR') && (
+              <StatCard
+                label="उधार बाकी"
+                value={`₹${fmt(total_udhaar)}`}
+                sub={`${udhaar_count} ग्राहक`}
+                gradient="from-red-50 to-rose-100"
+                icon="💸"
+                href="/udhaar"
+              />
+            )}
+            {hasPermission('VIEW_GST') && (
+              <StatCard
+                label="GST देना है"
+                value={`₹${fmt(gst_payable)}`}
+                sub="इस महीने"
+                gradient="from-amber-50 to-orange-100"
+                icon="📊"
+                href="/gst"
+              />
+            )}
+            {hasPermission('VIEW_REPORTS') && (
+              <StatCard
+                label="इस महीने"
+                value={`₹${fmt(month_sales)}`}
+                sub={`₹${fmt(month_profit)} profit`}
+                gradient="from-green-50 to-emerald-100"
+                icon="📈"
+                href="/reports"
+              />
+            )}
           </div>
         </div>
 
         {/* ══════════════════════════════════════
             3. जल्दी काम - Quick Actions with Beautiful Gradients
         ══════════════════════════════════════ */}
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">
-            जल्दी काम
-          </p>
-          <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
-            <QuickAction
-              href="/sales?open=1&payment=cash"
-              emoji="🧾"
-              label="बिल बनाओ"
-              sublabel="Cash Sale"
-              gradient="from-green-50 to-emerald-100"
-            />
-            <QuickAction
-              href="/sales?open=1&payment=credit"
-              emoji="📒"
-              label="उधार दो"
-              sublabel="Credit"
-              gradient="from-rose-50 to-red-100"
-            />
-            <QuickAction
-              href="/purchases"
-              emoji="🛒"
-              label="माल खरीदो"
-              sublabel="Purchase"
-              gradient="from-amber-50 to-orange-100"
-            />
-            <QuickAction
-              href="/product"
-              emoji="📦"
-              label="स्टॉक देखो"
-              sublabel="Inventory"
-              gradient="from-blue-50 to-cyan-100"
-            />
-            <QuickAction
-              href="/expenses"
-              emoji="💳"
-              label="खर्च लिखो"
-              sublabel="Expenses"
-              gradient="from-purple-50 to-violet-100"
-            />
-            <QuickAction
-              href="/udhaar"
-              emoji="💸"
-              label="पैसे लो"
-              sublabel="Collect"
-              gradient="from-pink-50 to-rose-100"
-            />
-            <QuickAction
-              href="/reports"
-              emoji="📊"
-              label="हिसाब देखो"
-              sublabel="Reports"
-              gradient="from-slate-50 to-gray-100"
-            />
-          </div>
-        </div>
+        {(() => {
+          const quickActions = [
+            { href: '/sales?open=1&payment=cash', emoji: '🧾', label: 'बिल बनाओ',   sublabel: 'Cash Sale',  gradient: 'from-green-50 to-emerald-100',  permission: 'CREATE_INVOICE'   },
+            { href: '/sales?open=1&payment=credit',emoji: '📒', label: 'उधार दो',   sublabel: 'Credit',    gradient: 'from-rose-50 to-red-100',        permission: 'CREATE_INVOICE'   },
+            { href: '/purchases',                  emoji: '🛒', label: 'माल खरीदो', sublabel: 'Purchase',  gradient: 'from-amber-50 to-orange-100',    permission: 'CREATE_PURCHASE'  },
+            { href: '/product',                    emoji: '📦', label: 'स्टॉक देखो',sublabel: 'Inventory', gradient: 'from-blue-50 to-cyan-100',        permission: 'MANAGE_INVENTORY' },
+            { href: '/expenses',                   emoji: '💳', label: 'खर्च लिखो', sublabel: 'Expenses',  gradient: 'from-purple-50 to-violet-100',   permission: 'VIEW_EXPENSES'    },
+            { href: '/udhaar',                     emoji: '💸', label: 'पैसे लो',   sublabel: 'Collect',   gradient: 'from-pink-50 to-rose-100',        permission: 'VIEW_UDHAAR'      },
+            { href: '/reports',                    emoji: '📊', label: 'हिसाब देखो',sublabel: 'Reports',   gradient: 'from-slate-50 to-gray-100',      permission: 'VIEW_REPORTS'     },
+          ].filter(a => hasPermission(a.permission));
+          if (quickActions.length === 0) return null;
+          return (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">
+                जल्दी काम
+              </p>
+              <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
+                {quickActions.map(a => (
+                  <QuickAction key={a.href} href={a.href} emoji={a.emoji} label={a.label} sublabel={a.sublabel} gradient={a.gradient} />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ══════════════════════════════════════
             4. ज़रूरी काम - Urgent Tasks Enhanced
         ══════════════════════════════════════ */}
-        {hasUrgent && (
+        {hasUrgent && (hasPermission('MANAGE_INVENTORY') || hasPermission('VIEW_UDHAAR')) && (
           <div>
             <div className="flex items-center justify-between mb-3 px-1">
               <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
                 ⚠️ ज़रूरी काम
               </p>
-              {(low_stock > 0 || out_of_stock > 0) && (
+              {(low_stock > 0 || out_of_stock > 0) && hasPermission('MANAGE_INVENTORY') && (
                 <Link href="/product" className="text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline">
                   सभी देखें →
                 </Link>
@@ -380,7 +357,7 @@ export default function DashboardPage() {
 
             <div className="space-y-3">
               {/* Stock alert - Enhanced */}
-              {(low_stock > 0 || out_of_stock > 0) && (
+              {(low_stock > 0 || out_of_stock > 0) && hasPermission('MANAGE_INVENTORY') && (
                 <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex items-center gap-3 px-4 py-4 border-b border-amber-200/50 bg-white/50">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
@@ -423,7 +400,7 @@ export default function DashboardPage() {
               )}
 
               {/* Udhaar collection - Enhanced */}
-              {udhaar_count > 0 && (
+              {udhaar_count > 0 && hasPermission('VIEW_UDHAAR') && (
                 <div className="rounded-2xl border-2 border-rose-200 bg-white overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
                   <div className="flex items-center gap-3 px-4 py-4 border-b border-rose-100 bg-gradient-to-br from-rose-50 to-red-50">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-400 to-red-500 flex items-center justify-center text-2xl shadow-lg flex-shrink-0">
@@ -503,11 +480,13 @@ export default function DashboardPage() {
               {shopName} — रखरखाव के साथ
             </p>
           </div>
-          <Link href="/sales"
-            className="relative z-10 flex-shrink-0 px-5 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-[13px] font-black text-white shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:-translate-y-px transition-all"
-          >
-            बिल बनाओ →
-          </Link>
+          {hasPermission('CREATE_INVOICE') && (
+            <Link href="/sales"
+              className="relative z-10 flex-shrink-0 px-5 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-[13px] font-black text-white shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:-translate-y-px transition-all"
+            >
+              बिल बनाओ →
+            </Link>
+          )}
         </div>
 
       </div>
