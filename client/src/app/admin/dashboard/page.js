@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiUrl } from '../../lib/api';
+import { apiUrl } from '../../../lib/api';
 
 function getAdminToken() {
   if (typeof window === 'undefined') return null;
