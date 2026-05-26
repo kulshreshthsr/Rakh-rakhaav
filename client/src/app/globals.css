@@ -109,6 +109,10 @@
   .ui-card-success { @apply border-emerald-300/60 bg-emerald-50; }
 
   .page-shell { @apply flex flex-col gap-5 text-slate-900; letter-spacing: -0.003em; }
+
+  /* Desktop page expansion — add alongside mobile max-w-2xl / pb-28 to unconstrain on desktop.
+     Mobile is unaffected; only activates above the sidebar breakpoint. */
+  .desktop-expand { /* mobile: no-op */ }
   .page-toolbar, .compact-page-toolbar, .ui-card-head, .panel-head, .flow-modal-header { @apply flex min-h-12 flex-wrap items-start justify-between gap-4; }
   .page-title {
     @apply font-display font-extrabold leading-[1.08] text-slate-900;
@@ -661,6 +665,14 @@
   }
   @media (min-width: 901px) {
     .rr-workspace-premium .premium-main-content::before { display: block; }
+
+    /* Remove mobile-only page content constraints on desktop.
+       Pages use max-w-2xl (672px) + pb-28 (112px) for mobile layout.
+       On desktop the sidebar is visible and content area is much wider. */
+    .desktop-expand {
+      max-width: none !important;
+      padding-bottom: 2rem !important;
+    }
   }
   .desktop-sidebar { display: flex; }
   .mobile-topbar, .mobile-bottom-nav { display: none; }
@@ -701,7 +713,7 @@
   .sidebar-user-menu button, .sidebar-user-menu a { @apply flex w-full items-center gap-2.5 border-0 bg-transparent px-[14px] py-[13px] text-[13px] font-bold text-slate-900 no-underline; }
   .sidebar-user-menu button + button, .sidebar-user-menu button + a, .sidebar-user-menu a + button, .sidebar-user-menu a + a { border-top: 1px solid #e2e8f0; }
   .sidebar-user-menu .danger { @apply text-red-600; }
-  .sidebar-nav { @apply flex flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5; }
+  .sidebar-nav { @apply flex flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-0.5; min-height: 0; }
   .nav-link {
     @apply relative flex gap-3 overflow-hidden rounded-[6px] border border-slate-400/70 px-3 py-[13px] no-underline text-slate-200;
     align-items: flex-start;
@@ -747,6 +759,10 @@
   .nav-tone-credit .nav-link-accent { background: linear-gradient(180deg, #ef4444, #fb7185); }
   .nav-tone-gst .nav-link-accent { background: linear-gradient(180deg, #14b8a6, #2dd4bf); }
   .nav-tone-reports .nav-link-accent { background: linear-gradient(180deg, #0f766e, #22d3ee); }
+  .nav-tone-income.is-active { background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(52,211,153,0.08)); }
+  .nav-tone-income .nav-link-accent { background: linear-gradient(180deg, #10b981, #34d399); }
+  .nav-tone-bank.is-active { background: linear-gradient(135deg, rgba(8,145,178,0.14), rgba(34,211,238,0.08)); }
+  .nav-tone-bank .nav-link-accent { background: linear-gradient(180deg, #0891b2, #22d3ee); }
   .sidebar-logout { @apply mt-1.5 flex w-full items-center justify-center gap-2 rounded-[6px] border border-slate-400 bg-white px-[14px] py-3 font-extrabold text-red-600; }
   .premium-topbar { @apply fixed inset-x-0 top-0 z-[60] hidden items-center justify-between gap-2.5 p-[14px]; border-bottom: 1px solid rgba(96,165,250,0.16); background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(239,246,255,0.88), rgba(248,250,252,0.8)); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 8px 20px rgba(15,23,42,0.06); transition: box-shadow 200ms ease, background 200ms ease, border-color 200ms ease; }
   .premium-topbar::after { content: ''; position: absolute; inset: auto 18px 0; height: 1px; background: linear-gradient(90deg, rgba(96,165,250,0), rgba(59,130,246,0.32), rgba(125,211,252,0), rgba(96,165,250,0)); pointer-events: none; }
@@ -882,7 +898,7 @@
     font-size: 13px;
     font-weight: 900;
   }
-  .premium-main-content { margin-left: 288px; padding: 30px 26px 108px; min-height: 100vh; position: relative; }
+  .premium-main-content { margin-left: 288px; padding: 32px 36px 40px; min-height: 100vh; position: relative; }
   .main-content { min-height: 100vh; }
   .content-container { @apply relative mx-auto max-w-[1440px]; }
   .content-container::before { content: ''; position: fixed; top: 96px; right: 32px; width: 280px; height: 280px; border-radius: 999px; background: radial-gradient(circle, rgba(13,148,136,0.07), transparent 68%); pointer-events: none; filter: blur(20px); z-index: -1; opacity: 0.85; }

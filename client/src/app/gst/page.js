@@ -329,7 +329,7 @@ export default function GSTPage() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Page header ── */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">

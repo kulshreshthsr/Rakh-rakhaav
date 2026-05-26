@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AppLocaleProvider } from "../components/AppLocale";
+import { IndustryProvider } from "../contexts/IndustryContext";
 import AppSplash from "../components/AppSplash";
 import PWAInstall from "../components/PWAInstall";
 
@@ -45,9 +46,11 @@ export default function RootLayout({ children }) {
       </head>
       <body className="rr-enterprise-surface">
         <AppLocaleProvider>
-          <AppSplash />
-          {children}
-          <PWAInstall />
+          <IndustryProvider>
+            <AppSplash />
+            {children}
+            <PWAInstall />
+          </IndustryProvider>
         </AppLocaleProvider>
       </body>
     </html>

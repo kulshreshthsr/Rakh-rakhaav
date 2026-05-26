@@ -146,7 +146,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+        <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
           {[80, 140, 180, 120].map((h, i) => (
             <div key={i} className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200/50 animate-pulse"
               style={{ height: h }} />
@@ -159,7 +159,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <Layout>
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
+        <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
           <div className="rounded-2xl border-2 border-red-200 bg-red-50 px-5 py-5">
             <p className="text-[16px] font-black text-red-900">Dashboard data load nahi ho paya.</p>
             <p className="mt-2 text-[13px] text-red-700">{error}</p>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-5">
+      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-5">
         {refreshing && (
           <div className="flex items-center justify-end gap-1.5 px-1 -mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

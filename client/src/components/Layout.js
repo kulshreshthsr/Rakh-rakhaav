@@ -13,18 +13,21 @@ import {
 } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
 import { SYSTEM_ROLES as FRONTEND_ROLES } from '../lib/permissions';
+import { useIndustry } from '../contexts/IndustryContext';
 
 /* ─── Nav config ─────────────────────────────────────────────────── */
 // permission: the permission required to see this item; null = visible to all
 const NAV_ITEMS = [
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     tone: 'home',    permission: 'VIEW_DASHBOARD'    },
-  { href: '/product',   key: 'products',  shortLabel: 'Stock',    tone: 'stock',   permission: 'MANAGE_INVENTORY'  },
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales',   permission: 'VIEW_SALES'        },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase',permission: 'VIEW_PURCHASES'    },
-  { href: '/expenses',  key: 'expenses',  shortLabel: 'Expense',  tone: 'reports', permission: 'VIEW_EXPENSES'     },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit',  permission: 'VIEW_UDHAAR'       },
-  { href: '/gst',       key: 'gst',       shortLabel: 'GST',      tone: 'gst',     permission: 'VIEW_GST'          },
-  { href: '/reports',   key: 'reports',   shortLabel: 'Reports',  tone: 'reports', permission: 'VIEW_REPORTS'      },
+  { href: '/dashboard',    key: 'dashboard', shortLabel: 'Home',     tone: 'home',    permission: 'VIEW_DASHBOARD'    },
+  { href: '/product',      key: 'products',  shortLabel: 'Stock',    tone: 'stock',   permission: 'MANAGE_INVENTORY'  },
+  { href: '/sales',        key: 'sales',     shortLabel: 'Sale',     tone: 'sales',   permission: 'VIEW_SALES'        },
+  { href: '/purchases',    key: 'purchases', shortLabel: 'Purchase', tone: 'purchase',permission: 'VIEW_PURCHASES'    },
+  { href: '/expenses',     key: 'expenses',  shortLabel: 'Expense',  tone: 'reports', permission: 'VIEW_EXPENSES'     },
+  { href: '/income',       key: 'income',    shortLabel: 'Income',   tone: 'income',  permission: 'VIEW_INCOME'       },
+  { href: '/bank-entries', key: 'bank',      shortLabel: 'Bank',     tone: 'bank',    permission: 'VIEW_BANK'         },
+  { href: '/udhaar',       key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit',  permission: 'VIEW_UDHAAR'       },
+  { href: '/gst',          key: 'gst',       shortLabel: 'GST',      tone: 'gst',     permission: 'VIEW_GST'          },
+  { href: '/reports',      key: 'reports',   shortLabel: 'Reports',  tone: 'reports', permission: 'VIEW_REPORTS'      },
 ];
 
 const MOBILE_BOTTOM_NAV = [
@@ -286,6 +289,7 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = M
 /* ─── Main layout ────────────────────────────────────────────────── */
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
+  const { updateBusinessType } = useIndustry();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -319,7 +323,11 @@ function LayoutInner({ children }) {
       }
       if (!res.ok) return false;
       const data = await res.json();
-      if (data.user) { setUser(data.user); localStorage.setItem('user', JSON.stringify(data.user)); }
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        if (data.user.businessType) updateBusinessType(data.user.businessType);
+      }
       setSubscription(data.subscription || null);
       writeStoredSubscription(data.subscription || null);
       setPlans(mergePlansWithFallback(data.plans));
@@ -327,7 +335,7 @@ function LayoutInner({ children }) {
       markSubscriptionRefreshNow();
       return true;
     } catch { return false; }
-  }, [router]);
+  }, [router, updateBusinessType]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -404,6 +412,8 @@ function LayoutInner({ children }) {
     sales:     'बेचिए / Sales',
     purchases: 'खरीदिए / Purchases',
     expenses:  'खर्च / Expenses',
+    income:    'आय / Income',
+    bank:      'बैंक / Bank',
     udhaar:    'उधार / Credit',
     gst:       'GST / Tax',
     reports:   'रिपोर्ट / Hisaab',

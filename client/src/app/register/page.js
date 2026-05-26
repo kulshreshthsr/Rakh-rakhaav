@@ -9,6 +9,7 @@ import {
   setWelcomePending,
   writeStoredSubscription,
 } from '../../lib/subscription';
+import { setOnboardingPending } from '../onboarding/page';
 import { apiUrl } from '../../lib/api';
 
 const PERKS = [
@@ -86,7 +87,8 @@ export default function RegisterPage() {
         writeStoredSubscription(data.user?.subscription || null);
         setWelcomePending(true);
         clearTrialGateSeen();
-        router.push('/welcome');
+        setOnboardingPending();
+        router.push('/onboarding');
       } else {
         setError(data.message || 'Registration failed');
       }

@@ -117,7 +117,7 @@ export default function BankEntriesPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Header ── */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border border-slate-200 p-5 shadow-sm">

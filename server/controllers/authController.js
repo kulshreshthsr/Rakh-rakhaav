@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const Shop = require('../models/shopModel');
+const { BUSINESS_TYPES } = Shop;
 const { logAuditEvent, cloneForAudit } = require('../utils/auditTrail');
 const {
   TRIAL_DAYS,
@@ -153,27 +154,28 @@ const updateShop = async (req, res) => {
     name, address, city, state, pincode, gstin, phone, email,
     bank_name, bank_account, bank_ifsc, bank_branch,
     cash_opening_balance, bank_opening_balance,
-    owner_photo, terms,
+    owner_photo, terms, businessType,
   } = req.body;
   try {
     if (!isValidOwnerPhoto(owner_photo)) {
       return res.status(400).json({ message: 'Owner photo must be a PNG, JPG, JPEG, or WEBP image up to 5MB.' });
     }
+    if (businessType && !BUSINESS_TYPES.includes(businessType)) {
+      return res.status(400).json({ message: 'Invalid business type.' });
+    }
 
     const shop = await getOrCreateShop(req.user.id);
     const beforeValue = cloneForAudit(shop);
-    const updated = await Shop.findByIdAndUpdate(
-      shop._id,
-      {
-        name, address, city, state, pincode, gstin, phone, email,
-        bank_name, bank_account, bank_ifsc, bank_branch,
-        cash_opening_balance: Number(cash_opening_balance || 0),
-        bank_opening_balance: Number(bank_opening_balance || 0),
-        owner_photo,
-        terms,
-      },
-      { new: true }
-    );
+    const updatePayload = {
+      name, address, city, state, pincode, gstin, phone, email,
+      bank_name, bank_account, bank_ifsc, bank_branch,
+      cash_opening_balance: Number(cash_opening_balance || 0),
+      bank_opening_balance: Number(bank_opening_balance || 0),
+      owner_photo,
+      terms,
+    };
+    if (businessType) updatePayload.businessType = businessType;
+    const updated = await Shop.findByIdAndUpdate(shop._id, updatePayload, { new: true });
     await logAuditEvent({
       shopId: updated._id,
       userId: req.user.id,
@@ -216,6 +218,10 @@ const getSubscriptionStatus = async (req, res) => {
         };
       }
     }
+
+    // Include businessType from shop so frontend IndustryContext stays fresh
+    const shopForBiz = await Shop.findOne({ owner: req.user.id }).select('businessType');
+    responseUser.businessType = shopForBiz?.businessType || 'general';
 
     res.json({
       user: responseUser,

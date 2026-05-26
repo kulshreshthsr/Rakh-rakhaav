@@ -410,7 +410,7 @@ export default function ProfilePage() {
   if (isSubUser) {
     return (
       <Layout>
-        <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28">
+        <div className="desktop-expand w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28">
           <div className="max-w-2xl mx-auto space-y-5">
 
             {/* Hero */}
@@ -449,7 +449,7 @@ export default function ProfilePage() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28">
+      <div className="desktop-expand w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28">
         <div className="max-w-3xl mx-auto space-y-5">
 
           {/* ══ HERO HEADER ══════════════════════════════════════════ */}

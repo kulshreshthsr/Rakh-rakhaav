@@ -16,6 +16,8 @@ const saleItemSchema = new mongoose.Schema({
   total_gst: { type: Number, default: 0 },
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
   total_amount: { type: Number, default: 0 },
+  // Industry-specific line fields (pharmacy: batch_number/expiry, clothing: size/color, etc.)
+  item_metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
 });
 
 const saleSchema = new mongoose.Schema({

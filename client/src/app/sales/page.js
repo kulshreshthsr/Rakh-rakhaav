@@ -529,7 +529,7 @@ export default function SalesPage() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
+      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
 
         {/* ── Page header ── */}
         <div className="relative overflow-hidden mb-5 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-white via-green-50/40 to-emerald-50/40 p-6 shadow-lg hover:shadow-xl transition-shadow">

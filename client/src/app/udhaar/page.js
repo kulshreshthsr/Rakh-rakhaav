@@ -413,7 +413,7 @@ export default function UdhaarPage() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28 space-y-5">
+      <div className="desktop-expand w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28 space-y-5">
 
         {/* ══ HERO HEADER ════════════════════════════════════════════ */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 lg:p-7 shadow-lg hover:shadow-xl transition-shadow">

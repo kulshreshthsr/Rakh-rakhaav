@@ -209,7 +209,7 @@ export default function ProductsPage() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── OFFLINE BANNER ── */}
         {!isOnline && (

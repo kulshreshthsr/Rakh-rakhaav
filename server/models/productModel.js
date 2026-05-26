@@ -30,6 +30,9 @@ const productSchema = new mongoose.Schema({
   low_stock_threshold: { type: Number, default: 5 }, // alert when stock <= this
   isActive: { type: Boolean, default: true },         // soft delete
 
+  // ── Industry-specific attributes (pharmacy: manufacturer/schedule, clothing: brand, etc.)
+  metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
+
   // ── Stock history log ─────────────────────────────────────────
   stock_history: [stockHistorySchema],
 }, { timestamps: true });
