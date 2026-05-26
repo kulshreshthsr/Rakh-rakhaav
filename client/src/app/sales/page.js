@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
+import { useIndustry } from '../../contexts/IndustryContext';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { getDisplayQueue, queueSale, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
@@ -17,7 +18,7 @@ const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli a
 
 const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
-const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
+const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const GSTIN_LENGTH = 15;
 const SALES_CACHE_KEY = 'sales-page';
@@ -152,6 +153,7 @@ const INPUT = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white te
 export default function SalesPage() {
   const router = useRouter();
   const { locale } = useAppLocale();
+  const { term, config } = useIndustry();
 
   /* ── All state (UNCHANGED) ── */
   const [sales, setSales]           = useState([]);
@@ -172,6 +174,7 @@ export default function SalesPage() {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth]   = useState('');
+  const [extraFields, setExtraFields]           = useState({});
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [showMoreCustomerDetails, setShowMoreCustomerDetails] = useState(false);
   const [customerQuery, setCustomerQuery] = useState('');
@@ -383,7 +386,7 @@ export default function SalesPage() {
     const nextPaymentType = overrides.payment_type || form.payment_type || 'cash';
     setEditingSaleId(''); setItems([emptyItem()]);
     setForm(buildInitialForm({ payment_type: nextPaymentType, amount_paid: '', ...overrides }));
-    setGstinTouched(false); setError(''); setCustomerQuery('');
+    setGstinTouched(false); setError(''); setExtraFields({}); setCustomerQuery('');
     setShowCustomerInfo(false); setShowCustomerSuggestions(false); setShowMoreCustomerDetails(false);
   }
 
@@ -414,7 +417,7 @@ export default function SalesPage() {
       const res = await fetch(isEditing ? apiUrl(`/api/sales/${editingSaleId}`) : apiUrl('/api/sales'), {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ items: validItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total }),
+        body: JSON.stringify({ items: validItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total, extra_fields: extraFields }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -455,7 +458,8 @@ export default function SalesPage() {
     if (sale?._isOffline) { setError('Pending offline sale sync hone se pehle edit nahi hogi.'); return; }
     const sourceItems = sale.items && sale.items.length > 0 ? sale.items : [{ product: sale.product, quantity: sale.quantity, price_per_unit: sale.price_per_unit }];
     setEditingSaleId(sale._id);
-    setItems(sourceItems.map((item) => ({ product_id: item.product?._id || item.product || '', quantity: item.quantity || 1, price_per_unit: item.price_per_unit || '' })));
+    setItems(sourceItems.map((item) => ({ product_id: item.product?._id || item.product || '', quantity: item.quantity || 1, price_per_unit: item.price_per_unit || '', item_metadata: item.item_metadata && typeof item.item_metadata === 'object' ? { ...item.item_metadata } : {} })));
+    setExtraFields(sale.extra_fields && typeof sale.extra_fields === 'object' ? { ...sale.extra_fields } : {});
     setForm(buildInitialForm({ payment_type: sale.payment_type || 'cash', amount_paid: sale.payment_type === 'credit' ? String(sale.amount_paid || '') : '', buyer_name: sale.buyer_name || '', buyer_phone: sale.buyer_phone || '', buyer_gstin: sale.buyer_gstin || '', buyer_address: sale.buyer_address || '', buyer_state: sale.buyer_state || '', notes: sale.notes || '', sale_date: formatDateInputValue(sale.createdAt || sale.sold_at) || getDefaultSaleDateValue() }));
     setGstinTouched(false); setError(''); setCustomerQuery(sale.buyer_name || '');
     setShowCustomerInfo(Boolean(sale.payment_type === 'credit' || sale.buyer_name || sale.buyer_phone || sale.buyer_gstin || sale.buyer_address || sale.buyer_state));
@@ -540,13 +544,13 @@ export default function SalesPage() {
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
-                🧾 बिक्री • Sales
+                {config.icon || '🧾'} बिक्री • {term('sales', 'Sales')}
               </span>
               <h1 className="mt-3 text-[26px] font-black text-slate-900">
-                Sales / बेचिए
+                {term('sales', 'Sales')} / बेचिए
               </h1>
               <p className="mt-2 text-[14px] text-slate-600 font-medium">
-                Billing, invoice और customer payment flow
+                {term('invoice', 'Invoice')} और {term('customer', 'customer')} payment flow
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -560,7 +564,7 @@ export default function SalesPage() {
                 onClick={() => { resetForm(); setShowModal(true); }}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
               >
-                + New Sale
+                + New {term('sale', 'Sale')}
               </button>
             </div>
           </div>
@@ -868,10 +872,33 @@ export default function SalesPage() {
               )}
             </div>
 
+            {/* ── Industry-specific invoice-level fields ── */}
+            {config.invoiceExtraFields && config.invoiceExtraFields.length > 0 && (
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700">{config.icon} {term('invoice', 'Invoice')} Details</p>
+                {config.invoiceExtraFields.map((field) => (
+                  <div key={field.key}>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{field.label}{field.required && <span className="text-rose-500 ml-0.5">*</span>}</p>
+                    {field.type === 'select' ? (
+                      <select className={INPUT} value={extraFields[field.key] || ''} onChange={(e) => setExtraFields((prev) => ({ ...prev, [field.key]: e.target.value }))}>
+                        <option value="">{field.placeholder || `Select ${field.label}`}</option>
+                        {(field.options || []).map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <input className={INPUT} type={field.type === 'number' ? 'number' : 'text'}
+                        value={extraFields[field.key] || ''} onChange={(e) => setExtraFields((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                        placeholder={field.placeholder || field.label} step={field.type === 'number' ? '0.01' : undefined}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* ── Items section ── */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[13px] font-black text-slate-900">Items</p>
+                <p className="text-[13px] font-black text-slate-900">{term('items', 'Items')}</p>
                 <button type="button" onClick={() => setShowBarcodeScanner(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-colors"
                 >📷 Scan Barcode</button>
@@ -953,6 +980,35 @@ export default function SalesPage() {
                         <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
                           <span className="text-slate-400">₹{fmt(g.taxable)} + <span className="text-amber-600">₹{fmt(g.gst)} GST</span></span>
                           <span className="font-black text-slate-900">= ₹{fmt(g.total)}</span>
+                        </div>
+                      )}
+
+                      {/* Industry-specific line fields (batch/expiry, size/color, etc.) */}
+                      {config.invoiceLineFields && config.invoiceLineFields.length > 0 && (
+                        <div className="pt-1 space-y-2.5 border-t border-slate-200">
+                          {config.invoiceLineFields.map((field) => (
+                            <div key={field.key}>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{field.label}</p>
+                              {field.type === 'select' ? (
+                                <select
+                                  className="h-9 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
+                                  value={(item.item_metadata || {})[field.key] || ''}
+                                  onChange={(e) => { const updated = [...items]; updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), [field.key]: e.target.value } }; setItems(updated); }}
+                                >
+                                  <option value="">{field.placeholder || `Select ${field.label}`}</option>
+                                  {(field.options || []).map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                              ) : (
+                                <input
+                                  className="h-9 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
+                                  type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                                  value={(item.item_metadata || {})[field.key] || ''}
+                                  onChange={(e) => { const updated = [...items]; updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), [field.key]: e.target.value } }; setItems(updated); }}
+                                  placeholder={field.placeholder || field.label}
+                                />
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>

@@ -360,6 +360,7 @@ const buildSaleRecordData = async ({
     amount_paid_mode = '',
     notes,
     sale_date,
+    extra_fields,
   } = payload;
 
   if (payment_type === 'credit' && !buyer_name) {
@@ -440,6 +441,7 @@ const buildSaleRecordData = async ({
       taxable_amount: taxable,
       ...gstCalc,
       total_amount: lineTotal,
+      item_metadata: item.item_metadata || {},
     });
   }
 
@@ -488,6 +490,7 @@ const buildSaleRecordData = async ({
       buyer_address,
       buyer_state: resolvedBuyerState,
       notes,
+      extra_fields: extra_fields || {},
       createdAt: saleDate,
     },
   };

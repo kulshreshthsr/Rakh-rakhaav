@@ -289,7 +289,7 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = M
 /* ─── Main layout ────────────────────────────────────────────────── */
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
-  const { updateBusinessType } = useIndustry();
+  const { updateBusinessType, term, isEnabled } = useIndustry();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -408,16 +408,16 @@ function LayoutInner({ children }) {
 
   const bilingualLabels = useMemo(() => ({
     dashboard: 'होम / Dashboard',
-    products:  'स्टॉक / Products',
-    sales:     'बेचिए / Sales',
-    purchases: 'खरीदिए / Purchases',
+    products:  `स्टॉक / ${term('inventory', 'Products')}`,
+    sales:     `बेचिए / ${term('sale', 'Sales')}`,
+    purchases: `खरीदिए / ${term('purchase', 'Purchases')}`,
     expenses:  'खर्च / Expenses',
     income:    'आय / Income',
     bank:      'बैंक / Bank',
     udhaar:    'उधार / Credit',
     gst:       'GST / Tax',
     reports:   'रिपोर्ट / Hisaab',
-  }), []);
+  }), [term]);
 
   // Permission-based nav filtering: owners see everything; sub-users see only allowed items.
   // Falls back to system role defaults so nav is never blank while subscription-status loads.
@@ -443,8 +443,21 @@ function LayoutInner({ children }) {
   );
 
   const filteredDrawerItems = useMemo(
-    () => MORE_DRAWER_ITEMS.filter(item => canAccess(item.permission)),
-    [canAccess]
+    () => MORE_DRAWER_ITEMS
+      .filter(item => canAccess(item.permission))
+      // Hide purchases/gst/bank drawers if the module is disabled for this business type
+      .filter(item => {
+        if (item.key === 'purchases') return isEnabled('purchases');
+        if (item.key === 'gst')       return isEnabled('gst');
+        if (item.key === 'bank')      return isEnabled('bank');
+        return true;
+      })
+      // Adapt labels for industry-specific terminology
+      .map(item => {
+        if (item.key === 'products') return { ...item, label: term('inventory', 'Stock'), sublabel: `${term('products','Products')} & Inventory` };
+        return item;
+      }),
+    [canAccess, isEnabled, term]
   );
 
   return (

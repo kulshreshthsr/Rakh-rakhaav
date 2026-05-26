@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
+import { useIndustry } from '../../contexts/IndustryContext';
 
 /* ─── Constants & helpers (ALL UNCHANGED) ────────────────────────── */
 const getToken = () => localStorage.getItem('token');
@@ -42,11 +43,31 @@ function Backdrop({ children, onClose }) {
   );
 }
 
+/* ─── Industry-aware dynamic attribute field ──────────────────── */
+function DynamicAttrField({ attr, value, onChange }) {
+  const base = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
+  if (attr.type === 'select') {
+    return (
+      <select className={base} value={value || ''} onChange={e => onChange(e.target.value)}>
+        <option value="">{attr.placeholder || `Select ${attr.label}`}</option>
+        {(attr.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+      </select>
+    );
+  }
+  return (
+    <input className={base} type={attr.type === 'number' ? 'number' : 'text'}
+      value={value || ''} onChange={e => onChange(e.target.value)}
+      placeholder={attr.placeholder || attr.label} step={attr.type === 'number' ? '0.01' : undefined}
+    />
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════════ */
 export default function ProductsPage() {
   const router = useRouter();
+  const { term, config } = useIndustry();
 
   /* ── All state (UNCHANGED) ── */
   const [products,   setProducts]   = useState([]);
@@ -64,6 +85,7 @@ export default function ProductsPage() {
   const [showModal,   setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [form, setForm] = useState({ name:'', description:'', price:'', cost_price:'', quantity:'', unit:'pcs', barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5 });
+  const [metadata, setMetadata] = useState({});
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [lastScannedBarcode, setLastScannedBarcode] = useState('');
 
@@ -126,12 +148,15 @@ export default function ProductsPage() {
   const openAdd = () => {
     setEditProduct(null);
     setForm({ name:'', description:'', price:'', cost_price:'', quantity:'', unit:'pcs', barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5 });
+    setMetadata({});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
   };
 
   const openEdit = (p) => {
     setEditProduct(p);
     setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5 });
+    // Restore metadata from product (MongoDB Map serialises to plain object in JSON response)
+    setMetadata(p.metadata && typeof p.metadata === 'object' ? { ...p.metadata } : {});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
   };
 
@@ -140,7 +165,7 @@ export default function ProductsPage() {
     if (!isOnline) { setError('Offline mode me product save nahi hoga.'); return; }
     const url = editProduct ? apiUrl(`/api/products/${editProduct._id}`) : apiUrl('/api/products');
     try {
-      const res = await fetch(url, { method: editProduct ? 'PUT' : 'POST', headers: { 'Content-Type':'application/json', Authorization:`Bearer ${getToken()}` }, body: JSON.stringify(form) });
+      const res = await fetch(url, { method: editProduct ? 'PUT' : 'POST', headers: { 'Content-Type':'application/json', Authorization:`Bearer ${getToken()}` }, body: JSON.stringify({ ...form, metadata }) });
       const data = await res.json();
       if (res.ok) { setShowModal(false); fetchProducts(); } else setError(data.message || 'Could not save product');
     } catch { setError('Server error'); }
@@ -231,9 +256,9 @@ export default function ProductsPage() {
           <div className="relative flex items-start justify-between gap-3">
             <div>
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
-                📦 Stock Control
+                📦 {term('inventory', 'Stock')}
               </span>
-              <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">स्टॉक / Products</h1>
+              <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">स्टॉक / {term('products', 'Products')}</h1>
               <p className="mt-2 text-[13px] text-slate-600 font-medium">
                 {refreshing ? '🔄 Refreshing...'
                   : !isOnline ? `📶 Offline snapshot${cacheLabel ? ` · ${cacheLabel}` : ''}`
@@ -243,7 +268,7 @@ export default function ProductsPage() {
             </div>
             <button onClick={openAdd} disabled={!isOnline}
               className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 transition-all"
-            >+ Product</button>
+            >+ {term('addProduct', 'Add Product')}</button>
           </div>
         </div>
 
@@ -312,15 +337,15 @@ export default function ProductsPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
             <div className="text-4xl mb-3">📦</div>
             <p className="text-[14px] font-bold text-slate-700 mb-1">
-              {search || filterStock !== 'all' ? 'कोई product नहीं मिला' : 'अभी कोई product नहीं है'}
+              {search || filterStock !== 'all' ? `कोई ${term('product', 'product')} नहीं मिला` : `अभी कोई ${term('product', 'product')} नहीं है`}
             </p>
             <p className="text-[12px] text-slate-400 mb-4">
-              {search || filterStock !== 'all' ? 'Filter या search बदलकर देखो' : 'पहला product add करो और inventory शुरू करो'}
+              {search || filterStock !== 'all' ? 'Filter या search बदलकर देखो' : `पहला ${term('product', 'product')} add करो और ${term('inventory', 'inventory')} शुरू करो`}
             </p>
             {!search && filterStock === 'all' && (
               <button onClick={openAdd}
                 className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
-              >+ पहला Product Add करो</button>
+              >+ {term('addProduct', 'Add Product')}</button>
             )}
           </div>
         )}
@@ -414,8 +439,8 @@ export default function ProductsPage() {
             <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-5 py-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{editProduct ? 'Edit Product' : 'New Product'}</p>
-                  <h3 className="text-[18px] font-black text-slate-900 mt-0.5">{editProduct ? editProduct.name : 'Product Add करो'}</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{editProduct ? `Edit ${term('product','Product')}` : `New ${term('product','Product')}`}</p>
+                  <h3 className="text-[18px] font-black text-slate-900 mt-0.5">{editProduct ? editProduct.name : `${term('product','Product')} Add करो`}</h3>
                 </div>
                 <button onClick={() => setShowModal(false)}
                   className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
@@ -539,11 +564,30 @@ export default function ProductsPage() {
                   )}
                 </div>
 
+                {/* ── INDUSTRY-SPECIFIC ATTRIBUTES ── */}
+                {config.productAttributes && config.productAttributes.length > 0 && (
+                  <div className="rounded-2xl border border-green-100 bg-green-50/60 p-4 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-green-700">
+                      {config.icon} {term('product', 'Product')} Details
+                    </p>
+                    {config.productAttributes.map(attr => (
+                      <div key={attr.key}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{attr.label}</p>
+                        <DynamicAttrField
+                          attr={attr}
+                          value={metadata[attr.key] || ''}
+                          onChange={v => setMetadata(prev => ({ ...prev, [attr.key]: v }))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Submit */}
                 <div className="flex gap-3 pb-2">
                   <button type="submit"
                     className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 transition-all"
-                  >{editProduct ? '✓ Update Product' : '+ Add Product'}</button>
+                  >{editProduct ? `✓ Update ${term('product','Product')}` : `+ ${term('addProduct','Add Product')}`}</button>
                   <button type="button" onClick={() => setShowModal(false)}
                     className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                   >Cancel</button>

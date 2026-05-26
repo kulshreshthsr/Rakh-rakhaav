@@ -70,6 +70,8 @@ const saleSchema = new mongoose.Schema({
   invoice_number: { type: String, required: true },
   offline_operation_id: { type: String },
   notes: { type: String },
+  // Industry-specific invoice-level fields (restaurant: table_number/order_type, automobile: vehicle_number, etc.)
+  extra_fields: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
 
 }, { timestamps: true });
 

@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { hasPermission } from '../../lib/permissions';
+import { useIndustry } from '../../contexts/IndustryContext';
 
 const DASHBOARD_CACHE_KEY = 'dashboard-page';
 
@@ -32,7 +33,7 @@ function buildUdhaarReminder(customer, shopName) {
 }
 
 /* Enhanced Quick Action Card with Green Theme */
-function QuickAction({ href, emoji, label, sublabel, gradient, hover }) {
+function QuickAction({ href, emoji, label, sublabel, gradient }) {
   return (
     <Link href={href}
       className={`group relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br ${gradient} border-2 border-transparent text-center hover:border-green-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 active:scale-95`}
@@ -65,6 +66,7 @@ function StatCard({ label, value, sub, gradient, icon, href }) {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { term, config, isEnabled } = useIndustry();
 
   const hasBootstrappedRef = useRef(false);
 
@@ -312,17 +314,24 @@ export default function DashboardPage() {
         </div>
 
         {/* ══════════════════════════════════════
-            3. जल्दी काम - Quick Actions with Beautiful Gradients
+            3. जल्दी काम - Quick Actions (industry-aware)
         ══════════════════════════════════════ */}
         {(() => {
+          // Primary sale action label adapts: Order for restaurant, Job Card for service/repair, Bill otherwise
+          const saleLabel = config.modules?.tableManagement
+            ? 'नया Order'
+            : config.modules?.serviceJobs
+              ? 'Job Card बनाओ'
+              : `${term('invoice', 'Bill')} बनाओ`;
+
           const quickActions = [
-            { href: '/sales?open=1&payment=cash', emoji: '🧾', label: 'बिल बनाओ',   sublabel: 'Cash Sale',  gradient: 'from-green-50 to-emerald-100',  permission: 'CREATE_INVOICE'   },
-            { href: '/sales?open=1&payment=credit',emoji: '📒', label: 'उधार दो',   sublabel: 'Credit',    gradient: 'from-rose-50 to-red-100',        permission: 'CREATE_INVOICE'   },
-            { href: '/purchases',                  emoji: '🛒', label: 'माल खरीदो', sublabel: 'Purchase',  gradient: 'from-amber-50 to-orange-100',    permission: 'CREATE_PURCHASE'  },
-            { href: '/product',                    emoji: '📦', label: 'स्टॉक देखो',sublabel: 'Inventory', gradient: 'from-blue-50 to-cyan-100',        permission: 'MANAGE_INVENTORY' },
-            { href: '/expenses',                   emoji: '💳', label: 'खर्च लिखो', sublabel: 'Expenses',  gradient: 'from-purple-50 to-violet-100',   permission: 'VIEW_EXPENSES'    },
-            { href: '/udhaar',                     emoji: '💸', label: 'पैसे लो',   sublabel: 'Collect',   gradient: 'from-pink-50 to-rose-100',        permission: 'VIEW_UDHAAR'      },
-            { href: '/reports',                    emoji: '📊', label: 'हिसाब देखो',sublabel: 'Reports',   gradient: 'from-slate-50 to-gray-100',      permission: 'VIEW_REPORTS'     },
+            { href: '/sales?open=1&payment=cash',   emoji: config.icon || '🧾', label: saleLabel,         sublabel: term('sale','Sale'),          gradient: 'from-green-50 to-emerald-100',  permission: 'CREATE_INVOICE'   },
+            { href: '/sales?open=1&payment=credit',  emoji: '📒',                label: 'उधार दो',         sublabel: 'Credit',                    gradient: 'from-rose-50 to-red-100',       permission: 'CREATE_INVOICE'   },
+            { href: '/purchases',                    emoji: '🛒',                label: 'माल खरीदो',       sublabel: term('purchase','Purchase'), gradient: 'from-amber-50 to-orange-100',   permission: 'CREATE_PURCHASE'  },
+            { href: '/product',                      emoji: '📦',                label: term('inventory','स्टॉक'), sublabel: term('products','Items'), gradient: 'from-blue-50 to-cyan-100', permission: 'MANAGE_INVENTORY' },
+            { href: '/expenses',                     emoji: '💳',                label: 'खर्च लिखो',       sublabel: 'Expenses',                  gradient: 'from-purple-50 to-violet-100',  permission: 'VIEW_EXPENSES'    },
+            { href: '/udhaar',                       emoji: '💸',                label: 'पैसे लो',         sublabel: 'Collect',                   gradient: 'from-pink-50 to-rose-100',      permission: 'VIEW_UDHAAR'      },
+            { href: '/reports',                      emoji: '📊',                label: 'हिसाब देखो',      sublabel: 'Reports',                   gradient: 'from-slate-50 to-gray-100',     permission: 'VIEW_REPORTS'     },
           ].filter(a => hasPermission(a.permission));
           if (quickActions.length === 0) return null;
           return (
@@ -365,7 +374,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1">
                       <p className="text-[14px] font-black text-amber-900">
-                        {out_of_stock > 0 ? `${out_of_stock} product खत्म हो गया` : `${low_stock} product कम हो रहा है`}
+                        {out_of_stock > 0 ? `${out_of_stock} ${term('product','product')} खत्म हो गया` : `${low_stock} ${term('product','product')} कम हो रहा है`}
                       </p>
                       <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
                         {out_of_stock > 0 && low_stock > 0
@@ -464,6 +473,65 @@ export default function DashboardPage() {
         )}
 
         {/* ══════════════════════════════════════
+            4b. INDUSTRY-SPECIFIC CALLOUTS
+            Shown only when the relevant module is active for this business type.
+        ══════════════════════════════════════ */}
+
+        {/* Expiry tracking callout — Pharmacy, Kirana, Grocery, Bakery, etc. */}
+        {isEnabled('expiryTracking') && hasPermission('MANAGE_INVENTORY') && (
+          <Link href="/product" className="group flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 hover:border-orange-300 hover:-translate-y-0.5 hover:shadow-lg transition-all">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-2xl flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">⏰</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-black text-orange-900">Expiry Tracking चालू है</p>
+              <p className="text-[12px] text-orange-700 font-medium mt-0.5">{term('products','Products')} की expiry dates check करो — कुछ expire होने वाला हो सकता है</p>
+            </div>
+            <span className="text-orange-400 text-[18px] flex-shrink-0">→</span>
+          </Link>
+        )}
+
+        {/* Appointments callout — Salon, Service Center, Repair Shop */}
+        {isEnabled('appointments') && hasPermission('CREATE_INVOICE') && (
+          <div className="flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-2xl flex-shrink-0 shadow-md">📅</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-black text-purple-900">Appointments Mode</p>
+              <p className="text-[12px] text-purple-700 font-medium mt-0.5">{term('customer','Client')} के लिए {term('sale','Service')} bill बनाओ और record रखो</p>
+            </div>
+            <Link href="/sales?open=1&payment=cash" className="flex-shrink-0 px-4 py-2 rounded-xl bg-purple-600 text-[11px] font-black text-white hover:bg-purple-700 transition-colors shadow-md">
+              New {term('sale','Service')}
+            </Link>
+          </div>
+        )}
+
+        {/* Table / KOT callout — Restaurant, Dhaba */}
+        {isEnabled('tableManagement') && hasPermission('CREATE_INVOICE') && (
+          <div className="flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-red-50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-2xl flex-shrink-0 shadow-md">🍽️</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-black text-orange-900">Restaurant Mode</p>
+              <p className="text-[12px] text-orange-700 font-medium mt-0.5">Table number, Dine-in / Takeaway — {term('invoice','Bill')} बनाते समय डालो</p>
+            </div>
+            <Link href="/sales?open=1&payment=cash" className="flex-shrink-0 px-4 py-2 rounded-xl bg-orange-600 text-[11px] font-black text-white hover:bg-orange-700 transition-colors shadow-md">
+              नया Order
+            </Link>
+          </div>
+        )}
+
+        {/* Job Card callout — Automobile, Mobile Shop, Service/Repair */}
+        {isEnabled('serviceJobs') && !isEnabled('tableManagement') && hasPermission('CREATE_INVOICE') && (
+          <div className="flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-2xl flex-shrink-0 shadow-md">🔧</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-black text-blue-900">Service Jobs Mode</p>
+              <p className="text-[12px] text-blue-700 font-medium mt-0.5">Vehicle / Device details, complaint — {term('invoice','Job Card')} में record होगा</p>
+            </div>
+            <Link href="/sales?open=1&payment=cash" className="flex-shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-[11px] font-black text-white hover:bg-blue-700 transition-colors shadow-md">
+              Job Card
+            </Link>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
             5. MOTIVATIONAL FOOTER - Enhanced Green Theme
         ══════════════════════════════════════ */}
         <div className="relative overflow-hidden rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 px-5 py-4 flex items-center justify-between gap-4 shadow-lg hover:shadow-xl transition-shadow">
@@ -471,10 +539,10 @@ export default function DashboardPage() {
           <div className="relative z-10 flex-1">
             <p className="text-[13px] font-black text-slate-800">
               {today_bills === 0
-                ? 'आज का पहला bill बनाओ 💪'
+                ? `आज का पहला ${term('invoice','bill')} बनाओ 💪`
                 : today_bills === 1
-                  ? 'एक bill हो गया, और करो! 🔥'
-                  : `आज ${today_bills} bill बन गए — बढ़िया! 🎯`}
+                  ? `एक ${term('invoice','bill')} हो गया, और करो! 🔥`
+                  : `आज ${today_bills} ${term('invoice','bill')} बन गए — बढ़िया! 🎯`}
             </p>
             <p className="text-[11px] text-slate-500 mt-1 font-semibold">
               {shopName} — रखरखाव के साथ
