@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 
-/* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
+/* ─── Constants & pure helpers ───────────────────────────────────── */
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'];
 const GSTIN_LENGTH = 15;
 const GSTIN_REGEX  = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
@@ -30,6 +30,9 @@ const getStateFromGstin = (gstin = '') => {
   if (n.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(n)) return null;
   return GST_STATE_CODE_MAP[n.slice(0, 2)] || null;
 };
+
+const avatarColors = ['from-green-500 to-emerald-600', 'from-violet-500 to-purple-600', 'from-teal-500 to-cyan-600', 'from-rose-500 to-pink-600'];
+const getAvatarGrad = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
 
 /* ─── Section wrapper ────────────────────────────────────────────── */
 function Section({ icon, title, subtitle, badge, children }) {
@@ -76,25 +79,44 @@ const INPUT_ERR = 'h-11 w-full px-4 rounded-xl border border-rose-300 bg-rose-50
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════════ */
 export default function ProfilePage() {
-  /* ── All state (UNCHANGED) ── */
-  const [user] = useState(() => {
+  const [user, setUser] = useState(() => {
     if (typeof window === 'undefined') return null;
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
+  const router = useRouter();
+  const isSubUser = user?.isSubUser === true;
+
+  /* ── Personal profile state (all users) ── */
+  const [profileForm, setProfileForm]   = useState({ name: '' });
+  const [profileMsg,  setProfileMsg]    = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  /* ── Password state (all users) ── */
+  const [pwForm,   setPwForm]   = useState({ current: '', newPwd: '', confirm: '' });
+  const [pwMsg,    setPwMsg]    = useState('');
+  const [pwError,  setPwError]  = useState('');
+  const [savingPw, setSavingPw] = useState(false);
+  const [showPw,   setShowPw]   = useState({ current: false, newPwd: false, confirm: false });
+
+  /* ── Shop state (owners only) ── */
   const [shop,       setShop]       = useState(null);
   const [shopForm,   setShopForm]   = useState(emptyShopForm);
   const [shopMsg,    setShopMsg]    = useState('');
   const [shopError,  setShopError]  = useState('');
   const [savingShop, setSavingShop] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
-  const router = useRouter();
-
-  /* ── NEW: track which section is "dirty" so save button highlights ── */
   const [isDirty, setIsDirty] = useState(false);
 
   const getToken = () => localStorage.getItem('token');
 
+  /* ── Seed personal form from user object ── */
+  useEffect(() => {
+    if (user?.name) setProfileForm({ name: user.name });
+  }, [user?.name]);
+
+  /* ── Load shop data (owners only) ── */
   const loadShopIntoForm = (data) => {
     setShopForm({
       name:         data?.name         || '',
@@ -119,7 +141,7 @@ export default function ProfilePage() {
 
   const fetchShop = useCallback(async () => {
     try {
-      const res  = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const res  = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
       setShop(data);
       loadShopIntoForm(data);
@@ -128,22 +150,75 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
-    const id = setTimeout(() => fetchShop(), 0);
-    return () => clearTimeout(id);
-  }, [fetchShop, router, user]);
+    if (!isSubUser) {
+      const id = setTimeout(() => fetchShop(), 0);
+      return () => clearTimeout(id);
+    }
+  }, [fetchShop, router, user, isSubUser]);
 
-  /* ── Derived (UNCHANGED) ── */
+  /* ── Personal profile save ── */
+  const saveProfile = async (e) => {
+    e.preventDefault();
+    setProfileMsg(''); setProfileError('');
+    const trimmed = profileForm.name.trim();
+    if (!trimmed) { setProfileError('Name cannot be empty'); return; }
+    setSavingProfile(true);
+    try {
+      const res = await fetch(apiUrl('/api/auth/profile'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        const updated = { ...stored, name: data.name };
+        localStorage.setItem('user', JSON.stringify(updated));
+        setUser(updated);
+        setProfileMsg('Name updated successfully');
+      } else {
+        setProfileError(data.message || 'Failed to update name');
+      }
+    } catch { setProfileError('Server error'); }
+    setSavingProfile(false);
+  };
+
+  /* ── Password change ── */
+  const changePassword = async (e) => {
+    e.preventDefault();
+    setPwMsg(''); setPwError('');
+    if (!pwForm.current) { setPwError('Current password is required'); return; }
+    if (pwForm.newPwd.length < 6) { setPwError('New password must be at least 6 characters'); return; }
+    if (pwForm.newPwd !== pwForm.confirm) { setPwError('Passwords do not match'); return; }
+    setSavingPw(true);
+    try {
+      const res = await fetch(apiUrl('/api/auth/password'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.newPwd }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPwForm({ current: '', newPwd: '', confirm: '' });
+        setPwMsg('Password changed successfully');
+      } else {
+        setPwError(data.message || 'Failed to change password');
+      }
+    } catch { setPwError('Server error'); }
+    setSavingPw(false);
+  };
+
+  /* ── Shop helpers (owners only) ── */
   const gstinDetectedState = getStateFromGstin(shopForm.gstin);
   const gstinInvalid = shopForm.gstin.length > 0 && shopForm.gstin.length === GSTIN_LENGTH && !gstinDetectedState;
 
   const handleGstinChange = (value) => {
     const normalized    = normalizeGstin(value);
     const detectedState = getStateFromGstin(normalized);
-    patch({ gstin: normalized, ...(detectedState ? { state: detectedState } : {}) });
+    patchShop({ gstin: normalized, ...(detectedState ? { state: detectedState } : {}) });
   };
 
-  /* patch helper — sets dirty */
-  const patch = (fields) => {
+  const patchShop = (fields) => {
     setShopForm((c) => ({ ...c, ...fields }));
     setIsDirty(true);
     setShopMsg('');
@@ -178,21 +253,9 @@ export default function ProfilePage() {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setShopError('Please select an image file.');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setShopError('Photo size should be 5MB or less.');
-      return;
-    }
-
-    setPhotoUploading(true);
-    setShopError('');
-    setShopMsg('');
-
+    if (!file.type.startsWith('image/')) { setShopError('Please select an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setShopError('Photo size should be 5MB or less.'); return; }
+    setPhotoUploading(true); setShopError(''); setShopMsg('');
     try {
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -200,8 +263,7 @@ export default function ProfilePage() {
         reader.onerror = () => reject(new Error('Image read failed'));
         reader.readAsDataURL(file);
       });
-
-      patch({ owner_photo: dataUrl });
+      patchShop({ owner_photo: dataUrl });
       setShopMsg('Photo selected. Save changes to update dashboard.');
     } catch {
       setShopError('Photo upload nahi ho paaya.');
@@ -210,19 +272,180 @@ export default function ProfilePage() {
     }
   };
 
-  /* ── Profile completeness (NEW) ── */
   const completeness = useMemo(() => {
     const fields = [shopForm.name, shopForm.phone, shopForm.gstin, shopForm.state, shopForm.address, shopForm.bank_name, shopForm.bank_account, shopForm.bank_ifsc, shopForm.cash_opening_balance, shopForm.bank_opening_balance];
-    const filled  = fields.filter(Boolean).length;
-    return Math.round((filled / fields.length) * 100);
+    return Math.round((fields.filter(Boolean).length / fields.length) * 100);
   }, [shopForm]);
 
-  /* Avatar gradient */
-  const avatarColors = ['from-green-500 to-emerald-600', 'from-violet-500 to-purple-600', 'from-teal-500 to-cyan-600', 'from-rose-500 to-pink-600'];
-  const avatarGrad   = avatarColors[(user?.name?.charCodeAt(0) || 0) % avatarColors.length];
+  const avatarGrad = getAvatarGrad(user?.name);
+
+  /* ── Eye toggle button ── */
+  const EyeBtn = ({ field }) => (
+    <button
+      type="button"
+      tabIndex={-1}
+      onClick={() => setShowPw(p => ({ ...p, [field]: !p[field] }))}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+    >
+      {showPw[field] ? (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      )}
+    </button>
+  );
+
+  /* ── Reusable personal + password sections ── */
+  const PersonalSection = (
+    <Section icon="👤" title="My Details" subtitle="Apna naam update karein">
+      {profileMsg && (
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[12px] font-bold text-emerald-700">
+          ✓ {profileMsg}
+        </div>
+      )}
+      {profileError && (
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-bold text-rose-700">
+          ⚠️ {profileError}
+        </div>
+      )}
+      <form onSubmit={saveProfile} className="space-y-4">
+        <Field label="Display Name" required>
+          <input
+            className={INPUT}
+            placeholder="Your name"
+            value={profileForm.name}
+            onChange={(e) => { setProfileForm({ name: e.target.value }); setProfileMsg(''); setProfileError(''); }}
+            required
+          />
+        </Field>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={savingProfile || profileForm.name.trim() === (user?.name || '')}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[13px] font-black shadow-md shadow-green-500/20 hover:from-green-700 hover:to-emerald-800 disabled:opacity-50 transition-all"
+          >
+            {savingProfile ? 'Saving...' : 'Update Name'}
+          </button>
+        </div>
+      </form>
+    </Section>
+  );
+
+  const PasswordSection = (
+    <Section icon="🔒" title="Change Password" subtitle="Account security ke liye strong password rakhein">
+      {pwMsg && (
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[12px] font-bold text-emerald-700">
+          ✓ {pwMsg}
+        </div>
+      )}
+      {pwError && (
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-bold text-rose-700">
+          ⚠️ {pwError}
+        </div>
+      )}
+      <form onSubmit={changePassword} className="space-y-4">
+        <Field label="Current Password" required>
+          <div className="relative">
+            <input
+              className={INPUT}
+              type={showPw.current ? 'text' : 'password'}
+              placeholder="Current password"
+              value={pwForm.current}
+              onChange={(e) => { setPwForm(p => ({ ...p, current: e.target.value })); setPwMsg(''); setPwError(''); }}
+              required
+            />
+            <EyeBtn field="current" />
+          </div>
+        </Field>
+        <Field label="New Password" required>
+          <div className="relative">
+            <input
+              className={INPUT}
+              type={showPw.newPwd ? 'text' : 'password'}
+              placeholder="Min. 6 characters"
+              value={pwForm.newPwd}
+              onChange={(e) => { setPwForm(p => ({ ...p, newPwd: e.target.value })); setPwMsg(''); setPwError(''); }}
+              required
+            />
+            <EyeBtn field="newPwd" />
+          </div>
+        </Field>
+        <Field label="Confirm New Password" required>
+          <div className="relative">
+            <input
+              className={pwForm.confirm && pwForm.confirm !== pwForm.newPwd ? INPUT_ERR : INPUT}
+              type={showPw.confirm ? 'text' : 'password'}
+              placeholder="Repeat new password"
+              value={pwForm.confirm}
+              onChange={(e) => { setPwForm(p => ({ ...p, confirm: e.target.value })); setPwMsg(''); setPwError(''); }}
+              required
+            />
+            <EyeBtn field="confirm" />
+          </div>
+          {pwForm.confirm && pwForm.confirm !== pwForm.newPwd && (
+            <p className="text-[11px] font-semibold text-rose-600">⚠️ Passwords do not match</p>
+          )}
+        </Field>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={savingPw}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[13px] font-black shadow-md shadow-green-500/20 hover:from-green-700 hover:to-emerald-800 disabled:opacity-50 transition-all"
+          >
+            {savingPw ? 'Changing...' : 'Change Password'}
+          </button>
+        </div>
+      </form>
+    </Section>
+  );
 
   /* ════════════════════════════════════════════════════════════════
-     RENDER
+     SUB-USER VIEW — only personal sections
+  ════════════════════════════════════════════════════════════════ */
+  if (isSubUser) {
+    return (
+      <Layout>
+        <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28">
+          <div className="max-w-2xl mx-auto space-y-5">
+
+            {/* Hero */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-slate-50/60 to-green-50/40 border border-slate-200 p-5 lg:p-6 shadow-sm">
+              <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-green-200/20 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/15 blur-3xl" />
+              <div className="relative flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[22px] shadow-lg flex-shrink-0`}>
+                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-green-200 text-[10px] font-bold uppercase tracking-widest text-green-700 mb-2">
+                    👤 My Account
+                  </span>
+                  <h1 className="text-[22px] lg:text-[24px] font-black text-slate-900 leading-tight truncate">
+                    {user?.name || 'My Profile'}
+                  </h1>
+                  <p className="text-[12px] text-slate-500 mt-0.5 capitalize">
+                    {user?.role || 'Team Member'} · @{user?.username}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {PersonalSection}
+            {PasswordSection}
+
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     OWNER VIEW — personal sections + full shop management
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
@@ -235,7 +458,6 @@ export default function ProfilePage() {
             <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/15 blur-3xl" />
 
             <div className="relative flex items-start gap-4">
-              {/* Avatar */}
               {shopForm.owner_photo ? (
                 <img
                   src={shopForm.owner_photo}
@@ -248,7 +470,6 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-green-200 text-[10px] font-bold uppercase tracking-widest text-green-700 mb-2">
                   🏪 Shop Profile
@@ -308,6 +529,10 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* ── Personal + Password (owner) ── */}
+          {PersonalSection}
+          {PasswordSection}
+
           {/* ── Dirty banner ── */}
           {isDirty && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200">
@@ -326,7 +551,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* ── Global alerts ── */}
+          {/* ── Shop alerts ── */}
           {shopMsg && (
             <div className="flex items-center gap-2.5 px-4 py-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700">
               ✓ {shopMsg}
@@ -338,7 +563,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* ── FORM ── */}
+          {/* ── SHOP FORM ── */}
           <form onSubmit={updateShop} className="space-y-5">
 
             {/* ══ SHOP DETAILS ════════════════════════════════════ */}
@@ -357,7 +582,6 @@ export default function ProfilePage() {
                       {user?.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                   )}
-
                   <div className="flex flex-col gap-2">
                     <label className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[13px] font-bold cursor-pointer hover:from-green-700 hover:to-emerald-800 transition-all shadow-md shadow-green-500/20">
                       {photoUploading ? 'Uploading...' : 'Upload Photo'}
@@ -366,7 +590,7 @@ export default function ProfilePage() {
                     {shopForm.owner_photo && (
                       <button
                         type="button"
-                        onClick={() => patch({ owner_photo: '' })}
+                        onClick={() => patchShop({ owner_photo: '' })}
                         className="px-4 py-2 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-600 bg-white hover:bg-slate-50 transition-colors"
                       >
                         Remove Photo
@@ -376,19 +600,17 @@ export default function ProfilePage() {
                 </div>
               </Field>
 
-              {/* Shop name */}
               <Field label="Shop Name" required>
                 <input
                   id="name"
                   className={INPUT}
                   placeholder="Ramesh General Store"
                   value={shopForm.name}
-                  onChange={(e) => patch({ name: e.target.value })}
+                  onChange={(e) => patchShop({ name: e.target.value })}
                   required
                 />
               </Field>
 
-              {/* GSTIN */}
               <Field
                 label="GSTIN"
                 hint="15-digit GST number — state auto-detect होगी"
@@ -422,7 +644,6 @@ export default function ProfilePage() {
                 )}
               </Field>
 
-              {/* Phone + Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Phone">
                   <input
@@ -430,7 +651,7 @@ export default function ProfilePage() {
                     className={INPUT}
                     placeholder="9876543210"
                     value={shopForm.phone}
-                    onChange={(e) => patch({ phone: e.target.value })}
+                    onChange={(e) => patchShop({ phone: e.target.value })}
                   />
                 </Field>
                 <Field label="Email">
@@ -440,30 +661,28 @@ export default function ProfilePage() {
                     placeholder="shop@email.com"
                     type="email"
                     value={shopForm.email}
-                    onChange={(e) => patch({ email: e.target.value })}
+                    onChange={(e) => patchShop({ email: e.target.value })}
                   />
                 </Field>
               </div>
 
-              {/* Address */}
               <Field label="Address" hint="Invoice पर print होगा">
                 <textarea
                   className={`${INPUT} h-auto py-3 resize-none`}
                   rows={3}
                   placeholder="Street, area, landmark..."
                   value={shopForm.address}
-                  onChange={(e) => patch({ address: e.target.value })}
+                  onChange={(e) => patchShop({ address: e.target.value })}
                 />
               </Field>
 
-              {/* City + Pincode + State */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <Field label="City">
                   <input
                     className={INPUT}
                     placeholder="Lucknow"
                     value={shopForm.city}
-                    onChange={(e) => patch({ city: e.target.value })}
+                    onChange={(e) => patchShop({ city: e.target.value })}
                   />
                 </Field>
                 <Field label="Pincode">
@@ -472,7 +691,7 @@ export default function ProfilePage() {
                     placeholder="226001"
                     maxLength={6}
                     value={shopForm.pincode}
-                    onChange={(e) => patch({ pincode: e.target.value })}
+                    onChange={(e) => patchShop({ pincode: e.target.value })}
                   />
                 </Field>
                 <div className="col-span-2 sm:col-span-1">
@@ -481,7 +700,7 @@ export default function ProfilePage() {
                       id="state"
                       className={`${INPUT} cursor-pointer`}
                       value={shopForm.state}
-                      onChange={(e) => patch({ state: e.target.value })}
+                      onChange={(e) => patchShop({ state: e.target.value })}
                     >
                       <option value="">State चुनें</option>
                       {STATES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -492,55 +711,27 @@ export default function ProfilePage() {
             </Section>
 
             {/* ══ BANK DETAILS ════════════════════════════════════ */}
-            <Section
-              icon="🏦"
-              title="Bank Details"
-              subtitle="Invoice पर print होगा — professional billing के लिए"
-              badge="Optional"
-            >
+            <Section icon="🏦" title="Bank Details" subtitle="Invoice पर print होगा — professional billing के लिए" badge="Optional">
               <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-green-50 border border-green-100 -mt-1">
                 <span className="text-base flex-shrink-0">💡</span>
                 <p className="text-[12px] text-green-700 leading-relaxed">
                   Bank details add करने से customers directly आपके account में payment कर सकते हैं और invoice professional लगती है।
                 </p>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Bank Name">
-                  <input
-                    className={INPUT}
-                    placeholder="State Bank of India"
-                    value={shopForm.bank_name}
-                    onChange={(e) => patch({ bank_name: e.target.value })}
-                  />
+                  <input className={INPUT} placeholder="State Bank of India" value={shopForm.bank_name} onChange={(e) => patchShop({ bank_name: e.target.value })} />
                 </Field>
                 <Field label="Branch">
-                  <input
-                    className={INPUT}
-                    placeholder="Main Branch, Hazratganj"
-                    value={shopForm.bank_branch}
-                    onChange={(e) => patch({ bank_branch: e.target.value })}
-                  />
+                  <input className={INPUT} placeholder="Main Branch, Hazratganj" value={shopForm.bank_branch} onChange={(e) => patchShop({ bank_branch: e.target.value })} />
                 </Field>
                 <Field label="Account Number">
-                  <input
-                    className={INPUT}
-                    placeholder="0000000000"
-                    value={shopForm.bank_account}
-                    onChange={(e) => patch({ bank_account: e.target.value })}
-                  />
+                  <input className={INPUT} placeholder="0000000000" value={shopForm.bank_account} onChange={(e) => patchShop({ bank_account: e.target.value })} />
                 </Field>
                 <Field label="IFSC Code">
-                  <input
-                    className={INPUT}
-                    placeholder="SBIN0000000"
-                    value={shopForm.bank_ifsc}
-                    onChange={(e) => patch({ bank_ifsc: e.target.value.toUpperCase() })}
-                  />
+                  <input className={INPUT} placeholder="SBIN0000000" value={shopForm.bank_ifsc} onChange={(e) => patchShop({ bank_ifsc: e.target.value.toUpperCase() })} />
                 </Field>
               </div>
-
-              {/* Bank preview */}
               {(shopForm.bank_name || shopForm.bank_account) && (
                 <div className="mt-2 px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Invoice Preview</p>
@@ -554,33 +745,15 @@ export default function ProfilePage() {
               )}
             </Section>
 
-            <Section
-              icon="📒"
-              title="Accounting Setup"
-              subtitle="Opening balances yahin se carry forward honge"
-              badge="Ledger"
-            >
+            <Section icon="📒" title="Accounting Setup" subtitle="Opening balances yahin se carry forward honge" badge="Ledger">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Cash Opening Balance" hint="Cash book ka brought forward amount">
-                  <input
-                    className={INPUT}
-                    type="number"
-                    step="0.01"
-                    value={shopForm.cash_opening_balance}
-                    onChange={(e) => patch({ cash_opening_balance: e.target.value })}
-                  />
+                  <input className={INPUT} type="number" step="0.01" value={shopForm.cash_opening_balance} onChange={(e) => patchShop({ cash_opening_balance: e.target.value })} />
                 </Field>
                 <Field label="Bank Opening Balance" hint="Bank ledger ka opening amount">
-                  <input
-                    className={INPUT}
-                    type="number"
-                    step="0.01"
-                    value={shopForm.bank_opening_balance}
-                    onChange={(e) => patch({ bank_opening_balance: e.target.value })}
-                  />
+                  <input className={INPUT} type="number" step="0.01" value={shopForm.bank_opening_balance} onChange={(e) => patchShop({ bank_opening_balance: e.target.value })} />
                 </Field>
               </div>
-
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Accounting Preview</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -597,26 +770,16 @@ export default function ProfilePage() {
             </Section>
 
             {/* ══ TERMS & CONDITIONS ══════════════════════════════ */}
-            <Section
-              icon="📄"
-              title="Terms & Conditions"
-              subtitle="Invoice पर print होगा — clear business communication के लिए"
-              badge="Optional"
-            >
-              <Field
-                label="Terms"
-                hint="Each line = one term. Invoice पर numbered list बनेगी।"
-              >
+            <Section icon="📄" title="Terms & Conditions" subtitle="Invoice पर print होगा — clear business communication के लिए" badge="Optional">
+              <Field label="Terms" hint="Each line = one term. Invoice पर numbered list बनेगी।">
                 <textarea
                   className={`${INPUT} h-auto py-3 resize-none`}
                   rows={5}
                   placeholder={`Goods once sold will not be taken back.\nPayment due within 30 days.\nSubject to local jurisdiction.`}
                   value={shopForm.terms}
-                  onChange={(e) => patch({ terms: e.target.value })}
+                  onChange={(e) => patchShop({ terms: e.target.value })}
                 />
               </Field>
-
-              {/* Terms preview */}
               {shopForm.terms && (
                 <div className="px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Invoice Preview</p>
@@ -669,7 +832,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Completeness reminder */}
               {completeness < 80 && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-[11px] font-bold text-slate-500 mb-2">Complete करने के लिए add करें:</p>
