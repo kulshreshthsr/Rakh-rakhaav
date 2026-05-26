@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiUrl } from '../../../lib/api';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch(apiUrl('/api/admin/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -29,8 +30,8 @@ export default function AdminLoginPage() {
         return;
       }
 
+      sessionStorage.setItem('rk_admin_token', data.token);
       router.push('/admin/dashboard');
-      router.refresh();
     } catch {
       setError('Unable to sign in right now. Please try again.');
       setLoading(false);
@@ -54,7 +55,7 @@ export default function AdminLoginPage() {
             </div>
             <div className="admin-auth-point">
               <strong>Secure session</strong>
-              <span>Admin access JWT aur HTTP-only cookies se protected hai.</span>
+              <span>Admin access JWT se protected hai.</span>
             </div>
           </div>
         </section>

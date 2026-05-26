@@ -2,6 +2,17 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiUrl } from '../../lib/api';
+
+function getAdminToken() {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem('rk_admin_token');
+}
+
+function authHeaders() {
+  const token = getAdminToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 function formatDate(value) {
   if (!value) return '-';
@@ -40,6 +51,11 @@ export default function AdminDashboardPage() {
   const [deletingId, setDeletingId] = useState('');
 
   useEffect(() => {
+    if (!getAdminToken()) {
+      router.push('/admin/login');
+      return;
+    }
+
     const fetchDashboard = async () => {
       setLoading(true);
       setError('');
@@ -50,11 +66,12 @@ export default function AdminDashboardPage() {
         if (search.trim()) params.set('search', search.trim());
 
         const [statsResponse, shopsResponse] = await Promise.all([
-          fetch('/api/admin/stats', { cache: 'no-store' }),
-          fetch(`/api/admin/shops?${params.toString()}`, { cache: 'no-store' }),
+          fetch(apiUrl('/api/admin/stats'), { cache: 'no-store', headers: authHeaders() }),
+          fetch(apiUrl(`/api/admin/shops?${params.toString()}`), { cache: 'no-store', headers: authHeaders() }),
         ]);
 
         if (statsResponse.status === 401 || shopsResponse.status === 401) {
+          sessionStorage.removeItem('rk_admin_token');
           router.push('/admin/login');
           return;
         }
@@ -89,11 +106,12 @@ export default function AdminDashboardPage() {
     if (search.trim()) params.set('search', search.trim());
 
     const [statsResponse, shopsResponse] = await Promise.all([
-      fetch('/api/admin/stats', { cache: 'no-store' }),
-      fetch(`/api/admin/shops?${params.toString()}`, { cache: 'no-store' }),
+      fetch(apiUrl('/api/admin/stats'), { cache: 'no-store', headers: authHeaders() }),
+      fetch(apiUrl(`/api/admin/shops?${params.toString()}`), { cache: 'no-store', headers: authHeaders() }),
     ]);
 
     if (statsResponse.status === 401 || shopsResponse.status === 401) {
+      sessionStorage.removeItem('rk_admin_token');
       router.push('/admin/login');
       return;
     }
@@ -115,7 +133,10 @@ export default function AdminDashboardPage() {
     setDeletingId(shop.id);
     setError('');
     try {
-      const response = await fetch(`/api/admin/shops/${shop.id}`, { method: 'DELETE' });
+      const response = await fetch(apiUrl(`/api/admin/shops/${shop.id}`), {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Unable to remove user.');
       await refreshDashboard();
@@ -126,11 +147,10 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setLoggingOut(true);
-    await fetch('/api/admin/logout', { method: 'POST' });
+    sessionStorage.removeItem('rk_admin_token');
     router.push('/admin/login');
-    router.refresh();
   };
 
   return (

@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const Shop = require('../models/shopModel');
 const User = require('../models/userModel');
 const Sale = require('../models/salesModel');
@@ -185,8 +187,60 @@ const deleteAdminShop = async (req, res) => {
   }
 };
 
+function safeCompare(expected, received) {
+  const exp = Buffer.from(String(expected));
+  const rec = Buffer.from(String(received));
+  if (exp.length !== rec.length) {
+    crypto.timingSafeEqual(exp, exp); // dummy call to prevent timing leak
+    return false;
+  }
+  return crypto.timingSafeEqual(exp, rec);
+}
+
+const adminLogin = (req, res) => {
+  const adminUsername = process.env.ADMIN_USERNAME || '';
+  const adminPassword = process.env.ADMIN_PASSWORD || '';
+  const adminSecret = process.env.ADMIN_JWT_SECRET || '';
+
+  const missing = [];
+  if (!adminUsername) missing.push('ADMIN_USERNAME');
+  if (!adminPassword) missing.push('ADMIN_PASSWORD');
+  if (!adminSecret) missing.push('ADMIN_JWT_SECRET');
+
+  if (missing.length > 0) {
+    return res.status(500).json({
+      message: `Admin login not configured. Missing: ${missing.join(', ')} in server .env`,
+      missingKeys: missing,
+    });
+  }
+
+  const inputUsername = String(req.body.username || '').trim();
+  const inputPassword = String(req.body.password || '');
+
+  if (!safeCompare(adminUsername, inputUsername) || !safeCompare(adminPassword, inputPassword)) {
+    return res.status(401).json({ message: 'Invalid admin credentials.' });
+  }
+
+  const token = jwt.sign(
+    { role: 'admin', username: inputUsername },
+    adminSecret,
+    { expiresIn: '7d' }
+  );
+
+  res.json({ ok: true, token, username: inputUsername });
+};
+
+const adminSession = (req, res) => {
+  res.json({
+    authenticated: true,
+    admin: { username: req.admin.username, role: req.admin.role },
+  });
+};
+
 module.exports = {
   listAdminShops,
   getAdminStats,
   deleteAdminShop,
+  adminLogin,
+  adminSession,
 };
