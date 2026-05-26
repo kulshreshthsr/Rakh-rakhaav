@@ -455,7 +455,7 @@ export default function HomePage() {
                 <h4 className="font-bold mb-3 text-xs sm:text-sm text-green-400">Product</h4>
                 <ul className="space-y-2 text-xs sm:text-sm text-slate-400">
                   <li><Link href="/pricing" className="hover:text-white transition">Pricing</Link></li>
-                  <li><Link href="/features" className="hover:text-white transition">Features</Link></li>
+                  <li><a href="#features" className="hover:text-white transition">Features</a></li>
                 </ul>
               </div>
               <div>
@@ -468,8 +468,8 @@ export default function HomePage() {
               <div>
                 <h4 className="font-bold mb-3 text-xs sm:text-sm text-teal-400">Legal</h4>
                 <ul className="space-y-2 text-xs sm:text-sm text-slate-400">
-                  <li><Link href="/privacy" className="hover:text-white transition">Privacy</Link></li>
-                  <li><Link href="/terms" className="hover:text-white transition">Terms</Link></li>
+                  <li><a href="mailto:help@rakhrakhaav.com" className="hover:text-white transition">Privacy</a></li>
+                  <li><a href="mailto:help@rakhrakhaav.com" className="hover:text-white transition">Terms</a></li>
                 </ul>
               </div>
             </div>

@@ -190,8 +190,8 @@ export default function SupplierDirectoryPage() {
           </div>
         ) : (
           <div className="supplier-page-grid grid grid-cols-[minmax(240px,1fr)_minmax(360px,2fr)] gap-[14px]">
-            <div className="supplier-list-panel overflow-hidden rounded-[18px] border border-blue-100 bg-blue-50/40">
-              <div className="border-b border-blue-100 px-3 py-2.5 text-[12px] font-bold text-slate-500">
+            <div className="supplier-list-panel overflow-hidden rounded-[18px] border border-green-100 bg-green-50/30">
+              <div className="border-b border-green-100 px-3 py-2.5 text-[12px] font-bold text-slate-500">
                 All Suppliers ({filteredSuppliers.length})
               </div>
               <div className="supplier-list-scroll max-h-[520px] overflow-y-auto">
@@ -200,7 +200,7 @@ export default function SupplierDirectoryPage() {
                     type="button"
                     key={supplier.key}
                     onClick={() => setSelectedSupplierKey(supplier.key)}
-                    className={`supplier-list-item w-full cursor-pointer border-0 border-b border-blue-100 px-3 py-3 text-left ${supplier.key === selectedSupplier?.key ? 'bg-blue-100' : 'bg-white/80'}`}
+                    className={`supplier-list-item w-full cursor-pointer border-0 border-b border-green-100 px-3 py-3 text-left ${supplier.key === selectedSupplier?.key ? 'bg-green-100' : 'bg-white/80'}`}
                   >
                     <div className="text-[13px] font-bold text-slate-900">{supplier.name}</div>
                     <div className="text-[11px] text-slate-500">
@@ -250,7 +250,7 @@ export default function SupplierDirectoryPage() {
                     <div className="rounded-xl bg-rose-50 px-3 py-2 text-[12px] text-rose-800">
                       Balance Due <strong>₹{selectedSupplier.totalDue.toFixed(2)}</strong>
                     </div>
-                    <div className="rounded-xl bg-blue-50 px-3 py-2 text-[12px] text-blue-700">
+                    <div className="rounded-xl bg-slate-50 px-3 py-2 text-[12px] text-slate-700">
                       Last Deal <strong>{selectedSupplier.lastDate ? formatFullDateTime(selectedSupplier.lastDate) : '-'}</strong>
                     </div>
                   </div>

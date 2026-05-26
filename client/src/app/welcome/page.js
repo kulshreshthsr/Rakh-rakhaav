@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { hasWelcomePending, markTrialGateSeen, readStoredSubscription, setWelcomePending } from '../../lib/subscription';
+import { hasWelcomePending, markTrialGateSeen, setWelcomePending } from '../../lib/subscription';
 
 const featureCards = [
   {
@@ -21,8 +21,6 @@ const featureCards = [
 
 export default function WelcomePage() {
   const router = useRouter();
-  const subscription = useMemo(() => readStoredSubscription(), []);
-
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -46,7 +44,7 @@ export default function WelcomePage() {
       <div className="trial-gate-shell trust-welcome-shell">
         <section className="trial-gate-hero trust-welcome-hero">
           <div className="subscription-pill">Welcome to Rakhrakhaav</div>
-          <h1>Yeh aapka naya blue business workspace hai jo har screen par professional feel deta hai.</h1>
+          <h1>Yeh aapka naya smart business workspace hai jo har screen par professional feel deta hai.</h1>
           <p>
             Is experience ko aise design kiya gaya hai ki pehli screen se final bill tak aapka business zyada clear,
             reliable aur modern lage.
@@ -54,7 +52,7 @@ export default function WelcomePage() {
 
           <div className="trial-gate-chip-row">
             <span>7-day free trial</span>
-            <span>Blue premium theme</span>
+            <span>Green smart theme</span>
             <span>Mobile-friendly flow</span>
           </div>
 
@@ -71,7 +69,7 @@ export default function WelcomePage() {
         <aside className="trial-gate-sidecard trust-welcome-sidecard">
           <div className="trial-gate-side-kicker">Trial access</div>
           <div className="trial-gate-side-title">
-            {subscription?.trialDaysLeft ? `${subscription.trialDaysLeft} din ready hain` : 'Trial ready to start'}
+            Trial ready to start
           </div>
           <p>
             Dashboard kholo aur naya clean visual system explore karo, jo product ko modern bhi banata hai aur

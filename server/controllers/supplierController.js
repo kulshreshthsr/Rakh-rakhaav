@@ -148,8 +148,9 @@ const settleSupplierPayment = async (req, res) => {
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
     if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
 
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0)
+      return res.status(400).json({ message: 'Amount must be a positive number' });
     const payAmount = parseFloat(Number(amount).toFixed(2));
-    if (payAmount <= 0) return res.status(400).json({ message: 'Amount must be positive' });
     if (payAmount > supplier.totalUdhaar) {
       return res.status(400).json({ message: 'Payment exceeds balance due' });
     }

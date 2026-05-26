@@ -261,7 +261,7 @@ const syncCustomerLedgerForSale = async (shopId, saleDoc, itemNames = [], sessio
     let customerQuery = Customer.findOne({
       shop: shopId,
       $or: [
-        { name: { $regex: new RegExp(`^${saleDoc.buyer_name}$`, 'i') } },
+        { name: { $regex: new RegExp(`^${saleDoc.buyer_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
         ...(saleDoc.buyer_phone ? [{ phone: saleDoc.buyer_phone }] : []),
       ],
     });
@@ -302,7 +302,7 @@ const syncCustomerLedgerForSale = async (shopId, saleDoc, itemNames = [], sessio
     type: 'debit',
     amount: saleDoc.total_amount,
     running_balance: customer.totalUdhaar,
-    note: `Credit Sale â€” ${itemNames.join(', ')} (${saleDoc.invoice_number})`,
+    note: `Credit Sale - ${itemNames.join(', ')} (${saleDoc.invoice_number})`,
     date: saleDoc.createdAt || new Date(),
     reference_id: saleDoc.invoice_number,
     reference_type: 'sale',
@@ -331,7 +331,7 @@ const reverseCustomerLedgerForSale = async (saleDoc, session = null) => {
     ? await Customer.findById(saleDoc.customer).session(session || null)
     : await Customer.findOne({
         shop: saleDoc.shop,
-        name: { $regex: new RegExp(`^${saleDoc.buyer_name}$`, 'i') },
+        name: { $regex: new RegExp(`^${saleDoc.buyer_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
       }).session(session || null);
 
   if (!customer) return;
@@ -699,7 +699,7 @@ const createSale = async (req, res) => {
       let customer = await Customer.findOne({
         shop: shop._id,
         $or: [
-          { name:  { $regex: new RegExp(`^${buyer_name}$`, 'i') } },
+          { name: { $regex: new RegExp(`^${buyer_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
           ...(buyer_phone ? [{ phone: buyer_phone }] : []),
         ],
       });

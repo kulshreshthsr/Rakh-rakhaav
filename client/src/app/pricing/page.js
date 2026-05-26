@@ -92,7 +92,7 @@ export default function PricingPage() {
         {/* ── HERO ── */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 px-5 py-6 text-white shadow-xl">
           <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-green-600/15 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-500/10 blur-3xl" />
           <div className="relative">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-bold uppercase tracking-widest text-white/80 mb-3">
               Choose Your Plan

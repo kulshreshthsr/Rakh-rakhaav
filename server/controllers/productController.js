@@ -171,7 +171,7 @@ const adjustStock = async (req, res) => {
     // type: 'manual_add' | 'manual_remove' | 'adjustment'
     // quantity: always positive number
 
-    if (!quantity || Number(quantity) <= 0) {
+    if (!Number.isFinite(Number(quantity)) || Number(quantity) <= 0) {
       return res.status(400).json({ message: 'Quantity must be positive' });
     }
 

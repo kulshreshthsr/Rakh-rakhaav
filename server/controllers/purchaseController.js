@@ -185,7 +185,7 @@ const reverseSupplierLedgerForPurchase = async (purchase, session = null) => {
     ? await Supplier.findById(supplierId).session(session || null)
     : await Supplier.findOne({
         shop: purchase.shop,
-        name: { $regex: new RegExp(`^${purchase.supplier_name}$`, 'i') },
+        name: { $regex: new RegExp(`^${purchase.supplier_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
       }).session(session || null);
 
   if (!supplier) return;
@@ -214,7 +214,7 @@ const syncSupplierLedgerForPurchase = async (shopId, purchase, itemNames = [], s
   let supplierQuery = Supplier.findOne({
     shop: shopId,
     $or: [
-      { name: { $regex: new RegExp(`^${supplierName}$`, 'i') } },
+      { name: { $regex: new RegExp(`^${supplierName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
       ...(supplierPhone ? [{ phone: supplierPhone }] : []),
     ],
   });
@@ -637,7 +637,7 @@ const createPurchase = async (req, res) => {
       let supplier = await Supplier.findOne({
         shop: shop._id,
         $or: [
-          { name: { $regex: new RegExp(`^${supplier_name}$`, 'i') } },
+          { name: { $regex: new RegExp(`^${supplier_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
           ...(supplier_phone ? [{ phone: supplier_phone }] : []),
         ],
       });
@@ -851,7 +851,7 @@ const deletePurchaseLegacy = async (req, res) => {
       // Fallback if supplier ObjectId not linked (old records)
       const supplier = await Supplier.findOne({
         shop: purchase.shop,
-        name: { $regex: new RegExp(`^${purchase.supplier_name}$`, 'i') },
+        name: { $regex: new RegExp(`^${purchase.supplier_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
       });
       if (supplier) {
         supplier.totalPurchased = Math.max(0, supplier.totalPurchased - purchase.total_amount);

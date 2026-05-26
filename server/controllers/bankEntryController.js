@@ -24,7 +24,7 @@ const updateBankEntry = async (req, res) => {
     const entry = await BankEntry.findOne({ _id: req.params.id, shop: shop._id });
     if (!entry) return res.status(404).json({ message: 'Bank entry not found' });
     if (!req.body.entry_type) return res.status(400).json({ message: 'Bank entry type is required' });
-    if (Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Bank entry amount must be greater than zero' });
+    if (!Number.isFinite(Number(req.body.amount)) || Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Bank entry amount must be greater than zero' });
 
     const updatedEntry = await BankEntry.findOneAndUpdate(
       { _id: req.params.id, shop: shop._id },
@@ -61,7 +61,7 @@ const createBankEntry = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
     if (!req.body.entry_type) return res.status(400).json({ message: 'Bank entry type is required' });
-    if (Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Bank entry amount must be greater than zero' });
+    if (!Number.isFinite(Number(req.body.amount)) || Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Bank entry amount must be greater than zero' });
     const entry = await BankEntry.create({
       shop: shop._id,
       entry_type: req.body.entry_type,

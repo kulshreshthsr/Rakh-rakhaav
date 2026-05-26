@@ -28,7 +28,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#1d4ed8",
+  themeColor: "#15803d",
 };
 
 export default function RootLayout({ children }) {
@@ -37,7 +37,7 @@ export default function RootLayout({ children }) {
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#1d4ed8" />
+        <meta name="theme-color" content="#15803d" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-v2.png" />
         <link rel="apple-touch-startup-image" href="/splash-v2.png" />

@@ -56,9 +56,19 @@ const updateCustomer = async (req, res) => {
     const shop = await getOrCreateShop(req.user.id);
     const existingCustomer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!existingCustomer) return res.status(404).json({ message: 'Customer not found' });
-    const updatePayload = { ...req.body };
-    if (Object.prototype.hasOwnProperty.call(updatePayload, 'opening_balance')) {
-      const nextOpening = Number(updatePayload.opening_balance || 0);
+    const { name, phone, email, address, gstin, notes, opening_balance } = req.body;
+    const updatePayload = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (phone !== undefined) updatePayload.phone = phone;
+    if (email !== undefined) updatePayload.email = email;
+    if (address !== undefined) updatePayload.address = address;
+    if (gstin !== undefined) updatePayload.gstin = gstin;
+    if (notes !== undefined) updatePayload.notes = notes;
+    if (opening_balance !== undefined) {
+      const nextOpening = Number(opening_balance || 0);
+      if (!Number.isFinite(nextOpening) || nextOpening < 0) {
+        return res.status(400).json({ message: 'opening_balance must be a non-negative number' });
+      }
       const delta = nextOpening - Number(existingCustomer.opening_balance || 0);
       updatePayload.opening_balance = nextOpening;
       updatePayload.totalSales = Number((Number(existingCustomer.totalSales || 0) + delta).toFixed(2));
@@ -135,6 +145,9 @@ const getUdhaar = async (req, res) => {
 const addUdhaar = async (req, res) => {
   const { type, amount, note, date, payment_mode, reference_id } = req.body;
   try {
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+      return res.status(400).json({ message: 'Amount must be a positive number' });
+    }
     const shop = await getOrCreateShop(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
@@ -189,8 +202,10 @@ const settlePayment = async (req, res) => {
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+      return res.status(400).json({ message: 'Amount must be a positive number' });
+    }
     const payAmount = parseFloat(Number(amount).toFixed(2));
-    if (payAmount <= 0) return res.status(400).json({ message: 'Amount must be positive' });
     if (payAmount > customer.totalUdhaar) {
       return res.status(400).json({ message: 'Payment exceeds balance due' });
     }

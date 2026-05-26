@@ -120,10 +120,10 @@ export default function BankEntriesPage() {
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-blue-50/40 to-green-50/30 border border-slate-200 p-5 shadow-sm">
-          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-blue-200/30 blur-3xl" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border border-slate-200 p-5 shadow-sm">
+          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-green-200/20 blur-3xl" />
           <div className="relative">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-bold uppercase tracking-widest text-blue-700">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[10px] font-bold uppercase tracking-widest text-green-700">
               🏦 Bank Movement
             </span>
             <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight">Bank Entries</h1>
@@ -240,7 +240,7 @@ export default function BankEntriesPage() {
 
           {/* Filters */}
           <div className="px-4 py-3 border-b border-slate-50 space-y-2">
-            <input className="h-10 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+            <input className="h-10 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/25 focus:border-green-400 transition-all"
               placeholder="🔍 Search type, note or reference..."
               value={search} onChange={(e) => setSearch(e.target.value)}
             />

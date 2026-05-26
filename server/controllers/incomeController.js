@@ -24,7 +24,7 @@ const updateIncome = async (req, res) => {
     const income = await Income.findOne({ _id: req.params.id, shop: shop._id });
     if (!income) return res.status(404).json({ message: 'Income entry not found' });
     if (!req.body.source) return res.status(400).json({ message: 'Income source is required' });
-    if (Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Income amount must be greater than zero' });
+    if (!Number.isFinite(Number(req.body.amount)) || Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Income amount must be greater than zero' });
     if (!req.body.payment_mode) return res.status(400).json({ message: 'Income payment mode is required' });
 
     const updatedIncome = await Income.findOneAndUpdate(
@@ -64,7 +64,7 @@ const createIncome = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
     if (!req.body.source) return res.status(400).json({ message: 'Income source is required' });
-    if (Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Income amount must be greater than zero' });
+    if (!Number.isFinite(Number(req.body.amount)) || Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Income amount must be greater than zero' });
     if (!req.body.payment_mode) return res.status(400).json({ message: 'Income payment mode is required' });
     const income = await Income.create({
       shop: shop._id,

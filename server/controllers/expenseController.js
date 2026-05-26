@@ -25,7 +25,7 @@ const updateExpense = async (req, res) => {
     const existingExpense = await Expense.findOne({ _id: req.params.id, shop: shop._id });
     if (!existingExpense) return res.status(404).json({ message: 'Expense not found' });
     if (!category) return res.status(400).json({ message: 'Expense category is required' });
-    if (Number(amount) <= 0) return res.status(400).json({ message: 'Expense amount must be greater than zero' });
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return res.status(400).json({ message: 'Expense amount must be greater than zero' });
     if (!payment_mode) return res.status(400).json({ message: 'Expense payment mode is required' });
 
     const expense = await Expense.findOneAndUpdate(
@@ -65,7 +65,7 @@ const createExpense = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
     if (!category) return res.status(400).json({ message: 'Expense category is required' });
-    if (Number(amount) <= 0) return res.status(400).json({ message: 'Expense amount must be greater than zero' });
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return res.status(400).json({ message: 'Expense amount must be greater than zero' });
     if (!payment_mode) return res.status(400).json({ message: 'Expense payment mode is required' });
     const expense = await Expense.create({
       shop: shop._id,
