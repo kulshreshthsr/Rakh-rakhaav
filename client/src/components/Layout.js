@@ -12,34 +12,38 @@ import {
   setWelcomePending, writeStoredSubscription,
 } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
+import { SYSTEM_ROLES as FRONTEND_ROLES } from '../lib/permissions';
 
 /* ─── Nav config ─────────────────────────────────────────────────── */
+// permission: the permission required to see this item; null = visible to all
 const NAV_ITEMS = [
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     tone: 'home'     },
-  { href: '/product',   key: 'products',  shortLabel: 'Stock',    tone: 'stock'    },
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales'    },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase' },
-  { href: '/expenses',  key: 'expenses',  shortLabel: 'Expense',  tone: 'reports'  },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit'   },
-  { href: '/gst',       key: 'gst',       shortLabel: 'GST',      tone: 'gst'      },
-  { href: '/reports',   key: 'reports',   shortLabel: 'Reports',  tone: 'reports'  },
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     tone: 'home',    permission: 'VIEW_DASHBOARD'    },
+  { href: '/product',   key: 'products',  shortLabel: 'Stock',    tone: 'stock',   permission: 'MANAGE_INVENTORY'  },
+  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     tone: 'sales',   permission: 'VIEW_SALES'        },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', tone: 'purchase',permission: 'VIEW_PURCHASES'    },
+  { href: '/expenses',  key: 'expenses',  shortLabel: 'Expense',  tone: 'reports', permission: 'VIEW_EXPENSES'     },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   tone: 'credit',  permission: 'VIEW_UDHAAR'       },
+  { href: '/gst',       key: 'gst',       shortLabel: 'GST',      tone: 'gst',     permission: 'VIEW_GST'          },
+  { href: '/reports',   key: 'reports',   shortLabel: 'Reports',  tone: 'reports', permission: 'VIEW_REPORTS'      },
 ];
 
 const MOBILE_BOTTOM_NAV = [
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',    icon: 'dashboard' },
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',    icon: 'sales'     },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', icon: 'purchases' },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   icon: 'udhaar'    },
+  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     icon: 'dashboard', permission: 'VIEW_DASHBOARD' },
+  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     icon: 'sales',     permission: 'VIEW_SALES'     },
+  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', icon: 'purchases', permission: 'VIEW_PURCHASES' },
+  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   icon: 'udhaar',    permission: 'VIEW_UDHAAR'    },
 ];
 
 const MORE_DRAWER_ITEMS = [
-  { href: '/product',   key: 'products',  label: 'Stock',     sublabel: 'Products & Inventory', icon: 'products' },
-  { href: '/expenses',  key: 'expenses',  label: 'Expenses',  sublabel: 'Kharch Register',      icon: 'expenses' },
-  { href: '/income',    key: 'income',    label: 'Income',    sublabel: 'Other Income',         icon: 'income'   },
-  { href: '/bank-entries', key: 'bank',   label: 'Bank',      sublabel: 'Bank Register',        icon: 'bank'     },
-  { href: '/gst',       key: 'gst',       label: 'GST',       sublabel: 'Tax Filing',           icon: 'gst'      },
-  { href: '/reports',   key: 'reports',   label: 'रिपोर्ट',   sublabel: 'Reports',              icon: 'reports'  },
-  { href: '/profile',   key: 'profile',   label: 'Profile',   sublabel: 'दुकान की जानकारी',     icon: 'profile'  },
+  { href: '/product',      key: 'products', label: 'Stock',     sublabel: 'Products & Inventory', icon: 'products', permission: 'MANAGE_INVENTORY' },
+  { href: '/expenses',     key: 'expenses', label: 'Expenses',  sublabel: 'Kharch Register',      icon: 'expenses', permission: 'VIEW_EXPENSES'    },
+  { href: '/income',       key: 'income',   label: 'Income',    sublabel: 'Other Income',         icon: 'income',   permission: 'VIEW_INCOME'      },
+  { href: '/bank-entries', key: 'bank',     label: 'Bank',      sublabel: 'Bank Register',        icon: 'bank',     permission: 'VIEW_BANK'        },
+  { href: '/gst',          key: 'gst',      label: 'GST',       sublabel: 'Tax Filing',           icon: 'gst',      permission: 'VIEW_GST'         },
+  { href: '/reports',      key: 'reports',  label: 'रिपोर्ट',   sublabel: 'Reports',              icon: 'reports',  permission: 'VIEW_REPORTS'     },
+  { href: '/profile',      key: 'profile',  label: 'Profile',   sublabel: 'दुकान की जानकारी',     icon: 'profile',  permission: null               },
+  { href: '/team',         key: 'team',     label: 'Team',      sublabel: 'User Management',      icon: 'team',     permission: 'MANAGE_USERS'     },
+  { href: '/roles',        key: 'roles',    label: 'Roles',     sublabel: 'Permissions',          icon: 'roles',    permission: 'MANAGE_ROLES'     },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
@@ -86,6 +90,8 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
     menu:       <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>,
     close:      <><path d="M18 6 6 18" /><path d="M6 6l12 12" /></>,
     more:       <><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.2" fill="currentColor" stroke="none"/></>,
+    team:       <><circle cx="9" cy="7" r="3" /><path d="M3 21v-2a6 6 0 0 1 6-6" /><path d="M16 11c2.2 0 4 1.8 4 4v1.5" /><circle cx="19" cy="8" r="2.5" /></>,
+    roles:      <><path d="M12 3 4 7v5c0 5 4 9.7 8 11 4-1.3 8-6 8-11V7z" /><path d="m9 12 2 2 4-4" /></>,
   };
   return <svg {...p}>{icons[name] || <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />}</svg>;
 }
@@ -133,7 +139,7 @@ function UserDropdown({ onProfile, onLogout, extraItems, className = '' }) {
 }
 
 /* ─── More drawer (mobile) - Enhanced Green Theme ───────────────── */
-function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
+function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = MORE_DRAWER_ITEMS }) {
   const drawerRef = useRef(null);
 
   useEffect(() => {
@@ -156,6 +162,8 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
     reports:   'bg-purple-50 text-purple-700',
     gst:       'bg-amber-50 text-amber-700',
     profile:   'bg-slate-100 text-slate-700',
+    team:      'bg-green-50 text-green-700',
+    roles:     'bg-purple-50 text-purple-700',
   };
 
   return (
@@ -202,7 +210,7 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription }) {
 
           {/* Nav items grid - Enhanced */}
           <div className="px-4 pb-3 pt-3 grid grid-cols-1 gap-2.5">
-            {MORE_DRAWER_ITEMS.map((item) => {
+            {items.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -401,9 +409,32 @@ function LayoutInner({ children }) {
     reports:   'रिपोर्ट / Hisaab',
   }), []);
 
+  // Permission-based nav filtering: owners see everything; sub-users see only allowed items.
+  // Falls back to system role defaults so nav is never blank while subscription-status loads.
+  const canAccess = useCallback((permission) => {
+    if (!permission) return true;
+    if (!user?.isSubUser || user?.role === 'owner') return true;
+    const perms = user?.permissions?.length
+      ? user.permissions
+      : FRONTEND_ROLES[user?.role]?.permissions || [];
+    return perms.includes(permission);
+  }, [user]);
+
   const translatedNav = useMemo(
-    () => NAV_ITEMS.map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
-    [bilingualLabels, t]
+    () => NAV_ITEMS
+      .filter(item => canAccess(item.permission))
+      .map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
+    [bilingualLabels, t, canAccess]
+  );
+
+  const filteredBottomNav = useMemo(
+    () => MOBILE_BOTTOM_NAV.filter(item => canAccess(item.permission)),
+    [canAccess]
+  );
+
+  const filteredDrawerItems = useMemo(
+    () => MORE_DRAWER_ITEMS.filter(item => canAccess(item.permission)),
+    [canAccess]
   );
 
   return (
@@ -442,9 +473,16 @@ function LayoutInner({ children }) {
                   onProfile={goToProfile}
                   onLogout={logout}
                   extraItems={
-                    <Link href="/pricing" className="hover:bg-green-50 hover:text-green-700">
-                      <Glyph name="pricing" size={16} /> Rakhrakhaav Pro
-                    </Link>
+                    <>
+                      {canAccess('MANAGE_USERS') && (
+                        <Link href="/team" onClick={() => setDropdownOpen(false)} className="hover:bg-green-50 hover:text-green-700">
+                          <Glyph name="team" size={16} /> Team Members
+                        </Link>
+                      )}
+                      <Link href="/pricing" className="hover:bg-green-50 hover:text-green-700">
+                        <Glyph name="pricing" size={16} /> Rakhrakhaav Pro
+                      </Link>
+                    </>
                   }
                 />
               )}
@@ -512,6 +550,7 @@ function LayoutInner({ children }) {
           pathname={pathname}
           onLogout={logout}
           subscription={subscription}
+          items={filteredDrawerItems}
         />
 
         <main className="main-content premium-main-content">
@@ -522,7 +561,7 @@ function LayoutInner({ children }) {
         <nav className="mobile-bottom-nav premium-bottom-nav">
           <div className="mobile-bottom-nav-card">
 
-            {MOBILE_BOTTOM_NAV.map(item => {
+            {filteredBottomNav.map(item => {
               const isActive = pathname === item.href;
               return (
                 <Link

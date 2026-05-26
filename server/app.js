@@ -21,6 +21,7 @@ const expenseRoutes = require('./routes/expenseRoutes');
 const incomeRoutes = require('./routes/incomeRoutes');
 const bankEntryRoutes = require('./routes/bankEntryRoutes');
 const accountingRoutes = require('./routes/accountingRoutes');
+const rbacRoutes = require('./routes/rbacRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -90,6 +91,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/income', incomeRoutes);
 app.use('/api/bank-entries', bankEntryRoutes);
 app.use('/api/accounting', accountingRoutes);
+app.use('/api/rbac', rbacRoutes);
 
 app.use(errorHandler);
 

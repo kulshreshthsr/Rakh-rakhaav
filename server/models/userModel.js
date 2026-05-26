@@ -20,6 +20,12 @@ const userSchema = new mongoose.Schema({
     enum: ['trial', 'paid', 'failed', 'expired', 'pending', null],
     default: 'trial',
   },
+  // RBAC fields — safe defaults ensure backward compat for existing users
+  role: { type: String, default: 'owner' },
+  isSubUser: { type: Boolean, default: false },
+  shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', default: null },
+  isActive: { type: Boolean, default: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
