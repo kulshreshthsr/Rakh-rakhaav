@@ -916,23 +916,27 @@ export default function PurchasesPage() {
         {loading ? (
           <div className="flex flex-col gap-3">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+              <div key={index} className="skeleton-card border border-slate-200/60" style={{ height: 112 }} />
             ))}
           </div>
         ) : filteredPurchases.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
-            <div className="text-4xl mb-3">📦</div>
-            <div className="text-[15px] font-bold text-slate-700 mb-1">
-              {hasBillFilters ? 'No purchases found for this search/filter.' : term('noPurchases', 'No purchases yet.')}
-            </div>
-            <div className="text-[12px] text-slate-400 mb-5">
-              Add your first supplier bill to start tracking stock cost and ITC.
-            </div>
+          <div className="empty-state">
+            <div className="empty-state-icon mx-auto mb-4 text-[26px]">📦</div>
+            <p className="text-[14px] font-extrabold text-slate-700 mb-1">
+              {hasBillFilters
+                ? 'No purchases found for this search/filter.'
+                : term('noPurchases', 'No purchases yet.')}
+            </p>
+            <p className="text-[12px] text-slate-400 leading-relaxed">
+              {hasBillFilters
+                ? 'Try adjusting your search or filters to find purchases.'
+                : 'Record your first supplier bill to start tracking stock cost and ITC.'}
+            </p>
             {!hasBillFilters && (
               <button
                 type="button"
                 onClick={() => { resetModal(); setShowModal(true); }}
-                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
+                className="empty-action-btn"
               >
                 {term('newPurchase', 'Record Purchase')}
               </button>
@@ -950,7 +954,7 @@ export default function PurchasesPage() {
                 <div
                   key={p._id}
                   data-purchase-anchor={p._id}
-                  className={`group relative overflow-hidden rounded-2xl border-2 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 transition-all ${p._isOffline ? 'border-amber-200' : 'border-slate-200 hover:border-green-300'} ${isHighlighted ? 'ring-2 ring-green-400 shadow-lg shadow-green-100/70' : ''}`}
+                  className={`group relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 hover:-translate-y-[2px] ${p._isOffline ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.1)]' : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.1)] hover:border-slate-300/80'} ${isHighlighted ? 'ring-2 ring-green-400 ring-offset-1 shadow-[0_4px_16px_rgba(22,163,74,0.14)]' : ''}`}
                 >
                   {/* Gradient overlay on hover */}
                   <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />

@@ -207,15 +207,31 @@ export default function DashboardPage() {
   const topUdhaarCustomers = (data?.udhaar?.topCustomers || []).slice(0, 5);
   const lowStockItems = (data?.stock?.lowStockItems || []).slice(0, 4);
 
-  /* Skeleton loader with green theme */
+  /* Skeleton loader — matches dashboard layout to prevent shift */
   if (loading) {
     return (
       <Layout>
         <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
-          {[80, 140, 180, 120].map((h, i) => (
-            <div key={i} className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200/50 animate-pulse"
-              style={{ height: h }} />
-          ))}
+          {/* Header card skeleton */}
+          <div className="skeleton-card border border-slate-200/60" style={{ height: 96 }} />
+          {/* Today stats section */}
+          <div className="space-y-2">
+            <div className="skeleton-text w-1/4" style={{ width: '25%' }} />
+            <div className="skeleton-card border border-slate-200/60" style={{ height: 130 }} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="skeleton-card border border-slate-200/60" style={{ height: 72 }} />
+              <div className="skeleton-card border border-slate-200/60" style={{ height: 72 }} />
+            </div>
+          </div>
+          {/* Quick actions skeleton */}
+          <div className="space-y-2">
+            <div className="skeleton-text" style={{ width: '18%' }} />
+            <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="skeleton-card border border-slate-200/60" style={{ height: 80 }} />
+              ))}
+            </div>
+          </div>
         </div>
       </Layout>
     );
@@ -320,14 +336,10 @@ export default function DashboardPage() {
             2. आज का हाल - Today's Performance with Green Gradient
         ══════════════════════════════════════ */}
         <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-              आज का हाल
-            </p>
+          <div className="page-section-row px-0.5">
+            <span className="page-section-label">आज का हाल</span>
             {hasPermission('VIEW_SALES') && (
-              <Link href="/sales" className="text-[11px] font-bold text-green-700 hover:text-green-800 hover:underline">
-                सभी bills →
-              </Link>
+              <Link href="/sales" className="page-section-link">सभी bills →</Link>
             )}
           </div>
 
@@ -424,9 +436,9 @@ export default function DashboardPage() {
           if (quickActions.length === 0) return null;
           return (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">
-                जल्दी काम
-              </p>
+              <div className="page-section-row px-0.5 mb-3">
+                <span className="page-section-label">जल्दी काम</span>
+              </div>
               <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
                 {quickActions.map(a => (
                   <QuickAction key={a.href} href={a.href} emoji={a.emoji} label={a.label} sublabel={a.sublabel} gradient={a.gradient} />
@@ -441,12 +453,10 @@ export default function DashboardPage() {
         ══════════════════════════════════════ */}
         {hasUrgent && (hasPermission('MANAGE_INVENTORY') || hasPermission('VIEW_UDHAAR')) && (
           <div>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                ⚠️ ज़रूरी काम
-              </p>
+            <div className="page-section-row px-0.5">
+              <span className="page-section-label">⚠️ ज़रूरी काम</span>
               {(low_stock > 0 || out_of_stock > 0) && hasPermission('MANAGE_INVENTORY') && (
-                <Link href="/product" className="text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline">
+                <Link href="/product" className="page-section-link" style={{ color: '#d97706' }}>
                   सभी देखें →
                 </Link>
               )}
@@ -575,9 +585,9 @@ export default function DashboardPage() {
           if (dashTiles.length === 0) return null;
           return (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">
-                Business Tools
-              </p>
+              <div className="page-section-row px-0.5 mb-3">
+                <span className="page-section-label">Business Tools</span>
+              </div>
               <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
                 {dashTiles.map(t => (
                   <QuickAction key={t.id} href={t.href} emoji={t.icon} label={t.label} sublabel={t.sublabel || ''} gradient={TILE_GRADIENTS[t.color] || 'from-slate-50 to-gray-100'} />
@@ -593,13 +603,9 @@ export default function DashboardPage() {
         ══════════════════════════════════════ */}
         {wfc && wfWidgets.length > 0 && hasPermission('CREATE_INVOICE') && (
           <div>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                {wfc.saleNounPlural || 'Operations'}
-              </p>
-              <Link href="/sales" className="text-[11px] font-bold text-green-700 hover:text-green-800 hover:underline">
-                सभी देखें →
-              </Link>
+            <div className="page-section-row px-0.5">
+              <span className="page-section-label">{wfc.saleNounPlural || 'Operations'}</span>
+              <Link href="/sales" className="page-section-link">सभी देखें →</Link>
             </div>
             <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
               {wfWidgets.map(widget => (

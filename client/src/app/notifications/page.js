@@ -146,10 +146,12 @@ export default function NotificationsPage() {
 
         {/* List */}
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 px-6 py-12 text-center">
-            <p className="text-4xl mb-3">✅</p>
-            <p className="text-[15px] font-black text-slate-800">All clear</p>
-            <p className="text-[13px] text-slate-400 mt-1">No {filter === 'unread' ? 'unread ' : filter === 'critical' ? 'urgent ' : ''}alerts right now</p>
+          <div className="empty-state">
+            <div className="empty-state-icon mx-auto mb-4 text-[24px]">✅</div>
+            <p className="text-[14px] font-extrabold text-slate-800">All clear</p>
+            <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
+              No {filter === 'unread' ? 'unread ' : filter === 'critical' ? 'urgent ' : ''}alerts right now — you&apos;re on top of everything
+            </p>
           </div>
         ) : (
           <div className="space-y-2">

@@ -2686,3 +2686,274 @@ html { touch-action: manipulation; }
   background: rgba(22,163,74,0.18);
   color: #052e16;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   UI POLISH PASS v2 — Premium Refinements
+   Hierarchy · Spacing · Readability · Consistency · Accessibility
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ─── TABLE: fix hover from blue-purple to brand neutral ─────── */
+tbody tr:hover td,
+.ui-table tbody tr:hover td {
+  background: rgba(240, 253, 244, 0.6) !important;
+  transition: background 100ms ease;
+}
+
+/* ─── TABLE: remove redundant last-row border ────────────────── */
+tbody tr:last-child td { border-bottom: none !important; }
+
+/* ─── TABLE: sticky header (opt-in) ─────────────────────────── */
+.table-sticky thead,
+.ui-table-sticky thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(248, 250, 252, 0.98) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.18);
+}
+
+/* ─── TABLE: right-align numeric columns ─────────────────────── */
+.col-numeric, td.col-numeric, th.col-numeric {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ─── TABLE: better zebra stripe ────────────────────────────── */
+tbody tr:nth-child(even) td,
+.ui-table tbody tr:nth-child(even) td {
+  background: rgba(248, 250, 252, 0.45) !important;
+}
+
+/* ─── TABLE: desktop padding ─────────────────────────────────── */
+@media (min-width: 901px) {
+  th, .ui-table th { padding-left: 18px !important; padding-right: 18px !important; }
+  td, .ui-table td { padding-left: 18px !important; padding-right: 18px !important; }
+}
+
+/* ─── TABLE: empty row helper ────────────────────────────────── */
+.table-empty-row td {
+  padding: 40px 20px !important;
+  text-align: center !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+/* ─── SKELETON: neutral greys (not cyan) ─────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg, #f1f5f9 25%, #e8ecf1 50%, #f1f5f9 75%
+  ) !important;
+  background-size: 400% 100% !important;
+  animation: shimmer 1.6s ease-in-out infinite !important;
+}
+.skeleton-row {
+  height: 52px; border-radius: 10px; margin-bottom: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e8ecf1 50%, #f1f5f9 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.skeleton-text {
+  height: 13px; border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e8ecf1 50%, #f1f5f9 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.skeleton-card {
+  border-radius: 18px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e8ecf1 50%, #f1f5f9 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ─── FORM SECTION GROUPING ──────────────────────────────────── */
+.form-section {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.97));
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.form-section + .form-section { margin-top: 12px; }
+.form-section-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 8px; margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+.form-section-title {
+  font-size: 11px; font-weight: 900;
+  letter-spacing: 0.08em; text-transform: uppercase; color: #475569;
+}
+.form-section-subtitle { margin-top: 3px; font-size: 11px; color: #64748b; line-height: 1.5; }
+.field-helper  { margin-top: 5px; font-size: 11px; color: #64748b;  line-height: 1.5; }
+.field-error   { margin-top: 5px; font-size: 11px; color: #e11d48;  font-weight: 600; }
+.field-success { margin-top: 5px; font-size: 11px; color: #059669;  font-weight: 600; }
+
+/* ─── EMPTY STATE IMPROVEMENTS ───────────────────────────────── */
+.empty-state-icon {
+  background: linear-gradient(135deg, rgba(100,116,139,0.09), rgba(148,163,184,0.06)) !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  color: #94a3b8 !important;
+}
+.empty-action-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 14px; padding: 8px 18px; border-radius: 10px;
+  background: linear-gradient(135deg, rgba(22,163,74,0.09), rgba(16,185,129,0.06));
+  border: 1px solid rgba(22,163,74,0.2); color: #16a34a;
+  font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer;
+  transition: all 180ms ease;
+}
+.empty-action-btn:hover {
+  background: linear-gradient(135deg, rgba(22,163,74,0.14), rgba(16,185,129,0.1));
+  border-color: rgba(22,163,74,0.3); transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(22,163,74,0.1);
+}
+
+/* ─── MODAL: smooth scale-in ─────────────────────────────────── */
+@keyframes modal-scale-in {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+.modal      { animation: modal-scale-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.flow-modal { animation: modal-scale-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* ─── TOAST: improved shadow + radius ────────────────────────── */
+.toast {
+  box-shadow: 0 8px 24px rgba(15,23,42,0.13), 0 2px 8px rgba(15,23,42,0.08) !important;
+  border-radius: 12px !important;
+}
+
+/* ─── PAGE SECTION HELPERS ───────────────────────────────────── */
+.page-section-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px;
+}
+.page-section-label {
+  font-size: 10.5px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.13em; color: #64748b; user-select: none;
+}
+.page-section-link {
+  font-size: 11px; font-weight: 800; color: #16a34a;
+  text-decoration: none; transition: color 150ms ease;
+}
+.page-section-link:hover { color: #15803d; text-decoration: underline; }
+
+/* ─── NUMERIC VALUES: tabular nums throughout ────────────────── */
+.metric-value, .stat-value, .ui-stat-value, .mini-stat-value,
+.ui-data-row-value, .subscription-checkout-price,
+.subscription-modal-footer-price, .membership-summary-price {
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" !important;
+}
+
+/* ─── DIVIDER: slightly more defined ─────────────────────────── */
+.divider {
+  background: linear-gradient(
+    90deg, transparent, rgba(100,116,139,0.22), transparent
+  ) !important;
+}
+
+/* ─── SIDEBAR NAV: brand scrollbar ───────────────────────────── */
+.sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+.sidebar-nav::-webkit-scrollbar { width: 2px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
+
+/* ─── SIDEBAR: focus ring on dark background ─────────────────── */
+.sidebar-panel :focus-visible {
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.18), 0 0 0 1px rgba(255,255,255,0.38) !important;
+}
+
+/* ─── METRIC CARD: left accent by semantic class ─────────────── */
+.metric-card.accent-money::before,  .stat-card.accent-money::before  { background: #10b981 !important; }
+.metric-card.accent-danger::before, .stat-card.accent-danger::before { background: #e11d48 !important; }
+.metric-card.accent-warning::before,.stat-card.accent-warning::before{ background: #d97706 !important; }
+.metric-card.accent-blue::before,   .stat-card.accent-blue::before   { background: #3b82f6 !important; }
+.metric-card.accent-teal::before,   .stat-card.accent-teal::before   { background: #14b8a6 !important; }
+
+/* ─── INPUT PLACEHOLDER: consistent weight ───────────────────── */
+input::placeholder, textarea::placeholder {
+  color: #94a3b8 !important; font-weight: 400 !important; letter-spacing: 0 !important;
+}
+
+/* ─── RECHARTS: consistent font family and color ────────────── */
+.recharts-text tspan, .recharts-legend-item-text {
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif !important;
+  font-size: 12px !important; fill: #64748b !important;
+}
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line { stroke: rgba(148,163,184,0.14) !important; }
+
+/* ─── BUTTON GROUP utility ───────────────────────────────────── */
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ─── STATUS BADGE: pill variant ────────────────────────────── */
+.badge-pill, .ui-badge-pill {
+  border-radius: 999px !important; padding-left: 10px !important; padding-right: 10px !important;
+}
+
+/* ─── CARD: elevated variant ─────────────────────────────────── */
+.card-elevated, .ui-card-elevated {
+  box-shadow: var(--surface-shadow-strong) !important;
+  border-color: rgba(100, 116, 139, 0.16) !important;
+}
+.card-elevated:hover, .ui-card-elevated:hover { box-shadow: var(--surface-shadow-hover) !important; }
+
+/* ─── ALERT: polished border-radius and spacing ─────────────── */
+.alert-success, .alert-error, .alert-warning, .alert-info {
+  border-radius: 14px !important; padding: 12px 16px !important; line-height: 1.55 !important;
+}
+
+/* ─── PAGE SHELL: extended stagger ──────────────────────────── */
+.page-shell > *:nth-child(6) { animation-delay: 105ms; }
+.page-shell > *:nth-child(7) { animation-delay: 118ms; }
+.page-shell > *:nth-child(8) { animation-delay: 130ms; }
+
+/* ─── BRAND STATUS CARD: blur ────────────────────────────────── */
+.brand-status-card { backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; }
+
+/* ─── ENTRY FORM: green focus ring ──────────────────────────── */
+.entry-form-shell input:not([type='checkbox']):not([type='radio']):focus,
+.entry-form-shell select:focus,
+.entry-form-shell textarea:focus {
+  border-color: rgba(22,163,74,0.6) !important;
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.12), 0 8px 20px rgba(22,163,74,0.06) !important;
+}
+
+/* ─── FLOW MODAL: better max-height on desktop ───────────────── */
+@media (min-width: 640px) {
+  .flow-modal { max-height: min(90vh, 780px) !important; }
+}
+
+/* ─── PAGE TOOLBAR: vertically centered ─────────────────────── */
+.page-toolbar, .compact-page-toolbar { align-items: center !important; }
+
+/* ─── CARD HEAD: breathing room + subtle divider ────────────── */
+.ui-card-head {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148,163,184,0.12);
+}
+
+/* ─── SUBSCRIPTION MODAL FOOTER: sticky ─────────────────────── */
+.subscription-modal-footer { position: sticky; bottom: 0; z-index: 5; }
+
+/* ─── LIST CARD hover: more visible border ───────────────────── */
+.ui-list-card:hover { border-color: rgba(148,163,184,0.45) !important; }
+
+/* ─── SIDEBAR SECTION LABEL: consistent padding ─────────────── */
+.sidebar-section-label { padding: 2px 6px; margin-bottom: -2px; }
+
+/* ─── ACTION-SOFT: minimum height ───────────────────────────── */
+.action-soft { min-height: 36px; }
+
+/* ─── FORM LABEL: non-selectable ────────────────────────────── */
+.form-label { user-select: none; }
+
+/* ─── VERY SMALL MOBILE: tighter card padding ───────────────── */
+@media (max-width: 400px) {
+  .card, .ui-card { padding: 14px !important; }
+  .soft-panel, .toolbar-card { padding: 12px !important; }
+}

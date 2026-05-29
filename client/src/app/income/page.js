@@ -267,12 +267,12 @@ export default function IncomePage() {
           </div>
 
           {loading ? (
-            <div className="p-4 space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+            <div className="p-4 space-y-2.5">{[...Array(4)].map((_, i) => <div key={i} className="skeleton-row" />)}</div>
           ) : filteredEntries.length === 0 ? (
-            <div className="p-10 text-center">
-              <div className="text-4xl mb-2">💰</div>
-              <p className="text-[13px] font-bold text-slate-600">No income found</p>
-              <p className="text-[11px] text-slate-400 mt-1">Filter बदलो या नई income add करो</p>
+            <div className="empty-state rounded-none border-0 bg-transparent py-12">
+              <div className="empty-state-icon mx-auto mb-4 text-[22px]">💰</div>
+              <p className="text-[13px] font-extrabold text-slate-700">No income found</p>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Filter बदलो या नई income add करो</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">

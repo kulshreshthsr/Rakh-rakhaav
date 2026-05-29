@@ -711,22 +711,26 @@ export default function SalesPage() {
         {loading ? (
           <div className="flex flex-col gap-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+              <div key={i} className="skeleton-card border border-slate-200/60" style={{ height: 112 }} />
             ))}
           </div>
         ) : filteredSales.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
-            <div className="text-4xl mb-3">🧾</div>
-            <div className="text-[15px] font-bold text-slate-700 mb-1">
-              {hasBillFilters ? `कोई ${term('sale', 'sale')} नहीं मिली` : term('noSales', `अभी कोई ${term('sale', 'sale')} नहीं है`)}
-            </div>
-            <div className="text-[12px] text-slate-400 mb-5">
-              {hasBillFilters ? 'Filter बदलकर देखें' : `पहला ${term('invoice', 'bill')} बनाओ और शुरू हो जाओ`}
-            </div>
+          <div className="empty-state">
+            <div className="empty-state-icon mx-auto mb-4 text-[26px]">🧾</div>
+            <p className="text-[14px] font-extrabold text-slate-700 mb-1">
+              {hasBillFilters
+                ? `कोई ${term('sale', 'sale')} नहीं मिली`
+                : term('noSales', `अभी कोई ${term('sale', 'sale')} नहीं है`)}
+            </p>
+            <p className="text-[12px] text-slate-400 leading-relaxed">
+              {hasBillFilters
+                ? 'Filter बदलें या search हटाएं — bills मिलेंगे'
+                : `पहला ${term('invoice', 'bill')} बनाओ और शुरू हो जाओ`}
+            </p>
             {!hasBillFilters && (
               <button
                 onClick={() => { resetForm(); setShowModal(true); }}
-                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
+                className="empty-action-btn"
               >
                 + {term('newSale', 'पहला Bill बनाएं')}
               </button>
@@ -737,7 +741,7 @@ export default function SalesPage() {
             {filteredSales.map((s) => {
               const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
               return (
-                <div key={s._id} className={`group relative overflow-hidden rounded-2xl border-2 bg-white shadow-md hover:shadow-xl hover:-translate-y-1 transition-all ${s._isOffline ? 'border-amber-200' : 'border-slate-200 hover:border-green-300'}`}>
+                <div key={s._id} className={`group relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 hover:-translate-y-[2px] ${s._isOffline ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.1)]' : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.1)] hover:border-slate-300/80'}`}>
                   {/* Gradient overlay on hover */}
                   <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />
                   

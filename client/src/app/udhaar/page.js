@@ -598,26 +598,25 @@ export default function UdhaarPage() {
 
               {/* List body */}
               {loading ? (
-                <div className="p-5 space-y-3">
+                <div className="p-4 space-y-2.5">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-16 rounded-2xl bg-slate-100 animate-pulse" />
+                    <div key={i} className="skeleton-row" />
                   ))}
                 </div>
               ) : processedList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 text-center px-6">
-                  <div className="text-4xl mb-3">{isCustomer ? '👥' : '🏪'}</div>
-                  <div className="text-[14px] font-black text-slate-700 mb-1">
+                <div className="empty-state rounded-none border-0 bg-transparent py-14">
+                  <div className="empty-state-icon mx-auto mb-4 text-[24px]">{isCustomer ? '👥' : '🏪'}</div>
+                  <p className="text-[14px] font-extrabold text-slate-700 mb-1">
                     {isCustomer ? 'कोई customer नहीं' : 'कोई supplier नहीं'}
-                  </div>
-                  <div className="text-[12px] text-slate-400 mb-5 max-w-[260px] leading-relaxed">
+                  </p>
+                  <p className="text-[12px] text-slate-400 leading-relaxed max-w-[240px] mx-auto">
                     {isCustomer
-                      ? 'Credit sale करने पर customers यहाँ automatically आ जाएंगे'
-                      : 'Credit purchase करने पर suppliers यहाँ automatically आ जाएंगे'
-                    }
-                  </div>
+                      ? 'Credit sale बनाने पर customers यहाँ automatically दिखेंगे'
+                      : 'Credit purchase करने पर suppliers यहाँ automatically आएंगे'}
+                  </p>
                   {isCustomer && (
                     <button onClick={() => router.push('/sales?open=1&payment=credit')}
-                      className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-rose-500 to-pink-600 shadow-md hover:shadow-lg transition-all"
+                      className="empty-action-btn" style={{ borderColor: 'rgba(244,63,94,0.2)', color: '#e11d48', background: 'linear-gradient(135deg,rgba(244,63,94,0.08),rgba(251,113,133,0.05))' }}
                     >+ Credit Sale Record करें</button>
                   )}
                 </div>

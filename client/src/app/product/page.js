@@ -358,25 +358,31 @@ export default function ProductsPage() {
 
         {/* ── LOADING ── */}
         {loading && (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => <div key={i} className="h-24 rounded-2xl bg-white border border-slate-200 animate-pulse" />)}
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="skeleton-card border border-slate-200/80" style={{ height: 96 }} />
+            ))}
           </div>
         )}
 
         {/* ── EMPTY STATE ── */}
         {!loading && filtered.length === 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
-            <div className="text-4xl mb-3">📦</div>
-            <p className="text-[14px] font-bold text-slate-700 mb-1">
-              {search || filterStock !== 'all' ? `कोई ${term('product', 'product')} नहीं मिला` : `अभी कोई ${term('product', 'product')} नहीं है`}
+          <div className="empty-state">
+            <div className="empty-state-icon mx-auto mb-4 text-[26px]">📦</div>
+            <p className="text-[14px] font-extrabold text-slate-700 mb-1">
+              {search || filterStock !== 'all'
+                ? `कोई ${term('product', 'product')} नहीं मिला`
+                : `अभी कोई ${term('product', 'product')} नहीं है`}
             </p>
-            <p className="text-[12px] text-slate-400 mb-4">
-              {search || filterStock !== 'all' ? 'Filter या search बदलकर देखो' : `पहला ${term('product', 'product')} add करो और ${term('inventory', 'inventory')} शुरू करो`}
+            <p className="text-[12px] text-slate-400 leading-relaxed">
+              {search || filterStock !== 'all'
+                ? 'Search बदलें या filter हटाएं — कुछ मिलेगा'
+                : `पहला ${term('product', 'product')} add करो और अपना ${term('inventory', 'inventory')} शुरू करो`}
             </p>
             {!search && filterStock === 'all' && (
-              <button onClick={openAdd}
-                className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
-              >+ {term('addProduct', 'Add Product')}</button>
+              <button onClick={openAdd} className="empty-action-btn mt-4">
+                + {term('addProduct', 'Add Product')}
+              </button>
             )}
           </div>
         )}
@@ -389,12 +395,16 @@ export default function ProductsPage() {
                 const s = stockStatus(p);
                 return (
                   <div key={p._id}
-                    className={`bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all ${
-                      p.quantity === 0 ? 'border-rose-200' : p.is_low_stock ? 'border-amber-200' : 'border-slate-200'
-                    }`}
+                    className={`bg-white rounded-2xl border overflow-hidden transition-all duration-200 hover:-translate-y-[1px] ${
+                      p.quantity === 0
+                        ? 'border-rose-200 shadow-[0_2px_8px_rgba(239,68,68,0.08),0_1px_2px_rgba(15,23,42,0.04)]'
+                        : p.is_low_stock
+                          ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.08),0_1px_2px_rgba(15,23,42,0.04)]'
+                          : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.05),0_1px_2px_rgba(15,23,42,0.04)]'
+                    } hover:shadow-[0_6px_18px_rgba(15,23,42,0.09)]`}
                   >
-                    {/* Color bar */}
-                    <div className={`h-0.5 ${p.quantity === 0 ? 'bg-rose-400' : p.is_low_stock ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                    {/* Top accent bar */}
+                    <div className={`h-[3px] ${p.quantity === 0 ? 'bg-rose-400' : p.is_low_stock ? 'bg-amber-400' : 'bg-emerald-400'}`} />
 
                     <div className="p-4">
                       {/* Top row */}
@@ -454,17 +464,17 @@ export default function ProductsPage() {
                       )}
                       <div className="grid grid-cols-4 gap-2">
                         <button onClick={() => openStockAdjust(p)}
-                          className="py-2 rounded-xl border border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-colors"
-                        >📦 Stock</button>
+                          className="action-soft stock py-2 text-[11px] font-bold transition-all"
+                        >Stock</button>
                         <button onClick={() => openHistory(p)}
-                          className="py-2 rounded-xl border border-amber-200 bg-amber-50 text-[11px] font-bold text-amber-700 hover:bg-amber-100 transition-colors"
-                        >🕐 History</button>
+                          className="action-soft history py-2 text-[11px] font-bold transition-all"
+                        >History</button>
                         <button onClick={() => openEdit(p)}
-                          className="py-2 rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 hover:bg-slate-100 transition-colors"
-                        >✏️ Edit</button>
+                          className="action-soft edit py-2 text-[11px] font-bold transition-all"
+                        >Edit</button>
                         <button onClick={() => handleDelete(p._id)}
-                          className="py-2 rounded-xl border border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors"
-                        >🗑️ Del</button>
+                          className="action-soft delete py-2 text-[11px] font-bold transition-all"
+                        >Delete</button>
                       </div>
                     </div>
                   </div>
