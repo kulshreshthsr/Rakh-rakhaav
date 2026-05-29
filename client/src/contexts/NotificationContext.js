@@ -129,8 +129,13 @@ export function NotificationProvider({ children }) {
   );
 }
 
+const SAFE_DEFAULTS = {
+  notifications: [], unreadCount: 0, taskCount: 0, loading: false,
+  markRead: async () => {}, markAllRead: async () => {},
+  dismiss: async () => {}, refresh: async () => {},
+};
+
 export function useNotifications() {
   const ctx = useContext(NotificationContext);
-  if (!ctx) throw new Error('useNotifications must be used inside NotificationProvider');
-  return ctx;
+  return ctx ?? SAFE_DEFAULTS;
 }
