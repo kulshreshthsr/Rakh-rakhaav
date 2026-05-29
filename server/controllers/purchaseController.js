@@ -6,6 +6,9 @@ const Supplier = require('../models/supplierModel');
 const SupplierUdhaar = require('../models/supplierUdhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
 const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
+const ProductBatch    = require('../models/productBatchModel');
+const ProductVariant  = require('../models/productVariantModel');
+const SerialInventory = require('../models/serialInventoryModel');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers
@@ -174,6 +177,92 @@ const syncPurchaseStock = async (previousPurchase, nextItems, session = null) =>
     }
 
     await Product.findByIdAndUpdate(productId, update, session ? { session } : {});
+  }
+};
+
+/**
+ * Creates/updates sub-inventory records when a purchase is received.
+ * Reads item_metadata from each purchase item:
+ *   batch_number, expiry_date, manufacture_date, mrp → create/update ProductBatch
+ *   variant_id                                        → update ProductVariant quantity
+ *   serial_numbers[]                                  → create SerialInventory records
+ */
+const syncSubInventoryOnPurchase = async (previousItems = [], nextItems = [], invoiceNumber = '', shopId, session = null) => {
+  const opts = session ? { session } : {};
+
+  // For updates, reverse the previous sub-inventory first (simple approach: rebuild)
+  // We only create NEW records; reversal is handled when the purchase is deleted/updated
+  // via the main syncPurchaseStock which adjusts product.quantity
+
+  for (const item of nextItems) {
+    const meta = item.item_metadata || {};
+    if (!item.product) continue;
+
+    // ── Batch receive ──────────────────────────────────────────────────────
+    if (meta.batch_number) {
+      const qty = Number(item.quantity || 0);
+      // Try to find existing batch with same number for this product
+      const existing = await ProductBatch.findOne({
+        shop: shopId, product: item.product,
+        batch_number: String(meta.batch_number).trim(),
+      }).session(session || null);
+
+      if (existing) {
+        existing.quantity += qty;
+        existing.is_depleted = false;
+        if (meta.expiry_date)      existing.expiry_date      = new Date(meta.expiry_date);
+        if (meta.manufacture_date) existing.manufacture_date = new Date(meta.manufacture_date);
+        if (meta.mrp != null)      existing.mrp              = Number(meta.mrp);
+        if (meta.manufacturer)     existing.manufacturer     = meta.manufacturer;
+        existing.purchase_invoice = invoiceNumber;
+        await existing.save(opts);
+      } else {
+        await ProductBatch.create([{
+          shop: shopId, product: item.product,
+          batch_number:    String(meta.batch_number).trim(),
+          expiry_date:     meta.expiry_date      ? new Date(meta.expiry_date)      : undefined,
+          manufacture_date:meta.manufacture_date ? new Date(meta.manufacture_date) : undefined,
+          quantity:        qty,
+          mrp:             meta.mrp        != null ? Number(meta.mrp)        : undefined,
+          cost_price:      item.price_per_unit != null ? Number(item.price_per_unit) : 0,
+          manufacturer:    meta.manufacturer,
+          purchase_invoice: invoiceNumber,
+        }], opts);
+      }
+    }
+
+    // ── Variant receive ────────────────────────────────────────────────────
+    if (meta.variant_id) {
+      await ProductVariant.findByIdAndUpdate(
+        meta.variant_id,
+        { $inc: { quantity: Number(item.quantity || 0) } },
+        opts
+      );
+    }
+
+    // ── Serial number receive ──────────────────────────────────────────────
+    if (Array.isArray(meta.serial_numbers) && meta.serial_numbers.length > 0) {
+      const docs = meta.serial_numbers
+        .filter(sn => sn && typeof sn === 'string' && sn.trim())
+        .map(sn => ({
+          shop: shopId, product: item.product,
+          serial_number:   sn.trim(),
+          imei_number:     meta.imei_prefix ? `${meta.imei_prefix}${sn.trim()}` : undefined,
+          status:          'in_stock',
+          purchase_invoice: invoiceNumber,
+          warranty_expiry: meta.warranty_expiry ? new Date(meta.warranty_expiry) : undefined,
+          color:   meta.color,
+          storage: meta.storage,
+          ram:     meta.ram,
+        }));
+      if (docs.length > 0) {
+        try {
+          await SerialInventory.create(docs, opts);
+        } catch (_) {
+          // Ignore duplicate serial errors — idempotent
+        }
+      }
+    }
   }
 };
 
@@ -478,6 +567,7 @@ const createPurchase = async (req, res) => {
       });
 
       await syncPurchaseStock(null, data.items, session);
+      await syncSubInventoryOnPurchase([], data.items, data.invoice_number, shop._id, session);
 
       const createdPurchases = await Purchase.create([{
         ...data,
@@ -739,6 +829,7 @@ const updatePurchase = async (req, res) => {
 
       await reverseSupplierLedgerForPurchase(purchase, session);
       await syncPurchaseStock(purchase, data.items, session);
+      await syncSubInventoryOnPurchase(purchase.items || [], data.items, purchase.invoice_number, shop._id, session);
 
       Object.assign(purchase, data, { supplier: null });
       await purchase.save({ session });

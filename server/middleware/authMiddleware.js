@@ -75,4 +75,20 @@ async function resolvePermissions(roleName, ownerId, knownShopId) {
   }
 }
 
-module.exports = { protect };
+/**
+ * Route-level permission guard for sub-users.
+ * Owners and non-sub-users bypass the check automatically.
+ * Usage: router.patch('/route', protect, requirePermission('CREATE_INVOICE'), handler)
+ */
+const requirePermission = (permission) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+  // Owners have all permissions — skip check
+  if (!req.user.isSubUser) return next();
+  const perms = req.user.permissions || [];
+  if (!perms.includes(permission)) {
+    return res.status(403).json({ message: `Access denied: ${permission} permission required` });
+  }
+  next();
+};
+
+module.exports = { protect, requirePermission };

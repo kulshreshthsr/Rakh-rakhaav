@@ -3,6 +3,7 @@ const Product = require('../models/productModel');
 const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Shop = require('../models/shopModel');
+const ruleEngine = require('../services/ruleEngine');
 
 const getOrCreateShop = async (userId) => {
   let shop = await Shop.findOne({ owner: userId });
@@ -204,6 +205,9 @@ const getDashboardSummary = async (req, res) => {
       totalCustomerUdhaar: round2(totalCustomerUdhaar),
       fetchedAt: new Date().toISOString(),
     });
+
+    // Fire-and-forget rule scan — never blocks the response
+    ruleEngine.scanShop(shop._id, shop.businessType || 'general').catch(() => {});
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -23,6 +23,10 @@ const bankEntryRoutes = require('./routes/bankEntryRoutes');
 const accountingRoutes = require('./routes/accountingRoutes');
 const rbacRoutes = require('./routes/rbacRoutes');
 const industryRoutes = require('./routes/industryRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -94,6 +98,10 @@ app.use('/api/bank-entries', bankEntryRoutes);
 app.use('/api/accounting', accountingRoutes);
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/industry', industryRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/audit', auditRoutes);
 
 app.use(errorHandler);
 

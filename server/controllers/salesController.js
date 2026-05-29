@@ -8,6 +8,11 @@ const Udhaar   = require('../models/udhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
 const { generateGSTComplianceReport } = require('../utils/gstReportGenerator');
 const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
+const ruleEngine = require('../services/ruleEngine');
+const ProductBatch    = require('../models/productBatchModel');
+const ProductVariant  = require('../models/productVariantModel');
+const Recipe          = require('../models/recipeModel');
+const SerialInventory = require('../models/serialInventoryModel');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -243,6 +248,70 @@ const syncSaleStock = async (previousSale, nextItems, session = null) => {
     }
 
     await Product.findByIdAndUpdate(productId, { $inc: { quantity: -delta } }, session ? { session } : {});
+  }
+};
+
+/**
+ * Handles sub-inventory deduction AFTER the core product.quantity has already been updated.
+ * Reads item_metadata from each sale item to determine which records to update:
+ *   batch_id      → deduct from ProductBatch
+ *   variant_id    → deduct from ProductVariant
+ *   serial_ids[]  → mark SerialInventory records as 'sold'
+ *   deduct_recipe → true → deduct recipe ingredients for this dish
+ */
+const syncSubInventory = async (previousItems = [], nextItems = [], invoiceNumber = '', session = null) => {
+  // Build maps from item._id (or product) → previous quantity for delta calc
+  const prevMap = new Map();
+  for (const item of previousItems) {
+    const key = String(item.product);
+    prevMap.set(key, (prevMap.get(key) || 0) + Number(item.quantity || 0));
+  }
+
+  for (const item of nextItems) {
+    const meta = item.item_metadata || {};
+    const productKey = String(item.product);
+    const prevQty = prevMap.get(productKey) || 0;
+    const soldQty = Number(item.quantity || 0);
+    const delta = soldQty - prevQty;
+
+    // ── Batch deduction ────────────────────────────────────────────────────
+    if (meta.batch_id && delta !== 0) {
+      const opts = session ? { session } : {};
+      await ProductBatch.findByIdAndUpdate(meta.batch_id, { $inc: { quantity: -delta } }, opts);
+      // Mark depleted if quantity hits zero
+      await ProductBatch.updateOne({ _id: meta.batch_id, quantity: { $lte: 0 } }, { $set: { is_depleted: true, quantity: 0 } }, opts);
+    }
+
+    // ── Variant deduction ──────────────────────────────────────────────────
+    if (meta.variant_id && delta !== 0) {
+      const opts = session ? { session } : {};
+      await ProductVariant.findByIdAndUpdate(meta.variant_id, { $inc: { quantity: -delta } }, opts);
+    }
+
+    // ── Serial marking ─────────────────────────────────────────────────────
+    if (Array.isArray(meta.serial_ids) && meta.serial_ids.length > 0 && delta > 0) {
+      const opts = session ? { session } : {};
+      await SerialInventory.updateMany(
+        { _id: { $in: meta.serial_ids } },
+        { $set: { status: 'sold', sale_invoice: invoiceNumber, sale_date: new Date() } },
+        opts
+      );
+    }
+
+    // ── Recipe ingredient deduction ────────────────────────────────────────
+    if (meta.deduct_recipe && delta > 0) {
+      const recipe = await Recipe.findOne({ dish: item.product }).session(session || null);
+      if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
+        const servings = recipe.serving_quantity || 1;
+        for (const ing of recipe.ingredients) {
+          const deductQty = (ing.quantity / servings) * delta;
+          if (deductQty > 0 && ing.ingredient) {
+            const opts = session ? { session } : {};
+            await Product.findByIdAndUpdate(ing.ingredient, { $inc: { quantity: -deductQty } }, opts);
+          }
+        }
+      }
+    }
   }
 };
 
@@ -563,6 +632,7 @@ const createSale = async (req, res) => {
       });
 
       await syncSaleStock(null, data.items, session);
+      await syncSubInventory([], data.items, data.invoice_number, session);
 
       const createdSales = await Sale.create([{
         ...data,
@@ -793,6 +863,7 @@ const updateSale = async (req, res) => {
 
       await reverseCustomerLedgerForSale(sale, session);
       await syncSaleStock(sale, data.items, session);
+      await syncSubInventory(sale.items || [], data.items, sale.invoice_number, session);
 
       Object.assign(sale, data, { customer: null });
       if (data.createdAt) {
@@ -1095,11 +1166,57 @@ const getGSTComplianceReport = async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKFLOW STATUS UPDATE (lightweight — only writes extra_fields.workflow_status)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const updateSaleWorkflow = async (req, res) => {
+  try {
+    const { workflow_status } = req.body;
+    if (!workflow_status || typeof workflow_status !== 'string') {
+      return res.status(400).json({ message: 'workflow_status is required' });
+    }
+    const shop = await getOrCreateShop(req.user.id);
+    const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
+    if (!sale) return res.status(404).json({ message: 'Sale not found' });
+
+    // extra_fields is a Mongoose Map — use .set()
+    if (!sale.extra_fields) sale.extra_fields = new Map();
+    sale.extra_fields.set('workflow_status', workflow_status);
+    sale.markModified('extra_fields');
+    await sale.save({ validateBeforeSave: false });
+
+    res.json(sale);
+
+    // Fire-and-forget: auto-resolve workflow delay notifications when stage advances
+    ruleEngine.handleEvent('WORKFLOW_ADVANCED', {
+      shopId:   shop._id,
+      saleId:   sale._id,
+      newStage: workflow_status,
+    }).catch(() => {});
+
+    // Audit log
+    ruleEngine.createAuditLog({
+      shopId:     shop._id,
+      userId:     req.user.subUserId || req.user.id,
+      username:   req.user.username,
+      action:     'WORKFLOW_ADVANCED',
+      entity:     'sale',
+      entityId:   String(sale._id),
+      entityName: sale.invoice_number,
+      details:    { newStage: workflow_status },
+    }).catch(() => {});
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getSales,
   createSale,
   updateSale,
   deleteSale,
+  updateSaleWorkflow,
   getGSTSummary,
   getGSTComplianceReport,
   getProfitSummary,

@@ -14,6 +14,8 @@ import {
 import { useAppLocale } from './AppLocale';
 import { SYSTEM_ROLES as FRONTEND_ROLES } from '../lib/permissions';
 import { useIndustry } from '../contexts/IndustryContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
+import NotificationBell from './NotificationBell';
 
 /* ─── Nav config ─────────────────────────────────────────────────── */
 // permission: the permission required to see this item; null = visible to all
@@ -461,6 +463,7 @@ function LayoutInner({ children }) {
   );
 
   return (
+    <NotificationProvider>
     <div className="app-shell-root rr-workspace-premium">
       <div className={subscription?.isReadOnly ? 'shell-readonly-content' : ''}>
 
@@ -540,6 +543,7 @@ function LayoutInner({ children }) {
           </div>
 
           <div className="relative flex items-center gap-2" ref={mobileProfileRef}>
+            <NotificationBell />
             {!subscription?.isPro && (
               <Link href="/pricing"
                 className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-50 border border-green-300 text-[11px] font-black text-green-800 hover:bg-green-100 transition-all shadow-sm hover:shadow-md"
@@ -644,6 +648,7 @@ function LayoutInner({ children }) {
         }
       />
     </div>
+    </NotificationProvider>
   );
 }
 

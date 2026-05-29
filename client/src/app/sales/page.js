@@ -7,10 +7,15 @@ import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
 import { useIndustry } from '../../contexts/IndustryContext';
+import DynamicFormField from '../../components/DynamicFormField';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { getDisplayQueue, queueSale, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 import { apiUrl } from '../../lib/api';
+import { getInvBehavior, isBatchMode, isVariantMode, isSerialMode, isRecipeMode } from '../../lib/inventoryBehavior';
+import { generateInvoiceHTML } from '../../lib/generateInvoice';
+import { getWorkflowConfig, getStages, getSaleWorkflowStatus, getStageColors } from '../../lib/workflowEngine';
+import WorkflowStatusBadge from '../../components/WorkflowStatusBadge';
 
 /* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
@@ -74,15 +79,6 @@ const getRoundedBillValues = (amount) => {
   const roundedTotal = Math.round(numericAmount);
   return { roundedTotal, roundOff: parseFloat((roundedTotal - numericAmount).toFixed(2)) };
 };
-const STATE_CODE_BY_NAME = {
-  'andaman & nicobar islands':'35','andhra pradesh':'37','arunachal pradesh':'12','assam':'18',
-  'bihar':'10','chandigarh':'04','chhattisgarh':'22','dadra & nagar haveli and daman & diu':'26',
-  'delhi':'07','goa':'30','gujarat':'24','haryana':'06','himachal pradesh':'02','jammu & kashmir':'01',
-  'jharkhand':'20','karnataka':'29','kerala':'32','ladakh':'38','lakshadweep':'31','madhya pradesh':'23',
-  'maharashtra':'27','manipur':'14','meghalaya':'17','mizoram':'15','nagaland':'13','odisha':'21',
-  'puducherry':'34','punjab':'03','rajasthan':'08','sikkim':'11','tamil nadu':'33','telangana':'36',
-  'tripura':'16','uttar pradesh':'09','uttarakhand':'05','west bengal':'19',
-};
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
@@ -108,21 +104,6 @@ const buildOfflineSaleItems = (rawItems, products) => (
     };
   }).filter((item) => item.product_id && item.quantity > 0)
 );
-const numberToWords = (num) => {
-  const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-  const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-  const convert = (n) => {
-    if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' '+ones[n%10] : '');
-    if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' and '+convert(n%100) : '');
-    if (n < 100000) return convert(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' '+convert(n%1000) : '');
-    if (n < 10000000) return convert(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' '+convert(n%100000) : '');
-    return convert(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' '+convert(n%10000000) : '');
-  };
-  const rupees = Math.floor(num);
-  const paise  = Math.round((num - rupees) * 100);
-  return convert(rupees) + ' Rupees' + (paise ? ' and '+convert(paise)+' Paise' : '') + ' Only';
-};
 const buildWhatsAppShareMessage = (sale, shopName) => {
   const saleDate = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const advancePaid = sale.payment_type === 'credit' ? parseFloat(sale.amount_paid || 0) : parseFloat(sale.total_amount || 0);
@@ -138,8 +119,16 @@ const buildWhatsAppShareMessage = (sale, shopName) => {
 const PAY_BADGE = {
   cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: '💵 Cash' },
   credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200',          label: '📒 उधार' },
-  upi:    { cls: 'bg-green-50 text-green-700 border-green-200',           label: '📱 UPI'  },
+  upi:    { cls: 'bg-green-50 text-green-700 border-green-200',        label: '📱 UPI'  },
   bank:   { cls: 'bg-blue-50 text-blue-700 border-blue-200',           label: '🏦 Bank' },
+};
+
+/* ─── All possible payment tab definitions ── */
+const PAYMENT_TAB_DEFS = {
+  cash:   { type: 'cash',   label: '💵 कैश',     active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg',     isCredit: false },
+  upi:    { type: 'upi',    label: '📱 UPI',      active: 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg',         isCredit: false },
+  bank:   { type: 'bank',   label: '🏦 Bank',     active: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg',          isCredit: false },
+  credit: { type: 'credit', label: '📒 उधार',    active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg',           isCredit: true  },
 };
 const PayBadge = ({ type }) => {
   const s = PAY_BADGE[type] || PAY_BADGE.cash;
@@ -154,6 +143,24 @@ export default function SalesPage() {
   const router = useRouter();
   const { locale } = useAppLocale();
   const { term, config } = useIndustry();
+
+  /* ── Schema-derived constants ── */
+  const sSchema        = config.saleFormSchema || {};
+  const barcodeEnabled = sSchema.showBarcodeScanner !== false;
+  const paymentMethods = Array.isArray(sSchema.paymentMethods) && sSchema.paymentMethods.length
+    ? sSchema.paymentMethods : ['cash', 'credit'];
+  const activeTabs     = paymentMethods.map(m => PAYMENT_TAB_DEFS[m]).filter(Boolean);
+  const defaultPayment = sSchema.defaultPayment || 'cash';
+
+  /* ── Workflow config ── */
+  const wfc = getWorkflowConfig(config);
+
+  /* ── Inventory behavior ── */
+  const inv          = getInvBehavior(config);
+  const batchSales   = isBatchMode(inv);
+  const variantSales = isVariantMode(inv);
+  const serialSales  = isSerialMode(inv);
+  const recipeSales  = isRecipeMode(inv);
 
   /* ── All state (UNCHANGED) ── */
   const [sales, setSales]           = useState([]);
@@ -170,15 +177,20 @@ export default function SalesPage() {
   const [error, setError]           = useState('');
   const [items, setItems]           = useState([emptyItem()]);
   const [gstinTouched, setGstinTouched] = useState(false);
-  const [form, setForm]             = useState(buildInitialForm());
+  const [form, setForm]             = useState(() => buildInitialForm({ payment_type: defaultPayment }));
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth]   = useState('');
   const [extraFields, setExtraFields]           = useState({});
+  const [wfFilter, setWfFilter]                 = useState('');
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [showMoreCustomerDetails, setShowMoreCustomerDetails] = useState(false);
   const [customerQuery, setCustomerQuery] = useState('');
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+
+  // Sub-inventory cache: productId → { batches: [], variants: [] }
+  const [productBatches,  setProductBatches]  = useState({});
+  const [productVariants, setProductVariants] = useState({});
 
   const amountPaidInputRef  = useRef(null);
   const buyerNameInputRef   = useRef(null);
@@ -315,6 +327,8 @@ export default function SalesPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
+    const wf = params.get('wf');
+    if (wf) { setWfFilter(wf); router.replace('/sales'); return; }
     if (params.get('open') !== '1' || params.get('payment') !== 'credit') return;
     setEditingSaleId(''); setItems([emptyItem()]); setForm(buildInitialForm({ payment_type: 'credit' }));
     setGstinTouched(false); setError(''); setShowModal(true); router.replace('/sales');
@@ -328,9 +342,30 @@ export default function SalesPage() {
   const updateItemQuantityBy = (index, delta) => setItems((current) => current.map((item, itemIndex) => itemIndex !== index ? item : { ...item, quantity: Math.max(1, Number(item.quantity || 1) + delta) }));
   const applyQuickQuantity = (index, quantity) => updateItem(index, 'quantity', quantity);
   const duplicateItem = (index) => setItems((current) => { const source = current[index]; if (!source) return current; const nextItems = [...current]; nextItems.splice(index + 1, 0, { ...source }); return nextItems; });
+  const loadBatchesFor = async (pid) => {
+    if (productBatches[pid]) return;
+    try {
+      const res  = await fetch(apiUrl(`/inventory/batches/${pid}`), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const data = await res.json();
+      setProductBatches(prev => ({ ...prev, [pid]: (Array.isArray(data) ? data : []).filter(b => !b.is_depleted && b.quantity > 0) }));
+    } catch {}
+  };
+
+  const loadVariantsFor = async (pid) => {
+    if (productVariants[pid]) return;
+    try {
+      const res  = await fetch(apiUrl(`/inventory/variants/${pid}`), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const data = await res.json();
+      setProductVariants(prev => ({ ...prev, [pid]: Array.isArray(data) ? data : [] }));
+    } catch {}
+  };
+
   const handleProductSelect = (index, product) => {
     updateItem(index, 'product_id', product._id);
-    setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: item.quantity || 1, price_per_unit: product.price || item.price_per_unit } : item));
+    const initialMeta = recipeSales ? { deduct_recipe: true } : {};
+    setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: item.quantity || 1, price_per_unit: product.price || item.price_per_unit, item_metadata: initialMeta } : item));
+    if (batchSales)   loadBatchesFor(product._id);
+    if (variantSales) loadVariantsFor(product._id);
   };
   const addOrIncrementProduct = (product) => {
     setItems((current) => {
@@ -383,7 +418,7 @@ export default function SalesPage() {
   };
 
   function resetForm(overrides = {}) {
-    const nextPaymentType = overrides.payment_type || form.payment_type || 'cash';
+    const nextPaymentType = overrides.payment_type || form.payment_type || defaultPayment;
     setEditingSaleId(''); setItems([emptyItem()]);
     setForm(buildInitialForm({ payment_type: nextPaymentType, amount_paid: '', ...overrides }));
     setGstinTouched(false); setError(''); setExtraFields({}); setCustomerQuery('');
@@ -479,9 +514,26 @@ export default function SalesPage() {
     catch { setError('Delete failed'); }
   };
 
+  const advanceWorkflowStage = async (saleId, nextStage, action) => {
+    try {
+      const res = await fetch(apiUrl(`/api/sales/${saleId}/workflow`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ workflow_status: nextStage }),
+      });
+      if (!res.ok) { setError('Status update failed'); return; }
+      const updated = await res.json();
+      setSales(current => current.map(s => s._id === saleId ? { ...s, extra_fields: updated.extra_fields } : s));
+      if (action?.triggerInvoice) {
+        const sale = sales.find(s => s._id === saleId);
+        if (sale) printInvoice({ ...sale, extra_fields: updated.extra_fields });
+      }
+    } catch { setError('Status update failed'); }
+  };
+
   const printInvoice = async (sale) => {
     if (sale?._isOffline) { setError('Pending offline sale ka invoice sync ke baad print hoga'); return; }
-    try { const shopRes = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } }); const shop = await shopRes.json(); generateInvoiceHTML(sale, shop, true); }
+    try { const shopRes = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } }); const shop = await shopRes.json(); generateInvoiceHTML(sale, shop, config, true); }
     catch { alert('Invoice could not be generated.'); }
   };
 
@@ -503,9 +555,10 @@ export default function SalesPage() {
   const filteredSales = sales.filter((sale) => {
     const matchesSearch = !normalizedBillSearch || getSaleSearchText(sale).includes(normalizedBillSearch);
     const matchesMonth  = !billMonth || getMonthFilterValue(sale.createdAt || sale.sold_at) === billMonth;
-    return matchesSearch && matchesMonth;
+    const matchesWf     = !wfFilter  || getSaleWorkflowStatus(sale, wfc) === wfFilter;
+    return matchesSearch && matchesMonth && matchesWf;
   });
-  const hasBillFilters = Boolean(normalizedBillSearch || billMonth);
+  const hasBillFilters = Boolean(normalizedBillSearch || billMonth || wfFilter);
   const pastCustomers = useMemo(() => {
     const seen = new Set();
     return sales.filter((s) => s.buyer_name && s.buyer_name !== 'Walk-in Customer' && s.buyer_phone).filter((s) => { const key = s.buyer_phone; if (seen.has(key)) return false; seen.add(key); return true; }).map((s) => ({ name: s.buyer_name, phone: s.buyer_phone, state: s.buyer_state || '', address: s.buyer_address || '', gstin: s.buyer_gstin || '' }));
@@ -557,14 +610,14 @@ export default function SalesPage() {
               <Link href="/sales/customers"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-[13px] font-bold text-slate-700 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
               >
-                👥 Customers
+                👥 {term('customers', 'Customers')}
               </Link>
               <button
                 type="button"
                 onClick={() => { resetForm(); setShowModal(true); }}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
               >
-                + New {term('sale', 'Sale')}
+                + {term('newSale', 'New Sale')}
               </button>
             </div>
           </div>
@@ -581,12 +634,45 @@ export default function SalesPage() {
           </div>
         )}
 
+        {/* ── Workflow stage filter tabs (only shown when business has a workflow) ── */}
+        {wfc && (
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-hide">
+            <button
+              type="button"
+              onClick={() => setWfFilter('')}
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-[12px] font-black border-2 transition-all ${!wfFilter ? 'border-green-500 bg-green-50 text-green-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+            >
+              All {wfc.saleNounPlural || 'Sales'}
+            </button>
+            {getStages(wfc).map(stage => {
+              const colors  = getStageColors(stage);
+              const isActive = wfFilter === stage.id;
+              const count   = sales.filter(s => getSaleWorkflowStatus(s, wfc) === stage.id).length;
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  onClick={() => setWfFilter(isActive ? '' : stage.id)}
+                  className={`flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-black border-2 transition-all ${isActive ? `${colors.border} ${colors.bg} ${colors.text}` : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+                >
+                  {stage.icon} {stage.label}
+                  {count > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isActive ? 'bg-white/70 ' + colors.text : 'bg-slate-100 text-slate-500'}`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* ── KPI strip ── */}
         <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3 mb-5">
           {[
             { label: 'Revenue', value: `₹${fmt(revenueDisplay)}`, gradient: 'from-green-50 to-emerald-100', text: 'text-green-800', icon: '💰', border: 'border-green-200' },
             { label: 'GST', value: `₹${fmt(gstDisplay)}`, gradient: 'from-amber-50 to-orange-100', text: 'text-amber-800', icon: '📊', border: 'border-amber-200' },
-            { label: 'Invoices', value: filteredSales.length, gradient: 'from-slate-50 to-gray-100', text: 'text-slate-800', icon: '🧾', border: 'border-slate-200' },
+            { label: term('kpiInvoices', 'Invoices'), value: filteredSales.length, gradient: 'from-slate-50 to-gray-100', text: 'text-slate-800', icon: '🧾', border: 'border-slate-200' },
           ].map((k) => (
             <div key={k.label} className={`relative overflow-hidden bg-gradient-to-br ${k.gradient} border-2 ${k.border} rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
               <div className="absolute top-2 right-2 text-3xl opacity-10">{k.icon}</div>
@@ -601,7 +687,7 @@ export default function SalesPage() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
-              placeholder="🔍 Search invoice, customer, product..."
+              placeholder={`🔍 ${term('searchSale', 'Search invoice, customer, product...')}`}
               value={billSearch}
               onChange={(e) => setBillSearch(e.target.value)}
             />
@@ -629,17 +715,17 @@ export default function SalesPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
             <div className="text-4xl mb-3">🧾</div>
             <div className="text-[15px] font-bold text-slate-700 mb-1">
-              {hasBillFilters ? 'कोई sale नहीं मिली' : 'अभी कोई sale नहीं है'}
+              {hasBillFilters ? `कोई ${term('sale', 'sale')} नहीं मिली` : term('noSales', `अभी कोई ${term('sale', 'sale')} नहीं है`)}
             </div>
             <div className="text-[12px] text-slate-400 mb-5">
-              {hasBillFilters ? 'Filter बदलकर देखें' : 'पहला bill बनाओ और शुरू हो जाओ'}
+              {hasBillFilters ? 'Filter बदलकर देखें' : `पहला ${term('invoice', 'bill')} बनाओ और शुरू हो जाओ`}
             </div>
             {!hasBillFilters && (
               <button
                 onClick={() => { resetForm(); setShowModal(true); }}
                 className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
               >
-                + पहला Bill बनाएं
+                + {term('newSale', 'पहला Bill बनाएं')}
               </button>
             )}
           </div>
@@ -696,6 +782,52 @@ export default function SalesPage() {
                       </span>
                     </div>
 
+                    {/* Workflow status badge + one-tap stage actions */}
+                    {wfc && !s._isOffline && (
+                      <div className="mb-4">
+                        <WorkflowStatusBadge
+                          sale={s}
+                          wfc={wfc}
+                          onAdvance={advanceWorkflowStage}
+                        />
+                      </div>
+                    )}
+
+                    {/* Invoice-level extra field chips (restaurant: Table/Order Type, automobile: Vehicle No/Model…) */}
+                    {config.invoiceExtraFields && config.invoiceExtraFields.length > 0 && s.extra_fields && (() => {
+                      const chips = config.invoiceExtraFields
+                        .map(f => ({ label: f.label, value: s.extra_fields?.[f.key] }))
+                        .filter(c => c.value);
+                      if (!chips.length) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {chips.map(chip => (
+                            <span key={chip.label} className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-[11px] font-semibold text-indigo-600">
+                              {chip.label}: {chip.value}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Per-line field chips for single-item sales (pharmacy: Batch/Expiry, clothing: Size/Color…) */}
+                    {config.invoiceLineFields && config.invoiceLineFields.length > 0 && s.items?.length === 1 && (() => {
+                      const meta = s.items[0]?.item_metadata || {};
+                      const chips = config.invoiceLineFields
+                        .map(f => ({ label: f.label, value: meta[f.key] }))
+                        .filter(c => c.value);
+                      if (!chips.length) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {chips.map(chip => (
+                            <span key={chip.label} className="px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-100 text-[11px] font-semibold text-violet-600">
+                              {chip.label}: {chip.value}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
                     {/* Action buttons */}
                     <div className="grid grid-cols-2 min-[480px]:grid-cols-4 gap-2">
                       <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)}
@@ -746,10 +878,10 @@ export default function SalesPage() {
             <div className="flex items-start justify-between mb-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {editingSaleId ? 'Edit Sale' : 'New Sale'}
+                  {editingSaleId ? term('editSale', 'Edit Sale') : term('newSale', 'New Sale')}
                 </p>
                 <h3 className="text-[20px] font-black text-slate-900 mt-0.5">
-                  {editingSaleId ? 'Sale Edit करें' : 'नया Bill बनाएं'}
+                  {editingSaleId ? `${term('sale', 'Sale')} Edit करें` : term('quickNewSaleHindi', 'नया Bill बनाएं')}
                 </h3>
               </div>
               <button
@@ -759,13 +891,14 @@ export default function SalesPage() {
               >✕</button>
             </div>
 
-            {/* Cash / Udhaar toggle */}
+            {/* Payment method tabs — driven by saleFormSchema.paymentMethods */}
             <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl">
-              {[
-                { type: 'cash',   label: '💵 कैश',  active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg', onSelect: () => { updateForm({ payment_type: 'cash', amount_paid: '' }); setShowCustomerInfo(false); } },
-                { type: 'credit', label: '📒 उधार', active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg',     onSelect: () => { updateForm({ payment_type: 'credit' }); setShowCustomerInfo(true); } },
-              ].map((opt) => (
-                <button key={opt.type} type="button" onClick={opt.onSelect}
+              {activeTabs.map((opt) => (
+                <button key={opt.type} type="button"
+                  onClick={() => {
+                    updateForm({ payment_type: opt.type, ...(opt.isCredit ? {} : { amount_paid: '' }) });
+                    setShowCustomerInfo(opt.isCredit);
+                  }}
                   className={`flex-1 py-3 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-600 hover:text-slate-700'}`}
                 >{opt.label}</button>
               ))}
@@ -804,7 +937,7 @@ export default function SalesPage() {
             <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-[13px] font-black text-slate-900">Customer Info</p>
+                  <p className="text-[13px] font-black text-slate-900">{term('customerSection', 'Customer Info')}</p>
                   {form.payment_type !== 'credit' && (
                     <p className="text-[11px] text-slate-400 mt-0.5">{customerSummary}</p>
                   )}
@@ -822,7 +955,7 @@ export default function SalesPage() {
                     <input
                       ref={buyerNameInputRef}
                       className={INPUT}
-                      placeholder="Customer का नाम"
+                      placeholder={term('customerNamePlaceholder', 'Customer का नाम')}
                       value={customerQuery}
                       onChange={(e) => { setCustomerQuery(e.target.value); updateForm({ buyer_name: e.target.value }); setShowCustomerSuggestions(true); }}
                       onFocus={() => setShowCustomerSuggestions(true)}
@@ -842,7 +975,7 @@ export default function SalesPage() {
                     )}
                   </div>
 
-                  <input className={INPUT} placeholder="Phone number" value={form.buyer_phone} onChange={(e) => updateForm({ buyer_phone: e.target.value })} />
+                  <input className={INPUT} placeholder={term('customerPhonePlaceholder', 'Phone number')} value={form.buyer_phone} onChange={(e) => updateForm({ buyer_phone: e.target.value })} />
 
                   <button type="button" onClick={() => setShowMoreCustomerDetails(v => !v)}
                     className="text-[12px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
@@ -875,21 +1008,15 @@ export default function SalesPage() {
             {/* ── Industry-specific invoice-level fields ── */}
             {config.invoiceExtraFields && config.invoiceExtraFields.length > 0 && (
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700">{config.icon} {term('invoice', 'Invoice')} Details</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700">{term('invoice', 'Invoice')} Details</p>
                 {config.invoiceExtraFields.map((field) => (
                   <div key={field.key}>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{field.label}{field.required && <span className="text-rose-500 ml-0.5">*</span>}</p>
-                    {field.type === 'select' ? (
-                      <select className={INPUT} value={extraFields[field.key] || ''} onChange={(e) => setExtraFields((prev) => ({ ...prev, [field.key]: e.target.value }))}>
-                        <option value="">{field.placeholder || `Select ${field.label}`}</option>
-                        {(field.options || []).map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    ) : (
-                      <input className={INPUT} type={field.type === 'number' ? 'number' : 'text'}
-                        value={extraFields[field.key] || ''} onChange={(e) => setExtraFields((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                        placeholder={field.placeholder || field.label} step={field.type === 'number' ? '0.01' : undefined}
-                      />
-                    )}
+                    <DynamicFormField
+                      field={field}
+                      value={extraFields[field.key] || ''}
+                      onChange={(v) => setExtraFields((prev) => ({ ...prev, [field.key]: v }))}
+                    />
                   </div>
                 ))}
               </div>
@@ -899,9 +1026,11 @@ export default function SalesPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[13px] font-black text-slate-900">{term('items', 'Items')}</p>
-                <button type="button" onClick={() => setShowBarcodeScanner(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-colors"
-                >📷 Scan Barcode</button>
+                {barcodeEnabled && (
+                  <button type="button" onClick={() => setShowBarcodeScanner(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-colors"
+                  >📷 Scan Barcode</button>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -926,8 +1055,8 @@ export default function SalesPage() {
                         products={products} value={item.product_id}
                         onChange={(id) => updateItem(index, 'product_id', id)}
                         onSelectProduct={(product) => handleProductSelect(index, product)}
-                        placeholder="Product चुनें"
-                        searchPlaceholder="Name, barcode, HSN..."
+                        placeholder={`${term('product', 'Product')} चुनें`}
+                        searchPlaceholder={term('searchProduct', 'Name, barcode, HSN...')}
                       />
 
                       {prod && (
@@ -983,30 +1112,118 @@ export default function SalesPage() {
                         </div>
                       )}
 
-                      {/* Industry-specific line fields (batch/expiry, size/color, etc.) */}
+                      {/* ── Batch selector (pharmacy, bakery, grocery) ── */}
+                      {batchSales && prod && (
+                        <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{inv.batchLabel || 'Batch'}</p>
+                          <select
+                            className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-green-600 bg-white"
+                            value={(item.item_metadata || {}).batch_id || ''}
+                            onChange={e => {
+                              const batch = (productBatches[prod._id] || []).find(b => b._id === e.target.value);
+                              const updated = [...items];
+                              updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), batch_id: e.target.value, batch_number: batch?.batch_number || '' } };
+                              if (batch?.mrp) updated[index].price_per_unit = String(batch.mrp);
+                              setItems(updated);
+                            }}
+                          >
+                            <option value="">— Select Batch —</option>
+                            {(productBatches[prod._id] || []).map(b => (
+                              <option key={b._id} value={b._id}>
+                                {b.batch_number} · Qty:{b.quantity}{b.expiry_date ? ` · Exp:${b.expiry_date.slice(0,10)}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          {!(productBatches[prod._id]?.length) && (
+                            <p className="text-[10px] text-amber-600">No batches found — add via Products → Inventory</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ── Variant selector (clothing, footwear, sports) ── */}
+                      {variantSales && prod && (
+                        <div className="pt-2 border-t border-slate-200 space-y-2">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{inv.variantLabel || 'Variant'}</p>
+                          <div className="flex gap-2">
+                            {inv.variantDimensions?.includes('size') && inv.sizeOptions?.length > 0 && (
+                              <div className="flex-1">
+                                <p className="text-[10px] text-slate-400 mb-0.5">Size</p>
+                                <select
+                                  className="h-9 w-full rounded-xl border-2 border-slate-200 px-2 text-[12px] text-slate-700 bg-white focus:outline-none focus:border-green-600"
+                                  value={(item.item_metadata || {}).size || ''}
+                                  onChange={e => {
+                                    const sz  = e.target.value;
+                                    const col = (item.item_metadata || {}).color || '';
+                                    const variant = (productVariants[prod._id] || []).find(v => v.size === sz && (!col || v.color === col) && v.quantity > 0);
+                                    const updated = [...items];
+                                    updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), size: sz, variant_id: variant?._id || '' } };
+                                    if (variant?.price) updated[index].price_per_unit = String(variant.price);
+                                    setItems(updated);
+                                  }}
+                                >
+                                  <option value="">Size</option>
+                                  {inv.sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                              </div>
+                            )}
+                            {inv.variantDimensions?.includes('color') && inv.colorOptions?.length > 0 && (
+                              <div className="flex-1">
+                                <p className="text-[10px] text-slate-400 mb-0.5">Color</p>
+                                <select
+                                  className="h-9 w-full rounded-xl border-2 border-slate-200 px-2 text-[12px] text-slate-700 bg-white focus:outline-none focus:border-green-600"
+                                  value={(item.item_metadata || {}).color || ''}
+                                  onChange={e => {
+                                    const col = e.target.value;
+                                    const sz  = (item.item_metadata || {}).size || '';
+                                    const variant = (productVariants[prod._id] || []).find(v => v.color === col && (!sz || v.size === sz) && v.quantity > 0);
+                                    const updated = [...items];
+                                    updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), color: col, variant_id: variant?._id || '' } };
+                                    if (variant?.price) updated[index].price_per_unit = String(variant.price);
+                                    setItems(updated);
+                                  }}
+                                >
+                                  <option value="">Color</option>
+                                  {inv.colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                          {(item.item_metadata || {}).variant_id
+                            ? <p className="text-[10px] text-emerald-600 font-semibold">✓ Variant selected — stock will be updated</p>
+                            : <p className="text-[10px] text-slate-400">Select size/color to link variant stock</p>
+                          }
+                        </div>
+                      )}
+
+                      {/* ── Serial selector (electronics, mobile_shop) ── */}
+                      {serialSales && prod && (
+                        <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{inv.serialLabel || 'Serial No.'}</p>
+                          <input
+                            className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] font-mono text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400"
+                            placeholder="Serial / IMEI (comma-separated for multiple)"
+                            value={((item.item_metadata || {}).serial_ids || []).join(', ')}
+                            onChange={e => {
+                              const vals = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                              const updated = [...items];
+                              updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), serial_ids: vals } };
+                              setItems(updated);
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Industry-specific line fields (batch/expiry, size/color, IMEI, etc.) */}
                       {config.invoiceLineFields && config.invoiceLineFields.length > 0 && (
                         <div className="pt-1 space-y-2.5 border-t border-slate-200">
                           {config.invoiceLineFields.map((field) => (
                             <div key={field.key}>
                               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{field.label}</p>
-                              {field.type === 'select' ? (
-                                <select
-                                  className="h-9 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
-                                  value={(item.item_metadata || {})[field.key] || ''}
-                                  onChange={(e) => { const updated = [...items]; updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), [field.key]: e.target.value } }; setItems(updated); }}
-                                >
-                                  <option value="">{field.placeholder || `Select ${field.label}`}</option>
-                                  {(field.options || []).map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                                </select>
-                              ) : (
-                                <input
-                                  className="h-9 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
-                                  type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                                  value={(item.item_metadata || {})[field.key] || ''}
-                                  onChange={(e) => { const updated = [...items]; updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), [field.key]: e.target.value } }; setItems(updated); }}
-                                  placeholder={field.placeholder || field.label}
-                                />
-                              )}
+                              <DynamicFormField
+                                field={field}
+                                value={(item.item_metadata || {})[field.key] || ''}
+                                onChange={(v) => { const updated = [...items]; updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), [field.key]: v } }; setItems(updated); }}
+                              />
                             </div>
                           ))}
                         </div>
@@ -1084,8 +1301,10 @@ export default function SalesPage() {
                 {submitting ? (
                   <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
                 ) : !isOnline ? '📥 Offline Save'
-                  : form.payment_type === 'credit' ? '📒 Credit Sale Save करें'
-                  : '💵 Sale Save करें'}
+                  : form.payment_type === 'credit' ? `📒 Credit ${term('sale','Sale')} Save करें`
+                  : form.payment_type === 'upi'    ? `📱 UPI ${term('sale','Sale')} Save करें`
+                  : form.payment_type === 'bank'   ? `🏦 Bank ${term('sale','Sale')} Save करें`
+                  : `💵 ${term('sale','Sale')} Save करें`}
               </button>
               <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
@@ -1106,151 +1325,4 @@ export default function SalesPage() {
       />
     </Layout>
   );
-}
-
-/* ─── Invoice HTML Generator (100% UNCHANGED) ───────────────────── */
-const getStateCode = (stateName = '', gstin = '') => {
-  const gstStateCode = String(gstin || '').slice(0, 2);
-  if (/^\d{2}$/.test(gstStateCode)) return gstStateCode;
-  return STATE_CODE_BY_NAME[normalizeState(stateName)] || '';
-};
-
-const buildTaxSummaryRows = (saleItems, isIGST) => {
-  const grouped = saleItems.reduce((acc, item) => {
-    const rate = Number(item.gst_rate || 0);
-    const key = String(rate);
-    if (!acc[key]) acc[key] = { rate, cgst: 0, sgst: 0, igst: 0 };
-    acc[key].cgst += Number(item.cgst_amount || 0);
-    acc[key].sgst += Number(item.sgst_amount || 0);
-    acc[key].igst += Number(item.igst_amount || 0);
-    return acc;
-  }, {});
-  return Object.values(grouped).sort((a, b) => a.rate - b.rate).map((group) => (
-    isIGST
-      ? '<div class="amount-row"><span>IGST @' + group.rate + '%</span><span>₹' + fmt(group.igst) + '</span></div>'
-      : '<div class="amount-row"><span>CGST @' + (group.rate / 2).toFixed(1) + '%</span><span>₹' + fmt(group.cgst) + '</span></div>'
-        + '<div class="amount-row"><span>SGST @' + (group.rate / 2).toFixed(1) + '%</span><span>₹' + fmt(group.sgst) + '</span></div>'
-  )).join('');
-};
-
-function generateInvoiceHTML(sale, shop, autoPrint, suggestedFileName) {
-  const INR = '&#8377;';
-  const shopDisplayName = shop?.name?.trim() || 'My Shop';
-  const roundedBill = getRoundedBillValues(sale.total_amount);
-  const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{ product_name: sale.product_name, hsn_code: sale.hsn_code, quantity: sale.quantity, price_per_unit: sale.price_per_unit, gst_rate: sale.gst_rate, taxable_amount: sale.taxable_amount, cgst_amount: sale.cgst_amount, sgst_amount: sale.sgst_amount, igst_amount: sale.igst_amount, gst_type: sale.gst_type, total_amount: sale.total_amount }];
-  const isIGST   = sale.gst_type === 'IGST' || saleItems.some(i => i.gst_type === 'IGST');
-  const saleDate = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const colSpan  = isIGST ? 8 : 10;
-  const placeOfSupplyCode  = getStateCode(sale.buyer_state, sale.buyer_gstin);
-  const sellerStateCode    = getStateCode(shop.state, shop.gstin);
-  const placeOfSupplyLabel = sale.buyer_state ? `${sale.buyer_state}${placeOfSupplyCode ? ` (${placeOfSupplyCode})` : ''}` : 'Not specified';
-  const gstCols = isIGST ? '<th>IGST%</th><th>IGST ₹</th>' : '<th>CGST%</th><th>CGST ₹</th><th>SGST%</th><th>SGST ₹</th>';
-  const itemRows = saleItems.map((item, idx) => {
-    const gstCells = isIGST
-      ? '<td>' + (item.gst_rate || 0) + '%</td><td>' + INR + fmt(item.igst_amount) + '</td>'
-      : '<td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>' + INR + fmt(item.cgst_amount) + '</td><td>' + ((item.gst_rate || 0) / 2).toFixed(1) + '%</td><td>' + INR + fmt(item.sgst_amount) + '</td>';
-    return '<tr><td>' + (idx + 1) + '</td><td style="text-align:left"><strong>' + item.product_name + '</strong></td><td>' + (item.hsn_code || '-') + '</td><td>' + item.quantity + '</td><td>' + INR + fmt(item.price_per_unit) + '</td><td>' + INR + fmt(item.taxable_amount) + '</td>' + gstCells + '<td><strong>' + INR + fmt(item.total_amount) + '</strong></td></tr>';
-  }).join('');
-  const emptyCell  = '<td style="height:20px"></td>';
-  const fillerRows = Array(Math.max(0, 5 - saleItems.length)).fill('<tr>' + emptyCell.repeat(colSpan) + '</tr>').join('');
-  const footerGST  = isIGST ? '<td></td><td>' + INR + fmt(sale.igst_amount) + '</td>' : '<td></td><td>' + INR + fmt(sale.cgst_amount) + '</td><td></td><td>' + INR + fmt(sale.sgst_amount) + '</td>';
-  const amountGSTRows = buildTaxSummaryRows(saleItems, isIGST);
-  const payBg    = sale.payment_type === 'cash' ? '#dcfce7' : sale.payment_type === 'upi' ? '#ecfeff' : '#fee2e2';
-  const payColor = sale.payment_type === 'cash' ? '#166534' : sale.payment_type === 'upi' ? '#0f766e' : '#991b1b';
-  const payLabel = sale.payment_type === 'cash' ? 'CASH' : sale.payment_type === 'upi' ? 'UPI' : sale.payment_type === 'bank' ? 'BANK' : 'CREDIT';
-  const bankHTML = shop.bank_name
-    ? '<div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;margin-bottom:6px">Bank Details</div>'
-      + '<div style="font-size:11px;margin-bottom:3px">Bank: <strong>' + shop.bank_name + '</strong></div>'
-      + (shop.bank_branch  ? '<div style="font-size:11px;margin-bottom:3px">Branch: <strong>' + shop.bank_branch  + '</strong></div>' : '')
-      + (shop.bank_account ? '<div style="font-size:11px;margin-bottom:3px">A/C: <strong>'    + shop.bank_account + '</strong></div>' : '')
-      + (shop.bank_ifsc    ? '<div style="font-size:11px">IFSC: <strong>'                     + shop.bank_ifsc    + '</strong></div>' : '')
-    : '<div style="color:#9ca3af;font-size:11px;font-style:italic">Add bank details in Profile</div>';
-  const termsHTML = shop.terms
-    ? '<div class="terms-box"><div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Terms & Conditions</div><div style="font-size:10px;color:#374151">'
-      + shop.terms.split('\n').map((t, i) => (i + 1) + '. ' + t).join('<br/>')
-      + '</div></div>'
-    : '';
-  const pdfBanner = suggestedFileName && !autoPrint
-    ? '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px">'
-      + '<span style="font-size:18px">PDF</span>'
-      + '<div><strong>Save as PDF:</strong> Press <kbd style="background:#e5e7eb;padding:1px 6px;border-radius:4px;font-size:11px">Ctrl+P</kbd> → Change destination to <strong>"Save as PDF"</strong> → Save as <strong>' + suggestedFileName + '</strong><br/>'
-      + '<span style="font-size:11px;opacity:0.8">Then attach this PDF file on WhatsApp</span></div>'
-      + '</div>'
-    : '';
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Invoice - ' + sale.invoice_number + '</title>'
-    + '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Segoe UI",Arial,sans-serif;font-size:11px;color:#111827;background:#fff}'
-    + '.invoice{max-width:820px;margin:0 auto;padding:18px;border:2px solid #111827}'
-    + '.header{display:grid;grid-template-columns:1.45fr .95fr;border:1.5px solid #111827}'
-    + '.header-left,.header-right{padding:14px 16px;min-height:120px}.header-left{border-right:1.5px solid #111827}'
-    + '.brand-tag{display:inline-block;max-width:100%;padding:8px 14px;border:1.5px solid #111827;font-size:20px;font-weight:900;letter-spacing:0;color:#111827;background:#f8fafc;margin-bottom:10px;line-height:1.2;word-break:break-word;font-family:"Segoe UI",Arial,sans-serif}'
-    + '.shop-line{font-size:11px;line-height:1.55;color:#374151;margin-top:8px}'
-    + '.invoice-title{font-size:22px;font-weight:900;letter-spacing:.16em;text-align:center;color:#111827;text-transform:uppercase;margin-top:4px}'
-    + '.invoice-copy{font-size:10px;letter-spacing:.12em;text-align:center;color:#6b7280;text-transform:uppercase;margin-top:6px}'
-    + '.pay-chip{display:inline-block;padding:4px 12px;border:1px solid #111827;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-top:14px}'
-    + '.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;border:1.5px solid #111827;border-top:none}'
-    + '.info-cell{padding:10px 12px;min-height:58px}.info-cell + .info-cell{border-left:1.5px solid #111827}'
-    + '.label{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#6b7280;margin-bottom:6px}'
-    + '.value{font-size:12px;font-weight:700;color:#111827;line-height:1.4}'
-    + '.party-grid{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #111827;border-top:none}'
-    + '.party-box{padding:12px 14px;min-height:126px}.party-box + .party-box{border-left:1.5px solid #111827}'
-    + '.party-name{font-size:15px;font-weight:800;color:#111827;margin-bottom:6px}'
-    + '.party-detail{font-size:11px;line-height:1.55;color:#374151}'
-    + '.items-wrap{border:1.5px solid #111827;border-top:none}'
-    + 'table{width:100%;border-collapse:collapse}thead th{padding:8px 6px;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#111827;background:#f8fafc;border-bottom:1.5px solid #111827}'
-    + 'th + th,td + td{border-left:1px solid #111827}tbody td,tfoot td{padding:7px 6px;font-size:11px;text-align:center;vertical-align:top}td:nth-child(2),th:nth-child(2){text-align:left}'
-    + 'tbody td{height:28px}tfoot td{font-weight:800;background:#fafafa}'
-    + '.summary-grid{display:grid;grid-template-columns:1.15fr .85fr;border:1.5px solid #111827;border-top:none}'
-    + '.summary-box{padding:12px 14px;min-height:140px}.summary-box + .summary-box{border-left:1.5px solid #111827}'
-    + '.words-copy{font-size:11px;line-height:1.7;color:#1f2937;font-weight:600;font-style:italic}'
-    + '.amount-table{width:100%;border-collapse:collapse}.amount-table td{padding:5px 0;border:none!important;font-size:11px}.amount-table td:last-child{text-align:right;font-weight:700}'
-    + '.amount-grand td{padding-top:10px;font-size:15px;font-weight:900}.amount-rounded td{padding-top:6px;font-size:12px;font-weight:800;color:#0f766e}'
-    + '.footer-grid{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #111827;border-top:none}'
-    + '.footer-box{padding:12px 14px;min-height:120px}.footer-box + .footer-box{border-left:1.5px solid #111827}'
-    + '.signature-block{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:right}'
-    + '.signature-space{height:48px}.signature-line{font-size:11px;font-weight:800;color:#111827}.signature-note{font-size:10px;line-height:1.5;color:#6b7280;margin-top:6px}'
-    + '.terms-box{border:1.5px solid #111827;border-top:none;padding:10px 14px;font-size:10px;line-height:1.6;color:#374151}'
-    + '.footer-mark{margin-top:10px;text-align:center;font-size:10px;letter-spacing:.02em;color:#6b7280;font-family:"Noto Sans Devanagari","Mangal","Segoe UI",Arial,sans-serif}'
-    + '@media print{.pdf-banner{display:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}'
-    + '</style></head><body>'
-    + '<div class="pdf-banner" style="max-width:820px;margin:0 auto 0;">' + pdfBanner + '</div>'
-    + '<div class="invoice">'
-    + '<div class="header"><div class="header-left"><div class="brand-tag">' + shopDisplayName + '</div>'
-    + (shop.address ? '<div class="shop-line">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
-    + ((shop.phone || shop.email) ? '<div class="shop-line">' + (shop.phone ? 'Phone: ' + shop.phone : '') + (shop.phone && shop.email ? ' | ' : '') + (shop.email ? 'Email: ' + shop.email : '') + '</div>' : '')
-    + (shop.gstin ? '<div class="shop-line"><strong>GSTIN:</strong> ' + shop.gstin + '</div>' : '')
-    + (shop.state ? '<div class="shop-line"><strong>State Code:</strong> ' + (sellerStateCode || 'N/A') + '</div>' : '')
-    + '</div><div class="header-right"><div class="invoice-title">Invoice</div><div class="invoice-copy">Original For Recipient</div><div style="text-align:center"><span class="pay-chip" style="background:' + payBg + ';color:' + payColor + '">' + payLabel + '</span></div></div></div>'
-    + '<div class="info-grid"><div class="info-cell"><div class="label">Invoice No</div><div class="value">' + sale.invoice_number + '</div></div><div class="info-cell"><div class="label">Invoice Date</div><div class="value">' + saleDate + '</div></div><div class="info-cell"><div class="label">Invoice Type</div><div class="value">' + (sale.invoice_type || 'B2C') + ' / ' + (isIGST ? 'IGST' : 'CGST + SGST') + '</div></div><div class="info-cell"><div class="label">Place Of Supply</div><div class="value">' + placeOfSupplyLabel + '</div></div></div>'
-    + '<div class="party-grid"><div class="party-box"><div class="label">Bill From</div><div class="party-name">' + shopDisplayName + '</div>'
-    + (shop.address ? '<div class="party-detail">' + shop.address + (shop.city ? ', ' + shop.city : '') + (shop.state ? ', ' + shop.state : '') + (shop.pincode ? ' - ' + shop.pincode : '') + '</div>' : '')
-    + (shop.phone ? '<div class="party-detail">Phone: ' + shop.phone + '</div>' : '')
-    + (shop.gstin ? '<div class="party-detail">GSTIN: ' + shop.gstin + '</div>' : '')
-    + '</div><div class="party-box"><div class="label">Bill To</div><div class="party-name">' + (sale.buyer_name || 'Walk-in Customer') + '</div>'
-    + (sale.buyer_address ? '<div class="party-detail">' + sale.buyer_address + '</div>' : '')
-    + (sale.buyer_state   ? '<div class="party-detail">State: ' + sale.buyer_state + '</div>' : '')
-    + (sale.buyer_phone   ? '<div class="party-detail">Phone: ' + sale.buyer_phone + '</div>' : '')
-    + (sale.buyer_gstin   ? '<div class="party-detail">GSTIN: ' + sale.buyer_gstin + '</div>' : '')
-    + '</div></div>'
-    + '<div class="items-wrap"><table><thead><tr><th style="width:34px">Sr</th><th>Particulars</th><th style="width:78px">HSN</th><th style="width:52px">Qty</th><th style="width:88px">Rate ' + INR + '</th><th style="width:94px">Taxable ' + INR + '</th>' + gstCols + '<th style="width:96px">Amount ' + INR + '</th></tr></thead>'
-    + '<tbody>' + itemRows + fillerRows + '</tbody>'
-    + '<tfoot><tr><td colspan="5" style="text-align:right;padding-right:12px">Total</td><td>' + INR + fmt(sale.taxable_amount) + '</td>' + footerGST + '<td>' + INR + fmt(sale.total_amount) + '</td></tr></tfoot></table></div>'
-    + '<div class="summary-grid"><div class="summary-box"><div class="label">Amount In Words</div><div class="words-copy">' + numberToWords(parseFloat(sale.total_amount)) + '</div></div>'
-    + '<div class="summary-box"><div class="label">Amount Summary</div><table class="amount-table">'
-    + '<tr><td>Taxable Amount</td><td>' + INR + fmt(sale.taxable_amount) + '</td></tr>'
-    + amountGSTRows.replace(/<div class="amount-row"><span>/g, '<tr><td>').replace(/<\/span><span>/g, '</td><td>').replace(/<\/span><\/div>/g, '</td></tr>')
-    + '<tr><td>Total GST</td><td>' + INR + fmt(sale.total_gst) + '</td></tr>'
-    + '<tr><td>Round Off</td><td>' + (roundedBill.roundOff >= 0 ? '+' : '') + INR + fmt(roundedBill.roundOff) + '</td></tr>'
-    + '<tr class="amount-grand"><td>Grand Total</td><td>' + INR + fmt(sale.total_amount) + '</td></tr>'
-    + '<tr class="amount-rounded"><td>Rounded Total</td><td>' + INR + fmt(roundedBill.roundedTotal) + '</td></tr>'
-    + '</table></div></div>'
-    + '<div class="footer-grid"><div class="footer-box">' + bankHTML + '</div>'
-    + '<div class="footer-box"><div class="signature-block"><div style="font-size:12px;font-weight:700;margin-bottom:10px">For <strong>' + shopDisplayName + '</strong></div><div class="signature-space"></div><div class="signature-line">Authorised Signatory</div><div class="signature-note">Computer generated invoice. Signature not required.</div></div></div></div>'
-    + termsHTML
-    + '<div class="footer-mark">Grow your business with - रखरखाव</div>'
-    + '</div>'
-    + (autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : '')
-    + '</body></html>';
-  const win = window.open('', '_blank');
-  win.document.write(html);
-  win.document.close();
 }

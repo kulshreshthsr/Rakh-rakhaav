@@ -5,11 +5,20 @@
  * Keeping it in the frontend means the app works fully offline
  * (no extra API call needed just to know what labels to show).
  *
+ * Terminology is now fully driven by the central engine in
+ * ../business-configs — do NOT add hardcoded labels here.
+ * To change any label/placeholder/empty-state text, edit the
+ * relevant file in client/src/lib/business-configs/.
+ *
  * To add a new business type:
  *   1. Add its key to BUSINESS_TYPES in server/models/shopModel.js
- *   2. Add its config here AND in the server registry
- *   3. Done.
+ *   2. Add its structural config (modules, attributes, fields) below
+ *   3. Create client/src/lib/business-configs/<type>.js with overrides
+ *   4. Register it in client/src/lib/business-configs/index.js
+ *   5. Mirror in server/config/industries/index.js
  */
+
+import { getBusinessConfig } from '../business-configs/index.js';
 
 export const INDUSTRIES = {
 
@@ -18,12 +27,6 @@ export const INDUSTRIES = {
     label: 'General Store / Retail',
     labelHindi: 'जनरल स्टोर',
     icon: '🏪',
-    terminology: {
-      product: 'Product', products: 'Products', productHindi: 'सामान',
-      inventory: 'Inventory', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Product', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -40,12 +43,6 @@ export const INDUSTRIES = {
     label: 'Pharmacy / Medical Store',
     labelHindi: 'दवाई की दुकान',
     icon: '💊',
-    terminology: {
-      product: 'Medicine', products: 'Medicines', productHindi: 'दवाई',
-      inventory: 'Medicine Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Distributor', suppliers: 'Distributors', customer: 'Patient / Customer',
-      addProduct: 'Add Medicine', item: 'Medicine',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -71,12 +68,6 @@ export const INDUSTRIES = {
     label: 'Clothing / Apparel Store',
     labelHindi: 'कपड़े की दुकान',
     icon: '👗',
-    terminology: {
-      product: 'Item', products: 'Items', productHindi: 'कपड़े',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -100,12 +91,6 @@ export const INDUSTRIES = {
     label: 'Hardware Store',
     labelHindi: 'हार्डवेयर की दुकान',
     icon: '🔧',
-    terminology: {
-      product: 'Item', products: 'Items', productHindi: 'सामान',
-      inventory: 'Stock', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -126,12 +111,6 @@ export const INDUSTRIES = {
     label: 'Electronics Store',
     labelHindi: 'इलेक्ट्रॉनिक्स की दुकान',
     icon: '📺',
-    terminology: {
-      product: 'Product', products: 'Products', productHindi: 'सामान',
-      inventory: 'Stock', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Product', item: 'Product',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -155,12 +134,6 @@ export const INDUSTRIES = {
     label: 'Restaurant / Dhaba / Food',
     labelHindi: 'रेस्टोरेंट / ढाबा',
     icon: '🍽️',
-    terminology: {
-      product: 'Dish', products: 'Menu Items', productHindi: 'खाना',
-      inventory: 'Menu', invoice: 'Bill', sale: 'Order', purchase: 'Purchase',
-      supplier: 'Vendor', suppliers: 'Vendors', customer: 'Guest',
-      addProduct: 'Add Dish', item: 'Dish',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -184,12 +157,6 @@ export const INDUSTRIES = {
     label: 'Automobile / Spare Parts',
     labelHindi: 'ऑटोमोबाइल / स्पेयर पार्ट्स',
     icon: '🚗',
-    terminology: {
-      product: 'Part', products: 'Parts', productHindi: 'पार्ट्स',
-      inventory: 'Parts Stock', invoice: 'Job Card / Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Vehicle Owner',
-      addProduct: 'Add Part', item: 'Part',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -214,12 +181,6 @@ export const INDUSTRIES = {
     label: 'Retail Store',
     labelHindi: 'रिटेल स्टोर',
     icon: '🛍️',
-    terminology: {
-      product: 'Product', products: 'Products', productHindi: 'प्रोडक्ट',
-      inventory: 'Stock', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Product', item: 'Product',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -239,12 +200,6 @@ export const INDUSTRIES = {
     label: 'Bookstall & School Accessories',
     labelHindi: 'किताब / स्कूल सामान',
     icon: '📚',
-    terminology: {
-      product: 'Book/Item', products: 'Books & Items', productHindi: 'किताब',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Publisher/Supplier', suppliers: 'Publishers/Suppliers', customer: 'Customer',
-      addProduct: 'Add Book/Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -266,12 +221,6 @@ export const INDUSTRIES = {
     label: 'Kirana / General Store',
     labelHindi: 'किराना / जनरल स्टोर',
     icon: '🛒',
-    terminology: {
-      product: 'Item', products: 'Items', productHindi: 'सामान',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -291,12 +240,6 @@ export const INDUSTRIES = {
     label: 'Sweet Shop / Mithai',
     labelHindi: 'मिठाई की दुकान',
     icon: '🍬',
-    terminology: {
-      product: 'Sweet/Item', products: 'Sweets & Items', productHindi: 'मिठाई',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Sweet/Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -318,12 +261,6 @@ export const INDUSTRIES = {
     label: 'Bakery',
     labelHindi: 'बेकरी',
     icon: '🍞',
-    terminology: {
-      product: 'Item', products: 'Bakery Items', productHindi: 'बेकरी आइटम',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -343,12 +280,6 @@ export const INDUSTRIES = {
     label: 'Salon / Beauty Parlour',
     labelHindi: 'सैलून / पार्लर',
     icon: '✂️',
-    terminology: {
-      product: 'Service', products: 'Services', productHindi: 'सर्विस',
-      inventory: 'Services & Products', invoice: 'Bill', sale: 'Service', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Client',
-      addProduct: 'Add Service', item: 'Service',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -370,12 +301,6 @@ export const INDUSTRIES = {
     label: 'Stationery Store',
     labelHindi: 'स्टेशनरी की दुकान',
     icon: '✏️',
-    terminology: {
-      product: 'Item', products: 'Items', productHindi: 'सामान',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -394,12 +319,6 @@ export const INDUSTRIES = {
     label: 'Mobile Shop',
     labelHindi: 'मोबाइल की दुकान',
     icon: '📱',
-    terminology: {
-      product: 'Mobile/Accessory', products: 'Mobiles & Accessories', productHindi: 'मोबाइल',
-      inventory: 'Stock', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Distributor', suppliers: 'Distributors', customer: 'Customer',
-      addProduct: 'Add Mobile/Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -423,12 +342,6 @@ export const INDUSTRIES = {
     label: 'Grocery Store',
     labelHindi: 'ग्रोसरी स्टोर',
     icon: '🥕',
-    terminology: {
-      product: 'Item', products: 'Grocery Items', productHindi: 'किराना',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -448,12 +361,6 @@ export const INDUSTRIES = {
     label: 'Cosmetics / Beauty Store',
     labelHindi: 'कॉस्मेटिक्स की दुकान',
     icon: '💄',
-    terminology: {
-      product: 'Product', products: 'Products', productHindi: 'सामान',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Product', item: 'Product',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -473,12 +380,6 @@ export const INDUSTRIES = {
     label: 'Footwear Store',
     labelHindi: 'जूते-चप्पल की दुकान',
     icon: '👟',
-    terminology: {
-      product: 'Footwear', products: 'Footwear Items', productHindi: 'जूते',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Footwear', item: 'Pair',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -502,12 +403,6 @@ export const INDUSTRIES = {
     label: 'Furniture Store',
     labelHindi: 'फर्नीचर की दुकान',
     icon: '🪑',
-    terminology: {
-      product: 'Furniture Item', products: 'Furniture Items', productHindi: 'फर्नीचर',
-      inventory: 'Stock', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Manufacturer/Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Furniture', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -530,12 +425,6 @@ export const INDUSTRIES = {
     label: 'Gift Shop',
     labelHindi: 'गिफ्ट शॉप',
     icon: '🎁',
-    terminology: {
-      product: 'Gift Item', products: 'Gift Items', productHindi: 'गिफ्ट',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Gift Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -556,12 +445,6 @@ export const INDUSTRIES = {
     label: 'Toy Store',
     labelHindi: 'खिलौने की दुकान',
     icon: '🧸',
-    terminology: {
-      product: 'Toy', products: 'Toys', productHindi: 'खिलौना',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Toy', item: 'Toy',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -581,12 +464,6 @@ export const INDUSTRIES = {
     label: 'Sports Store',
     labelHindi: 'स्पोर्ट्स स्टोर',
     icon: '⚽',
-    terminology: {
-      product: 'Equipment', products: 'Sports Equipment', productHindi: 'स्पोर्ट्स सामान',
-      inventory: 'Stock', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Equipment', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -606,12 +483,6 @@ export const INDUSTRIES = {
     label: 'Jewellery Store',
     labelHindi: 'ज्वेलरी की दुकान',
     icon: '💍',
-    terminology: {
-      product: 'Jewellery Item', products: 'Jewellery Items', productHindi: 'ज्वेलरी',
-      inventory: 'Stock', invoice: 'Invoice', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier/Manufacturer', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Jewellery', item: 'Piece',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -636,12 +507,6 @@ export const INDUSTRIES = {
     label: 'Pet Shop',
     labelHindi: 'पेट शॉप',
     icon: '🐾',
-    terminology: {
-      product: 'Item/Pet', products: 'Products & Pets', productHindi: 'पालतू जानवर',
-      inventory: 'Stock', invoice: 'Bill', sale: 'Sale', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Pet Owner',
-      addProduct: 'Add Item', item: 'Item',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -661,12 +526,6 @@ export const INDUSTRIES = {
     label: 'Service Center',
     labelHindi: 'सर्विस सेंटर',
     icon: '🔌',
-    terminology: {
-      product: 'Service/Part', products: 'Services & Parts', productHindi: 'सर्विस',
-      inventory: 'Parts & Services', invoice: 'Job Card / Invoice', sale: 'Service', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Service/Part', item: 'Service',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -689,12 +548,6 @@ export const INDUSTRIES = {
     label: 'Repair Shop',
     labelHindi: 'मरम्मत की दुकान',
     icon: '🛠️',
-    terminology: {
-      product: 'Service/Part', products: 'Services & Parts', productHindi: 'सर्विस',
-      inventory: 'Parts & Services', invoice: 'Job Card', sale: 'Repair Job', purchase: 'Purchase',
-      supplier: 'Supplier', suppliers: 'Suppliers', customer: 'Customer',
-      addProduct: 'Add Service/Part', item: 'Service',
-    },
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: true,
       expenses: true, income: true, bank: true, reports: true, gst: true,
@@ -710,9 +563,17 @@ export const INDUSTRIES = {
   },
 };
 
-/** Get config for a given businessType, with 'general' as fallback. */
+/**
+ * Get full config for a given businessType.
+ * Merges structural config (modules, attributes, fields) with the
+ * complete terminology from the central business-configs engine.
+ */
 export function getIndustryConfig(businessType) {
-  return INDUSTRIES[businessType] || INDUSTRIES.general;
+  const base = INDUSTRIES[businessType] || INDUSTRIES.general;
+  return {
+    ...base,
+    terminology: getBusinessConfig(businessType),
+  };
 }
 
 /** All industries as an array — used for the onboarding picker. */

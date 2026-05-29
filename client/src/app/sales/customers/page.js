@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../../lib/pageCache';
 import { apiUrl } from '../../../lib/api';
+import { useCustomerTerms } from '../../../hooks/useEntityTerms';
 
 const SALES_CACHE_KEY = 'sales-page';
 const getToken = () => localStorage.getItem('token');
@@ -13,6 +14,7 @@ const getInitialSalesCache = () => (typeof window === 'undefined' ? null : readP
 
 export default function CustomersDirectoryPage() {
   const router = useRouter();
+  const { labelPlural, pageTitle, refreshing: refreshingLabel, backToSales, searchPlaceholder, emptyState } = useCustomerTerms();
   const initialCache = getInitialSalesCache();
   const [sales, setSales] = useState(() => initialCache?.sales || []);
   const [loading, setLoading] = useState(() => !Boolean(initialCache?.sales));
@@ -80,12 +82,12 @@ export default function CustomersDirectoryPage() {
         <section className="hero-panel sales-hero customer-hero">
           <div className="page-toolbar">
             <div className="min-w-0">
-              <p className="rr-page-eyebrow">Customers</p>
-              <div className="page-title">Customer Directory</div>
-              {refreshing ? <p className="rr-meta-line">Refreshing customers…</p> : null}
+              <p className="rr-page-eyebrow">{labelPlural}</p>
+              <div className="page-title">{pageTitle}</div>
+              {refreshing ? <p className="rr-meta-line">{refreshingLabel}</p> : null}
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              <Link href="/sales" className="btn-ghost w-auto shrink-0">Back to Sales</Link>
+              <Link href="/sales" className="btn-ghost w-auto shrink-0">{backToSales}</Link>
             </div>
           </div>
         </section>
@@ -94,7 +96,7 @@ export default function CustomersDirectoryPage() {
           <div className="toolbar">
             <input
               className="form-input min-w-[220px] flex-1"
-              placeholder="Search customer name or phone..."
+              placeholder={searchPlaceholder}
               value={customerSearch}
               onChange={(event) => setCustomerSearch(event.target.value)}
             />
@@ -114,7 +116,7 @@ export default function CustomersDirectoryPage() {
         ) : filteredCustomers.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">CU</div>
-            <div>No customers found.</div>
+            <div>{emptyState}</div>
           </div>
         ) : (
           <div className="card customer-list-card grid gap-2.5">

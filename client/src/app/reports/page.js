@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
+import { useIndustry } from '../../contexts/IndustryContext';
+import { getReportConfig, computeInsights } from '../../lib/reportConfig';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 /* ─── Helpers (ALL UNCHANGED) ───────────────────────────────────── */
 const getToken = () => localStorage.getItem('token');
@@ -116,6 +119,8 @@ function KpiCard({ label, value, sub, barColor, valueColor, icon, onClick }) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function ReportsPage() {
   const router = useRouter();
+  const { config } = useIndustry();
+  const reportCfg   = getReportConfig(config);
   const [filter,       setFilter]       = useState('month');
   const [loading,      setLoading]      = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
@@ -288,12 +293,14 @@ export default function ReportsPage() {
       filename = `Profit_Report_${label.replace(' ', '_')}.csv`;
     }
     if (type === 'products') {
-      rows = [['Top Products - ' + label], ['Product','Units Sold','Revenue','Profit','Orders'], ...topProducts.map((p) => [p.name, p.qty, fmt(p.revenue), fmt(p.profit), p.count])];
-      filename = `Top_Products_${label.replace(' ', '_')}.csv`;
+      const itemLabel = reportCfg.topItemsLabel.replace('Top ', '') || 'Product';
+      rows = [[`${reportCfg.topItemsLabel} - ${label}`], [itemLabel, 'Units Sold', 'Revenue', 'Profit', reportCfg.invoiceUnit], ...topProducts.map((p) => [p.name, p.qty, fmt(p.revenue), fmt(p.profit), p.count])];
+      filename = `${reportCfg.topItemsLabel.replace(/ /g, '_')}_${label.replace(' ', '_')}.csv`;
     }
     if (type === 'customers') {
-      rows = [['Top Customers - ' + label], ['Customer','Phone','Orders','Total Spent','Udhaar Pending'], ...topCustomers.map((c) => [c.name, c.phone, c.count, fmt(c.revenue), fmt(c.udhaar)])];
-      filename = `Top_Customers_${label.replace(' ', '_')}.csv`;
+      const buyerLabel = reportCfg.topBuyersLabel.replace('Top ', '') || 'Customer';
+      rows = [[`${reportCfg.topBuyersLabel} - ${label}`], [buyerLabel, 'Phone', reportCfg.invoiceUnit, 'Total Spent', 'Udhaar Pending'], ...topCustomers.map((c) => [c.name, c.phone, c.count, fmt(c.revenue), fmt(c.udhaar)])];
+      filename = `${reportCfg.topBuyersLabel.replace(/ /g, '_')}_${label.replace(' ', '_')}.csv`;
     }
     const csv  = rows.map((row) => row.map((v) => `"${v}"`).join(',')).join('\n');
     markDownloadStarted(`Preparing ${filename}...`, type);
@@ -539,7 +546,7 @@ export default function ReportsPage() {
             {/* Left */}
             <div className="reports-hero-copy">
               <p className="rr-page-eyebrow">Business analytics</p>
-              <h1 className="page-title reports-hero-title">Reports / हिसाब</h1>
+              <h1 className="page-title reports-hero-title">{reportCfg.pageTitle}</h1>
               <p className="reports-hero-subtitle">
                 {label.toLowerCase()} ke liye revenue, profit, GST aur customer trends ek clean view mein.
               </p>
@@ -571,7 +578,7 @@ export default function ReportsPage() {
             <div className="reports-hero-summary-card">
               <span className="reports-hero-summary-label">Revenue Snapshot</span>
               <strong className="reports-hero-summary-value">₹{fmtN(summary.totalRevenue)}</strong>
-              <span className="reports-hero-summary-note">{summary.salesCount || 0} invoices tracked</span>
+              <span className="reports-hero-summary-note">{summary.salesCount || 0} {reportCfg.invoiceUnit} tracked</span>
             </div>
             <div className="reports-hero-summary-card">
               <span className="reports-hero-summary-label">Net Profit</span>
@@ -594,7 +601,7 @@ export default function ReportsPage() {
             <KpiCard
               label="Revenue"
               value={`₹${fmtN(summary.totalRevenue)}`}
-              sub={`${summary.salesCount || 0} invoices`}
+              sub={`${summary.salesCount || 0} ${reportCfg.invoiceUnit}`}
               barColor="linear-gradient(90deg,#16a34a,#047857)"
               valueColor="#15803d"
               icon="rupee"
@@ -637,6 +644,84 @@ export default function ReportsPage() {
 
         {!loading && (
           <>
+            {/* ══════════════════════════════════════════════════════
+                BUSINESS INSIGHTS — operational tips + dynamic alerts
+            ══════════════════════════════════════════════════════ */}
+            {(() => {
+              const insights = computeInsights(reportCfg, sales, summary);
+              if (insights.length === 0) return null;
+              const BG   = { red: '#fff1f2', amber: '#fffbeb', green: '#f0fdf4' };
+              const BD   = { red: '#fecaca', amber: '#fde68a', green: '#bbf7d0' };
+              const CLR  = { red: '#9f1239', amber: '#92400e', green: '#065f46' };
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {insights.map((ins, i) => {
+                    const tone = ins.color || 'green';
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px', borderRadius: 14, background: BG[tone] || BG.green, border: `1px solid ${BD[tone] || BD.green}` }}>
+                        <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1.3 }}>{ins.icon}</span>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: CLR[tone] || CLR.green, lineHeight: 1.55, margin: 0 }}>{ins.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* ══════════════════════════════════════════════════════
+                REVENUE TREND CHART — recharts bar chart
+            ══════════════════════════════════════════════════════ */}
+            {dailySales.length > 1 && (
+              <SectionCard
+                title={reportCfg.analyticsTitle}
+                eyebrow={`${label} · Revenue trend`}
+                badge={`${dailySales.length} day${dailySales.length !== 1 ? 's' : ''}`}
+                accentColor={reportCfg.accentColor}
+              >
+                <div style={{ width: '100%', height: 200, marginBottom: 8 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[...dailySales].reverse().slice(-14)}
+                      margin={{ top: 8, right: 4, left: -12, bottom: 0 }}
+                    >
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `₹${Math.round(v / 1000)}k` : `₹${v}`} />
+                      <Tooltip
+                        formatter={(v) => [`₹${fmtN(v)}`, 'Revenue']}
+                        contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                        cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                      />
+                      <Bar dataKey="revenue" fill={reportCfg.chartColor} radius={[4, 4, 0, 0]} maxBarSize={36} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="reports-breakdown-grid" style={{ gap: 10 }}>
+                  {[
+                    {
+                      l: 'Peak Day',
+                      v: dailySales.reduce((a, b) => b.revenue > a.revenue ? b : a, dailySales[0])?.date || '—',
+                      color: '#0f172a', bg: '#f8fafc', isText: true,
+                    },
+                    {
+                      l: 'Avg Daily Revenue',
+                      v: `₹${fmtN(Math.round((summary.totalRevenue || 0) / Math.max(dailySales.length, 1)))}`,
+                      color: '#065f46', bg: '#f0fdf4', isText: true,
+                    },
+                    {
+                      l: `Best ${reportCfg.topItemsLabel.replace('Top ', '')}`,
+                      v: topProducts[0]?.name || '—',
+                      color: '#0e7490', bg: '#ecfeff', isText: true,
+                    },
+                  ].map(item => (
+                    <div key={item.l} className="dashboard-breakdown-card reports-breakdown-card" style={{ background: item.bg, borderColor: item.bg }}>
+                      <p className="reports-breakdown-label">{item.l}</p>
+                      <p className="reports-breakdown-value" style={{ color: item.color, fontSize: 14 }}>{item.v}</p>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+
             {/* ══════════════════════════════════════════════════════
                 PROFIT BREAKDOWN — full width premium card
             ══════════════════════════════════════════════════════ */}
@@ -1036,18 +1121,18 @@ export default function ReportsPage() {
                 TWO-COLUMN: Top Products + Top Customers
             ══════════════════════════════════════════════════════ */}
             <div className="reports-two-col reports-split-grid">
-              {/* Top Products */}
+              {/* Top Products (label adapts by business type) */}
               <SectionCard
-                title="Top Products"
+                title={reportCfg.topItemsLabel}
                 eyebrow={`${label} · Most sold`}
                 badge={topProducts.length > 0 ? `${topProducts.length} items` : null}
                 accentColor="linear-gradient(90deg,#06b6d4,#10b981)"
-                action={<CsvBtn onClick={() => exportCSV('products')} busy={downloadState.active && downloadState.key === 'products'} />}
+                action={<CsvBtn label="Export CSV" onClick={() => exportCSV('products')} busy={downloadState.active && downloadState.key === 'products'} />}
               >
                 {topProducts.length === 0 ? (
                   <div className="empty-state" style={{ padding: '32px 16px' }}>
-                    <div className="empty-state-icon" style={{ fontSize: 28 }}>📦</div>
-                    <p style={{ fontWeight: 700, color: '#334155' }}>No product data</p>
+                    <div className="empty-state-icon" style={{ fontSize: 28 }}>{reportCfg.topItemsIcon}</div>
+                    <p style={{ fontWeight: 700, color: '#334155' }}>No {reportCfg.topItemsLabel.replace('Top ', '').toLowerCase()} data</p>
                     <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi sale nahi mili</p>
                   </div>
                 ) : (
@@ -1078,18 +1163,18 @@ export default function ReportsPage() {
                 )}
               </SectionCard>
 
-              {/* Top Customers */}
+              {/* Top Customers (label adapts by business type) */}
               <SectionCard
-                title="Top Customers"
+                title={reportCfg.topBuyersLabel}
                 eyebrow={`${label} · Best buyers`}
-                badge={topCustomers.length > 0 ? `${topCustomers.length} customers` : null}
+                badge={topCustomers.length > 0 ? `${topCustomers.length} ${reportCfg.topBuyersLabel.replace('Top ', '').toLowerCase()}` : null}
                 accentColor="linear-gradient(90deg,#8b5cf6,#ec4899)"
-                action={<CsvBtn onClick={() => exportCSV('customers')} busy={downloadState.active && downloadState.key === 'customers'} />}
+                action={<CsvBtn label="Export CSV" onClick={() => exportCSV('customers')} busy={downloadState.active && downloadState.key === 'customers'} />}
               >
                 {topCustomers.length === 0 ? (
                   <div className="empty-state" style={{ padding: '32px 16px' }}>
                     <div className="empty-state-icon" style={{ fontSize: 28 }}>👥</div>
-                    <p style={{ fontWeight: 700, color: '#334155' }}>No customer data</p>
+                    <p style={{ fontWeight: 700, color: '#334155' }}>No {reportCfg.topBuyersLabel.replace('Top ', '').toLowerCase()} data</p>
                     <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi named sale nahi mili</p>
                   </div>
                 ) : (

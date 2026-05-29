@@ -8,6 +8,8 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { getDisplayQueue, queuePurchase, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 import { apiUrl } from '../../lib/api';
+import { useIndustry } from '../../contexts/IndustryContext';
+import { getInvBehavior, isBatchMode, isVariantMode, isSerialMode } from '../../lib/inventoryBehavior';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -110,7 +112,7 @@ const getRoundedBillValues = (amount) => {
 };
 
 // Empty item row
-const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '' });
+const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
@@ -181,6 +183,11 @@ const buildOfflinePurchaseItems = (rawItems, products) => (
 );
 
 export default function PurchasesPage() {
+  const { term, config } = useIndustry();
+  const inv          = getInvBehavior(config);
+  const batchPurch   = isBatchMode(inv);
+  const variantPurch = isVariantMode(inv);
+  const serialPurch  = isSerialMode(inv);
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({});
@@ -764,6 +771,7 @@ export default function PurchasesPage() {
       product_id: item.product?._id || item.product || '',
       quantity: item.quantity || 1,
       price_per_unit: item.price_per_unit || '',
+      item_metadata: item.item_metadata && typeof item.item_metadata === 'object' ? { ...item.item_metadata } : {},
     })));
     setForm({
       payment_type: purchase.payment_type || 'cash',
@@ -826,14 +834,14 @@ export default function PurchasesPage() {
                 href="/purchases/suppliers"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-[13px] font-bold text-slate-700 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
               >
-                सप्लायर लिस्ट
+                {term('supplierDirectoryHindi', 'सप्लायर लिस्ट')}
               </Link>
               <button
                 type="button"
                 onClick={() => { resetModal(); setShowModal(true); }}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
               >
-                + New Purchase
+                + {term('newPurchase', 'New Purchase')}
               </button>
             </div>
           </div>
@@ -876,7 +884,7 @@ export default function PurchasesPage() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
-              placeholder="🔍 Search bill, supplier, phone or product..."
+              placeholder={`🔍 ${term('searchPurchase', 'Search bill, supplier, phone or product...')}`}
               value={billSearch}
               onChange={(e) => setBillSearch(e.target.value)}
             />
@@ -915,7 +923,7 @@ export default function PurchasesPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
             <div className="text-4xl mb-3">📦</div>
             <div className="text-[15px] font-bold text-slate-700 mb-1">
-              {hasBillFilters ? 'No purchases found for this search/filter.' : 'No purchases yet.'}
+              {hasBillFilters ? 'No purchases found for this search/filter.' : term('noPurchases', 'No purchases yet.')}
             </div>
             <div className="text-[12px] text-slate-400 mb-5">
               Add your first supplier bill to start tracking stock cost and ITC.
@@ -926,7 +934,7 @@ export default function PurchasesPage() {
                 onClick={() => { resetModal(); setShowModal(true); }}
                 className="inline-flex items-center px-5 py-2.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg transition-all"
               >
-                Record Purchase
+                {term('newPurchase', 'Record Purchase')}
               </button>
             )}
           </div>
@@ -1053,9 +1061,9 @@ export default function PurchasesPage() {
             <div className="flex items-start justify-between mb-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {editingPurchaseId ? 'Edit Purchase' : 'New Purchase'}
+                  {editingPurchaseId ? term('editPurchase', 'Edit Purchase') : term('newPurchase', 'New Purchase')}
                 </p>
-                <h3 className="text-[20px] font-black text-slate-900 mt-0.5">Record Purchase</h3>
+                <h3 className="text-[20px] font-black text-slate-900 mt-0.5">{term('newPurchase', 'Record Purchase')}</h3>
                 <p className="text-[12px] text-slate-500 mt-1">Ek hi compact form me items, payment aur supplier details.</p>
               </div>
               <button
@@ -1094,7 +1102,7 @@ export default function PurchasesPage() {
             <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-[13px] font-black text-slate-900">Supplier Info</p>
+                  <p className="text-[13px] font-black text-slate-900">{term('supplierSection', 'Supplier Info')}</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     {form.payment_type === 'credit' ? 'Required for credit purchases' : 'Optional details for supplier record'}
                   </p>
@@ -1105,9 +1113,9 @@ export default function PurchasesPage() {
               </div>
 
               <div className="space-y-3">
-                <input className={INPUT} placeholder="Supplier ka naam" value={form.supplier_name} onChange={(e) => updateForm({ supplier_name: e.target.value })} required={form.payment_type === 'credit'} />
+                <input className={INPUT} placeholder={term('supplierNamePlaceholder', 'Supplier ka naam')} value={form.supplier_name} onChange={(e) => updateForm({ supplier_name: e.target.value })} required={form.payment_type === 'credit'} />
                 <div className="grid grid-cols-2 gap-3">
-                  <input className={INPUT} placeholder="Mobile number" value={form.supplier_phone} onChange={(e) => updateForm({ supplier_phone: e.target.value })} />
+                  <input className={INPUT} placeholder={term('supplierPhonePlaceholder', 'Mobile number')} value={form.supplier_phone} onChange={(e) => updateForm({ supplier_phone: e.target.value })} />
                   <div>
                     <input className={INPUT} placeholder="Supplier GSTIN" value={form.supplier_gstin} maxLength={GSTIN_LENGTH} onChange={(e) => handleSupplierGstinChange(e.target.value)} onBlur={() => setGstinTouched(true)} />
                     {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">Invalid GSTIN format</p>}
@@ -1150,7 +1158,7 @@ export default function PurchasesPage() {
 
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Product</p>
-                        <SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} placeholder="Search product..." />
+                        <SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} placeholder={term('searchProduct', 'Search product...')} />
                       </div>
 
                       {showInlineProductForm && inlineProductRowIndex === index && (
@@ -1191,6 +1199,131 @@ export default function PurchasesPage() {
                         <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
                           <span className="text-slate-400">₹{fmt(rowGST.taxable)} + <span className="text-amber-600">₹{fmt(rowGST.gst)} GST</span></span>
                           <span className="font-black text-slate-900">= ₹{fmt(rowGST.total)}</span>
+                        </div>
+                      )}
+
+                      {/* ── Batch fields on purchase (pharmacy, bakery, grocery) ── */}
+                      {batchPurch && prod && (
+                        <div className="pt-2 border-t border-slate-200 space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{inv.batchLabel || 'Batch'} Details</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 mb-1">Batch No. *</p>
+                              <input
+                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400"
+                                placeholder="e.g. BT2024001"
+                                value={(item.item_metadata || {}).batch_number || ''}
+                                onChange={e => {
+                                  const updated = [...items];
+                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), batch_number: e.target.value } };
+                                  setItems(updated);
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 mb-1">{inv.expiryLabel || 'Expiry Date'}</p>
+                              <input
+                                type="date"
+                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white"
+                                value={(item.item_metadata || {}).expiry_date || ''}
+                                onChange={e => {
+                                  const updated = [...items];
+                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), expiry_date: e.target.value } };
+                                  setItems(updated);
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 mb-1">MRP (₹)</p>
+                              <input
+                                type="number"
+                                step="0.01"
+                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400"
+                                placeholder="0.00"
+                                value={(item.item_metadata || {}).mrp || ''}
+                                onChange={e => {
+                                  const updated = [...items];
+                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), mrp: e.target.value } };
+                                  setItems(updated);
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 mb-1">Manufacturer</p>
+                              <input
+                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400"
+                                placeholder="Company name"
+                                value={(item.item_metadata || {}).manufacturer || ''}
+                                onChange={e => {
+                                  const updated = [...items];
+                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), manufacturer: e.target.value } };
+                                  setItems(updated);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Variant fields on purchase (clothing, footwear, sports) ── */}
+                      {variantPurch && prod && (
+                        <div className="pt-2 border-t border-slate-200 space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{inv.variantLabel || 'Variant'} Details</p>
+                          <div className="flex gap-2">
+                            {inv.variantDimensions?.includes('size') && inv.sizeOptions?.length > 0 && (
+                              <div className="flex-1">
+                                <p className="text-[10px] text-slate-400 mb-0.5">Size</p>
+                                <select
+                                  className="h-9 w-full rounded-xl border-2 border-slate-200 px-2 text-[12px] text-slate-700 bg-white focus:outline-none focus:border-green-600"
+                                  value={(item.item_metadata || {}).size || ''}
+                                  onChange={e => {
+                                    const updated = [...items];
+                                    updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), size: e.target.value } };
+                                    setItems(updated);
+                                  }}
+                                >
+                                  <option value="">Size</option>
+                                  {inv.sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                              </div>
+                            )}
+                            {inv.variantDimensions?.includes('color') && inv.colorOptions?.length > 0 && (
+                              <div className="flex-1">
+                                <p className="text-[10px] text-slate-400 mb-0.5">Color</p>
+                                <select
+                                  className="h-9 w-full rounded-xl border-2 border-slate-200 px-2 text-[12px] text-slate-700 bg-white focus:outline-none focus:border-green-600"
+                                  value={(item.item_metadata || {}).color || ''}
+                                  onChange={e => {
+                                    const updated = [...items];
+                                    updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), color: e.target.value } };
+                                    setItems(updated);
+                                  }}
+                                >
+                                  <option value="">Color</option>
+                                  {inv.colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Serial fields on purchase (electronics, mobile_shop) ── */}
+                      {serialPurch && prod && (
+                        <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{inv.serialLabel || 'Serial No.'} Numbers</p>
+                          <textarea
+                            className="h-16 w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-[12px] font-mono text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400 resize-none"
+                            placeholder="One serial per line or comma-separated"
+                            value={((item.item_metadata || {}).serial_numbers || []).join('\n')}
+                            onChange={e => {
+                              const vals = e.target.value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+                              const updated = [...items];
+                              updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), serial_numbers: vals } };
+                              setItems(updated);
+                            }}
+                          />
+                          <p className="text-[10px] text-slate-400">Each serial number will be added to stock</p>
                         </div>
                       )}
                     </div>
@@ -1240,7 +1373,7 @@ export default function PurchasesPage() {
           <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
             <div className="flex gap-3">
               <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all">
-                {submitting ? 'Saving...' : !isOnline ? 'Offline Save' : editingPurchaseId ? 'Update Purchase' : form.payment_type === 'credit' ? 'Credit Purchase' : 'Record Purchase'}
+                {submitting ? 'Saving...' : !isOnline ? 'Offline Save' : editingPurchaseId ? `Update ${term('purchase', 'Purchase')}` : form.payment_type === 'credit' ? `Credit ${term('purchase', 'Purchase')}` : term('newPurchase', 'Record Purchase')}
               </button>
               <button type="button" onClick={resetModal} className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                 Cancel

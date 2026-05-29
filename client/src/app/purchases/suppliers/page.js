@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../../lib/pageCache';
 import { apiUrl } from '../../../lib/api';
+import { useSupplierTerms } from '../../../hooks/useEntityTerms';
 
 const PURCHASES_CACHE_KEY = 'purchases-page';
 const getToken = () => localStorage.getItem('token');
@@ -52,6 +53,7 @@ const buildPurchaseWhatsAppMessage = (purchase) => {
 
 export default function SupplierDirectoryPage() {
   const router = useRouter();
+  const { labelPlural, pageTitleHindi, refreshing: refreshingLabel, backToPurchases, searchPlaceholder, emptyState, allLabel, selectPrompt } = useSupplierTerms();
   const initialCache = getInitialPurchasesCache();
   const [purchases, setPurchases] = useState(() => initialCache?.purchases || []);
   const [loading, setLoading] = useState(() => !Boolean(initialCache?.purchases));
@@ -154,12 +156,12 @@ export default function SupplierDirectoryPage() {
         <section className="hero-panel purchases-hero supplier-hero">
           <div className="page-toolbar">
             <div className="min-w-0">
-              <p className="rr-page-eyebrow">Suppliers</p>
-              <div className="page-title">सप्लायर लिस्ट</div>
-              {refreshing ? <p className="rr-meta-line">Refreshing suppliers...</p> : null}
+              <p className="rr-page-eyebrow">{labelPlural}</p>
+              <div className="page-title">{pageTitleHindi}</div>
+              {refreshing ? <p className="rr-meta-line">{refreshingLabel}</p> : null}
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              <Link href="/purchases" className="btn-ghost w-auto shrink-0">Purchases par wapas</Link>
+              <Link href="/purchases" className="btn-ghost w-auto shrink-0">{backToPurchases}</Link>
             </div>
           </div>
         </section>
@@ -168,7 +170,7 @@ export default function SupplierDirectoryPage() {
           <div className="toolbar">
             <input
               className="form-input min-w-[220px] flex-1"
-              placeholder="Supplier ka naam ya phone search karein..."
+              placeholder={searchPlaceholder}
               value={supplierSearch}
               onChange={(event) => setSupplierSearch(event.target.value)}
             />
@@ -186,13 +188,13 @@ export default function SupplierDirectoryPage() {
         ) : filteredSuppliers.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">SP</div>
-            <div>No suppliers found.</div>
+            <div>{emptyState}</div>
           </div>
         ) : (
           <div className="supplier-page-grid grid grid-cols-[minmax(240px,1fr)_minmax(360px,2fr)] gap-[14px]">
             <div className="supplier-list-panel overflow-hidden rounded-[18px] border border-green-100 bg-green-50/30">
               <div className="border-b border-green-100 px-3 py-2.5 text-[12px] font-bold text-slate-500">
-                All Suppliers ({filteredSuppliers.length})
+                {allLabel} ({filteredSuppliers.length})
               </div>
               <div className="supplier-list-scroll max-h-[520px] overflow-y-auto">
                 {filteredSuppliers.map((supplier) => (
@@ -285,7 +287,7 @@ export default function SupplierDirectoryPage() {
                   </div>
                 </>
               ) : (
-                <div className="text-[13px] text-slate-400">Select a supplier to see details.</div>
+                <div className="text-[13px] text-slate-400">{selectPrompt}</div>
               )}
             </div>
           </div>

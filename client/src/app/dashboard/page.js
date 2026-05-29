@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
-import { hasPermission } from '../../lib/permissions';
+import { hasPermission, getRoleLabel, getRoleColor } from '../../lib/permissions';
+import { getSuggestedRoles } from '../../lib/roleConfig';
 import { useIndustry } from '../../contexts/IndustryContext';
+import { getWorkflowConfig, getDashboardWidgets, getQuickActions } from '../../lib/workflowEngine';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const DASHBOARD_CACHE_KEY = 'dashboard-page';
 
@@ -64,9 +67,66 @@ function StatCard({ label, value, sub, gradient, icon, href }) {
   );
 }
 
+const CALLOUT_COLORS = {
+  cyan:   { border: 'border-cyan-200',   bg: 'from-cyan-50 to-sky-50',      icon: 'from-cyan-400 to-sky-500',      text: 'text-cyan-900',   sub: 'text-cyan-700'   },
+  orange: { border: 'border-orange-200', bg: 'from-orange-50 to-amber-50',  icon: 'from-orange-400 to-amber-500',  text: 'text-orange-900', sub: 'text-orange-700' },
+  purple: { border: 'border-purple-200', bg: 'from-purple-50 to-violet-50', icon: 'from-purple-400 to-violet-500', text: 'text-purple-900', sub: 'text-purple-700' },
+  blue:   { border: 'border-blue-200',   bg: 'from-blue-50 to-cyan-50',     icon: 'from-blue-400 to-cyan-500',     text: 'text-blue-900',   sub: 'text-blue-700'   },
+  green:  { border: 'border-green-200',  bg: 'from-green-50 to-emerald-50', icon: 'from-green-400 to-emerald-500', text: 'text-green-900',  sub: 'text-green-700'  },
+  amber:  { border: 'border-amber-200',  bg: 'from-amber-50 to-yellow-50',  icon: 'from-amber-400 to-yellow-500',  text: 'text-amber-900',  sub: 'text-amber-700'  },
+  rose:   { border: 'border-rose-200',   bg: 'from-rose-50 to-pink-50',     icon: 'from-rose-400 to-pink-500',     text: 'text-rose-900',   sub: 'text-rose-700'   },
+  indigo: { border: 'border-indigo-200', bg: 'from-indigo-50 to-blue-50',   icon: 'from-indigo-400 to-blue-500',   text: 'text-indigo-900', sub: 'text-indigo-700' },
+  teal:   { border: 'border-teal-200',   bg: 'from-teal-50 to-cyan-50',     icon: 'from-teal-400 to-cyan-500',     text: 'text-teal-900',   sub: 'text-teal-700'   },
+  red:    { border: 'border-red-200',    bg: 'from-red-50 to-rose-50',      icon: 'from-red-400 to-rose-500',      text: 'text-red-900',    sub: 'text-red-700'    },
+  pink:   { border: 'border-pink-200',   bg: 'from-pink-50 to-rose-50',     icon: 'from-pink-400 to-rose-500',     text: 'text-pink-900',   sub: 'text-pink-700'   },
+  slate:  { border: 'border-slate-200',  bg: 'from-slate-50 to-gray-50',    icon: 'from-slate-400 to-gray-500',    text: 'text-slate-900',  sub: 'text-slate-700'  },
+};
+
+const TILE_GRADIENTS = {
+  orange: 'from-orange-50 to-amber-100',
+  blue:   'from-blue-50 to-cyan-100',
+  amber:  'from-amber-50 to-yellow-100',
+  purple: 'from-purple-50 to-violet-100',
+  green:  'from-green-50 to-emerald-100',
+  rose:   'from-rose-50 to-pink-100',
+  cyan:   'from-cyan-50 to-sky-100',
+  indigo: 'from-indigo-50 to-blue-100',
+  teal:   'from-teal-50 to-cyan-100',
+  red:    'from-red-50 to-rose-100',
+  pink:   'from-pink-50 to-rose-100',
+  slate:  'from-slate-50 to-gray-100',
+};
+
+function DashCallout({ callout }) {
+  const c = CALLOUT_COLORS[callout.color] || CALLOUT_COLORS.green;
+  return (
+    <Link href={callout.href}
+      className={`group flex items-center gap-4 px-4 py-4 rounded-2xl border-2 ${c.border} bg-gradient-to-br ${c.bg} hover:-translate-y-0.5 hover:shadow-lg transition-all`}
+    >
+      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${c.icon} flex items-center justify-center text-2xl flex-shrink-0 shadow-md group-hover:scale-110 transition-transform`}>
+        {callout.icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-[14px] font-black ${c.text}`}>{callout.title}</p>
+        <p className={`text-[12px] ${c.sub} font-medium mt-0.5`}>{callout.body}</p>
+      </div>
+      {callout.cta && (
+        <span className="flex-shrink-0 text-[11px] font-black text-slate-500 group-hover:translate-x-0.5 transition-transform">
+          {callout.cta} →
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
-  const { term, config, isEnabled } = useIndustry();
+  const { term, config } = useIndustry();
+  const { notifications, taskCount } = useNotifications();
+  const wfc        = getWorkflowConfig(config);
+  const wfWidgets  = getDashboardWidgets(wfc);
+  const wfActions  = getQuickActions(wfc);
+  const dashCfg    = config?.dashboardConfig || null;
 
   const hasBootstrappedRef = useRef(false);
 
@@ -77,6 +137,8 @@ export default function DashboardPage() {
   const [shopName, setShopName] = useState('');
   const [ownerPhoto, setOwnerPhoto] = useState('');
   const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState(null);
+  const [isStaffUser, setIsStaffUser] = useState(false);
   const [greeting] = useState(getGreeting);
   const [today] = useState(getTodayLabel);
 
@@ -113,6 +175,7 @@ export default function DashboardPage() {
     if (!token) { router.push('/login'); return; }
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setUserName(user.name || '');
+    if (user.isSubUser) { setIsStaffUser(true); setUserRole(user.role || null); }
 
     const cached = readPageCache(DASHBOARD_CACHE_KEY);
     if (cached?.data) {
@@ -230,6 +293,30 @@ export default function DashboardPage() {
         </div>
 
         {/* ══════════════════════════════════════
+            1b. STAFF ROLE BANNER — visible only for sub-users
+        ══════════════════════════════════════ */}
+        {isStaffUser && userRole && (() => {
+          const rc = getRoleColor(userRole);
+          const suggestions = getSuggestedRoles(config);
+          const match = suggestions.find(s => s.role === userRole);
+          const roleEmoji = match?.emoji || '👤';
+          const roleTitle = match?.businessLabel || getRoleLabel(userRole);
+          const roleDesc  = match?.description || 'You have role-limited access to this shop.';
+          return (
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${rc.border} ${rc.bg}`}>
+              <span className="text-2xl flex-shrink-0">{roleEmoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-[13px] font-black ${rc.text}`}>{roleTitle}</p>
+                <p className={`text-[11px] font-medium mt-0.5 ${rc.text} opacity-75`}>{roleDesc}</p>
+              </div>
+              <span className={`flex-shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${rc.border} ${rc.bg} ${rc.text}`}>
+                {getRoleLabel(userRole)}
+              </span>
+            </div>
+          );
+        })()}
+
+        {/* ══════════════════════════════════════
             2. आज का हाल - Today's Performance with Green Gradient
         ══════════════════════════════════════ */}
         <div>
@@ -317,18 +404,19 @@ export default function DashboardPage() {
             3. जल्दी काम - Quick Actions (industry-aware)
         ══════════════════════════════════════ */}
         {(() => {
-          // Primary sale action label adapts: Order for restaurant, Job Card for service/repair, Bill otherwise
-          const saleLabel = config.modules?.tableManagement
-            ? 'नया Order'
-            : config.modules?.serviceJobs
-              ? 'Job Card बनाओ'
-              : `${term('invoice', 'Bill')} बनाओ`;
-
+          const workflowQuickItems = wfActions.map(a => ({
+            href: a.href, emoji: a.icon,
+            label: a.labelHindi || a.label, sublabel: a.label,
+            gradient: 'from-indigo-50 to-blue-100', permission: a.permission || 'CREATE_INVOICE',
+          }));
           const quickActions = [
-            { href: '/sales?open=1&payment=cash',   emoji: config.icon || '🧾', label: saleLabel,         sublabel: term('sale','Sale'),          gradient: 'from-green-50 to-emerald-100',  permission: 'CREATE_INVOICE'   },
+            // workflow-specific actions first (e.g. "Kitchen Queue" for restaurant)
+            ...workflowQuickItems,
+            // standard actions
+            { href: '/sales?open=1&payment=cash',   emoji: config.icon || '🧾', label: term('quickNewSaleHindi', 'Bill बनाओ'), sublabel: term('sale','Sale'),          gradient: 'from-green-50 to-emerald-100',  permission: 'CREATE_INVOICE'   },
             { href: '/sales?open=1&payment=credit',  emoji: '📒',                label: 'उधार दो',         sublabel: 'Credit',                    gradient: 'from-rose-50 to-red-100',       permission: 'CREATE_INVOICE'   },
-            { href: '/purchases',                    emoji: '🛒',                label: 'माल खरीदो',       sublabel: term('purchase','Purchase'), gradient: 'from-amber-50 to-orange-100',   permission: 'CREATE_PURCHASE'  },
-            { href: '/product',                      emoji: '📦',                label: term('inventory','स्टॉक'), sublabel: term('products','Items'), gradient: 'from-blue-50 to-cyan-100', permission: 'MANAGE_INVENTORY' },
+            { href: '/purchases',                    emoji: '🛒',                label: term('quickPurchaseHindi', 'माल खरीदो'), sublabel: term('purchase','Purchase'), gradient: 'from-amber-50 to-orange-100',   permission: 'CREATE_PURCHASE'  },
+            { href: '/product',                      emoji: '📦',                label: term('quickAddStockHindi','Product जोड़ो'), sublabel: term('inventory','स्टॉक'), gradient: 'from-blue-50 to-cyan-100', permission: 'MANAGE_INVENTORY' },
             { href: '/expenses',                     emoji: '💳',                label: 'खर्च लिखो',       sublabel: 'Expenses',                  gradient: 'from-purple-50 to-violet-100',  permission: 'VIEW_EXPENSES'    },
             { href: '/udhaar',                       emoji: '💸',                label: 'पैसे लो',         sublabel: 'Collect',                   gradient: 'from-pink-50 to-rose-100',      permission: 'VIEW_UDHAAR'      },
             { href: '/reports',                      emoji: '📊',                label: 'हिसाब देखो',      sublabel: 'Reports',                   gradient: 'from-slate-50 to-gray-100',     permission: 'VIEW_REPORTS'     },
@@ -473,63 +561,117 @@ export default function DashboardPage() {
         )}
 
         {/* ══════════════════════════════════════
-            4b. INDUSTRY-SPECIFIC CALLOUTS
-            Shown only when the relevant module is active for this business type.
+            4b. BUSINESS CALLOUT & TILES (config-driven)
         ══════════════════════════════════════ */}
 
-        {/* Expiry tracking callout — Pharmacy, Kirana, Grocery, Bakery, etc. */}
-        {isEnabled('expiryTracking') && hasPermission('MANAGE_INVENTORY') && (
-          <Link href="/product" className="group flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 hover:border-orange-300 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-2xl flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">⏰</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-black text-orange-900">Expiry Tracking चालू है</p>
-              <p className="text-[12px] text-orange-700 font-medium mt-0.5">{term('products','Products')} की expiry dates check करो — कुछ expire होने वाला हो सकता है</p>
-            </div>
-            <span className="text-orange-400 text-[18px] flex-shrink-0">→</span>
-          </Link>
+        {/* Business-specific featured callout */}
+        {dashCfg?.callout && hasPermission(dashCfg.callout.permission || 'MANAGE_INVENTORY') && (
+          <DashCallout callout={dashCfg.callout} />
         )}
 
-        {/* Appointments callout — Salon, Service Center, Repair Shop */}
-        {isEnabled('appointments') && hasPermission('CREATE_INVOICE') && (
-          <div className="flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-violet-50">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-2xl flex-shrink-0 shadow-md">📅</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-black text-purple-900">Appointments Mode</p>
-              <p className="text-[12px] text-purple-700 font-medium mt-0.5">{term('customer','Client')} के लिए {term('sale','Service')} bill बनाओ और record रखो</p>
+        {/* Business-specific operational tiles */}
+        {(() => {
+          const dashTiles = (dashCfg?.tiles || []).filter(t => hasPermission(t.permission || 'CREATE_INVOICE'));
+          if (dashTiles.length === 0) return null;
+          return (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">
+                Business Tools
+              </p>
+              <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
+                {dashTiles.map(t => (
+                  <QuickAction key={t.id} href={t.href} emoji={t.icon} label={t.label} sublabel={t.sublabel || ''} gradient={TILE_GRADIENTS[t.color] || 'from-slate-50 to-gray-100'} />
+                ))}
+              </div>
             </div>
-            <Link href="/sales?open=1&payment=cash" className="flex-shrink-0 px-4 py-2 rounded-xl bg-purple-600 text-[11px] font-black text-white hover:bg-purple-700 transition-colors shadow-md">
-              New {term('sale','Service')}
-            </Link>
+          );
+        })()}
+
+        {/* ══════════════════════════════════════
+            4c. WORKFLOW OPERATIONS WIDGET
+            Shows stage-based navigation tiles when the business has a workflow.
+        ══════════════════════════════════════ */}
+        {wfc && wfWidgets.length > 0 && hasPermission('CREATE_INVOICE') && (
+          <div>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                {wfc.saleNounPlural || 'Operations'}
+              </p>
+              <Link href="/sales" className="text-[11px] font-bold text-green-700 hover:text-green-800 hover:underline">
+                सभी देखें →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
+              {wfWidgets.map(widget => (
+                <Link
+                  key={widget.id}
+                  href={`/sales?wf=${widget.stages[0]}`}
+                  className="group flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-green-300 hover:-translate-y-0.5 hover:shadow-md transition-all"
+                >
+                  <span className="text-2xl group-hover:scale-110 transition-transform">{widget.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-black text-slate-800 leading-tight">{widget.label}</p>
+                    <p className="text-[10px] font-bold text-green-600 mt-0.5">View →</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Table / KOT callout — Restaurant, Dhaba */}
-        {isEnabled('tableManagement') && hasPermission('CREATE_INVOICE') && (
-          <div className="flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-red-50">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-2xl flex-shrink-0 shadow-md">🍽️</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-black text-orange-900">Restaurant Mode</p>
-              <p className="text-[12px] text-orange-700 font-medium mt-0.5">Table number, Dine-in / Takeaway — {term('invoice','Bill')} बनाते समय डालो</p>
-            </div>
-            <Link href="/sales?open=1&payment=cash" className="flex-shrink-0 px-4 py-2 rounded-xl bg-orange-600 text-[11px] font-black text-white hover:bg-orange-700 transition-colors shadow-md">
-              नया Order
-            </Link>
+        {/* Business tip */}
+        {dashCfg?.tip && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="text-base flex-shrink-0">💡</span>
+            <p className="text-[12px] text-slate-600 font-medium leading-relaxed">{dashCfg.tip}</p>
           </div>
         )}
 
-        {/* Job Card callout — Automobile, Mobile Shop, Service/Repair */}
-        {isEnabled('serviceJobs') && !isEnabled('tableManagement') && hasPermission('CREATE_INVOICE') && (
-          <div className="flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-2xl flex-shrink-0 shadow-md">🔧</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-black text-blue-900">Service Jobs Mode</p>
-              <p className="text-[12px] text-blue-700 font-medium mt-0.5">Vehicle / Device details, complaint — {term('invoice','Job Card')} में record होगा</p>
+        {/* ══════════════════════════════════════
+            4c. OPERATIONAL STATUS — Alerts & Tasks
+        ══════════════════════════════════════ */}
+        {(() => {
+          const urgentAlerts = notifications.filter(n => !n.isRead && ['critical','high'].includes(n.priority)).slice(0, 3);
+          const hasOps = urgentAlerts.length > 0 || taskCount > 0;
+          if (!hasOps) return null;
+          const PRIORITY_DOT = { critical: '#dc2626', high: '#ea580c', medium: '#d97706', low: '#16a34a' };
+          const TYPE_ICON = { low_stock: '📦', out_of_stock: '🚫', expiry_warning: '⏰', expired: '☠️', workflow_delay: '⚠️' };
+          return (
+            <div className="bg-white rounded-2xl border border-red-200/80 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 bg-gradient-to-r from-red-50 to-orange-50 border-b border-red-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🚨</span>
+                  <p className="text-[13px] font-black text-red-900">Needs Attention</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {taskCount > 0 && (
+                    <Link href="/tasks"
+                      className="text-[11px] font-black text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors">
+                      {taskCount} task{taskCount !== 1 ? 's' : ''} →
+                    </Link>
+                  )}
+                  <Link href="/notifications"
+                    className="text-[11px] font-black text-red-700 hover:underline">
+                    See all →
+                  </Link>
+                </div>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {urgentAlerts.map(alert => (
+                  <Link key={alert._id} href="/notifications"
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors">
+                    <span className="text-lg flex-shrink-0 mt-0.5">{TYPE_ICON[alert.type] || '🔔'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-black text-slate-900 leading-snug">{alert.title}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug line-clamp-1">{alert.message}</p>
+                    </div>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: PRIORITY_DOT[alert.priority] || '#d97706', flexShrink: 0, marginTop: 5 }} />
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link href="/sales?open=1&payment=cash" className="flex-shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-[11px] font-black text-white hover:bg-blue-700 transition-colors shadow-md">
-              Job Card
-            </Link>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ══════════════════════════════════════
             5. MOTIVATIONAL FOOTER - Enhanced Green Theme
@@ -539,10 +681,10 @@ export default function DashboardPage() {
           <div className="relative z-10 flex-1">
             <p className="text-[13px] font-black text-slate-800">
               {today_bills === 0
-                ? `आज का पहला ${term('invoice','bill')} बनाओ 💪`
+                ? `आज का पहला ${term('invoice','bill')} बनाओ `
                 : today_bills === 1
-                  ? `एक ${term('invoice','bill')} हो गया, और करो! 🔥`
-                  : `आज ${today_bills} ${term('invoice','bill')} बन गए — बढ़िया! 🎯`}
+                  ? `एक ${term('invoice','bill')} हो गया, और करो! `
+                  : `आज ${today_bills} ${term('invoice','bill')} बन गए — बढ़िया! `}
             </p>
             <p className="text-[11px] text-slate-500 mt-1 font-semibold">
               {shopName} — रखरखाव के साथ

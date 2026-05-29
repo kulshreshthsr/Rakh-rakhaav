@@ -5,6 +5,8 @@ import Layout from '../../components/Layout';
 import PermissionGuard from '../../components/PermissionGuard';
 import { apiUrl } from '../../lib/api';
 import { SYSTEM_ROLES, getRoleColor, getRoleLabel } from '../../lib/permissions';
+import { useIndustry } from '../../contexts/IndustryContext';
+import { getSuggestedRoles } from '../../lib/roleConfig';
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : '');
@@ -34,15 +36,16 @@ function StatusDot({ active }) {
 const INPUT = 'h-11 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/25 focus:border-green-400 focus:bg-white transition-all';
 
 /* ─── Add Member Modal ─────────────────────────────────────────────── */
-function AddMemberModal({ open, roles, onClose, onCreated }) {
-  const [form, setForm] = useState({ name: '', username: '', password: '', role: 'cashier' });
+function AddMemberModal({ open, roles, onClose, onCreated, defaultRole }) {
+  const initialRole = defaultRole || 'cashier';
+  const [form, setForm] = useState({ name: '', username: '', password: '', role: initialRole });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [createdPassword, setCreatedPassword] = useState('');
 
-  const reset = () => { setForm({ name: '', username: '', password: '', role: 'cashier' }); setError(''); setCreatedPassword(''); };
+  const reset = () => { setForm({ name: '', username: '', password: '', role: defaultRole || 'cashier' }); setError(''); setCreatedPassword(''); };
 
-  useEffect(() => { if (!open) reset(); }, [open]);
+  useEffect(() => { if (!open) reset(); }, [open, defaultRole]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -244,11 +247,14 @@ function EditMemberModal({ member, roles, onClose, onUpdated, onReset }) {
 /* ─── Main Page ─────────────────────────────────────────────────────── */
 export default function TeamPage() {
   const router = useRouter();
+  const { config } = useIndustry();
+  const suggestedRoles = getSuggestedRoles(config);
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
+  const [addDefaultRole, setAddDefaultRole] = useState(null);
   const [editMember, setEditMember] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -299,7 +305,7 @@ export default function TeamPage() {
               <p className="text-[13px] text-slate-400 mt-1">Manage who has access to your shop</p>
             </div>
             <button
-              onClick={() => setShowAdd(true)}
+              onClick={() => { setAddDefaultRole(null); setShowAdd(true); }}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 text-white font-black text-[14px] shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 whitespace-nowrap"
             >
               + Add Member
@@ -312,6 +318,34 @@ export default function TeamPage() {
               <RoleBadge key={r.name} role={r.name} color={r.color} />
             ))}
           </div>
+
+          {/* Business role suggestion cards */}
+          {suggestedRoles.length > 0 && (
+            <div className="bg-white rounded-2xl border border-green-200/80 shadow-sm overflow-hidden">
+              <div className="px-5 py-3 border-b border-green-100 bg-green-50/40">
+                <p className="text-[13px] font-black text-slate-800">Quick Setup</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Click to add a team member with the right role pre-selected</p>
+              </div>
+              <div className="p-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {suggestedRoles.map((sr, i) => (
+                  <button
+                    key={`${sr.role}-${i}`}
+                    onClick={() => { setAddDefaultRole(sr.role); setShowAdd(true); }}
+                    className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:border-green-300 hover:bg-green-50/60 text-left transition-all group"
+                  >
+                    <span className="text-2xl flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform">{sr.emoji}</span>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-black text-slate-900 leading-tight">{sr.businessLabel}</p>
+                      <p className="text-[11px] text-slate-400 leading-snug mt-0.5">{sr.description}</p>
+                      <span className={`inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${getRoleColor(sr.role).bg} ${getRoleColor(sr.role).text} ${getRoleColor(sr.role).border}`}>
+                        {getRoleLabel(sr.role)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Error */}
           {error && (
@@ -397,8 +431,9 @@ export default function TeamPage() {
           <AddMemberModal
             open={showAdd}
             roles={selectableRoles}
-            onClose={() => setShowAdd(false)}
+            onClose={() => { setShowAdd(false); setAddDefaultRole(null); }}
             onCreated={(m) => { setMembers(prev => [m, ...prev]); }}
+            defaultRole={addDefaultRole}
           />
         )}
 
