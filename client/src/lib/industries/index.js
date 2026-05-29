@@ -576,9 +576,10 @@ export function getIndustryConfig(businessType) {
   };
 }
 
-/** All industries as an array — used for the onboarding picker. */
+/** All industries as an array — used for the onboarding picker.
+ *  Each entry is fully enriched with `terminology` via getIndustryConfig(). */
 export function listIndustries() {
-  return Object.values(INDUSTRIES);
+  return Object.values(INDUSTRIES).map(ind => getIndustryConfig(ind.id));
 }
 
 /** Helper: read terminology term from the loaded config. */
