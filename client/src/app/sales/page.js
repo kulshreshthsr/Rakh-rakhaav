@@ -16,6 +16,7 @@ import { getInvBehavior, isBatchMode, isVariantMode, isSerialMode, isRecipeMode 
 import { generateInvoiceHTML } from '../../lib/generateInvoice';
 import { getWorkflowConfig, getStages, getSaleWorkflowStatus, getStageColors } from '../../lib/workflowEngine';
 import WorkflowStatusBadge from '../../components/WorkflowStatusBadge';
+import eventBus from '../../lib/eventBus';
 
 /* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
@@ -457,6 +458,7 @@ export default function SalesPage() {
       const data = await res.json();
       if (res.ok) {
         if (isEditing && data?._id) setSales((current) => current.map((sale) => (sale._id === data._id ? data : sale)).sort((a, b) => new Date(b.createdAt || b.sold_at || 0).getTime() - new Date(a.createdAt || a.sold_at || 0).getTime()));
+        if (!isEditing) eventBus.emit('INVOICE_CREATED', { saleId: data._id });
         setShowModal(false); resetForm(); fetchAll();
       } else { setError(data.message || 'Failed'); }
     } catch { setError('Server error'); }
@@ -524,6 +526,7 @@ export default function SalesPage() {
       if (!res.ok) { setError('Status update failed'); return; }
       const updated = await res.json();
       setSales(current => current.map(s => s._id === saleId ? { ...s, extra_fields: updated.extra_fields } : s));
+      eventBus.emit('WORKFLOW_ADVANCED', { saleId, newStage: nextStage });
       if (action?.triggerInvoice) {
         const sale = sales.find(s => s._id === saleId);
         if (sale) printInvoice({ ...sale, extra_fields: updated.extra_fields });

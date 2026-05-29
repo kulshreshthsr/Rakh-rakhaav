@@ -40,15 +40,18 @@ const MOBILE_BOTTOM_NAV = [
 ];
 
 const MORE_DRAWER_ITEMS = [
-  { href: '/product',      key: 'products', label: 'Stock',     sublabel: 'Products & Inventory', icon: 'products', permission: 'MANAGE_INVENTORY' },
-  { href: '/expenses',     key: 'expenses', label: 'Expenses',  sublabel: 'Kharch Register',      icon: 'expenses', permission: 'VIEW_EXPENSES'    },
-  { href: '/income',       key: 'income',   label: 'Income',    sublabel: 'Other Income',         icon: 'income',   permission: 'VIEW_INCOME'      },
-  { href: '/bank-entries', key: 'bank',     label: 'Bank',      sublabel: 'Bank Register',        icon: 'bank',     permission: 'VIEW_BANK'        },
-  { href: '/gst',          key: 'gst',      label: 'GST',       sublabel: 'Tax Filing',           icon: 'gst',      permission: 'VIEW_GST'         },
-  { href: '/reports',      key: 'reports',  label: 'रिपोर्ट',   sublabel: 'Reports',              icon: 'reports',  permission: 'VIEW_REPORTS'     },
-  { href: '/profile',      key: 'profile',  label: 'Profile',   sublabel: 'दुकान की जानकारी',     icon: 'profile',  permission: null               },
-  { href: '/team',         key: 'team',     label: 'Team',      sublabel: 'User Management',      icon: 'team',     permission: 'MANAGE_USERS'     },
-  { href: '/roles',        key: 'roles',    label: 'Roles',     sublabel: 'Permissions',          icon: 'roles',    permission: 'MANAGE_ROLES'     },
+  { href: '/product',       key: 'products',       label: 'Stock',         sublabel: 'Products & Inventory', icon: 'products', permission: 'MANAGE_INVENTORY' },
+  { href: '/expenses',      key: 'expenses',       label: 'Expenses',      sublabel: 'Kharch Register',      icon: 'expenses', permission: 'VIEW_EXPENSES'    },
+  { href: '/income',        key: 'income',         label: 'Income',        sublabel: 'Other Income',         icon: 'income',   permission: 'VIEW_INCOME'      },
+  { href: '/bank-entries',  key: 'bank',           label: 'Bank',          sublabel: 'Bank Register',        icon: 'bank',     permission: 'VIEW_BANK'        },
+  { href: '/gst',           key: 'gst',            label: 'GST',           sublabel: 'Tax Filing',           icon: 'gst',      permission: 'VIEW_GST'         },
+  { href: '/reports',       key: 'reports',        label: 'रिपोर्ट',       sublabel: 'Reports',              icon: 'reports',  permission: 'VIEW_REPORTS'     },
+  { href: '/notifications', key: 'notifications', label: 'Alerts',     sublabel: 'Stock & Operation Alerts', icon: 'reports', permission: 'VIEW_DASHBOARD' },
+  { href: '/tasks',         key: 'tasks',         label: 'Tasks',      sublabel: 'Operational Tasks',        icon: 'reports', permission: 'VIEW_DASHBOARD'  },
+  { href: '/audit',         key: 'audit',         label: 'Activity',   sublabel: 'Audit Trail',              icon: 'reports', permission: 'VIEW_REPORTS'    },
+  { href: '/profile',       key: 'profile',        label: 'Profile',       sublabel: 'दुकान की जानकारी',     icon: 'profile',  permission: null               },
+  { href: '/team',          key: 'team',           label: 'Team',          sublabel: 'User Management',      icon: 'team',     permission: 'MANAGE_USERS'     },
+  { href: '/roles',         key: 'roles',          label: 'Roles',         sublabel: 'Permissions',          icon: 'roles',    permission: 'MANAGE_ROLES'     },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
@@ -512,6 +515,15 @@ function LayoutInner({ children }) {
                   }
                 />
               )}
+            </div>
+
+            {/* Notification bell row — desktop sidebar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px 4px' }}>
+              <NotificationBell />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Link href="/notifications" style={{ fontSize: 12, fontWeight: 700, color: '#475569', textDecoration: 'none', display: 'block' }}>Alerts</Link>
+                <Link href="/tasks" style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'none', display: 'block', marginTop: 1 }}>My Tasks</Link>
+              </div>
             </div>
 
             <div className="sidebar-section-label">{t('mainMenu')}</div>

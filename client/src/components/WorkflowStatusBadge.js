@@ -3,9 +3,10 @@ import { useState } from 'react';
 import {
   getStageById,
   getSaleWorkflowStatus,
-  getAllowedActions,
+  getAvailableWorkflowActions,
   getStageColors,
 } from '../lib/workflowEngine';
+import { getStoredUser } from '../lib/permissions';
 
 /**
  * WorkflowStatusBadge
@@ -28,8 +29,9 @@ export default function WorkflowStatusBadge({ sale, wfc, onAdvance, disabled = f
   const currentStage  = getStageById(wfc, currentStatus);
   if (!currentStage) return null;
 
-  const colors  = getStageColors(currentStage);
-  const actions = getAllowedActions(wfc, currentStatus);
+  const colors   = getStageColors(currentStage);
+  const userRole = getStoredUser()?.role || null;
+  const actions  = getAvailableWorkflowActions(wfc, currentStatus, userRole);
 
   const handleAction = async (action) => {
     if (advancing || disabled) return;
