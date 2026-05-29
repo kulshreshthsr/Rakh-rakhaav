@@ -176,14 +176,14 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = M
 
   return (
     <>
-      {/* Enhanced backdrop with green tint */}
-      <div
-        onClick={onClose}
-        className={`fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        aria-hidden="true"
-      />
+      {/* Backdrop — conditionally rendered so it disappears instantly on nav link click */}
+      {open && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+          aria-hidden="true"
+        />
+      )}
 
       {/* Sheet — slides up from bottom */}
       <div
