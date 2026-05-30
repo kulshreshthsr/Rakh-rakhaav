@@ -259,4 +259,13 @@ export default {
     showSignatureBlock: false,
     footerNote:         'Thank you for dining with us! We hope to see you again soon.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',      sublabel: 'Total billed today'   },
+    kpi2: { label: 'Orders',           sublabel: 'Served today'          },
+    kpi3: { label: 'मुनाफा',          sublabel: 'After food cost'       },
+    kpi4: { label: 'Open Tables',      sublabel: 'Active right now'      },
+    kpi5: { label: 'GST Payable',      sublabel: 'This month'            },
+    kpi6: { label: 'Low Ingredients',  sublabel: 'Needs restock'         },
+  },
 };

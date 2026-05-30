@@ -160,10 +160,10 @@ const getOfflineBadgeMeta = (status) => {
   return { label: 'Sync pending', color: 'text-amber-700 bg-amber-50 border-amber-200' };
 };
 const PAY_BADGE = {
-  cash: { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Cash' },
-  credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200', label: 'Credit' },
-  upi: { cls: 'bg-green-50 text-green-700 border-green-200', label: 'UPI' },
-  bank: { cls: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Bank' },
+  cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Cash' },
+  credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200',          label: '📒 Udhaar' },
+  upi:    { cls: 'bg-violet-50 text-violet-700 border-violet-200',    label: '📱 UPI' },
+  bank:   { cls: 'bg-blue-50 text-blue-700 border-blue-200',          label: '🏦 Bank' },
 };
 const INPUT = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
@@ -213,6 +213,7 @@ export default function PurchasesPage() {
     supplier_name: '', supplier_phone: '', supplier_gstin: '',
     supplier_address: '', supplier_state: '', notes: '',
     purchase_date: getDefaultPurchaseDateValue(),
+    due_date: '',
   });
   const [showInlineProductForm, setShowInlineProductForm] = useState(false);
   const [inlineProductRowIndex, setInlineProductRowIndex] = useState(0);
@@ -226,6 +227,9 @@ export default function PurchasesPage() {
   });
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth] = useState('');
+  const [hasMorePurchases, setHasMorePurchases] = useState(false);
+  const [purchasesCursor, setPurchasesCursor] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const hasBootstrappedRef = useRef(false);
 
   const loadPendingOfflinePurchases = useCallback(async () => {
@@ -312,6 +316,8 @@ export default function PurchasesPage() {
       });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
+      setHasMorePurchases(data.hasMore || false);
+      setPurchasesCursor(data.nextCursor || null);
       const nextPurchases = data.purchases || [];
       const nextSummary = data.summary || {};
       const mergedPurchases = await mergePurchasesWithPendingQueue(nextPurchases);
@@ -320,6 +326,20 @@ export default function PurchasesPage() {
       writePageCache(PURCHASES_CACHE_KEY, { purchases: mergedPurchases, summary: nextSummary });
     } catch { setError('Purchases could not be loaded'); }
   }, [mergePurchasesWithPendingQueue, router]);
+
+  const loadMorePurchases = useCallback(async () => {
+    if (!purchasesCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(apiUrl(`/api/purchases?cursor=${purchasesCursor}`), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const data = await res.json();
+      setHasMorePurchases(data.hasMore || false);
+      setPurchasesCursor(data.nextCursor || null);
+      const more = data.purchases || [];
+      setPurchases(prev => [...prev, ...more.filter(p => !prev.some(existing => existing._id === p._id))]);
+    } catch { setError('Could not load older purchases'); }
+    setLoadingMore(false);
+  }, [purchasesCursor, loadingMore]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -570,11 +590,6 @@ export default function PurchasesPage() {
     });
     setGstinTouched(Boolean(normalized));
   };
-  const wizardSteps = [
-    { title: 'Items', copy: 'Purchase items' },
-    { title: 'Payment', copy: 'Credit or cash' },
-    { title: 'Supplier', copy: 'Supplier and GST' },
-  ];
 
   // â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSubmit = async (e) => {
@@ -660,13 +675,15 @@ export default function PurchasesPage() {
       const payload = {
         items: validItems,
         payment_type: form.payment_type,
-        amount_paid: form.payment_type === 'credit' ? (amountPaidNum || 0) : billTotals.total,
+        amount_paid: ['credit', 'upi', 'bank'].includes(form.payment_type) ? (amountPaidNum || 0) : billTotals.total,
+        amount_paid_mode: ['upi', 'bank'].includes(form.payment_type) ? form.payment_type : undefined,
         supplier_name: form.supplier_name,
         supplier_phone: form.supplier_phone,
         supplier_gstin: gstinValue,
         supplier_address: form.supplier_address,
         supplier_state: form.supplier_state,
         purchase_date: form.purchase_date,
+        due_date: form.payment_type === 'credit' && form.due_date ? form.due_date : undefined,
         notes: form.notes,
       };
 
@@ -684,7 +701,7 @@ export default function PurchasesPage() {
       if (res.ok) {
         setShowModal(false);
         setItems([emptyItem()]);
-        setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue() });
+        setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '' });
         setGstinTouched(false);
         fetchPurchases();
       } else {
@@ -713,10 +730,15 @@ export default function PurchasesPage() {
 
     if (!confirm('Delete this purchase? Stock will be restored.')) return;
     try {
-      await fetch(apiUrl(`/api/purchases/${purchase._id}`), {
+      const res = await fetch(apiUrl(`/api/purchases/${purchase._id}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${getToken()}` },
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || 'Could not delete purchase');
+        return;
+      }
       fetchPurchases();
     } catch { setError('Could not delete purchase'); }
   };
@@ -747,7 +769,7 @@ export default function PurchasesPage() {
     setShowModal(false);
     setError('');
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue() });
+    setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '' });
     setGstinTouched(false);
     resetInlineProductForm();
   }
@@ -783,6 +805,7 @@ export default function PurchasesPage() {
       supplier_state: purchase.supplier_state || '',
       notes: purchase.notes || '',
       purchase_date: formatDateInputValue(purchase.createdAt || purchase.purchased_at || new Date()),
+      due_date: purchase.due_date ? formatDateInputValue(purchase.due_date) : '',
     });
     setGstinTouched(false);
     setError('');
@@ -1022,7 +1045,8 @@ export default function PurchasesPage() {
                         type="button"
                         onClick={() => sendPurchaseWhatsApp(p)}
                         disabled={!p.supplier_phone}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
+                        title={p.supplier_phone ? `Send WhatsApp to ${p.supplier_phone}` : 'Supplier phone number not added'}
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                       >
                         📤 WA
                       </button>
@@ -1046,6 +1070,17 @@ export default function PurchasesPage() {
                 </div>
               );
             })}
+
+            {/* Load older purchases */}
+            {hasMorePurchases && !normalizedBillSearch && !billMonth && (
+              <button
+                onClick={loadMorePurchases}
+                disabled={loadingMore}
+                className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-500 hover:border-slate-300 hover:text-slate-600 disabled:opacity-50 transition-all"
+              >
+                {loadingMore ? 'Loading...' : '↓ Load older purchases'}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1067,7 +1102,7 @@ export default function PurchasesPage() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                   {editingPurchaseId ? term('editPurchase', 'Edit Purchase') : term('newPurchase', 'New Purchase')}
                 </p>
-                <h3 className="text-[20px] font-black text-slate-900 mt-0.5">{term('newPurchase', 'Record Purchase')}</h3>
+                <h3 className="text-[20px] font-black text-slate-900 mt-0.5">{editingPurchaseId ? term('editPurchase', 'Edit Purchase') : term('newPurchase', 'Record Purchase')}</h3>
                 <p className="text-[12px] text-slate-500 mt-1">Ek hi compact form me items, payment aur supplier details.</p>
               </div>
               <button
@@ -1081,14 +1116,16 @@ export default function PurchasesPage() {
             </div>
             <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl">
               {[
-                { type: 'cash', label: '💵 Cash', active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg' },
-                { type: 'credit', label: '📒 Credit', active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg' },
+                { type: 'cash',   label: '💵 Cash',   active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg' },
+                { type: 'upi',    label: '📱 UPI',    active: 'bg-gradient-to-r from-violet-600 to-purple-700 text-white shadow-lg' },
+                { type: 'bank',   label: '🏦 Bank',   active: 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg' },
+                { type: 'credit', label: '📒 Udhaar', active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg' },
               ].map((opt) => (
                 <button
                   key={opt.type}
                   type="button"
                   onClick={() => updateForm({ payment_type: opt.type, amount_paid: opt.type === 'credit' ? form.amount_paid : '' })}
-                  className={`flex-1 py-3 rounded-lg text-[13px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-600 hover:text-slate-700'}`}
+                  className={`flex-1 py-2 rounded-lg text-[11px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-600 hover:text-slate-700'}`}
                 >
                   {opt.label}
                 </button>
@@ -1127,7 +1164,18 @@ export default function PurchasesPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <input className={INPUT} type="date" value={form.purchase_date} onChange={(e) => updateForm({ purchase_date: e.target.value })} />
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-500 mb-1 block">Purchase Date</label>
+                    <input className={INPUT} type="date" value={form.purchase_date} onChange={(e) => updateForm({ purchase_date: e.target.value })} />
+                  </div>
+                  {form.payment_type === 'credit' && (
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">Payment Due Date</label>
+                      <input className={INPUT} type="date" value={form.due_date || ''} onChange={(e) => updateForm({ due_date: e.target.value })} placeholder="Optional due date" />
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <select className={INPUT} value={form.supplier_state} onChange={(e) => updateForm({ supplier_state: e.target.value })}>
                       <option value="">Select State/UT</option>

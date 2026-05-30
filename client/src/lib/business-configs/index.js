@@ -93,3 +93,23 @@ export { BASE_TERMINOLOGY };
 
 /** All registered business type keys — mirrors BUSINESS_TYPES in shopModel. */
 export const BUSINESS_TYPE_KEYS = Object.keys(OVERRIDES);
+
+const DEFAULT_KPI_CONFIG = {
+  kpi1: { label: 'आज की कमाई',  sublabel: "Today's Revenue"   },
+  kpi2: { label: 'Bills',        sublabel: 'Invoices today'    },
+  kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit'      },
+  kpi4: { label: 'Udhaar',       sublabel: 'Pending credit'    },
+  kpi5: { label: 'GST Payable',  sublabel: 'This month'        },
+  kpi6: { label: 'Stock Alerts', sublabel: 'Low / Out of stock'},
+};
+
+/**
+ * Returns the kpiConfig for a business type, falling back to the default.
+ * Used to drive dashboard KPI label customisation per industry.
+ */
+export function getKpiConfig(businessType) {
+  const config = getBusinessConfig(businessType);
+  return config.kpiConfig || DEFAULT_KPI_CONFIG;
+}
+
+export { DEFAULT_KPI_CONFIG };

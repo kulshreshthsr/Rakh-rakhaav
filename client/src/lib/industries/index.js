@@ -135,8 +135,8 @@ export const INDUSTRIES = {
     labelHindi: 'रेस्टोरेंट / ढाबा',
     icon: '🍽️',
     modules: {
-      sales: true, purchases: true, inventory: true, udhaar: true,
-      expenses: true, income: true, bank: true, reports: true, gst: true,
+      sales: true, purchases: true, inventory: true, udhaar: false,
+      expenses: true, income: false, bank: true, reports: true, gst: true,
       batchTracking: false, expiryTracking: false, appointments: false,
       tableManagement: true, kot: true, variants: false, serviceJobs: false,
     },
@@ -241,8 +241,8 @@ export const INDUSTRIES = {
     labelHindi: 'मिठाई की दुकान',
     icon: '🍬',
     modules: {
-      sales: true, purchases: true, inventory: true, udhaar: true,
-      expenses: true, income: true, bank: true, reports: true, gst: true,
+      sales: true, purchases: true, inventory: true, udhaar: false,
+      expenses: true, income: false, bank: false, reports: true, gst: true,
       batchTracking: false, expiryTracking: true, appointments: false,
       tableManagement: false, kot: false, variants: false, serviceJobs: false,
     },
@@ -262,8 +262,8 @@ export const INDUSTRIES = {
     labelHindi: 'बेकरी',
     icon: '🍞',
     modules: {
-      sales: true, purchases: true, inventory: true, udhaar: true,
-      expenses: true, income: true, bank: true, reports: true, gst: true,
+      sales: true, purchases: true, inventory: true, udhaar: false,
+      expenses: true, income: false, bank: false, reports: true, gst: true,
       batchTracking: false, expiryTracking: true, appointments: false,
       tableManagement: false, kot: false, variants: false, serviceJobs: false,
     },
@@ -281,8 +281,8 @@ export const INDUSTRIES = {
     labelHindi: 'सैलून / पार्लर',
     icon: '✂️',
     modules: {
-      sales: true, purchases: true, inventory: true, udhaar: true,
-      expenses: true, income: true, bank: true, reports: true, gst: true,
+      sales: true, purchases: false, inventory: true, udhaar: false,
+      expenses: true, income: false, bank: true, reports: true, gst: true,
       batchTracking: false, expiryTracking: false, appointments: true,
       tableManagement: false, kot: false, variants: false, serviceJobs: false,
     },

@@ -15,6 +15,8 @@ const purchaseItemSchema = new mongoose.Schema({
   total_gst: { type: Number, default: 0 },
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
   total_amount: { type: Number, default: 0 },
+  // batch/variant/serial data entered during purchase — drives sub-inventory
+  item_metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
 });
 
 const purchaseSchema = new mongoose.Schema({
@@ -60,6 +62,9 @@ const purchaseSchema = new mongoose.Schema({
   invoice_number: { type: String, required: true },
   offline_operation_id: { type: String },
   notes: { type: String },
+
+  // ── Credit terms ──────────────────────────────────────────────
+  due_date: { type: Date, default: null },  // payment due date for credit purchases
 
 }, { timestamps: true });
 

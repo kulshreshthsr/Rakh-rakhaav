@@ -222,7 +222,7 @@ const getExistingItemQuantities = (record) => {
   return quantityMap;
 };
 
-const syncSaleStock = async (previousSale, nextItems, session = null) => {
+const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', session = null) => {
   const previousMap = getExistingItemQuantities(previousSale);
   const nextMap = new Map();
 
@@ -247,7 +247,19 @@ const syncSaleStock = async (previousSale, nextItems, session = null) => {
       throw new Error(`${product.name}: sirf ${product.quantity} stock available hai`);
     }
 
-    await Product.findByIdAndUpdate(productId, { $inc: { quantity: -delta } }, session ? { session } : {});
+    const quantityAfter = round2(product.quantity - delta);
+    await Product.findByIdAndUpdate(productId, {
+      $inc: { quantity: -delta },
+      $push: {
+        stock_history: {
+          type: delta > 0 ? 'sale' : 'sale_return',
+          quantity_change: -delta,
+          quantity_after: quantityAfter,
+          reference_id: invoiceNumber,
+          date: new Date(),
+        },
+      },
+    }, session ? { session } : {});
   }
 };
 
@@ -406,10 +418,57 @@ const reverseCustomerLedgerForSale = async (saleDoc, session = null) => {
   if (!customer) return;
 
   customer.totalSales = Math.max(0, round2((customer.totalSales || 0) - (saleDoc.total_amount || 0)));
-  customer.totalPaid = Math.max(0, round2((customer.totalPaid || 0) - (saleDoc.amount_paid || 0)));
-  customer.totalUdhaar = round2(customer.totalSales - customer.totalPaid);
+  customer.totalPaid  = Math.max(0, round2((customer.totalPaid  || 0) - (saleDoc.amount_paid  || 0)));
+  // Prevent negative udhaar: if totalPaid was overclamped relative to totalSales, normalize
+  customer.totalUdhaar = Math.max(0, round2(customer.totalSales - customer.totalPaid));
   await customer.save(session ? { session } : {});
   await Udhaar.deleteMany({ shop: saleDoc.shop, reference_id: saleDoc.invoice_number, reference_type: 'sale' }, session ? { session } : {});
+};
+
+const reverseSubInventoryForSale = async (items = [], session = null) => {
+  const opts = session ? { session } : {};
+  for (const item of items) {
+    const meta = item.item_metadata instanceof Map
+      ? Object.fromEntries(item.item_metadata)
+      : (item.item_metadata || {});
+
+    if (meta.batch_id) {
+      await ProductBatch.findByIdAndUpdate(
+        meta.batch_id,
+        { $inc: { quantity: Number(item.quantity || 0) }, $set: { is_depleted: false } },
+        opts
+      );
+    }
+
+    if (meta.variant_id) {
+      await ProductVariant.findByIdAndUpdate(
+        meta.variant_id,
+        { $inc: { quantity: Number(item.quantity || 0) } },
+        opts
+      );
+    }
+
+    if (Array.isArray(meta.serial_ids) && meta.serial_ids.length > 0) {
+      await SerialInventory.updateMany(
+        { _id: { $in: meta.serial_ids } },
+        { $set: { status: 'in_stock' }, $unset: { sale_invoice: '', sale_date: '' } },
+        opts
+      );
+    }
+
+    if (meta.deduct_recipe && item.product) {
+      const recipe = await Recipe.findOne({ dish: item.product }).session(session || null);
+      if (recipe?.ingredients?.length > 0) {
+        const servings = recipe.serving_quantity || 1;
+        for (const ing of recipe.ingredients) {
+          const restoreQty = (ing.quantity / servings) * Number(item.quantity || 0);
+          if (restoreQty > 0 && ing.ingredient) {
+            await Product.findByIdAndUpdate(ing.ingredient, { $inc: { quantity: restoreQty } }, opts);
+          }
+        }
+      }
+    }
+  }
 };
 
 const buildSaleRecordData = async ({
@@ -476,6 +535,16 @@ const buildSaleRecordData = async ({
     const ppu = Number(item.price_per_unit);
     if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(ppu) || ppu < 0) {
       throw new Error(`Invalid quantity or price for ${product.name}`);
+    }
+
+    // MRP enforcement for pharmacy — DPCO hard block
+    if (shop.businessType === 'pharmacy') {
+      const mrp = product.metadata?.get('mrp');
+      if (mrp !== undefined && mrp !== null && mrp !== '' && ppu > Number(mrp)) {
+        throw new Error(
+          `${product.name}: Selling price ₹${ppu} exceeds MRP ₹${mrp}. Cannot create bill. (DPCO violation)`
+        );
+      }
     }
 
     const previousQty = previousQuantities.get(String(product._id)) || 0;
@@ -572,7 +641,7 @@ const buildSaleRecordData = async ({
 const getSales = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
-    const { payment_type, from, to } = req.query;
+    const { payment_type, from, to, limit: limitParam, cursor } = req.query;
 
     const filter = { shop: shop._id };
     if (payment_type) filter.payment_type = payment_type;
@@ -581,12 +650,25 @@ const getSales = async (req, res) => {
       if (from) filter.createdAt.$gte = new Date(from);
       if (to)   filter.createdAt.$lte = new Date(to);
     }
+    // Default: last 3 months if no date range provided
+    if (!filter.createdAt && !from && !to) {
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      filter.createdAt = { $gte: threeMonthsAgo };
+    }
+    if (cursor) filter._id = { $lt: cursor };
 
+    const pageSize = Math.min(Number(limitParam) || 200, 500);
     const sales = await Sale.find(filter)
       .populate('customer', 'name phone')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(pageSize + 1);
 
-    const summary = sales.reduce((acc, s) => {
+    const hasMore = sales.length > pageSize;
+    const page = hasMore ? sales.slice(0, pageSize) : sales;
+    const nextCursor = hasMore ? String(page[page.length - 1]._id) : null;
+
+    const summary = page.reduce((acc, s) => {
       acc.totalRevenue += s.total_amount  || 0;
       acc.totalGST     += s.total_gst     || 0;
       acc.totalCOGS    += s.total_cost    || 0;
@@ -594,7 +676,7 @@ const getSales = async (req, res) => {
       return acc;
     }, { totalRevenue: 0, totalGST: 0, totalCOGS: 0, totalProfit: 0 });
 
-    res.json({ sales, summary });
+    res.json({ sales: page, summary, hasMore, nextCursor });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -609,10 +691,12 @@ const createSale = async (req, res) => {
   try {
     let createdSaleId;
     let auditShopId = null;
+    let createdShop = null;
     const offlineOperationId = normalizeOfflineOperationId(req.body?.offline_operation_id);
 
     await session.withTransaction(async () => {
       const shop = await getOrCreateShop(req.user.id, session);
+      createdShop = shop;
       auditShopId = shop._id;
       if (offlineOperationId) {
         const existingSale = await Sale.findOne({
@@ -631,7 +715,7 @@ const createSale = async (req, res) => {
         session,
       });
 
-      await syncSaleStock(null, data.items, session);
+      await syncSaleStock(null, data.items, data.invoice_number, session);
       await syncSubInventory([], data.items, data.invoice_number, session);
 
       const createdSales = await Sale.create([{
@@ -646,6 +730,48 @@ const createSale = async (req, res) => {
     });
 
     const hydratedSale = await Sale.findById(createdSaleId).populate('customer', 'name phone gstin');
+
+    // Auto-log narcotics register for Schedule X / H1 items (pharmacy only)
+    if (createdShop?.businessType === 'pharmacy' && hydratedSale) {
+      const NarcoticsRegister = require('../models/narcoticsRegisterModel');
+      const scheduleXItems = (hydratedSale.items || []).filter(item => {
+        const meta = item.item_metadata instanceof Map
+          ? Object.fromEntries(item.item_metadata)
+          : (item.item_metadata || {});
+        return meta.schedule === 'Schedule X' || meta.schedule === 'Schedule H1';
+      });
+      if (scheduleXItems.length > 0) {
+        const efObj = hydratedSale.extra_fields instanceof Map
+          ? Object.fromEntries(hydratedSale.extra_fields)
+          : (hydratedSale.extra_fields || {});
+        const entries = scheduleXItems.map(item => {
+          const meta = item.item_metadata instanceof Map
+            ? Object.fromEntries(item.item_metadata)
+            : (item.item_metadata || {});
+          return {
+            shop:              hydratedSale.shop,
+            saleId:            hydratedSale._id,
+            invoiceNumber:     hydratedSale.invoice_number,
+            dispensedAt:       hydratedSale.createdAt,
+            productId:         item.product,
+            drugName:          item.product_name,
+            schedule:          meta.schedule,
+            batchNumber:       meta.batch_no || meta.batch_number || '',
+            quantityDispensed: item.quantity,
+            unit:              'units',
+            prescriptionNumber: efObj.prescription_no || '',
+            prescribingDoctor:  efObj.doctor_name || '',
+            patientName:       hydratedSale.buyer_name || 'Walk-in Patient',
+            patientPhone:      hydratedSale.buyer_phone || '',
+            dispensedBy:       req.user?.username || '',
+          };
+        });
+        await NarcoticsRegister.insertMany(entries).catch(err =>
+          console.error('Narcotics register auto-log failed:', err.message)
+        );
+      }
+    }
+
     await logAuditEvent({
       shopId: auditShopId || hydratedSale?.shop,
       userId: req.user.id,
@@ -656,170 +782,6 @@ const createSale = async (req, res) => {
       afterValue: hydratedSale,
     });
     return res.status(201).json(hydratedSale);
-
-    const {
-      items,
-      product_id, quantity, price_per_unit,
-      buyer_name, buyer_phone, buyer_gstin,
-      buyer_address, buyer_state,
-      payment_type = 'cash',
-      amount_paid = 0,
-      notes,
-    } = req.body;
-
-    if (payment_type === 'credit' && !buyer_name) {
-      return res.status(400).json({ message: 'Credit sale ke liye customer ka naam zaroori hai!' });
-    }
-
-    const rawItems = items && items.length > 0
-      ? items
-      : [{ product_id, quantity, price_per_unit }];
-
-    let totalTaxable = 0, totalCGST = 0, totalSGST = 0;
-    let totalIGST = 0, totalGST = 0, grandTotal = 0;
-    let totalCost = 0;
-
-    const invoice_type   = (buyer_gstin && buyer_gstin.trim() !== '') ? 'B2B' : 'B2C';
-    const invoice_number = await generateInvoiceNumber(shop._id);
-    const resolvedItems  = [];
-
-    for (const item of rawItems) {
-      const product = await Product.findById(item.product_id);
-      if (!product) {
-        return res.status(404).json({ message: `Product not found: ${item.product_id}` });
-      }
-
-      const qty      = Number(item.quantity);
-      const ppu      = Number(item.price_per_unit);
-      const cost     = product.cost_price || 0;
-      const gst_rate = product.gst_rate   || 0;
-
-      const taxable   = parseFloat((qty * ppu).toFixed(2));
-      const gstCalc   = calculateGST(taxable, gst_rate, shop.state, buyer_state);
-      const lineTotal = parseFloat((taxable + gstCalc.total_gst).toFixed(2));
-      const lineCost  = parseFloat((cost * qty).toFixed(2));
-
-      totalTaxable += taxable;
-      totalCGST    += gstCalc.cgst_amount;
-      totalSGST    += gstCalc.sgst_amount;
-      totalIGST    += gstCalc.igst_amount;
-      totalGST     += gstCalc.total_gst;
-      grandTotal   += lineTotal;
-      totalCost    += lineCost;
-
-      resolvedItems.push({
-        product:        product._id,
-        product_name:   product.name,
-        hsn_code:       product.hsn_code,
-        quantity:       qty,
-        price_per_unit: ppu,
-        cost_price:     cost,
-        gst_rate,
-        taxable_amount: taxable,
-        ...gstCalc,
-        total_amount:   lineTotal,
-      });
-
-      await Product.findByIdAndUpdate(product._id, { $inc: { quantity: -qty } });
-    }
-
-    totalTaxable = parseFloat(totalTaxable.toFixed(2));
-    totalGST     = parseFloat(totalGST.toFixed(2));
-    grandTotal   = parseFloat(grandTotal.toFixed(2));
-    totalCost    = parseFloat(totalCost.toFixed(2));
-    const paid = parseFloat(Number(amount_paid).toFixed(2));
-
-    const grossProfit = parseFloat((totalTaxable - totalCost).toFixed(2));
-    const firstItem   = resolvedItems[0];
-    const uniqueRates = [...new Set(resolvedItems.map((item) => Number(item.gst_rate || 0)))];
-
-    const sale = await Sale.create({
-      shop:     shop._id,
-      items:    resolvedItems,
-
-      product:        firstItem.product,
-      product_name:   firstItem.product_name,
-      hsn_code:       firstItem.hsn_code,
-      quantity:       firstItem.quantity,
-      price_per_unit: firstItem.price_per_unit,
-      cost_price:     firstItem.cost_price,
-      gst_rate:       uniqueRates.length === 1 ? firstItem.gst_rate : 0,
-      gst_type:       firstItem.gst_type,
-
-      invoice_type,
-      invoice_number,
-
-      taxable_amount: totalTaxable,
-      cgst_amount:    parseFloat(totalCGST.toFixed(2)),
-      sgst_amount:    parseFloat(totalSGST.toFixed(2)),
-      igst_amount:    parseFloat(totalIGST.toFixed(2)),
-      total_gst:      totalGST,
-      total_amount:   grandTotal,
-      total_cost:     totalCost,
-      gross_profit:   grossProfit,
-
-      payment_type,
-      amount_paid: payment_type === 'credit' ? paid : grandTotal,
-      buyer_name:    buyer_name || (invoice_type === 'B2C' ? 'Walk-in Customer' : ''),
-      buyer_phone,
-      buyer_gstin,
-      buyer_address,
-      buyer_state: buyer_state || '',
-      notes,
-    });
-
-    if (payment_type === 'credit' && buyer_name) {
-      let customer = await Customer.findOne({
-        shop: shop._id,
-        $or: [
-          { name: { $regex: new RegExp(`^${buyer_name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
-          ...(buyer_phone ? [{ phone: buyer_phone }] : []),
-        ],
-      });
-
-      if (!customer) {
-        customer = await Customer.create({
-          shop: shop._id,
-          name: buyer_name, phone: buyer_phone || '',
-          gstin: buyer_gstin || '', address: buyer_address || '',
-          totalSales: 0, totalPaid: 0, totalUdhaar: 0,
-        });
-      }
-
-      customer.totalSales  = parseFloat((customer.totalSales + grandTotal).toFixed(2));
-      customer.totalPaid   = parseFloat((customer.totalPaid + paid).toFixed(2));
-      customer.totalUdhaar = parseFloat((customer.totalSales - customer.totalPaid).toFixed(2));
-      await customer.save();
-      await Sale.findByIdAndUpdate(sale._id, { customer: customer._id });
-
-      await Udhaar.create({
-        shop:            shop._id,
-        customer:        customer._id,
-        type:            'debit',
-        amount:          grandTotal,
-        running_balance: customer.totalUdhaar,
-        note:            `Credit Sale — ${resolvedItems.map(i => i.product_name).join(', ')} (${invoice_number})`,
-        date:            new Date(),
-        reference_id:    invoice_number,
-        reference_type:  'sale',
-      });
-
-      if (paid > 0) {
-        await Udhaar.create({
-          shop:            shop._id,
-          customer:        customer._id,
-          type:            'credit',
-          amount:          paid,
-          running_balance: customer.totalUdhaar,
-          note:            `Advance payment at time of sale (${invoice_number})`,
-          date:            new Date(),
-          reference_id:    invoice_number,
-          reference_type:  'sale',
-        });
-      }
-    }
-
-    res.status(201).json(sale);
   } catch (err) {
     if (err?.code === 11000 && req.body?.offline_operation_id) {
       const shop = await getOrCreateShop(req.user.id);
@@ -831,7 +793,6 @@ const createSale = async (req, res) => {
         return res.status(200).json(existingSale);
       }
     }
-    console.error('createSale error:', err);
     res.status(500).json({ message: err.message });
   } finally {
     await session.endSession();
@@ -862,7 +823,7 @@ const updateSale = async (req, res) => {
       });
 
       await reverseCustomerLedgerForSale(sale, session);
-      await syncSaleStock(sale, data.items, session);
+      await syncSaleStock(sale, data.items, sale.invoice_number, session);
       await syncSubInventory(sale.items || [], data.items, sale.invoice_number, session);
 
       Object.assign(sale, data, { customer: null });
@@ -896,7 +857,6 @@ const updateSale = async (req, res) => {
     });
     res.json(hydratedSale);
   } catch (err) {
-    console.error('updateSale error:', err);
     if (err.message === 'Sale not found') {
       return res.status(404).json({ message: err.message });
     }
@@ -921,14 +881,32 @@ const deleteSale = async (req, res) => {
       if (!sale) throw new Error('Sale not found');
       deletedSale = cloneForAudit(sale);
 
-      if (sale.items && sale.items.length > 0) {
-        for (const item of sale.items) {
-          await Product.findByIdAndUpdate(item.product, { $inc: { quantity: item.quantity } }, { session });
-        }
-      } else if (sale.product) {
-        await Product.findByIdAndUpdate(sale.product, { $inc: { quantity: sale.quantity } }, { session });
+      const itemsToReverse = sale.items && sale.items.length > 0
+        ? sale.items
+        : (sale.product ? [{ product: sale.product, quantity: sale.quantity, item_metadata: {} }] : []);
+
+      for (const item of itemsToReverse) {
+        let productQuery = Product.findById(item.product);
+        if (session) productQuery = productQuery.session(session);
+        const product = await productQuery;
+        if (!product) continue;
+        const quantityAfter = round2(product.quantity + Number(item.quantity || 0));
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { quantity: item.quantity },
+          $push: {
+            stock_history: {
+              type: 'sale_return',
+              quantity_change: Number(item.quantity),
+              quantity_after: quantityAfter,
+              note: `Sale deleted: ${sale.invoice_number}`,
+              reference_id: sale.invoice_number,
+              date: new Date(),
+            },
+          },
+        }, { session });
       }
 
+      await reverseSubInventoryForSale(sale.items || [], session);
       await reverseCustomerLedgerForSale(sale, session);
       await Sale.findOneAndDelete({ _id: req.params.id, shop: shop._id }, { session });
     });
@@ -1220,4 +1198,5 @@ module.exports = {
   getGSTSummary,
   getGSTComplianceReport,
   getProfitSummary,
+  calculateGSTR3BSummary,
 };

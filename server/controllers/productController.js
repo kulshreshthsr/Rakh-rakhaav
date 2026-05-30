@@ -15,17 +15,33 @@ const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim(
 const getProducts = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
-    const products = await Product.find({ shop: shop._id, isActive: { $ne: false } })
-      .select('-stock_history') // don't send history in list — heavy
-      .sort({ name: 1 });
+    const { search, limit: limitParam, cursor } = req.query;
 
-    // Add computed fields for frontend
-    const result = products.map(p => ({
+    const filter = { shop: shop._id, isActive: { $ne: false } };
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { name: { $regex: escaped, $options: 'i' } },
+        { barcode: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+    if (cursor) filter._id = { $gt: cursor };
+
+    const pageSize = Math.min(Number(limitParam) || 500, 1000);
+    const products = await Product.find(filter)
+      .select('-stock_history')
+      .sort({ name: 1 })
+      .limit(pageSize + 1);
+
+    const hasMore = products.length > pageSize;
+    const page = hasMore ? products.slice(0, pageSize) : products;
+    const nextCursor = hasMore ? String(page[page.length - 1]._id) : null;
+
+    const result = page.map(p => ({
       ...p.toJSON(),
       margin: p.cost_price > 0
         ? parseFloat((((p.price - p.cost_price) / p.cost_price) * 100).toFixed(1))
         : null,
-      is_low_stock: p.quantity <= p.low_stock_threshold,
     }));
 
     res.json(result);
@@ -57,6 +73,19 @@ const createProduct = async (req, res) => {
       }
     }
 
+    // MRP validation for pharmacy (DPCO)
+    if (shop.businessType === 'pharmacy' && req.body.metadata) {
+      const mrp = req.body.metadata.mrp;
+      if (mrp !== undefined && mrp !== null && mrp !== '') {
+        const sellingPrice = Number(price);
+        if (sellingPrice > Number(mrp)) {
+          return res.status(400).json({
+            message: `Selling price (₹${sellingPrice}) cannot exceed MRP (₹${mrp}). DPCO violation.`,
+          });
+        }
+      }
+    }
+
     const product = await Product.create({
       shop: shop._id,
       name: name.trim(),
@@ -69,6 +98,7 @@ const createProduct = async (req, res) => {
       hsn_code: hsn_code || '',
       gst_rate: Number(gst_rate) || 0,
       low_stock_threshold: Number(low_stock_threshold) || 5,
+      metadata: req.body.metadata || {},
       // Log initial stock
       stock_history: qty > 0 ? [{
         type: 'manual_add',
@@ -116,6 +146,19 @@ const updateProduct = async (req, res) => {
       }
     }
 
+    // MRP validation for pharmacy (DPCO)
+    if (shop.businessType === 'pharmacy' && req.body.metadata) {
+      const mrp = req.body.metadata.mrp;
+      if (mrp !== undefined && mrp !== null && mrp !== '') {
+        const sellingPrice = price !== undefined ? Number(price) : product.price;
+        if (sellingPrice > Number(mrp)) {
+          return res.status(400).json({
+            message: `Selling price (₹${sellingPrice}) cannot exceed MRP (₹${mrp}). DPCO violation.`,
+          });
+        }
+      }
+    }
+
     // Note: quantity is NOT updated here — use /adjust-stock for that
     product.name = name?.trim() || product.name;
     product.description = description ?? product.description;
@@ -126,6 +169,10 @@ const updateProduct = async (req, res) => {
     product.hsn_code = hsn_code ?? product.hsn_code;
     product.gst_rate = gst_rate !== undefined ? Number(gst_rate) : product.gst_rate;
     product.low_stock_threshold = low_stock_threshold !== undefined ? Number(low_stock_threshold) : product.low_stock_threshold;
+    if (req.body.metadata !== undefined) {
+      product.metadata = req.body.metadata;
+      product.markModified('metadata');
+    }
 
     await product.save();
 

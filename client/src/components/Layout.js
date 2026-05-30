@@ -32,12 +32,7 @@ const NAV_ITEMS = [
   { href: '/reports',      key: 'reports',   shortLabel: 'Reports',  tone: 'reports', permission: 'VIEW_REPORTS'      },
 ];
 
-const MOBILE_BOTTOM_NAV = [
-  { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',     icon: 'dashboard', permission: 'VIEW_DASHBOARD' },
-  { href: '/sales',     key: 'sales',     shortLabel: 'Sale',     icon: 'sales',     permission: 'VIEW_SALES'     },
-  { href: '/purchases', key: 'purchases', shortLabel: 'Purchase', icon: 'purchases', permission: 'VIEW_PURCHASES' },
-  { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',   icon: 'udhaar',    permission: 'VIEW_UDHAAR'    },
-];
+// Bottom nav is dynamically computed per business type — see bottomNavItems below
 
 const MORE_DRAWER_ITEMS = [
   { href: '/product',       key: 'products',       label: 'Stock',         sublabel: 'Products & Inventory', icon: 'products', permission: 'MANAGE_INVENTORY' },
@@ -294,7 +289,7 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = M
 /* ─── Main layout ────────────────────────────────────────────────── */
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
-  const { updateBusinessType, term, isEnabled } = useIndustry();
+  const { updateBusinessType, term, isEnabled, businessType } = useIndustry();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -438,32 +433,67 @@ function LayoutInner({ children }) {
   const translatedNav = useMemo(
     () => NAV_ITEMS
       .filter(item => canAccess(item.permission))
+      .filter(item => isEnabled(item.key))
       .map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
-    [bilingualLabels, t, canAccess]
+    [bilingualLabels, t, canAccess, isEnabled]
   );
+
+  // Dynamic bottom nav — slot 0 is always Dashboard, slot 1 is always Sales,
+  // slots 2-3 are chosen based on business type.
+  const bottomNavItems = useMemo(() => {
+    const ALL_ITEMS = {
+      dashboard: { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',                         icon: 'dashboard', permission: 'VIEW_DASHBOARD'   },
+      sales:     { href: '/sales',     key: 'sales',     shortLabel: term('sale', 'Sale'),            icon: 'sales',     permission: 'VIEW_SALES'       },
+      purchases: { href: '/purchases', key: 'purchases', shortLabel: 'Purchase',                      icon: 'purchases', permission: 'VIEW_PURCHASES'   },
+      udhaar:    { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',                        icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
+      product:   { href: '/product',   key: 'products',  shortLabel: term('inventory', 'Stock'),      icon: 'products',  permission: 'MANAGE_INVENTORY' },
+      reports:   { href: '/reports',   key: 'reports',   shortLabel: 'Reports',                       icon: 'reports',   permission: 'VIEW_REPORTS'     },
+      expenses:  { href: '/expenses',  key: 'expenses',  shortLabel: 'Expense',                       icon: 'expenses',  permission: 'VIEW_EXPENSES'    },
+    };
+    const typeMap = {
+      restaurant:     ['purchases', 'reports'],
+      salon:          ['product',   'reports'],
+      repair_shop:    ['product',   'udhaar'],
+      automobile:     ['product',   'udhaar'],
+      service_center: ['product',   'udhaar'],
+      pharmacy:       ['product',   'udhaar'],
+      jewellery:      ['product',   'udhaar'],
+      kirana:         ['purchases', 'udhaar'],
+      grocery:        ['purchases', 'udhaar'],
+      mobile_shop:    ['product',   'purchases'],
+      sweet_shop:     ['product',   'expenses'],
+      bakery:         ['product',   'expenses'],
+      hardware:       ['purchases', 'udhaar'],
+      clothing:       ['product',   'udhaar'],
+      footwear:       ['product',   'udhaar'],
+    };
+    const [slot2, slot3] = typeMap[businessType] || ['purchases', 'udhaar'];
+    return [ALL_ITEMS.dashboard, ALL_ITEMS.sales, ALL_ITEMS[slot2], ALL_ITEMS[slot3]];
+  }, [businessType, term]);
 
   const filteredBottomNav = useMemo(
-    () => MOBILE_BOTTOM_NAV.filter(item => canAccess(item.permission)),
-    [canAccess]
+    () => bottomNavItems.filter(item => canAccess(item.permission)),
+    [bottomNavItems, canAccess]
   );
 
-  const filteredDrawerItems = useMemo(
-    () => MORE_DRAWER_ITEMS
+  const filteredDrawerItems = useMemo(() => {
+    const base = MORE_DRAWER_ITEMS
       .filter(item => canAccess(item.permission))
-      // Hide purchases/gst/bank drawers if the module is disabled for this business type
-      .filter(item => {
-        if (item.key === 'purchases') return isEnabled('purchases');
-        if (item.key === 'gst')       return isEnabled('gst');
-        if (item.key === 'bank')      return isEnabled('bank');
-        return true;
-      })
-      // Adapt labels for industry-specific terminology
+      .filter(item => isEnabled(item.key))
       .map(item => {
         if (item.key === 'products') return { ...item, label: term('inventory', 'Stock'), sublabel: `${term('products','Products')} & Inventory` };
         return item;
-      }),
-    [canAccess, isEnabled, term]
-  );
+      });
+    // Narcotics register — pharmacy only, injected after isEnabled filter
+    if (businessType === 'pharmacy' && canAccess('VIEW_REPORTS')) {
+      base.push({
+        href: '/narcotics', key: 'narcotics',
+        label: 'Narcotics Reg.', sublabel: 'Schedule X Dispensing Log',
+        icon: 'reports', permission: 'VIEW_REPORTS',
+      });
+    }
+    return base;
+  }, [canAccess, isEnabled, term, businessType]);
 
   return (
     <NotificationProvider>

@@ -220,4 +220,13 @@ export default {
     itemSectionTitle: 'Products',
     footerNote:       'IMEI warranty as per manufacturer policy. Keep this invoice safe for all warranty claims.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: "Today's Revenue"    },
+    kpi2: { label: 'Devices Sold', sublabel: 'Units today'         },
+    kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit'        },
+    kpi4: { label: 'Udhaar',       sublabel: 'Customer credit'     },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'          },
+    kpi6: { label: 'Stock Alerts', sublabel: 'Low / Out of stock'  },
+  },
 };

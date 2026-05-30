@@ -50,7 +50,7 @@ const saleSchema = new mongoose.Schema({
   // ── Payment ───────────────────────────────────────────────────
   payment_type: {
     type: String,
-    enum: ['cash', 'credit', 'upi', 'bank'],     // ← added upi/bank
+    enum: ['cash', 'credit', 'upi', 'bank', 'insurance'],
     default: 'cash'
   },
   amount_paid: { type: Number, default: 0 },
@@ -65,6 +65,23 @@ const saleSchema = new mongoose.Schema({
   buyer_gstin: { type: String },
   buyer_address: { type: String },
   buyer_state: { type: String },
+
+  // ── Insurance billing (pharmacy) ──────────────────────────────
+  insurance_type: {
+    type: String,
+    enum: ['none', 'CGHS', 'ESIC', 'Ayushman', 'private_insurance', 'other'],
+    default: 'none',
+  },
+  insurance_card_no:   { type: String },
+  insurance_company:   { type: String },
+  insurance_amount:    { type: Number, default: 0 },
+  patient_copay:       { type: Number, default: 0 },
+  insurance_claim_no:  { type: String },
+  insurance_status: {
+    type: String,
+    enum: ['not_applicable', 'pending_claim', 'claimed', 'rejected', 'partial'],
+    default: 'not_applicable',
+  },
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true },

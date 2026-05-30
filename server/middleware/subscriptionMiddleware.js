@@ -20,10 +20,6 @@ async function loadSubscriptionState(req, res, next) {
   }
 }
 
-async function checkTrialStatus(req, res, next) {
-  return loadSubscriptionState(req, res, next);
-}
-
 async function checkSubscriptionStatus(req, res, next) {
   try {
     await loadSubscriptionState(req, res, () => {});
@@ -44,6 +40,5 @@ async function checkSubscriptionStatus(req, res, next) {
 
 module.exports = {
   loadSubscriptionState,
-  checkTrialStatus,
   checkSubscriptionStatus,
 };

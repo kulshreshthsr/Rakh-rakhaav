@@ -13,14 +13,14 @@ const {
   getProfitSummary,
 } = require('../controllers/salesController');
 
-router.get('/profit-summary', protect, getProfitSummary);
-router.get('/gst-summary', protect, getGSTSummary);
-router.get('/gst-report', protect, getGSTComplianceReport);
+router.get('/profit-summary', protect, requirePermission('VIEW_REPORTS'), getProfitSummary);
+router.get('/gst-summary',    protect, requirePermission('VIEW_GST'),     getGSTSummary);
+router.get('/gst-report',     protect, requirePermission('VIEW_GST'),     getGSTComplianceReport);
 
-router.get('/', protect, getSales);
-router.post('/', protect, checkSubscriptionStatus, createSale);
+router.get('/',    protect, requirePermission('VIEW_SALES'),   getSales);
+router.post('/',   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createSale);
 router.patch('/:id/workflow', protect, requirePermission('CREATE_INVOICE'), updateSaleWorkflow);
-router.put('/:id', protect, checkSubscriptionStatus, updateSale);
-router.delete('/:id', protect, checkSubscriptionStatus, deleteSale);
+router.put('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),  updateSale);
+router.delete('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'), deleteSale);
 
 module.exports = router;

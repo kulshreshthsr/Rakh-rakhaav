@@ -13,6 +13,80 @@ export default {
     defaultPayment:     'cash',
   },
   productAttributes:  [],
+  productAttributeSections: [
+    {
+      title: 'Product Details',
+      icon: '🏷️',
+      fields: [
+        {
+          key: 'brand',
+          label: 'Brand',
+          type: 'text',
+          placeholder: 'e.g. Hindustan Unilever, ITC, Nestlé, Amul',
+          required: false,
+        },
+        {
+          key: 'category',
+          label: 'Category',
+          type: 'select',
+          options: [
+            'FMCG',
+            'Personal Care',
+            'Household',
+            'Food & Grocery',
+            'Beverages',
+            'Dairy & Eggs',
+            'Cleaning Supplies',
+            'Stationery',
+            'Health & Medicine',
+            'Baby Products',
+            'Tobacco & Pan',
+            'Other',
+          ],
+          required: false,
+        },
+        {
+          key: 'sub_category',
+          label: 'Sub-Category',
+          type: 'text',
+          placeholder: 'e.g. Shampoo, Biscuits, Detergent',
+          required: false,
+        },
+        {
+          key: 'pack_size',
+          label: 'Pack Size / Weight',
+          type: 'text',
+          placeholder: 'e.g. 500g, 1L, 6-pack',
+          required: false,
+        },
+      ],
+    },
+    {
+      title: 'Stock & Storage',
+      icon: '📦',
+      fields: [
+        {
+          key: 'rack_location',
+          label: 'Rack / Shelf Location',
+          type: 'text',
+          placeholder: 'e.g. Rack A2, Counter shelf',
+          required: false,
+        },
+        {
+          key: 'is_loose_sold',
+          label: 'Sold Loose / Unpackaged',
+          type: 'checkbox',
+          required: false,
+        },
+        {
+          key: 'expiry_date',
+          label: 'Expiry Date',
+          type: 'date',
+          required: false,
+        },
+      ],
+    },
+  ],
   invoiceExtraFields: [],
   invoiceLineFields:  [],
 
@@ -24,7 +98,7 @@ export default {
     trackVariants:   false,
     trackSerials:    false,
     supportRecipes:  false,
-    supportLooseQty: false,
+    supportLooseQty: true,
     stockUnit: 'pcs',
     allowedUnits: ['Piece', 'Box', 'Pack', 'Kg', 'Litre', 'Set', 'Dozen'],
     expiryAlertDays: 30,
@@ -47,7 +121,8 @@ export default {
     tiles: [
       { id: 'stock',  icon: '📦', label: 'All Stock',       sublabel: 'Inventory overview',  href: '/product', color: 'green', permission: 'MANAGE_INVENTORY' },
       { id: 'sales',  icon: '🧾', label: "Today's Sales",   sublabel: 'All bills today',      href: '/sales',   color: 'blue',  permission: 'VIEW_SALES'       },
-      { id: 'udhaar', icon: '💸', label: 'Udhaar Recovery', sublabel: 'Pending collections', href: '/udhaar',  color: 'rose',  permission: 'VIEW_UDHAAR'      },
+      { id: 'udhaar',       icon: '💸', label: 'Udhaar Recovery', sublabel: 'Pending collections',   href: '/udhaar',              color: 'rose',   permission: 'VIEW_UDHAAR'      },
+      { id: 'credit-aging', icon: '📊', label: 'Credit Aging',    sublabel: 'Overdue customer report', href: '/dashboard#credit-aging', color: 'indigo', permission: 'VIEW_UDHAAR'      },
     ],
     tip: 'Keep low-stock alerts enabled. Regular udhaar collection keeps cash flow healthy.',
   },
@@ -79,5 +154,14 @@ export default {
 
   invoiceConfig: {
     itemSectionTitle: 'Items',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',      sublabel: 'Total billed today'          },
+    kpi2: { label: 'Cash & UPI Today', sublabel: 'Cash received today'         },
+    kpi3: { label: 'मुनाफा',          sublabel: 'Gross profit today'           },
+    kpi4: { label: 'Udhaar',           sublabel: 'Customer credit outstanding' },
+    kpi5: { label: 'GST Payable',      sublabel: 'This month estimate'         },
+    kpi6: { label: 'Stock Alerts',     sublabel: 'Low / Out of stock items'    },
   },
 };

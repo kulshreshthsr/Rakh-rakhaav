@@ -179,4 +179,13 @@ export default {
     itemSectionTitle:  'Baked Goods',
     footerNote:        'Best consumed fresh. Check "Fresh Until" date before purchase. Store as directed on packaging.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',   sublabel: "Today's Revenue"  },
+    kpi2: { label: 'Items Sold',    sublabel: "Today's count"    },
+    kpi3: { label: 'मुनाफा',       sublabel: 'Gross profit'     },
+    kpi4: { label: 'Udhaar',        sublabel: 'Pending credit'   },
+    kpi5: { label: 'GST Payable',   sublabel: 'This month'       },
+    kpi6: { label: 'Expiry Alerts', sublabel: 'Fresh stock check'},
+  },
 };

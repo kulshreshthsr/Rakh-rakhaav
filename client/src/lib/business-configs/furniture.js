@@ -165,4 +165,13 @@ export default {
     itemSectionTitle: 'Furniture Items',
     footerNote:       'Delivery as per agreed schedule. Assembly charges if applicable are separate. Warranty as per manufacturer terms.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',    sublabel: "Today's Revenue"    },
+    kpi2: { label: 'Bills',           sublabel: 'Invoices today'      },
+    kpi3: { label: 'मुनाफा',         sublabel: 'Gross profit'        },
+    kpi4: { label: 'Contractor Dues', sublabel: 'Outstanding credit'  },
+    kpi5: { label: 'GST Payable',     sublabel: 'This month'          },
+    kpi6: { label: 'Stock Alerts',    sublabel: 'Low / Out of stock'  },
+  },
 };

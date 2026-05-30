@@ -184,4 +184,13 @@ export default {
     itemSectionTitle: 'Jewellery Items',
     footerNote:       'BIS Hallmarked jewellery. Buyback available as per prevailing rates. Keep this invoice for all future transactions.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: "Today's Revenue"        },
+    kpi2: { label: 'Pieces Sold',  sublabel: 'Items today'             },
+    kpi3: { label: 'मुनाफा',      sublabel: 'Making charges earned'   },
+    kpi4: { label: 'Udhaar',       sublabel: 'Pending credit'          },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'              },
+    kpi6: { label: 'Low Stock',    sublabel: 'Low / Out of stock'      },
+  },
 };

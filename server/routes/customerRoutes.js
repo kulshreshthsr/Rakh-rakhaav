@@ -9,16 +9,16 @@ const {
   addUdhaar,
   settlePayment,
 } = require('../controllers/customerController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 
-router.get('/', protect, getCustomers);
-router.post('/', protect, checkSubscriptionStatus, createCustomer);
-router.put('/:id', protect, checkSubscriptionStatus, updateCustomer);
-router.delete('/:id', protect, checkSubscriptionStatus, deleteCustomer);
-router.get('/:id/udhaar', protect, getUdhaar);
-router.post('/:id/udhaar', protect, checkSubscriptionStatus, addUdhaar);
-router.post('/:id/settle', protect, checkSubscriptionStatus, settlePayment);
-router.put('/:id/settle', protect, checkSubscriptionStatus, settlePayment);
+router.get('/',      protect, requirePermission('VIEW_UDHAAR'),    getCustomers);
+router.post('/',     protect, checkSubscriptionStatus, requirePermission('MANAGE_CUSTOMERS'), createCustomer);
+router.put('/:id',   protect, checkSubscriptionStatus, requirePermission('MANAGE_CUSTOMERS'), updateCustomer);
+router.delete('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_CUSTOMERS'), deleteCustomer);
+router.get('/:id/udhaar',  protect, requirePermission('VIEW_UDHAAR'),   getUdhaar);
+router.post('/:id/udhaar', protect, checkSubscriptionStatus, requirePermission('MANAGE_UDHAAR'), addUdhaar);
+router.post('/:id/settle', protect, checkSubscriptionStatus, requirePermission('MANAGE_UDHAAR'), settlePayment);
+router.put('/:id/settle',  protect, checkSubscriptionStatus, requirePermission('MANAGE_UDHAAR'), settlePayment);
 
 module.exports = router;

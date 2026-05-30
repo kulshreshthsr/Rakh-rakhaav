@@ -141,4 +141,13 @@ export default {
     itemSectionTitle: 'Materials',
     footerNote:       'Material once sold is not returnable without prior approval. All measurements to be verified at time of delivery.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',      sublabel: "Today's Revenue"      },
+    kpi2: { label: 'Bills',             sublabel: 'Invoices today'        },
+    kpi3: { label: 'मुनाफा',           sublabel: 'Gross profit'          },
+    kpi4: { label: 'Contractor Dues',   sublabel: 'Outstanding credit'    },
+    kpi5: { label: 'GST Payable',       sublabel: 'This month'            },
+    kpi6: { label: 'Stock Alerts',      sublabel: 'Low / Out of stock'    },
+  },
 };

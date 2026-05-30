@@ -397,9 +397,18 @@ const addSerials = async (req, res) => {
 const updateSerial = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
+    // Whitelist only editable fields to prevent injection of shop/product/status overrides
+    const allowed = ['color', 'storage', 'ram', 'warranty_expiry', 'imei_number', 'notes'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
     const serial = await SerialInventory.findOneAndUpdate(
       { _id: req.params.serialId, shop: shop._id },
-      { $set: req.body },
+      { $set: update },
       { new: true }
     );
     if (!serial) return res.status(404).json({ message: 'Serial not found' });

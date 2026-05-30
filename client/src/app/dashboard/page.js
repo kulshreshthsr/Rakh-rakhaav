@@ -13,6 +13,15 @@ import { useNotifications } from '../../contexts/NotificationContext';
 
 const DASHBOARD_CACHE_KEY = 'dashboard-page';
 
+const DEFAULT_KPI_CONFIG = {
+  kpi1: { label: 'आज की कमाई',  sublabel: "Today's Revenue"   },
+  kpi2: { label: 'Bills',        sublabel: 'Invoices today'    },
+  kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit'      },
+  kpi4: { label: 'Udhaar',       sublabel: 'Pending credit'    },
+  kpi5: { label: 'GST Payable',  sublabel: 'This month'        },
+  kpi6: { label: 'Stock Alerts', sublabel: 'Low / Out of stock'},
+};
+
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtD = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -121,12 +130,15 @@ function DashCallout({ callout }) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { term, config } = useIndustry();
+  const { term, config, businessType } = useIndustry();
   const { notifications, taskCount } = useNotifications();
-  const wfc        = getWorkflowConfig(config);
+  // terminology holds the business-config specific data (dashboardConfig, workflowConfig, kpiConfig)
+  const bizConfig  = config?.terminology || {};
+  const wfc        = getWorkflowConfig(bizConfig);
   const wfWidgets  = getDashboardWidgets(wfc);
   const wfActions  = getQuickActions(wfc);
-  const dashCfg    = config?.dashboardConfig || null;
+  const dashCfg    = bizConfig.dashboardConfig || null;
+  const kpiConfig  = bizConfig.kpiConfig || DEFAULT_KPI_CONFIG;
 
   const hasBootstrappedRef = useRef(false);
 
@@ -141,6 +153,10 @@ export default function DashboardPage() {
   const [isStaffUser, setIsStaffUser] = useState(false);
   const [greeting] = useState(getGreeting);
   const [today] = useState(getTodayLabel);
+  const [workflowCounts, setWorkflowCounts] = useState({});
+  const [agingData, setAgingData] = useState(null);
+  const [agingLoading, setAgingLoading] = useState(false);
+  const [showAging, setShowAging] = useState(false);
 
   const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
     const token = getToken();
@@ -168,6 +184,39 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  const fetchWorkflowCounts = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await fetch(apiUrl('/api/dashboard/workflow-counts'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setWorkflowCounts(d.counts || {});
+      }
+    } catch {
+      // non-critical — silently ignore
+    }
+  }, []);
+
+  const fetchCreditAging = async () => {
+    setAgingLoading(true);
+    try {
+      const res = await fetch(apiUrl('/api/dashboard/credit-aging'), {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        const cdata = await res.json();
+        setAgingData(cdata);
+      }
+    } catch (e) {
+      console.error('credit aging fetch failed', e);
+    } finally {
+      setAgingLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (hasBootstrappedRef.current) return undefined;
     hasBootstrappedRef.current = true;
@@ -187,11 +236,23 @@ export default function DashboardPage() {
 
     const deferredId = scheduleDeferred(async () => {
       setRefreshing(Boolean(cached?.data));
-      await fetchDashboard({ silent: Boolean(cached?.data) });
+      await Promise.all([
+        fetchDashboard({ silent: Boolean(cached?.data) }),
+        fetchWorkflowCounts(),
+      ]);
       setRefreshing(false);
     });
     return () => cancelDeferred(deferredId);
-  }, [fetchDashboard, router]);
+  }, [fetchDashboard, fetchWorkflowCounts, router]);
+
+  useEffect(() => {
+    if (!wfc) return;
+    const interval = setInterval(fetchWorkflowCounts, 60000);
+    return () => clearInterval(interval);
+  }, [fetchWorkflowCounts, wfc]);
+
+  const expiryStats     = data?.expiryStats     || { expiredCount: 0, expiring7Days: 0, expiring30Days: 0 };
+  const insurancePending = data?.insurancePending || 0;
 
   const today_sales = data?.today?.revenue || 0;
   const today_bills = data?.today?.bills || 0;
@@ -204,6 +265,7 @@ export default function DashboardPage() {
   const low_stock = data?.stock?.lowStockCount || 0;
   const out_of_stock = data?.stock?.outOfStockCount || 0;
 
+  const paymentSplit = data?.paymentSplit || {};
   const topUdhaarCustomers = (data?.udhaar?.topCustomers || []).slice(0, 5);
   const lowStockItems = (data?.stock?.lowStockItems || []).slice(0, 4);
 
@@ -349,18 +411,27 @@ export default function DashboardPage() {
             <div className="pointer-events-none absolute -bottom-12 -left-8 w-32 h-32 rounded-full bg-emerald-400/20 blur-2xl" />
             
             <div className="relative z-10">
-              <p className="text-[12px] font-bold text-white/80 uppercase tracking-wider mb-2">आज की कमाई</p>
+              <p className="text-[12px] font-bold text-white/80 uppercase tracking-wider mb-2">{kpiConfig.kpi1.label}</p>
               <p className="text-[42px] sm:text-[48px] font-black text-white leading-none tracking-tight mb-4">
                 ₹{fmt(today_sales)}
               </p>
               <div className="flex items-center gap-5">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <span className="text-xl">🧾</span>
+                    <span className="text-xl">{businessType === 'general' ? '💵' : '🧾'}</span>
                   </div>
                   <div>
-                    <p className="text-[10px] text-white/70 uppercase tracking-wider">Bills</p>
-                    <p className="text-[20px] font-black text-white">{today_bills}</p>
+                    <p className="text-[10px] text-white/70 uppercase tracking-wider">{kpiConfig.kpi2.label}</p>
+                    {businessType === 'general' ? (
+                      <div>
+                        <p className="text-[20px] font-black text-white">₹{fmt(paymentSplit.cashInHand)}</p>
+                        {(paymentSplit.creditGiven || 0) > 0 && (
+                          <p className="text-[10px] font-bold text-amber-300">+₹{fmt(paymentSplit.creditGiven)} credit</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[20px] font-black text-white">{today_bills}</p>
+                    )}
                   </div>
                 </div>
                 <div className="w-px h-12 bg-white/20" />
@@ -369,7 +440,7 @@ export default function DashboardPage() {
                     <span className="text-xl">💰</span>
                   </div>
                   <div>
-                    <p className="text-[10px] text-white/70 uppercase tracking-wider">मुनाफा</p>
+                    <p className="text-[10px] text-white/70 uppercase tracking-wider">{kpiConfig.kpi3.label}</p>
                     <p className="text-[20px] font-black text-white">₹{fmt(today_profit)}</p>
                   </div>
                 </div>
@@ -381,7 +452,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
             {hasPermission('VIEW_UDHAAR') && (
               <StatCard
-                label="उधार बाकी"
+                label={kpiConfig.kpi4.label}
                 value={`₹${fmt(total_udhaar)}`}
                 sub={`${udhaar_count} ग्राहक`}
                 gradient="from-red-50 to-rose-100"
@@ -391,9 +462,9 @@ export default function DashboardPage() {
             )}
             {hasPermission('VIEW_GST') && (
               <StatCard
-                label="GST देना है"
+                label={kpiConfig.kpi5.label}
                 value={`₹${fmt(gst_payable)}`}
-                sub="इस महीने"
+                sub={kpiConfig.kpi5.sublabel}
                 gradient="from-amber-50 to-orange-100"
                 icon="📊"
                 href="/gst"
@@ -411,6 +482,125 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+
+        {/* ══════════════════════════════════════
+            2b. CREDIT AGING — General Store Only
+        ══════════════════════════════════════ */}
+        {businessType === 'general' && (
+          <div id="credit-aging">
+            <div className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50 overflow-hidden shadow-md">
+              {/* Collapsible header */}
+              <button
+                className="w-full flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-white/30 transition-colors"
+                onClick={() => {
+                  const next = !showAging;
+                  setShowAging(next);
+                  if (next && agingData === null) fetchCreditAging();
+                }}
+              >
+                <div>
+                  <p className="text-[14px] font-black text-indigo-900">📊 Purana उधार रिपोर्ट</p>
+                  <p className="text-[12px] text-indigo-700 font-medium mt-0.5">कितने दिन पुराना उधार है?</p>
+                </div>
+                <span className="flex-shrink-0 text-[11px] font-black text-indigo-600 bg-indigo-100 px-3 py-1.5 rounded-lg">
+                  {showAging ? 'Collapse ▲' : 'Expand ▼'}
+                </span>
+              </button>
+
+              {/* Expanded content */}
+              {showAging && (
+                <div className="border-t border-indigo-200 px-4 py-4 space-y-4">
+                  {agingLoading ? (
+                    <div className="space-y-2">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="h-14 rounded-xl bg-indigo-100 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : agingData ? (
+                    <>
+                      {agingData.customers.length === 0 ? (
+                        <div className="py-6 text-center">
+                          <p className="text-[15px] font-black text-emerald-700">✅ कोई पुराना उधार नहीं — सब हिसाब बराबर है!</p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Bucket summary */}
+                          <div className="grid grid-cols-2 min-[480px]:grid-cols-4 gap-2">
+                            {[
+                              { key: '0-30 days',  grad: 'from-emerald-50 to-green-100',  border: 'border-emerald-200', text: 'text-emerald-800', label: '0-30 दिन'  },
+                              { key: '31-60 days', grad: 'from-amber-50 to-yellow-100',   border: 'border-amber-200',   text: 'text-amber-800',   label: '31-60 दिन' },
+                              { key: '61-90 days', grad: 'from-orange-50 to-amber-100',   border: 'border-orange-200',  text: 'text-orange-800',  label: '61-90 दिन' },
+                              { key: '90+ days',   grad: 'from-red-50 to-rose-100',       border: 'border-red-200',     text: 'text-red-800',     label: '90+ दिन'   },
+                            ].map(b => {
+                              const bkt = agingData.summary[b.key] || { count: 0, total: 0 };
+                              return (
+                                <div key={b.key} className={`bg-gradient-to-br ${b.grad} border-2 ${b.border} rounded-xl p-3 text-center`}>
+                                  <p className={`text-[15px] font-black ${b.text}`}>₹{fmt(bkt.total)}</p>
+                                  <p className={`text-[10px] font-bold ${b.text} mt-0.5`}>{b.label}</p>
+                                  <p className="text-[10px] text-slate-500">{bkt.count} customers</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Grand total */}
+                          <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-red-50 border border-red-200">
+                            <span className="text-[13px] font-bold text-red-900">कुल Outstanding</span>
+                            <span className="text-[16px] font-black text-red-700">₹{fmt(agingData.grandTotal)}</span>
+                          </div>
+
+                          {/* Customer list */}
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {agingData.customers.map((c, i) => {
+                              const cName  = c._id?.buyerName  || 'Unknown';
+                              const cPhone = (c._id?.buyerPhone || '').replace(/\D/g, '');
+                              const waMsg  = `Namaste ${cName} ji 🙏\n\nHamari General Store se aapka ₹${fmt(c.totalDue)} udhaar baaki hai.\n\nKripya jald se jald payment karein.\n\nDhanyawad 🙏`;
+                              const dotColor = ({
+                                '0-30 days': 'bg-emerald-500',
+                                '31-60 days': 'bg-amber-500',
+                                '61-90 days': 'bg-orange-500',
+                                '90+ days': 'bg-red-500',
+                              })[c.agingBucket] || 'bg-slate-400';
+                              return (
+                                <div key={i} className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotColor}`} />
+                                      <p className="text-[13px] font-black text-slate-900">{cName}</p>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      ₹{fmt(c.totalDue)} due • {c.billCount} bill{c.billCount !== 1 ? 's' : ''} • Oldest: {c.oldestBillAge} days
+                                      {c._id?.buyerPhone ? ` • 📞 ${c._id.buyerPhone}` : ''}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-2 flex-shrink-0">
+                                    {cPhone && (
+                                      <a
+                                        href={`https://wa.me/91${cPhone}?text=${encodeURIComponent(waMsg)}`}
+                                        target="_blank" rel="noreferrer"
+                                        className="px-2.5 py-1.5 rounded-lg bg-emerald-500 text-white text-[11px] font-bold hover:bg-emerald-600 transition-colors"
+                                      >WhatsApp</a>
+                                    )}
+                                    <Link href="/udhaar" className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-50 transition-colors">
+                                      View
+                                    </Link>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[10px] text-slate-400 text-right">
+                            As of {new Date(agingData.asOf).toLocaleString('en-IN')}
+                          </p>
+                        </>
+                      )}
+                    </>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ══════════════════════════════════════
             3. जल्दी काम - Quick Actions (industry-aware)
@@ -471,6 +661,7 @@ export default function DashboardPage() {
                       ⚠️
                     </div>
                     <div className="flex-1">
+                      <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-0.5">{kpiConfig.kpi6.label}</p>
                       <p className="text-[14px] font-black text-amber-900">
                         {out_of_stock > 0 ? `${out_of_stock} ${term('product','product')} खत्म हो गया` : `${low_stock} ${term('product','product')} कम हो रहा है`}
                       </p>
@@ -589,10 +780,55 @@ export default function DashboardPage() {
                 <span className="page-section-label">Business Tools</span>
               </div>
               <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
-                {dashTiles.map(t => (
-                  <QuickAction key={t.id} href={t.href} emoji={t.icon} label={t.label} sublabel={t.sublabel || ''} gradient={TILE_GRADIENTS[t.color] || 'from-slate-50 to-gray-100'} />
-                ))}
+                {dashTiles.map(t => {
+                  // Pharmacy-specific expiry tile — show live count badge
+                  if (t.id === 'expiry' && businessType === 'pharmacy') {
+                    const expired   = expiryStats.expiredCount;
+                    const exp7      = expiryStats.expiring7Days;
+                    const exp30     = expiryStats.expiring30Days;
+                    const badgeCls  = expired > 0 ? 'bg-red-500' : exp7 > 0 ? 'bg-red-400' : 'bg-amber-500';
+                    const badgeNum  = expired > 0 ? expired : exp7 > 0 ? exp7 : exp30;
+                    const sublabelTxt = expired > 0
+                      ? `⚠️ ${expired} already expired — remove now`
+                      : exp7 > 0
+                      ? `${exp7} expiring this week`
+                      : exp30 > 0
+                      ? `${exp30} expiring in 30 days`
+                      : 'All stock within date ✓';
+                    return (
+                      <Link key={t.id} href="/product?filter=expiring"
+                        className={`group relative overflow-hidden flex flex-col gap-2 p-4 rounded-2xl bg-gradient-to-br ${TILE_GRADIENTS[t.color] || 'from-orange-50 to-amber-100'} border-2 border-transparent hover:border-green-300 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 active:scale-95`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-3xl transform group-hover:scale-110 transition-transform">{t.icon}</span>
+                          {badgeNum > 0 && (
+                            <span className={`${badgeCls} text-white text-[11px] font-black px-2 py-0.5 rounded-full`}>{badgeNum}</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="block text-[14px] font-black text-slate-900 leading-tight">{t.label}</span>
+                          <span className="block text-[10px] font-bold text-slate-500 mt-0.5 leading-snug">{sublabelTxt}</span>
+                        </div>
+                      </Link>
+                    );
+                  }
+                  return (
+                    <QuickAction key={t.id} href={t.href} emoji={t.icon} label={t.label} sublabel={t.sublabel || ''} gradient={TILE_GRADIENTS[t.color] || 'from-slate-50 to-gray-100'} />
+                  );
+                })}
               </div>
+              {/* Insurance claims pending — pharmacy only */}
+              {businessType === 'pharmacy' && insurancePending > 0 && (
+                <Link href="/sales?filter=insurance_pending"
+                  className="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors"
+                >
+                  <span className="text-xl flex-shrink-0">🏥</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-black text-blue-900">{insurancePending} Insurance Claims Pending</p>
+                    <p className="text-[11px] text-blue-600 font-medium">Awaiting reimbursement →</p>
+                  </div>
+                </Link>
+              )}
             </div>
           );
         })()}
@@ -608,19 +844,26 @@ export default function DashboardPage() {
               <Link href="/sales" className="page-section-link">सभी देखें →</Link>
             </div>
             <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
-              {wfWidgets.map(widget => (
-                <Link
-                  key={widget.id}
-                  href={`/sales?wf=${widget.stages[0]}`}
-                  className="group flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-green-300 hover:-translate-y-0.5 hover:shadow-md transition-all"
-                >
-                  <span className="text-2xl group-hover:scale-110 transition-transform">{widget.icon}</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-black text-slate-800 leading-tight">{widget.label}</p>
-                    <p className="text-[10px] font-bold text-green-600 mt-0.5">View →</p>
-                  </div>
-                </Link>
-              ))}
+              {wfWidgets.map(widget => {
+                const count = widget.stages.reduce((sum, stage) => sum + (workflowCounts[stage] || 0), 0);
+                return (
+                  <Link
+                    key={widget.id}
+                    href={`/sales?wf=${widget.stages[0]}`}
+                    className="group flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-green-300 hover:-translate-y-0.5 hover:shadow-md transition-all"
+                  >
+                    <span className="text-2xl group-hover:scale-110 transition-transform">{widget.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-black text-slate-800 leading-tight">{widget.label}</p>
+                      <p className="text-[10px] font-bold text-green-600 mt-0.5">View →</p>
+                    </div>
+                    {count > 0
+                      ? <span className="flex-shrink-0 bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full min-w-[22px] text-center">{count}</span>
+                      : <span className="flex-shrink-0 text-slate-400 text-[11px]">0</span>
+                    }
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}

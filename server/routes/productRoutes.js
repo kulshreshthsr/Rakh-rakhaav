@@ -8,14 +8,15 @@ const {
   adjustStock,
   getStockHistory,
 } = require('../controllers/productController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 
-router.get('/', protect, getProducts);
-router.post('/', protect, checkSubscriptionStatus, createProduct);
-router.put('/:id', protect, checkSubscriptionStatus, updateProduct);
-router.delete('/:id', protect, checkSubscriptionStatus, deleteProduct);
-router.post('/:id/adjust-stock', protect, checkSubscriptionStatus, adjustStock);
+// Products are readable by all authenticated users (needed to create invoices)
+router.get('/',    protect, getProducts);
 router.get('/:id/stock-history', protect, getStockHistory);
+router.post('/',   protect, checkSubscriptionStatus, requirePermission('MANAGE_INVENTORY'), createProduct);
+router.put('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_INVENTORY'), updateProduct);
+router.delete('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_INVENTORY'), deleteProduct);
+router.post('/:id/adjust-stock', protect, checkSubscriptionStatus, requirePermission('MANAGE_INVENTORY'), adjustStock);
 
 module.exports = router;

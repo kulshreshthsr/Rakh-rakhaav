@@ -187,4 +187,13 @@ export default {
     itemSectionTitle:   'Garments',
     footerNote:         'Exchange within 7 days with original bill. No cash refund on sale items.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: "Today's Revenue"   },
+    kpi2: { label: 'Pieces Sold',  sublabel: 'Units today'        },
+    kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit'       },
+    kpi4: { label: 'Udhaar',       sublabel: 'Pending credit'     },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'         },
+    kpi6: { label: 'Size Alerts',  sublabel: 'Sizes out of stock' },
+  },
 };

@@ -1,7 +1,6 @@
 const express = require('express');
 const router  = express.Router();
-const { protect }          = require('../middleware/authMiddleware');
-const { requirePermission } = require('../middleware/permissionMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const ctrl = require('../controllers/inventoryController');
 
 router.use(protect);

@@ -244,4 +244,13 @@ export default {
     itemSectionTitle: 'Parts & Labour',
     footerNote:       'Warranty on parts as per manufacturer. Labour warranty valid for 30 days from date of service.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',    sublabel: "Today's Revenue"   },
+    kpi2: { label: 'Job Cards',      sublabel: 'Completed today'   },
+    kpi3: { label: 'Labour + Parts', sublabel: "Today's revenue"   },
+    kpi4: { label: 'In Repair',      sublabel: 'Active jobs now'   },
+    kpi5: { label: 'GST Payable',    sublabel: 'This month'        },
+    kpi6: { label: 'Parts Alert',    sublabel: 'Low stock parts'   },
+  },
 };

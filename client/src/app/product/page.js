@@ -56,7 +56,7 @@ function Backdrop({ children, onClose }) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function ProductsPage() {
   const router = useRouter();
-  const { term, config } = useIndustry();
+  const { term, config, businessType } = useIndustry();
 
   /* ── Schema-derived constants ── */
   const pSchema    = config.productFormSchema || {};
@@ -83,9 +83,10 @@ export default function ProductsPage() {
   const [isOnline,   setIsOnline]   = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
 
-  const [search,      setSearch]      = useState('');
-  const [sortBy,      setSortBy]      = useState('name');
-  const [filterStock, setFilterStock] = useState('all');
+  const [search,        setSearch]        = useState('');
+  const [sortBy,        setSortBy]        = useState('name');
+  const [filterStock,   setFilterStock]   = useState('all');
+  const [expiringFilter, setExpiringFilter] = useState(false);
 
   const [showModal,   setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -127,18 +128,34 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('filter') === 'expiring') setExpiringFilter(true);
+  }, []);
+
+  useEffect(() => {
     let r = [...products];
     if (search)              r = r.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.description && p.description.toLowerCase().includes(search.toLowerCase())) || (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase())));
     if (filterStock === 'low')     r = r.filter(p => p.quantity > 0 && p.is_low_stock);
     if (filterStock === 'out')     r = r.filter(p => p.quantity === 0);
     if (filterStock === 'instock') r = r.filter(p => p.quantity > 0 && !p.is_low_stock);
+    if (expiringFilter) {
+      const now = new Date();
+      const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      r = r.filter(p => {
+        const exp = p.metadata?.expiry_date;
+        if (!exp) return false;
+        const d = new Date(exp);
+        return !isNaN(d.getTime()) && d <= in30;
+      });
+    }
     if (sortBy === 'name')         r.sort((a, b) => a.name.localeCompare(b.name));
     if (sortBy === 'price_asc')    r.sort((a, b) => a.price - b.price);
     if (sortBy === 'price_desc')   r.sort((a, b) => b.price - a.price);
     if (sortBy === 'quantity')     r.sort((a, b) => a.quantity - b.quantity);
     if (sortBy === 'margin')       r.sort((a, b) => (b.margin || 0) - (a.margin || 0));
     setFiltered(r);
-  }, [search, sortBy, filterStock, products]);
+  }, [search, sortBy, filterStock, expiringFilter, products]);
 
   /* ── All logic (UNCHANGED) ── */
   const fetchProducts = async () => {
@@ -251,13 +268,15 @@ export default function ProductsPage() {
   const liveMargin = form.cost_price && form.price && Number(form.cost_price) > 0
     ? (((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1) : null;
   const liveProfit = liveMargin != null ? (Number(form.price) - Number(form.cost_price)).toFixed(2) : null;
+  const liveMrp = metadata?.mrp ? Number(metadata.mrp) : null;
+  const mrpViolation = businessType === 'pharmacy' && liveMrp && form.price && Number(form.price) > liveMrp;
   const cacheLabel = cacheUpdatedAt
     ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : null;
 
   const STOCK_TYPES = {
     manual_add:    { label:'Stock जोड़ो',   color:'border-emerald-400 bg-emerald-50 text-emerald-800', active:'bg-emerald-500 text-white border-emerald-500' },
     manual_remove: { label:'Stock हटाओ',   color:'border-rose-400 bg-rose-50 text-rose-800',         active:'bg-rose-500 text-white border-rose-500' },
-    adjustment:    { label:'Correction',   color:'border-green-600 bg-green-50 text-cyan-800',          active:'bg-green-600 text-white border-green-600' },
+    adjustment:    { label:'Correction',   color:'border-amber-400 bg-amber-50 text-amber-800',          active:'bg-amber-500 text-white border-amber-500' },
   };
 
   /* ════════════════════════════════════════════════════════════════
@@ -302,6 +321,23 @@ export default function ProductsPage() {
             >+ {term('addProduct', 'Add Product')}</button>
           </div>
         </div>
+
+        {/* ── EXPIRING FILTER BANNER (pharmacy) ── */}
+        {expiringFilter && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-orange-50 border-2 border-orange-300">
+            <span className="text-xl flex-shrink-0">⏰</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-black text-orange-900">
+                Showing medicines expiring within 30 days — {filtered.length} items
+              </p>
+              <p className="text-[11px] text-orange-700 mt-0.5">Expired or expiring stock should be reviewed immediately</p>
+            </div>
+            <button
+              onClick={() => { setExpiringFilter(false); window.history.replaceState({}, '', '/product'); }}
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg border border-orange-300 bg-white text-[11px] font-bold text-orange-700 hover:bg-orange-50 transition-colors"
+            >Clear Filter</button>
+          </div>
+        )}
 
         {/* ── KPI STRIP ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -560,8 +596,21 @@ export default function ProductsPage() {
                       <input className={INP} type="number" step="0.01" placeholder="Your cost" value={form.cost_price} onChange={e => setForm({...form, cost_price:e.target.value})} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Selling Price *</p>
-                      <input className={INP} type="number" step="0.01" placeholder="Customer pays" value={form.price} onChange={e => setForm({...form, price:e.target.value})} required />
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Selling Price *
+                        {liveMrp && <span className="text-slate-400 font-normal ml-1">(MRP: ₹{liveMrp})</span>}
+                      </p>
+                      <input className={`${INP} ${mrpViolation ? 'border-red-400 focus:border-red-500' : ''}`} type="number" step="0.01" placeholder="Customer pays" value={form.price} onChange={e => setForm({...form, price:e.target.value})} required />
+                      {mrpViolation && (
+                        <p className="text-red-600 text-[10px] font-semibold mt-1">
+                          ⚠️ Selling price ₹{form.price} MRP ₹{liveMrp} से ज़्यादा है — DPCO violation
+                        </p>
+                      )}
+                      {!mrpViolation && liveMrp && form.price && Number(form.price) < liveMrp && (
+                        <p className="text-green-600 text-[10px] mt-1">
+                          ✓ ₹{(liveMrp - Number(form.price)).toFixed(2)} discount below MRP
+                        </p>
+                      )}
                     </div>
                   </div>
                   {liveMargin !== null && (
@@ -672,8 +721,8 @@ export default function ProductsPage() {
 
                 {/* Submit */}
                 <div className="flex gap-3 pb-2">
-                  <button type="submit"
-                    className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 transition-all"
+                  <button type="submit" disabled={!!mrpViolation}
+                    className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:translate-y-0"
                   >{editProduct ? `✓ Update ${term('product','Product')}` : `+ ${term('addProduct','Add Product')}`}</button>
                   <button type="button" onClick={() => setShowModal(false)}
                     className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"

@@ -118,6 +118,7 @@ export default {
         { key: 'batch_no',    label: 'Batch Number',        type: 'text', required: true, placeholder: 'e.g. BT2024001', hint: 'Required for Schedule H / H1 medicines' },
         { key: 'expiry_date', label: 'Expiry Date',         type: 'date', required: true },
         { key: 'mfg_date',    label: 'Manufacturing Date',  type: 'date' },
+        { key: 'mrp',         label: 'MRP (Maximum Retail Price ₹)', type: 'number', placeholder: 'As printed on package', hint: 'Selling price cannot exceed MRP — DPCO law' },
       ],
     },
     {
@@ -142,8 +143,12 @@ export default {
 
   // ─── Invoice-level extra fields (stored in s.extra_fields) ─────────────────
   invoiceExtraFields: [
-    { key: 'prescription_no', label: 'Prescription No.',  type: 'text', placeholder: 'Rx number (optional)' },
-    { key: 'doctor_name',     label: "Doctor's Name",     type: 'text', placeholder: 'Referring doctor' },
+    { key: 'prescription_no',  label: 'Prescription No.',         type: 'text',   placeholder: 'Rx number (optional)' },
+    { key: 'doctor_name',      label: "Doctor's Name",            type: 'text',   placeholder: 'Referring doctor' },
+    { key: 'insurance_type',   label: 'Insurance Scheme',         type: 'select', options: ['None', 'CGHS', 'ESIC', 'Ayushman Bharat', 'Private Insurance', 'Other'], required: false },
+    { key: 'insurance_card_no',label: 'Insurance Card / UHID No.',type: 'text',   placeholder: 'Patient insurance card number', required: false },
+    { key: 'insurance_company',label: 'Insurance Company',        type: 'text',   placeholder: 'Only for private insurance', required: false },
+    { key: 'insurance_amount', label: 'Amount Covered by Insurance (₹)', type: 'number', required: false },
   ],
 
   // ─── Per-line-item extra fields (stored in item.item_metadata) ─────────────
@@ -214,9 +219,10 @@ export default {
       cta: 'Medicine Stock', href: '/product', permission: 'MANAGE_INVENTORY',
     },
     tiles: [
-      { id: 'expiry',    icon: '⏰', label: 'Expiry Alerts',     sublabel: 'Near-expiry medicines',   href: '/product',   color: 'orange', permission: 'MANAGE_INVENTORY' },
-      { id: 'batch',     icon: '🔬', label: 'Batch Records',     sublabel: 'Batch-wise stock',        href: '/product',   color: 'blue',   permission: 'MANAGE_INVENTORY' },
-      { id: 'purchases', icon: '🛒', label: 'Distributor Orders',sublabel: 'Medicine purchases',      href: '/purchases', color: 'teal',   permission: 'CREATE_PURCHASE'  },
+      { id: 'expiry',    icon: '⏰', label: 'Expiry Alerts',     sublabel: 'Near-expiry medicines',   href: '/product?filter=expiring', color: 'orange', permission: 'MANAGE_INVENTORY' },
+      { id: 'batch',     icon: '🔬', label: 'Batch Records',     sublabel: 'Batch-wise stock',        href: '/product',                 color: 'blue',   permission: 'MANAGE_INVENTORY' },
+      { id: 'purchases', icon: '🛒', label: 'Distributor Orders',sublabel: 'Medicine purchases',      href: '/purchases',               color: 'teal',   permission: 'CREATE_PURCHASE'  },
+      { id: 'narcotics', icon: '🔒', label: 'Narcotics Register',sublabel: 'Schedule X dispensing log',href: '/narcotics',              color: 'red',    permission: 'VIEW_REPORTS'     },
     ],
     tip: 'Schedule H medicines require valid prescription. Track batch numbers for traceability.',
   },
@@ -251,7 +257,18 @@ export default {
     accentColor:           '#0891b2',
     showBatchColumns:      true,
     showPrescriptionBlock: true,
+    showMrpColumn:         true,
+    showInsuranceBlock:    true,
     itemSectionTitle:      'Medicines',
     footerNote:            'Keep medicines in cool, dry place away from sunlight. Check expiry date before use. Not valid without pharmacist seal.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',    sublabel: "Today's Revenue"      },
+    kpi2: { label: 'Prescriptions',  sublabel: 'Dispensed today'       },
+    kpi3: { label: 'Margin',         sublabel: 'Net profit today'      },
+    kpi4: { label: 'Udhaar',         sublabel: 'Patient credit'        },
+    kpi5: { label: 'GST Payable',    sublabel: 'This month'            },
+    kpi6: { label: 'Expiry Alerts',  sublabel: 'Expiring in 30 days'   },
   },
 };

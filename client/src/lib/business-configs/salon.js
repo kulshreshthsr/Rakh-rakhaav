@@ -235,4 +235,13 @@ export default {
     itemSectionTitle: 'Services',
     footerNote:       'Thank you for visiting! We look forward to serving you again.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: "Today's Revenue"     },
+    kpi2: { label: 'Services',     sublabel: 'Completed today'      },
+    kpi3: { label: 'मुनाफा',      sublabel: 'After product cost'   },
+    kpi4: { label: 'Appointments', sublabel: 'Remaining today'      },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'           },
+    kpi6: { label: 'Low Products', sublabel: 'Salon products'       },
+  },
 };

@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
@@ -143,7 +143,7 @@ const INPUT = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white te
 export default function SalesPage() {
   const router = useRouter();
   const { locale } = useAppLocale();
-  const { term, config } = useIndustry();
+  const { term, config, businessType } = useIndustry();
 
   /* ── Schema-derived constants ── */
   const sSchema        = config.saleFormSchema || {};
@@ -184,10 +184,15 @@ export default function SalesPage() {
   const [billMonth, setBillMonth]   = useState('');
   const [extraFields, setExtraFields]           = useState({});
   const [wfFilter, setWfFilter]                 = useState('');
+  const [insuranceFilter, setInsuranceFilter]   = useState(false);
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [showMoreCustomerDetails, setShowMoreCustomerDetails] = useState(false);
   const [customerQuery, setCustomerQuery] = useState('');
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+
+  const [hasMoreSales, setHasMoreSales] = useState(false);
+  const [salesCursor, setSalesCursor]   = useState(null);
+  const [loadingMore, setLoadingMore]   = useState(false);
 
   // Sub-inventory cache: productId → { batches: [], variants: [] }
   const [productBatches,  setProductBatches]  = useState({});
@@ -246,6 +251,8 @@ export default function SalesPage() {
       const res = await fetch(apiUrl('/api/sales'), { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
+      setHasMoreSales(data.hasMore || false);
+      setSalesCursor(data.nextCursor || null);
       const nextSales = data.sales || (Array.isArray(data) ? data : []);
       const nextSummary = data.summary || {};
       const mergedSales = await mergeSalesWithPendingQueue(nextSales);
@@ -253,6 +260,20 @@ export default function SalesPage() {
       writePageCache(SALES_CACHE_KEY, { sales: mergedSales, summary: nextSummary });
     } catch { setError('Sales load nahi ho saki'); }
   }, [mergeSalesWithPendingQueue, router]);
+
+  const loadMoreSales = useCallback(async () => {
+    if (!salesCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(apiUrl(`/api/sales?cursor=${salesCursor}`), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const data = await res.json();
+      setHasMoreSales(data.hasMore || false);
+      setSalesCursor(data.nextCursor || null);
+      const moreSales = data.sales || [];
+      setSales(prev => [...prev, ...moreSales.filter(s => !prev.some(p => p._id === s._id))]);
+    } catch { setError('Could not load older sales'); }
+    setLoadingMore(false);
+  }, [salesCursor, loadingMore]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -330,6 +351,7 @@ export default function SalesPage() {
     const params = new URLSearchParams(window.location.search);
     const wf = params.get('wf');
     if (wf) { setWfFilter(wf); router.replace('/sales'); return; }
+    if (params.get('filter') === 'insurance_pending') { setInsuranceFilter(true); return; }
     if (params.get('open') !== '1' || params.get('payment') !== 'credit') return;
     setEditingSaleId(''); setItems([emptyItem()]); setForm(buildInitialForm({ payment_type: 'credit' }));
     setGstinTouched(false); setError(''); setShowModal(true); router.replace('/sales');
@@ -428,6 +450,14 @@ export default function SalesPage() {
 
   async function handleSubmit(e) {
     e?.preventDefault(); setError(''); setGstinTouched(true);
+    // Block Schedule X sale without prescription (Drugs & Cosmetics Act compliance)
+    if (businessType === 'pharmacy' && scheduleWarning?.hasScheduleX && !scheduleWarning?.prescriptionFilled) {
+      setError('Schedule X दवाई के लिए Prescription No. अनिवार्य है। Bill नहीं बनेगा।');
+      const fieldEl = document.getElementById('invoice-field-prescription_no');
+      fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      fieldEl?.querySelector('input, select, textarea')?.focus();
+      return;
+    }
     if (form.payment_type === 'credit' && !form.buyer_name) { setError('Customer name is required for credit sales.'); return; }
     if (!gstinValid) { setError('Invalid GSTIN format'); return; }
     const validItems = items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
@@ -465,8 +495,8 @@ export default function SalesPage() {
     setSubmitting(false);
   }
 
-  const handleShortcutSubmit = useEffectEvent(() => handleSubmit());
-  const handleShortcutAddItem = useEffectEvent(() => addItem());
+  const handleShortcutSubmit = useCallback(() => handleSubmit(), []);
+  const handleShortcutAddItem = useCallback(() => addItem(), []);
 
   useEffect(() => {
     if (!showModal) return undefined;
@@ -512,8 +542,11 @@ export default function SalesPage() {
       setSales((current) => current.filter((entry) => entry._id !== sale._id)); setError(''); return;
     }
     if (!confirm('Are you sure? Stock will also adjust.')) return;
-    try { await fetch(apiUrl(`/api/sales/${sale._id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } }); fetchAll(); }
-    catch { setError('Delete failed'); }
+    try {
+      const res = await fetch(apiUrl(`/api/sales/${sale._id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.message || 'Delete failed'); return; }
+      fetchAll();
+    } catch { setError('Delete failed'); }
   };
 
   const advanceWorkflowStage = async (saleId, nextStage, action) => {
@@ -556,12 +589,13 @@ export default function SalesPage() {
   const gstDisplay     = Number(summary.totalGST || 0) + offlineGst;
   const normalizedBillSearch = billSearch.trim().toLowerCase();
   const filteredSales = sales.filter((sale) => {
-    const matchesSearch = !normalizedBillSearch || getSaleSearchText(sale).includes(normalizedBillSearch);
-    const matchesMonth  = !billMonth || getMonthFilterValue(sale.createdAt || sale.sold_at) === billMonth;
-    const matchesWf     = !wfFilter  || getSaleWorkflowStatus(sale, wfc) === wfFilter;
-    return matchesSearch && matchesMonth && matchesWf;
+    const matchesSearch    = !normalizedBillSearch || getSaleSearchText(sale).includes(normalizedBillSearch);
+    const matchesMonth     = !billMonth || getMonthFilterValue(sale.createdAt || sale.sold_at) === billMonth;
+    const matchesWf        = !wfFilter  || getSaleWorkflowStatus(sale, wfc) === wfFilter;
+    const matchesInsurance = !insuranceFilter || (sale.insurance_status === 'pending_claim' && sale.insurance_type && sale.insurance_type !== 'none');
+    return matchesSearch && matchesMonth && matchesWf && matchesInsurance;
   });
-  const hasBillFilters = Boolean(normalizedBillSearch || billMonth || wfFilter);
+  const hasBillFilters = Boolean(normalizedBillSearch || billMonth || wfFilter || insuranceFilter);
   const pastCustomers = useMemo(() => {
     const seen = new Set();
     return sales.filter((s) => s.buyer_name && s.buyer_name !== 'Walk-in Customer' && s.buyer_phone).filter((s) => { const key = s.buyer_phone; if (seen.has(key)) return false; seen.add(key); return true; }).map((s) => ({ name: s.buyer_name, phone: s.buyer_phone, state: s.buyer_state || '', address: s.buyer_address || '', gstin: s.buyer_gstin || '' }));
@@ -571,9 +605,44 @@ export default function SalesPage() {
     if (!query) return pastCustomers.slice(0, 5);
     return pastCustomers.filter((customer) => customer.name.toLowerCase().includes(query) || customer.phone.toLowerCase().includes(query)).slice(0, 5);
   }, [customerQuery, pastCustomers]);
+  const scheduleWarning = useMemo(() => {
+    if (businessType !== 'pharmacy') return null;
+    const scheduleItems = items.filter(item => {
+      if (!item.product_id) return false;
+      const prod = products.find(p => p._id === item.product_id);
+      const schedule = prod?.metadata?.schedule || '';
+      return schedule && schedule !== 'OTC' && schedule !== '';
+    });
+    if (scheduleItems.length === 0) return null;
+    const hasScheduleX  = scheduleItems.some(item => {
+      const prod = products.find(p => p._id === item.product_id);
+      return prod?.metadata?.schedule === 'Schedule X';
+    });
+    const hasScheduleH1 = scheduleItems.some(item => {
+      const prod = products.find(p => p._id === item.product_id);
+      return prod?.metadata?.schedule === 'Schedule H1';
+    });
+    const prescriptionFilled = !!(extraFields?.prescription_no?.trim());
+    return {
+      hasControlled: true,
+      hasScheduleX,
+      hasScheduleH1,
+      prescriptionFilled,
+      scheduleItems: scheduleItems.map(item => {
+        const prod = products.find(p => p._id === item.product_id);
+        return { name: prod?.name || 'Medicine', schedule: prod?.metadata?.schedule || '' };
+      }),
+    };
+  }, [items, extraFields, businessType, products]);
+
   const invoicePreview = editingSaleId
     ? (sales.find((sale) => sale._id === editingSaleId)?.invoice_number || 'Editing invoice')
-    : `INV/${new Date().getFullYear().toString().slice(-2)}-${String(new Date().getFullYear() + 1).slice(-2)}/${String(sales.length + 1).padStart(4, '0')}`;
+    : (() => {
+        const now = new Date();
+        const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+        const fy = `${String(startYear).slice(-2)}-${String(startYear + 1).slice(-2)}`;
+        return `INV/${fy}/Auto`;
+      })();
   const selectPastCustomer = (customer) => {
     updateForm({ buyer_name: customer.name, buyer_phone: customer.phone, buyer_state: customer.state, buyer_address: customer.address, buyer_gstin: customer.gstin });
     setCustomerQuery(customer.name); setShowCustomerInfo(true); setShowCustomerSuggestions(false);
@@ -836,7 +905,7 @@ export default function SalesPage() {
                     })()}
 
                     {/* Action buttons */}
-                    <div className="grid grid-cols-2 min-[480px]:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 min-[480px]:grid-cols-5 gap-2">
                       <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)}
                         className="min-h-[44px] py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
                       >✏️ Edit</button>
@@ -846,6 +915,12 @@ export default function SalesPage() {
                       <button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)}
                         className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
                       >📤 Send</button>
+                      <button
+                        onClick={() => window.location.href = `/sale-returns?saleId=${s._id}&invoice=${s.invoice_number}`}
+                        disabled={Boolean(s._isOffline)}
+                        title="Process a return for this sale"
+                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50 text-[11px] font-bold text-amber-700 hover:bg-amber-100 disabled:opacity-40 transition-all"
+                      >↩️ Return</button>
                       <button onClick={() => handleDelete(s)}
                         className="min-h-[44px] py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
                       >{s._isOffline ? '✕' : '🗑️'}</button>
@@ -854,6 +929,17 @@ export default function SalesPage() {
                 </div>
               );
             })}
+
+            {/* Load more / pagination */}
+            {hasMoreSales && !hasBillFilters && (
+              <button
+                onClick={loadMoreSales}
+                disabled={loadingMore}
+                className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-500 hover:border-slate-300 hover:text-slate-600 disabled:opacity-50 transition-all"
+              >
+                {loadingMore ? 'Loading...' : '↓ Load older sales'}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -914,6 +1000,14 @@ export default function SalesPage() {
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+            {/* Shop state warning — IGST will be wrong without it */}
+            {!shopState && !editingSaleId && (
+              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-[12px] font-semibold text-amber-800">
+                <span className="text-base leading-none flex-shrink-0">⚠️</span>
+                <span>Shop state not set — inter-state GST (IGST) won&apos;t be calculated correctly. <a href="/profile" className="underline font-bold text-amber-900">Set in Profile →</a></span>
+              </div>
+            )}
 
             {/* Error */}
             {error && (
@@ -1017,7 +1111,7 @@ export default function SalesPage() {
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700">{term('invoice', 'Invoice')} Details</p>
                 {config.invoiceExtraFields.map((field) => (
-                  <div key={field.key}>
+                  <div key={field.key} id={`invoice-field-${field.key}`}>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{field.label}{field.required && <span className="text-rose-500 ml-0.5">*</span>}</p>
                     <DynamicFormField
                       field={field}
@@ -1026,6 +1120,12 @@ export default function SalesPage() {
                     />
                   </div>
                 ))}
+                {/* Prescription confirmed badge */}
+                {businessType === 'pharmacy' && scheduleWarning?.hasControlled && scheduleWarning.prescriptionFilled && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-200 text-[11px] font-semibold text-green-700">
+                    ✓ Prescription on file — Schedule H dispensing authorised
+                  </div>
+                )}
               </div>
             )}
 
@@ -1101,12 +1201,18 @@ export default function SalesPage() {
 
                         {/* Price */}
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Price (₹)</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                            Price (₹)
+                            {businessType === 'pharmacy' && prod?.metadata?.mrp && (
+                              <span className="text-slate-400 font-normal ml-1">MRP: ₹{prod.metadata.mrp}</span>
+                            )}
+                          </p>
                           <input
                             className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
                             type="number" step="0.01" placeholder="0.00"
                             value={item.price_per_unit}
                             onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)}
+                            max={businessType === 'pharmacy' && prod?.metadata?.mrp ? prod.metadata.mrp : undefined}
                           />
                         </div>
                       </div>
@@ -1244,6 +1350,68 @@ export default function SalesPage() {
                 >+ Item जोड़ें <span className="text-[10px] opacity-60">(Alt+A)</span></button>
               </div>
             </div>
+
+            {/* ── Schedule H/X Warning Banner (pharmacy) ── */}
+            {scheduleWarning && !scheduleWarning.prescriptionFilled && (
+              <div className={`flex items-start gap-3 p-3 rounded-xl border-2 ${scheduleWarning.hasScheduleX ? 'bg-red-50 border-red-400' : 'bg-amber-50 border-amber-400'}`}>
+                <span className="text-2xl flex-shrink-0">{scheduleWarning.hasScheduleX ? '🚫' : '⚠️'}</span>
+                <div className="flex-1">
+                  <p className={`font-black text-sm ${scheduleWarning.hasScheduleX ? 'text-red-800' : 'text-amber-800'}`}>
+                    {scheduleWarning.hasScheduleX
+                      ? 'Schedule X दवाई — Prescription अनिवार्य है'
+                      : 'Schedule H दवाई — Prescription नंबर डालें'}
+                  </p>
+                  <p className={`text-xs mt-0.5 ${scheduleWarning.hasScheduleX ? 'text-red-700' : 'text-amber-700'}`}>
+                    {scheduleWarning.scheduleItems.map(i => `${i.name} (${i.schedule})`).join(', ')}
+                  </p>
+                  {scheduleWarning.hasScheduleX && (
+                    <p className="text-xs font-semibold text-red-700 mt-1">
+                      Drugs &amp; Cosmetics Act — Schedule X बिना valid prescription के नहीं बेच सकते।
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fieldEl = document.getElementById('invoice-field-prescription_no');
+                    fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    fieldEl?.querySelector('input, select, textarea')?.focus();
+                  }}
+                  className={`text-xs font-black px-3 py-1.5 rounded-lg flex-shrink-0 ${scheduleWarning.hasScheduleX ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
+                >
+                  Prescription भरें ↑
+                </button>
+              </div>
+            )}
+
+            {/* ── Insurance Payment Breakdown (pharmacy) ── */}
+            {businessType === 'pharmacy' && extraFields.insurance_type && extraFields.insurance_type !== 'None' && extraFields.insurance_type !== '' && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
+                <p className="text-[13px] font-black text-slate-900">Insurance Payment Breakdown</p>
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-slate-400 mb-1.5">Insurance Coverage (₹)</p>
+                  <input
+                    className={INPUT}
+                    type="number" step="0.01" min="0"
+                    placeholder="Amount covered by insurance"
+                    value={extraFields.insurance_amount || ''}
+                    onChange={e => setExtraFields(prev => ({ ...prev, insurance_amount: e.target.value }))}
+                    max={billTotals.total}
+                  />
+                </div>
+                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white border border-blue-200">
+                  <span className="text-[12px] font-bold text-blue-700">Patient Copay</span>
+                  <span className="text-[15px] font-black text-blue-700">
+                    ₹{Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  {extraFields.insurance_type} — {Number(extraFields.insurance_amount || 0) >= billTotals.total
+                    ? 'Fully covered by insurance'
+                    : `Patient pays ₹${Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}`}
+                </p>
+              </div>
+            )}
 
             {/* ── Advance payment (credit only) ── */}
             {form.payment_type === 'credit' && (

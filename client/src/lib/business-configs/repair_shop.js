@@ -223,4 +223,13 @@ export default {
     itemSectionTitle: 'Services & Parts',
     footerNote:       'Warranty on repairs as mentioned per service. Bring device and this job card for warranty claims.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',   sublabel: "Today's Revenue"   },
+    kpi2: { label: 'Job Cards',     sublabel: 'Closed today'       },
+    kpi3: { label: 'Labour Income', sublabel: "Today's earnings"   },
+    kpi4: { label: 'Pending Jobs',  sublabel: 'Awaiting pickup'    },
+    kpi5: { label: 'GST Payable',   sublabel: 'This month'         },
+    kpi6: { label: 'Parts Alert',   sublabel: 'Low spare parts'    },
+  },
 };

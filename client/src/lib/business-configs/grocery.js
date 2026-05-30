@@ -146,4 +146,13 @@ export default {
     itemSectionTitle: 'Grocery Items',
     footerNote:       'Fresh produce quality assured. Check expiry date before purchase. Cold chain products store as directed.',
   },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',   sublabel: "Today's Revenue"        },
+    kpi2: { label: 'Bills',          sublabel: 'Customers served'        },
+    kpi3: { label: 'मुनाफा',        sublabel: 'Gross profit'            },
+    kpi4: { label: 'Udhaar',         sublabel: 'Regular customer dues'   },
+    kpi5: { label: 'GST Payable',    sublabel: 'This month'              },
+    kpi6: { label: 'Expiry Alerts',  sublabel: 'Perishables check'       },
+  },
 };

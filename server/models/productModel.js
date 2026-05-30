@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const stockHistorySchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['purchase', 'sale', 'manual_add', 'manual_remove', 'adjustment'],
+    enum: ['purchase', 'sale', 'sale_return', 'purchase_return', 'manual_add', 'manual_remove', 'adjustment'],
     required: true,
   },
   quantity_change: { type: Number, required: true }, // +ve = added, -ve = removed
@@ -43,9 +43,14 @@ productSchema.virtual('margin').get(function () {
   return parseFloat((((this.price - this.cost_price) / this.cost_price) * 100).toFixed(1));
 });
 
-// Virtual: is low stock
+// Virtual: is low stock (only when quantity > 0 to avoid double-flagging out-of-stock)
 productSchema.virtual('is_low_stock').get(function () {
-  return this.quantity <= this.low_stock_threshold;
+  return this.quantity > 0 && this.quantity <= this.low_stock_threshold;
+});
+
+// Virtual: is out of stock
+productSchema.virtual('is_out_of_stock').get(function () {
+  return this.quantity <= 0;
 });
 
 productSchema.index({ shop: 1 });
