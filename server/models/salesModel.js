@@ -18,6 +18,7 @@ const saleItemSchema = new mongoose.Schema({
   total_amount: { type: Number, default: 0 },
   // Industry-specific line fields (pharmacy: batch_number/expiry, clothing: size/color, etc.)
   item_metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
+  notes: { type: String, default: '' },
 });
 
 const saleSchema = new mongoose.Schema({
@@ -82,6 +83,24 @@ const saleSchema = new mongoose.Schema({
     enum: ['not_applicable', 'pending_claim', 'claimed', 'rejected', 'partial'],
     default: 'not_applicable',
   },
+
+  // ── Sale type & exchange ──────────────────────────────────────
+  sale_type: {
+    type: String,
+    enum: ['sale', 'exchange', 'return', 'exchange_out'],
+    default: 'sale',
+  },
+  exchange_reference: { type: String },   // original invoice number being exchanged
+
+  // ── Challan / Document type (hardware) ───────────────────────
+  document_type: {
+    type: String,
+    enum: ['invoice', 'challan', 'quotation'],
+    default: 'invoice',
+  },
+  converted_to_invoice:     { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
+  converted_from_challan:   { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
+  challan_date:             { type: Date, default: null },
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true },

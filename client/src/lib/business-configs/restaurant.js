@@ -142,9 +142,13 @@ export default {
 
   // ─── Invoice-level extra fields ─────────────────────────────────────────────
   invoiceExtraFields: [
-    { key: 'table_no',     label: 'Table No.',    type: 'text',   placeholder: 'Table number' },
-    { key: 'cover_count',  label: 'Covers',       type: 'number', placeholder: 'No. of guests', min: 1 },
-    { key: 'waiter_name',  label: 'Waiter',       type: 'text',   placeholder: 'Staff name (optional)' },
+    { key: 'order_type',           label: 'Order Type',          type: 'select',  options: ['Dine-In', 'Takeaway', 'Delivery', 'Swiggy', 'Zomato', 'Other'], required: true, defaultValue: 'Dine-In' },
+    { key: 'table_no',             label: 'Table No.',           type: 'text',    placeholder: 'e.g. T-5, Counter, Outdoor 2', showWhen: { field: 'order_type', value: 'Dine-In' } },
+    { key: 'covers',               label: 'No. of Guests',       type: 'number',  placeholder: '2', showWhen: { field: 'order_type', value: 'Dine-In' } },
+    { key: 'waiter_name',          label: 'Waiter / Staff',      type: 'text',    placeholder: 'Staff name' },
+    { key: 'delivery_platform_id', label: 'Platform Order ID',   type: 'text',    placeholder: 'Swiggy / Zomato order ID', showWhen: { field: 'order_type', values: ['Swiggy', 'Zomato', 'Delivery'] } },
+    { key: 'delivery_address',     label: 'Delivery Address',    type: 'text',    showWhen: { field: 'order_type', values: ['Delivery'] } },
+    { key: 'special_instructions', label: 'Special Instructions',type: 'text',    placeholder: 'e.g. No onion, Extra spicy, Jain preparation' },
   ],
 
   // ─── Per-line-item extra fields ─────────────────────────────────────────────
@@ -216,9 +220,11 @@ export default {
       cta: 'New Order', href: '/sales?open=1', permission: 'CREATE_INVOICE',
     },
     tiles: [
-      { id: 'dine_in',  icon: '🪑', label: 'Dine-In Orders', sublabel: 'Table-wise orders',   href: '/sales',     color: 'orange', permission: 'CREATE_INVOICE'   },
-      { id: 'menu',     icon: '🍜', label: 'Menu / Dishes',  sublabel: 'Add or edit dishes',  href: '/product',   color: 'amber',  permission: 'MANAGE_INVENTORY' },
-      { id: 'reports',  icon: '📊', label: 'Sales Reports',  sublabel: 'Revenue & insights',  href: '/reports',   color: 'green',  permission: 'VIEW_REPORTS'     },
+      { id: 'dine_in',   icon: '🪑', label: 'Dine-In Orders',   sublabel: 'Table-wise orders',         href: '/sales',              color: 'orange', permission: 'CREATE_INVOICE'   },
+      { id: 'menu',      icon: '🍜', label: 'Menu / Dishes',    sublabel: 'Add or edit dishes',         href: '/product',            color: 'amber',  permission: 'MANAGE_INVENTORY' },
+      { id: 'tables',    icon: '🗺️', label: 'Table Status',     sublabel: 'Live floor view',            href: '/tables',             color: 'blue',   permission: 'CREATE_INVOICE'   },
+      { id: 'delivery',  icon: '🛵', label: 'Delivery Orders',  sublabel: 'Swiggy / Zomato / Direct',  href: '/sales?filter=delivery', color: 'red',  permission: 'VIEW_SALES'       },
+      { id: 'reports',   icon: '📊', label: 'Sales Reports',    sublabel: 'Revenue & insights',         href: '/reports',            color: 'green',  permission: 'VIEW_REPORTS'     },
     ],
     tip: 'Track table numbers and covers per order. Use KOT workflow for kitchen efficiency.',
   },

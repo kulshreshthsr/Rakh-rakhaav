@@ -5,14 +5,22 @@
  *
  * Props:
  *   field   — { key, label, type, placeholder?, options?, required?, step?,
- *               min?, max?, hint?, defaultValue?, visibleWhen? }
+ *               min?, max?, hint?, defaultValue?, readOnly?, showWhen?,
+ *               notEmpty? }
  *   value   — current value
  *   onChange — (newValue) => void
  *   error   — optional error string; shows red border + message below field
+ *   allValues — { [fieldKey]: value } — required for showWhen evaluation
+ *   availableStylists — [{ _id, name, speciality, color }] — for stylist_select
  *
- * Supported types: text, number, date, select, multiselect, checkbox, textarea, tags
+ * Supported types: text, number, date, time, select, multiselect, checkbox,
+ *                  textarea, tags, stylist_select
+ *
+ * showWhen: { field, value? } — show only when allValues[field] === value
+ * showWhen: { field, values? } — show when allValues[field] is in values[]
+ * showWhen: { field, notEmpty: true } — show when allValues[field] is non-empty
  */
-export default function DynamicFormField({ field, value, onChange, error }) {
+export default function DynamicFormField({ field, value, onChange, error, allValues = {}, availableStylists = [] }) {
   const borderCls = error
     ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-400/30'
     : 'border-slate-200 focus:border-green-600 focus:ring-green-500/30';
@@ -21,6 +29,15 @@ export default function DynamicFormField({ field, value, onChange, error }) {
     'text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all';
 
   const ph = field.placeholder || field.label;
+
+  // showWhen evaluation
+  if (field.showWhen) {
+    const sw = field.showWhen;
+    const watchVal = allValues[sw.field];
+    if (sw.value !== undefined && watchVal !== sw.value) return null;
+    if (Array.isArray(sw.values) && !sw.values.includes(watchVal)) return null;
+    if (sw.notEmpty && (!watchVal || String(watchVal).trim() === '')) return null;
+  }
 
   let content;
 
@@ -34,6 +51,7 @@ export default function DynamicFormField({ field, value, onChange, error }) {
             className="sr-only"
             checked={!!value}
             onChange={e => onChange(e.target.checked)}
+            disabled={field.readOnly}
           />
           <div className={`w-10 h-6 rounded-full transition-all ${value ? 'bg-green-500' : 'bg-slate-200'}`} />
           <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -58,6 +76,7 @@ export default function DynamicFormField({ field, value, onChange, error }) {
             <button
               key={opt}
               type="button"
+              disabled={field.readOnly}
               onClick={() => {
                 const next = isActive ? selected.filter(s => s !== opt) : [...selected, opt];
                 onChange(next);
@@ -66,7 +85,7 @@ export default function DynamicFormField({ field, value, onChange, error }) {
                 isActive
                   ? 'bg-green-600 border-green-600 text-white shadow-sm'
                   : 'border-slate-200 text-slate-600 hover:border-green-300 hover:text-green-700 bg-white'
-              }`}
+              } disabled:opacity-60`}
             >{opt}</button>
           );
         })}
@@ -86,6 +105,7 @@ export default function DynamicFormField({ field, value, onChange, error }) {
           value={raw}
           onChange={e => onChange(e.target.value)}
           placeholder={ph || 'Enter values separated by commas'}
+          readOnly={field.readOnly}
         />
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -107,6 +127,7 @@ export default function DynamicFormField({ field, value, onChange, error }) {
         className={base}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
+        disabled={field.readOnly}
       >
         <option value="">{ph}</option>
         {(field.options || []).map(opt =>
@@ -114,6 +135,25 @@ export default function DynamicFormField({ field, value, onChange, error }) {
             ? <option key={opt.value} value={opt.value}>{opt.label}</option>
             : <option key={opt} value={opt}>{opt}</option>
         )}
+      </select>
+    );
+  }
+
+  /* ── Stylist select (populated from API) ── */
+  else if (field.type === 'stylist_select') {
+    content = (
+      <select
+        className={base}
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        disabled={field.readOnly}
+      >
+        <option value="">— Select Stylist —</option>
+        {availableStylists.map(s => (
+          <option key={s._id} value={s._id}>
+            {s.name}{s.speciality?.length ? ` (${s.speciality.join(', ')})` : ''}
+          </option>
+        ))}
       </select>
     );
   }
@@ -126,28 +166,50 @@ export default function DynamicFormField({ field, value, onChange, error }) {
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         placeholder={ph}
+        readOnly={field.readOnly}
       />
     );
   }
 
-  /* ── Text / Number / Date ── */
-  else {
+  /* ── Time ── */
+  else if (field.type === 'time') {
     content = (
       <input
         className={base}
-        type={
-          field.type === 'number' ? 'number'
-          : field.type === 'date' ? 'date'
-          : 'text'
-        }
+        type="time"
         value={value || ''}
         onChange={e => onChange(e.target.value)}
-        placeholder={ph}
-        step={field.type === 'number' ? (field.step ?? '1') : undefined}
-        min={field.min}
-        max={field.max}
+        readOnly={field.readOnly}
       />
     );
+  }
+
+  /* ── Text / Number / Date / ReadOnly display ── */
+  else {
+    if (field.readOnly) {
+      content = (
+        <div className={`${base} flex items-center bg-slate-50 text-slate-600 cursor-not-allowed`}>
+          {value || <span className="text-slate-400">{ph}</span>}
+        </div>
+      );
+    } else {
+      content = (
+        <input
+          className={base}
+          type={
+            field.type === 'number' ? 'number'
+            : field.type === 'date' ? 'date'
+            : 'text'
+          }
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={ph}
+          step={field.type === 'number' ? (field.step ?? '1') : undefined}
+          min={field.min}
+          max={field.max}
+        />
+      );
+    }
   }
 
   return (

@@ -46,19 +46,19 @@ export default function VariantInventoryPanel({ productId, basePrice = 0, inv, o
   useEffect(() => { load(); }, [load]);
 
   // Build editable matrix cells from loaded variants
-  const [cells, setCells] = useState({});  // key: `${size}__${color}` → { qty, price, _id }
+  const [cells, setCells] = useState({});  // key: `${size}__${color}` → { qty, price, barcode, _id }
 
   useEffect(() => {
     const map = {};
     for (const v of variants) {
       const key = `${v.size || ''}__${v.color || ''}`;
-      map[key] = { qty: v.quantity, price: v.price ?? '', _id: v._id };
+      map[key] = { qty: v.quantity, price: v.price ?? '', barcode: v.barcode || '', _id: v._id };
     }
     setCells(map);
   }, [variants]);
 
   const cellKey = (s, c) => `${s}__${c}`;
-  const getCell = (s, c) => cells[cellKey(s, c)] || { qty: 0, price: '' };
+  const getCell = (s, c) => cells[cellKey(s, c)] || { qty: 0, price: '', barcode: '' };
   const setCell = (s, c, field, val) => {
     const k = cellKey(s, c);
     setCells(prev => ({ ...prev, [k]: { ...getCell(s, c), [k]: prev[k], [field]: val } }));
@@ -79,11 +79,12 @@ export default function VariantInventoryPanel({ productId, basePrice = 0, inv, o
         const qty = Number(c.qty) || 0;
         if (qty > 0 || (c._id)) {
           payload.push({
-            _id:   c._id,
-            size:  hasSize  ? row : undefined,
-            color: hasColor ? col : undefined,
-            quantity:  qty,
-            price:     c.price !== '' ? Number(c.price) : undefined,
+            _id:     c._id,
+            size:    hasSize  ? row : undefined,
+            color:   hasColor ? col : undefined,
+            quantity: qty,
+            price:   c.price !== '' ? Number(c.price) : undefined,
+            barcode: c.barcode || undefined,
           });
         }
       }
@@ -105,6 +106,25 @@ export default function VariantInventoryPanel({ productId, basePrice = 0, inv, o
 
   const totalStock = variants.reduce((s, v) => s + (v.quantity || 0), 0);
 
+  const printBarcodeLabels = () => {
+    const rows = variants.filter(v => v.barcode);
+    if (!rows.length) { alert('No barcodes assigned yet. Add barcodes and save first.'); return; }
+    const labelHtml = rows.map(v => `
+      <div style="display:inline-block;border:1px solid #ccc;border-radius:6px;padding:10px 14px;margin:8px;text-align:center;font-family:monospace;min-width:130px;">
+        <div style="font-size:14px;font-weight:bold;letter-spacing:2px;">${v.barcode}</div>
+        <div style="font-size:11px;color:#555;margin-top:4px;">${[v.size, v.color].filter(Boolean).join(' / ')}</div>
+      </div>`).join('');
+    const win = window.open('', '_blank', 'width=700,height=500');
+    win.document.write(`<html><head><title>Barcode Labels</title><style>body{margin:16px;font-family:sans-serif}@media print{button{display:none}}</style></head><body><h3 style="margin-bottom:12px">Barcode Labels</h3><div>${labelHtml}</div><br><button onclick="window.print()">Print</button></body></html>`);
+    win.document.close();
+  };
+
+  const generateBarcode = (row, col, index) => {
+    const pid = productId ? productId.slice(-4) : 'xxxx';
+    const code = `${pid}-${String(index).padStart(2, '0')}-${Date.now().toString(36).slice(-4)}`;
+    setCell(row, col, 'barcode', code);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -112,14 +132,22 @@ export default function VariantInventoryPanel({ productId, basePrice = 0, inv, o
         <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
           {inv.variantLabel || 'Variants'} — {variants.length} combinations, {totalStock} total
         </p>
-        {sizeOpts.length > 0 && (
-          <button
-            onClick={() => setShowMatrix(m => !m)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-slate-200 text-slate-600 text-[12px] font-semibold hover:border-green-400 hover:text-green-700 transition-colors"
-          >
-            {showMatrix ? 'Hide Matrix' : 'Size Matrix'}
-          </button>
-        )}
+        <div className="flex gap-2">
+          {variants.some(v => v.barcode) && (
+            <button
+              onClick={printBarcodeLabels}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-slate-200 text-slate-600 text-[12px] font-semibold hover:border-indigo-400 hover:text-indigo-700 transition-colors"
+            >🏷️ Print Labels</button>
+          )}
+          {sizeOpts.length > 0 && (
+            <button
+              onClick={() => setShowMatrix(m => !m)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-slate-200 text-slate-600 text-[12px] font-semibold hover:border-green-400 hover:text-green-700 transition-colors"
+            >
+              {showMatrix ? 'Hide Matrix' : 'Size Matrix'}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <div className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-[12px] text-rose-700 font-medium">{error}</div>}
@@ -160,15 +188,17 @@ export default function VariantInventoryPanel({ productId, basePrice = 0, inv, o
                 {hasSize  && <th className="text-left py-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Size</th>}
                 {hasColor && <th className="text-left py-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">Color</th>}
                 <th className="text-center py-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 w-24">Stock</th>
-                <th className="text-center py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 w-28">Price (₹)</th>
+                <th className="text-center py-2 pr-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 w-28">Price (₹)</th>
+                <th className="text-center py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 w-32">Barcode</th>
               </tr>
             </thead>
             <tbody>
-              {rows.flatMap(row =>
-                cols.map(col => {
+              {rows.flatMap((row, rIdx) =>
+                cols.map((col, cIdx) => {
                   const k   = cellKey(row, col);
                   const c   = cells[k] || {};
                   const qty = c.qty ?? 0;
+                  const variantIdx = rIdx * cols.length + cIdx;
                   return (
                     <tr key={k} className="border-b border-slate-50 hover:bg-slate-50/50">
                       {hasSize  && <td className="py-1.5 pr-3 font-semibold text-slate-700">{row || '—'}</td>}
@@ -186,7 +216,7 @@ export default function VariantInventoryPanel({ productId, basePrice = 0, inv, o
                             focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600`}
                         />
                       </td>
-                      <td className="py-1.5">
+                      <td className="py-1.5 pr-3">
                         <input
                           type="number"
                           min="0"
@@ -196,6 +226,22 @@ export default function VariantInventoryPanel({ productId, basePrice = 0, inv, o
                           onChange={e => setCell(row, col, 'price', e.target.value)}
                           className="h-8 w-full rounded-lg border-2 border-slate-200 bg-white px-2 text-center text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
                         />
+                      </td>
+                      <td className="py-1.5">
+                        {c.barcode ? (
+                          <input
+                            type="text"
+                            value={c.barcode}
+                            onChange={e => setCell(row, col, 'barcode', e.target.value)}
+                            className="h-8 w-full rounded-lg border-2 border-indigo-200 bg-indigo-50 px-2 text-[12px] text-indigo-800 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 transition-all"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => generateBarcode(row, col, variantIdx)}
+                            className="h-8 w-full rounded-lg border-2 border-dashed border-slate-300 text-[11px] font-semibold text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-all"
+                          >+ Generate</button>
+                        )}
                       </td>
                     </tr>
                   );

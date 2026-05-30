@@ -87,6 +87,8 @@ export default function ProductsPage() {
   const [sortBy,        setSortBy]        = useState('name');
   const [filterStock,   setFilterStock]   = useState('all');
   const [expiringFilter, setExpiringFilter] = useState(false);
+  const [sizeFilter,     setSizeFilter]     = useState('');
+  const [urlLowStock,    setUrlLowStock]    = useState(false);
 
   const [showModal,   setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -131,6 +133,8 @@ export default function ProductsPage() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('filter') === 'expiring') setExpiringFilter(true);
+    if (params.get('filter') === 'low_stock') setUrlLowStock(true);
+    if (params.get('size')) setSizeFilter(params.get('size'));
   }, []);
 
   useEffect(() => {
@@ -149,13 +153,24 @@ export default function ProductsPage() {
         return !isNaN(d.getTime()) && d <= in30;
       });
     }
+    // Clothing: size + low_stock URL filter (from dashboard size pills)
+    if (urlLowStock && sizeFilter) {
+      r = r.filter(p => {
+        const isLow = p.quantity <= p.low_stock_threshold;
+        const meta = p.metadata || {};
+        const sizes = String(meta.sizes || meta.size || '');
+        return isLow && sizes.toLowerCase().includes(sizeFilter.toLowerCase());
+      });
+    } else if (urlLowStock && !sizeFilter) {
+      r = r.filter(p => p.quantity <= p.low_stock_threshold);
+    }
     if (sortBy === 'name')         r.sort((a, b) => a.name.localeCompare(b.name));
     if (sortBy === 'price_asc')    r.sort((a, b) => a.price - b.price);
     if (sortBy === 'price_desc')   r.sort((a, b) => b.price - a.price);
     if (sortBy === 'quantity')     r.sort((a, b) => a.quantity - b.quantity);
     if (sortBy === 'margin')       r.sort((a, b) => (b.margin || 0) - (a.margin || 0));
     setFiltered(r);
-  }, [search, sortBy, filterStock, expiringFilter, products]);
+  }, [search, sortBy, filterStock, expiringFilter, urlLowStock, sizeFilter, products]);
 
   /* ── All logic (UNCHANGED) ── */
   const fetchProducts = async () => {
@@ -339,6 +354,23 @@ export default function ProductsPage() {
           </div>
         )}
 
+        {/* ── CLOTHING SIZE LOW-STOCK FILTER BANNER ── */}
+        {urlLowStock && sizeFilter && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-50 border-2 border-amber-300">
+            <span className="text-xl flex-shrink-0">📏</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-black text-amber-900">
+                Showing Size {sizeFilter} low-stock garments — {filtered.length} item{filtered.length !== 1 ? 's' : ''}
+              </p>
+              <p className="text-[11px] text-amber-700 mt-0.5">These products are at or below their reorder threshold for this size</p>
+            </div>
+            <button
+              onClick={() => { setSizeFilter(''); setUrlLowStock(false); window.history.replaceState({}, '', '/product'); }}
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg border border-amber-300 bg-white text-[11px] font-bold text-amber-700 hover:bg-amber-50 transition-colors"
+            >Clear</button>
+          </div>
+        )}
+
         {/* ── KPI STRIP ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -488,6 +520,40 @@ export default function ProductsPage() {
                                 {pill.label}: {pill.value}
                               </span>
                             ))}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Restaurant: Availability toggle */}
+                      {businessType === 'restaurant' && (() => {
+                        const meta = p.metadata || {};
+                        const isAvailable = meta.is_available_today !== 'false';
+                        const reason = meta.unavailable_reason || '';
+                        const toggleAvail = async (available) => {
+                          const reasonInput = available ? '' : (window.prompt('Reason (optional):', 'Sold out today') ?? '');
+                          try {
+                            const res = await fetch(apiUrl(`/api/products/${p._id}/availability`), {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                              body: JSON.stringify({ available, unavailable_reason: reasonInput }),
+                            });
+                            if (res.ok) setProducts(prev => prev.map(x => x._id !== p._id ? x : {
+                              ...x,
+                              metadata: { ...(x.metadata instanceof Map ? Object.fromEntries(x.metadata) : (x.metadata || {})), is_available_today: available ? 'true' : 'false', unavailable_reason: reasonInput }
+                            }));
+                          } catch {}
+                        };
+                        return (
+                          <div className="mb-2">
+                            {isAvailable ? (
+                              <button onClick={() => toggleAvail(false)}
+                                className="w-full py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all"
+                              >✓ Available — Click to Mark Unavailable</button>
+                            ) : (
+                              <button onClick={() => toggleAvail(true)}
+                                className="w-full py-1.5 rounded-xl border-2 border-red-300 bg-red-50 text-[11px] font-bold text-red-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition-all"
+                              >✗ Sold Out{reason ? ` — ${reason}` : ''} — Click to Restore</button>
+                            )}
                           </div>
                         );
                       })()}

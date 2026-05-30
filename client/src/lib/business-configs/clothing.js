@@ -1,21 +1,23 @@
 export default {
   // Entity labels
-  product:        'Item',
-  products:       'Items',
+  product:        'Apparel',
+  products:       'Apparel',
   productHindi:   'कपड़े',
-  item:           'Item',
-  items:          'Items',
-  inventory:      'Stock',
+  item:           'Apparel',
+  items:          'Apparel',
+  inventory:      'Apparel Stock',
+  customer:       'Customer',
+  supplier:       'Supplier / Brand',
 
   // Transactions
-  invoice:        'Bill',
-  invoices:       'Bills',
+  invoice:        'Invoice',
+  invoices:       'Invoices',
 
   // Actions
   addProduct:     'Add Apparel',
-  newSale:        'New Bill',
+  newSale:        'New Sale',
   newPurchase:    'New Purchase',
-  editSale:       'Edit Bill',
+  editSale:       'Edit Sale',
   editPurchase:   'Edit Purchase',
 
   // Search placeholders
@@ -182,10 +184,18 @@ export default {
   },
 
   invoiceConfig: {
+    documentTitle:      'Tax Invoice',
     accentColor:        '#7c3aed',
     showVariantColumns: true,
-    itemSectionTitle:   'Garments',
-    footerNote:         'Exchange within 7 days with original bill. No cash refund on sale items.',
+    itemSectionTitle:   'Apparel Items',
+    showHsnColumn:      true,
+    showGstColumns:     true,
+    footerNote:         'Exchange within 7 days with original bill and tags intact. No exchange on innerwear or sale items.',
+  },
+
+  workflowConfig: {
+    exchangeEnabled:    true,
+    exchangeWindowDays: 7,
   },
 
   kpiConfig: {

@@ -157,6 +157,8 @@ export default function DashboardPage() {
   const [agingData, setAgingData] = useState(null);
   const [agingLoading, setAgingLoading] = useState(false);
   const [showAging, setShowAging] = useState(false);
+  const [tableStatusData, setTableStatusData] = useState(null);
+  const [appointmentData, setAppointmentData] = useState(null);
 
   const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
     const token = getToken();
@@ -236,9 +238,25 @@ export default function DashboardPage() {
 
     const deferredId = scheduleDeferred(async () => {
       setRefreshing(Boolean(cached?.data));
+      const bt = user.businessType || '';
+      const extraFetches = [];
+      if (bt === 'restaurant') {
+        extraFetches.push(
+          fetch(apiUrl('/api/dashboard/table-status'), { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : null).then(d => d && setTableStatusData(d)).catch(() => {})
+        );
+      }
+      if (bt === 'salon') {
+        const today = new Date().toISOString().split('T')[0];
+        extraFetches.push(
+          fetch(apiUrl(`/api/sales/appointments?date=${today}`), { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : null).then(d => d && setAppointmentData(d)).catch(() => {})
+        );
+      }
       await Promise.all([
         fetchDashboard({ silent: Boolean(cached?.data) }),
         fetchWorkflowCounts(),
+        ...extraFetches,
       ]);
       setRefreshing(false);
     });
@@ -251,8 +269,9 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchWorkflowCounts, wfc]);
 
-  const expiryStats     = data?.expiryStats     || { expiredCount: 0, expiring7Days: 0, expiring30Days: 0 };
+  const expiryStats      = data?.expiryStats     || { expiredCount: 0, expiring7Days: 0, expiring30Days: 0 };
   const insurancePending = data?.insurancePending || 0;
+  const variantLowStock  = data?.variantLowStock  || [];
 
   const today_sales = data?.today?.revenue || 0;
   const today_bills = data?.today?.bills || 0;
@@ -867,6 +886,130 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* ══════════════════════════════════════
+            4d. RESTAURANT: Table Status Summary + Delivery Channel Pills
+        ══════════════════════════════════════ */}
+        {businessType === 'restaurant' && tableStatusData && (
+          <div className="space-y-3">
+            {/* Table summary bar */}
+            <Link href="/tables"
+              className="flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-orange-200 bg-orange-50/60 hover:bg-orange-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🪑</span>
+                <span className="text-[13px] font-black text-orange-900">
+                  {tableStatusData.occupiedCount} tables occupied
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-orange-700">View Floor →</span>
+            </Link>
+
+            {/* Delivery channel pills */}
+            {data?.todayOrders && (() => {
+              const sales = data.todayOrders || [];
+              const channels = {};
+              sales.forEach(s => {
+                const ef = s.extra_fields instanceof Map ? Object.fromEntries(s.extra_fields) : (s.extra_fields || {});
+                const ch = ef.order_type || 'Dine-In';
+                if (!channels[ch]) channels[ch] = { count: 0, revenue: 0 };
+                channels[ch].count++;
+                channels[ch].revenue += s.total_amount || 0;
+              });
+              const channelIcons = { 'Dine-In': '🍽️', Takeaway: '📦', Delivery: '🛵', Swiggy: '🟠', Zomato: '🔴' };
+              const entries = Object.entries(channels).filter(([, v]) => v.count > 0);
+              if (!entries.length) return null;
+              return (
+                <div className="flex flex-wrap gap-2">
+                  {entries.map(([ch, v]) => (
+                    <div key={ch} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 shadow-sm">
+                      <span className="text-sm">{channelIcons[ch] || '🍽️'}</span>
+                      <span className="text-[11px] font-black text-slate-800">{ch}</span>
+                      <span className="text-[10px] text-slate-500">₹{fmt(v.revenue)} ({v.count})</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
+            4e. SALON: Appointment Summary
+        ══════════════════════════════════════ */}
+        {businessType === 'salon' && appointmentData && (() => {
+          const appts = appointmentData.appointments || [];
+          const doneCount = appts.filter(a => {
+            const ef = a.extra_fields instanceof Map ? Object.fromEntries(a.extra_fields) : (a.extra_fields || {});
+            return ef.workflow_status === 'paid' || ef.workflow_status === 'completed';
+          }).length;
+          const remaining = appts.length - doneCount;
+          return (
+            <Link href="/appointments"
+              className="flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-purple-200 bg-purple-50/60 hover:bg-purple-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📅</span>
+                <span className="text-[13px] font-black text-purple-900">
+                  {appts.length} appointments today — {doneCount} done, {remaining} remaining
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-purple-700">View Calendar →</span>
+            </Link>
+          );
+        })()}
+
+        {/* ══════════════════════════════════════
+            4f. CLOTHING: Size-wise Low-Stock Strip
+        ══════════════════════════════════════ */}
+        {businessType === 'clothing' && variantLowStock.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="page-section-label">📏 Size Stock Alerts</span>
+              <Link href="/product?filter=low_stock" className="page-section-link">View all →</Link>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {variantLowStock.map(v => (
+                <Link
+                  key={v._id || 'unknown'}
+                  href={`/product?size=${encodeURIComponent(v._id || '')}&filter=low_stock`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 text-[12px] font-bold hover:bg-amber-200 transition-colors"
+                >
+                  <span>Size {v._id || '?'}</span>
+                  <span className="opacity-70">—</span>
+                  <span>{v.productCount} item{v.productCount !== 1 ? 's' : ''}</span>
+                </Link>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-400 px-1">Tap a size to view affected products</p>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
+            4g. ELECTRONICS: Warranty Claims Summary
+        ══════════════════════════════════════ */}
+        {(businessType === 'electronics' || businessType === 'mobile_shop') && (() => {
+          const wData = data?.warrantySummary;
+          if (!wData) return null;
+          const pendingCount = wData.pendingCount || 0;
+          const readyCount   = wData.readyCount   || 0;
+          if (pendingCount === 0 && readyCount === 0) return null;
+          return (
+            <Link href="/warranty"
+              className="flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-teal-200 bg-teal-50/60 hover:bg-teal-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🛡️</span>
+                <span className="text-[13px] font-black text-teal-900">
+                  {pendingCount > 0 && `${pendingCount} warranty claim${pendingCount !== 1 ? 's' : ''} open`}
+                  {pendingCount > 0 && readyCount > 0 && '  •  '}
+                  {readyCount > 0 && `${readyCount} ready for pickup`}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-teal-700">View Claims →</span>
+            </Link>
+          );
+        })()}
 
         {/* Business tip */}
         {dashCfg?.tip && (

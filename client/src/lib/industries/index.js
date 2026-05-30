@@ -136,7 +136,7 @@ export const INDUSTRIES = {
     icon: '🍽️',
     modules: {
       sales: true, purchases: true, inventory: true, udhaar: false,
-      expenses: true, income: false, bank: true, reports: true, gst: true,
+      expenses: true, income: false, bank: false, reports: true, gst: true,
       batchTracking: false, expiryTracking: false, appointments: false,
       tableManagement: true, kot: true, variants: false, serviceJobs: false,
     },
@@ -145,10 +145,17 @@ export const INDUSTRIES = {
       { key: 'veg_nonveg', label: 'Type', type: 'select', options: ['Veg', 'Non-Veg', 'Egg'], placeholder: 'Veg' },
       { key: 'preparation_time', label: 'Prep Time (min)', type: 'number', placeholder: '15' },
     ],
-    invoiceLineFields: [],
+    invoiceLineFields: [
+      { key: 'item_note', label: 'Item Note', type: 'text', placeholder: 'No onion, extra spicy, half portion…' },
+    ],
     invoiceExtraFields: [
-      { key: 'table_number', label: 'Table No.', type: 'text', placeholder: 'T1' },
-      { key: 'order_type', label: 'Order Type', type: 'select', options: ['Dine-in', 'Takeaway', 'Delivery'], placeholder: 'Dine-in' },
+      { key: 'order_type', label: 'Order Type', type: 'select', options: ['Dine-In', 'Takeaway', 'Delivery', 'Swiggy', 'Zomato', 'Other'], required: true, defaultValue: 'Dine-In' },
+      { key: 'table_no', label: 'Table No.', type: 'text', placeholder: 'e.g. T-5, Counter, Outdoor 2', showWhen: { field: 'order_type', value: 'Dine-In' } },
+      { key: 'covers', label: 'No. of Guests', type: 'number', placeholder: '2', showWhen: { field: 'order_type', value: 'Dine-In' } },
+      { key: 'waiter_name', label: 'Waiter / Staff', type: 'text', placeholder: 'Staff name' },
+      { key: 'delivery_platform_id', label: 'Platform Order ID', type: 'text', placeholder: 'Swiggy / Zomato order ID', showWhen: { field: 'order_type', values: ['Swiggy', 'Zomato', 'Delivery'] } },
+      { key: 'delivery_address', label: 'Delivery Address', type: 'text', showWhen: { field: 'order_type', values: ['Delivery'] } },
+      { key: 'special_instructions', label: 'Special Instructions', type: 'text', placeholder: 'e.g. No onion, Extra spicy, Jain preparation' },
     ],
   },
 
@@ -282,7 +289,7 @@ export const INDUSTRIES = {
     icon: '✂️',
     modules: {
       sales: true, purchases: false, inventory: true, udhaar: false,
-      expenses: true, income: false, bank: true, reports: true, gst: true,
+      expenses: true, income: false, bank: false, reports: true, gst: true,
       batchTracking: false, expiryTracking: false, appointments: true,
       tableManagement: false, kot: false, variants: false, serviceJobs: false,
     },
@@ -290,10 +297,17 @@ export const INDUSTRIES = {
       { key: 'service_category', label: 'Category', type: 'text', placeholder: 'Hair, Skin, Nail…' },
       { key: 'duration_min', label: 'Duration (min)', type: 'number', placeholder: '30' },
     ],
-    invoiceLineFields: [
-      { key: 'staff_name', label: 'Staff', type: 'text', required: false, placeholder: 'Staff member' },
+    invoiceLineFields: [],
+    invoiceExtraFields: [
+      { key: 'appointment_date', label: 'Appointment Date', type: 'date', required: false },
+      { key: 'appointment_time', label: 'Appointment Time', type: 'time', required: false },
+      { key: 'appointment_duration', label: 'Duration (minutes)', type: 'number', placeholder: '60', required: false },
+      { key: 'stylist_id', label: 'Stylist / Staff', type: 'stylist_select', required: false },
+      { key: 'advance_paid', label: 'Advance Collected (₹)', type: 'number', placeholder: '0', required: false },
+      { key: 'advance_mode', label: 'Advance Payment Mode', type: 'select', options: ['Cash', 'UPI', 'Bank Transfer'], showWhen: { field: 'advance_paid', notEmpty: true } },
+      { key: 'balance_at_visit', label: 'Balance Due at Visit', type: 'number', placeholder: 'Auto-calculated', required: false, readOnly: true },
+      { key: 'client_notes', label: 'Client Notes / Preferences', type: 'text', placeholder: 'e.g. Allergic to ammonia, prefers head massage, bridal package' },
     ],
-    invoiceExtraFields: [],
   },
 
   stationery: {

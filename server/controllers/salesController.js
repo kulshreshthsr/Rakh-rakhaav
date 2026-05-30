@@ -715,6 +715,28 @@ const createSale = async (req, res) => {
         session,
       });
 
+      // ── Contractor credit check (hardware only) ──────────────────
+      let hardwareContractor = null;
+      if (shop.businessType === 'hardware' && data.payment_type === 'credit') {
+        const Contractor = require('../models/contractorModel');
+        const efRaw = req.body.extra_fields || {};
+        const contractorId = efRaw.contractor_id;
+        if (contractorId) {
+          hardwareContractor = await Contractor.findOne({ _id: contractorId, shop: shop._id }).session(session);
+          if (hardwareContractor && hardwareContractor.credit_limit > 0) {
+            const newOutstanding = hardwareContractor.current_outstanding + data.total_amount;
+            if (newOutstanding > hardwareContractor.credit_limit) {
+              throw Object.assign(new Error(
+                `Credit limit exceeded. Limit: ₹${hardwareContractor.credit_limit}, ` +
+                `Current outstanding: ₹${hardwareContractor.current_outstanding}, ` +
+                `This bill: ₹${data.total_amount}. ` +
+                `Over limit by ₹${round2(newOutstanding - hardwareContractor.credit_limit)}.`
+              ), { statusCode: 400 });
+            }
+          }
+        }
+      }
+
       await syncSaleStock(null, data.items, data.invoice_number, session);
       await syncSubInventory([], data.items, data.invoice_number, session);
 
@@ -727,6 +749,12 @@ const createSale = async (req, res) => {
       const createdSale = createdSales[0];
       createdSaleId = createdSale._id;
       await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
+
+      // Update contractor outstanding after sale created
+      if (hardwareContractor && data.payment_type === 'credit') {
+        hardwareContractor.current_outstanding = round2(hardwareContractor.current_outstanding + data.total_amount);
+        await hardwareContractor.save({ session });
+      }
     });
 
     const hydratedSale = await Sale.findById(createdSaleId).populate('customer', 'name phone gstin');
@@ -1189,6 +1217,252 @@ const updateSaleWorkflow = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET APPOINTMENTS (Salon — sales with appointment_date)
+// ─────────────────────────────────────────────────────────────────────────────
+const getAppointments = async (req, res) => {
+  try {
+    const { date, stylist_id } = req.query;
+    const shop = await getOrCreateShop(req.user.id);
+    const targetDate = date ? new Date(date) : new Date();
+    const dayStr = targetDate.toISOString().split('T')[0];
+
+    const match = {
+      shop: shop._id,
+      'extra_fields.appointment_date': dayStr,
+    };
+    if (stylist_id) match['extra_fields.stylist_id'] = stylist_id;
+
+    const appointments = await Sale.find(match)
+      .sort({ 'extra_fields.appointment_time': 1 })
+      .select('extra_fields buyer_name buyer_phone invoice_number total_amount items workflow_status payment_status createdAt');
+
+    res.json({ appointments, date: dayStr });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET CLIENT HISTORY (Salon)
+// ─────────────────────────────────────────────────────────────────────────────
+const getClientHistory = async (req, res) => {
+  try {
+    const { phone, name } = req.query;
+    if (!phone && !name) return res.status(400).json({ message: 'Phone or name required' });
+    const shop = await getOrCreateShop(req.user.id);
+
+    const match = { shop: shop._id };
+    if (phone) match.buyer_phone = { $regex: phone.replace(/\D/g, '').slice(-10) };
+    else match.buyer_name = { $regex: name, $options: 'i' };
+
+    const history = await Sale.find(match)
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .select('createdAt invoice_number total_amount items extra_fields payment_status buyer_name');
+
+    const visitCount = history.length;
+    const totalSpend = history.reduce((s, h) => s + (h.total_amount || 0), 0);
+    const lastVisit  = history[0]?.createdAt;
+    const daysSince  = lastVisit ? Math.floor((Date.now() - new Date(lastVisit)) / 86400000) : null;
+
+    const serviceCount = {};
+    history.forEach(sale => {
+      (sale.items || []).forEach(item => {
+        serviceCount[item.product_name] = (serviceCount[item.product_name] || 0) + item.quantity;
+      });
+    });
+    const topServices = Object.entries(serviceCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    const lastEf = history[0]?.extra_fields instanceof Map
+      ? Object.fromEntries(history[0].extra_fields)
+      : (history[0]?.extra_fields || {});
+    const lastNotes = lastEf.client_notes || '';
+
+    res.json({ history, summary: { visitCount, totalSpend: round2(totalSpend), daysSince, topServices, lastNotes } });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXCHANGE WORKFLOW (clothing only)
+// ─────────────────────────────────────────────────────────────────────────────
+const createExchange = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    let exchangeSale;
+    await session.withTransaction(async () => {
+      const shop = await getOrCreateShop(req.user.id, session);
+      const shopId = shop._id;
+
+      const {
+        original_invoice_no,
+        returned_items  = [],
+        exchange_items  = [],
+        customer_name,
+        customer_phone,
+        price_difference,
+        payment_type,
+      } = req.body;
+
+      // 1. Restore stock for returned items
+      for (const item of returned_items) {
+        const product = await Product.findOne({ _id: item.product_id, shop: shopId }).session(session);
+        if (!product) continue;
+
+        if (item.variant_id) {
+          const variant = await ProductVariant.findOne({ _id: item.variant_id, shop: shopId }).session(session);
+          if (variant) {
+            variant.quantity += Number(item.quantity) || 1;
+            await variant.save({ session });
+            product.quantity += Number(item.quantity) || 1;
+            await product.save({ session });
+          }
+        } else {
+          product.quantity += Number(item.quantity) || 1;
+          await product.save({ session });
+        }
+      }
+
+      // 2. Deduct stock for exchange items
+      for (const item of exchange_items) {
+        const product = await Product.findOne({ _id: item.product_id, shop: shopId }).session(session);
+        if (!product) continue;
+
+        if (item.variant_id) {
+          const variant = await ProductVariant.findOne({ _id: item.variant_id, shop: shopId }).session(session);
+          if (variant) {
+            if (variant.quantity < (Number(item.quantity) || 1)) {
+              throw Object.assign(new Error(`Insufficient stock: ${product.name} ${variant.size || ''} ${variant.color || ''}`.trim()), { status: 400 });
+            }
+            variant.quantity -= Number(item.quantity) || 1;
+            await variant.save({ session });
+            product.quantity -= Number(item.quantity) || 1;
+            await product.save({ session });
+          }
+        } else {
+          if (product.quantity < (Number(item.quantity) || 1)) {
+            throw Object.assign(new Error(`Insufficient stock: ${product.name}`), { status: 400 });
+          }
+          product.quantity -= Number(item.quantity) || 1;
+          await product.save({ session });
+        }
+      }
+
+      // 3. Create exchange sale record
+      const priceDiff = Number(price_difference) || 0;
+      const counter   = await Sale.countDocuments({ shop: shopId }).session(session);
+      const invoiceNo = `EXC-${Date.now()}-${counter + 1}`;
+
+      const saleItems = exchange_items.map(i => ({
+        product:        i.product_id,
+        product_name:   i.product_name || '',
+        quantity:       Number(i.quantity) || 1,
+        price_per_unit: Number(i.price) || 0,
+        total_amount:   (Number(i.quantity) || 1) * (Number(i.price) || 0),
+        item_metadata:  new Map(Object.entries({ size: i.size || '', color: i.color || '' })),
+      }));
+
+      [exchangeSale] = await Sale.create([{
+        shop:               shopId,
+        sale_type:          'exchange',
+        exchange_reference: original_invoice_no,
+        buyer_name:         customer_name,
+        buyer_phone:        customer_phone,
+        items:              saleItems,
+        total_amount:       Math.abs(priceDiff),
+        payment_type:       payment_type || 'cash',
+        amount_paid:        priceDiff > 0 ? Math.abs(priceDiff) : 0,
+        invoice_number:     invoiceNo,
+        extra_fields: new Map([
+          ['returned_items', JSON.stringify(returned_items)],
+          ['exchange_note', `Exchange against invoice ${original_invoice_no}`],
+        ]),
+      }], { session });
+    });
+
+    res.status(201).json({ exchangeSale, message: 'Exchange processed successfully' });
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message });
+  } finally {
+    await session.endSession();
+  }
+};
+
+// ── Delivery Challan (hardware) ────────────────────────────────────────────
+
+const createChallan = async (req, res) => {
+  // Same as createSale but document_type = 'challan' and no stock deduction
+  const session = await mongoose.startSession();
+  try {
+    let createdChallanId;
+    await session.withTransaction(async () => {
+      const shop = await getOrCreateShop(req.user.id, session);
+      const { data } = await buildSaleRecordData({ shop, payload: req.body, session });
+      const challanNumber = `CHN/${getFinancialYear()}/${String(Date.now()).slice(-6)}`;
+      const created = await Sale.create([{
+        ...data,
+        shop: shop._id,
+        document_type: 'challan',
+        invoice_number: challanNumber,
+        challan_date: new Date(),
+      }], { session });
+      createdChallanId = created[0]._id;
+    });
+    const challan = await Sale.findById(createdChallanId);
+    res.status(201).json(challan);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ message: err.message });
+  } finally {
+    await session.endSession();
+  }
+};
+
+const convertToInvoice = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    let invoiceId;
+    await session.withTransaction(async () => {
+      const shop = await getOrCreateShop(req.user.id, session);
+      const challan = await Sale.findOne({ _id: req.params.id, shop: shop._id, document_type: 'challan' }).session(session);
+      if (!challan) throw Object.assign(new Error('Challan not found'), { statusCode: 404 });
+      if (challan.converted_to_invoice) throw Object.assign(new Error('Already converted to invoice'), { statusCode: 400 });
+
+      const invoiceNumber = await generateInvoiceNumber(shop._id, session);
+      const challanObj = challan.toObject();
+      delete challanObj._id;
+      delete challanObj.createdAt;
+      delete challanObj.updatedAt;
+      delete challanObj.__v;
+
+      const [invoice] = await Sale.create([{
+        ...challanObj,
+        document_type: 'invoice',
+        invoice_number: invoiceNumber,
+        converted_from_challan: challan._id,
+      }], { session });
+
+      challan.converted_to_invoice = invoice._id;
+      await challan.save({ session });
+
+      // Deduct stock now that invoice is confirmed
+      await syncSaleStock(null, invoice.items || [], invoiceNumber, session);
+
+      invoiceId = invoice._id;
+    });
+    const invoice = await Sale.findById(invoiceId);
+    res.json({ invoice, message: 'Challan converted to invoice' });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ message: err.message });
+  } finally {
+    await session.endSession();
+  }
+};
+
 module.exports = {
   getSales,
   createSale,
@@ -1199,4 +1473,9 @@ module.exports = {
   getGSTComplianceReport,
   getProfitSummary,
   calculateGSTR3BSummary,
+  getAppointments,
+  getClientHistory,
+  createExchange,
+  createChallan,
+  convertToInvoice,
 };

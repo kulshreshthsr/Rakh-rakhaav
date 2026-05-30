@@ -1,4 +1,5 @@
 const Product = require('../models/productModel');
+const ProductVariant = require('../models/productVariantModel');
 const Shop = require('../models/shopModel');
 
 const getOrCreateShop = async (userId) => {
@@ -272,4 +273,52 @@ const getStockHistory = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory };
+// ─────────────────────────────────────────────────────────────────────────────
+// TOGGLE AVAILABILITY (Restaurant — daily sold-out flag)
+// ─────────────────────────────────────────────────────────────────────────────
+const toggleAvailability = async (req, res) => {
+  try {
+    const { available, unavailable_reason } = req.body;
+    const shop = await getOrCreateShop(req.user.id);
+    const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    product.metadata.set('is_available_today', available ? 'true' : 'false');
+    product.metadata.set('unavailable_reason', unavailable_reason || '');
+    product.metadata.set('availability_set_at', new Date().toISOString());
+    await product.save();
+    res.json({ message: 'Availability updated', available });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET PRODUCT BY BARCODE (product-level or variant-level)
+// ─────────────────────────────────────────────────────────────────────────────
+const getByBarcode = async (req, res) => {
+  try {
+    const shop = await getOrCreateShop(req.user.id);
+    const barcode = normalizeBarcode(req.params.barcode);
+    if (!barcode) return res.status(400).json({ message: 'Barcode required' });
+
+    // 1. Product-level barcode (existing behavior)
+    const byProduct = await Product.findOne({ shop: shop._id, barcode, isActive: { $ne: false } }).select('-stock_history');
+    if (byProduct) {
+      return res.json({ product: byProduct.toJSON(), variant: null, matchType: 'product' });
+    }
+
+    // 2. Variant-level barcode
+    const variant = await ProductVariant.findOne({ shop: shop._id, barcode, isActive: true });
+    if (!variant) return res.status(404).json({ message: 'Barcode not found' });
+
+    const product = await Product.findOne({ _id: variant.product, shop: shop._id, isActive: { $ne: false } }).select('-stock_history');
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    return res.json({ product: product.toJSON(), variant: variant.toJSON(), matchType: 'variant' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory, toggleAvailability, getByBarcode };

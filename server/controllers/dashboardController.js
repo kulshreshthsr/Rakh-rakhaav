@@ -1,8 +1,10 @@
 const Sale = require('../models/salesModel');
 const Product = require('../models/productModel');
+const ProductVariant = require('../models/productVariantModel');
 const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Shop = require('../models/shopModel');
+const WarrantyClaim = require('../models/warrantyClaimModel');
 const ruleEngine = require('../services/ruleEngine');
 const { calculateGSTR3BSummary } = require('./salesController');
 
@@ -243,6 +245,30 @@ const getDashboardSummary = async (req, res) => {
       insurancePending = insCount || 0;
     }
 
+    // Electronics/mobile: warranty claims summary
+    let warrantySummary = null;
+    if (shop.businessType === 'electronics' || shop.businessType === 'mobile_shop') {
+      const [pendingDocs, readyCount] = await Promise.all([
+        WarrantyClaim.countDocuments({ shop: shopId, claimStatus: { $in: ['received', 'sent_to_brand', 'under_repair'] } }),
+        WarrantyClaim.countDocuments({ shop: shopId, claimStatus: 'ready' }),
+      ]);
+      warrantySummary = { pendingCount: pendingDocs, readyCount };
+    }
+
+    // Clothing/footwear: size-wise low-stock aggregation from ProductVariant collection
+    let variantLowStock = [];
+    if (shop.businessType === 'clothing' || shop.businessType === 'footwear') {
+      variantLowStock = await ProductVariant.aggregate([
+        { $match: { shop: shopId, isActive: true } },
+        { $lookup: { from: 'products', localField: 'product', foreignField: '_id', as: 'productDoc' } },
+        { $unwind: '$productDoc' },
+        { $match: { 'productDoc.isActive': { $ne: false }, $expr: { $lte: ['$quantity', '$productDoc.low_stock_threshold'] } } },
+        { $group: { _id: '$size', productCount: { $sum: 1 }, products: { $push: '$productDoc.name' }, totalQty: { $sum: '$quantity' } } },
+        { $sort: { productCount: -1 } },
+        { $limit: 5 },
+      ]);
+    }
+
     res.json({
       today: {
         revenue: round2(todaySalesSummary.totalRevenue),
@@ -307,6 +333,8 @@ const getDashboardSummary = async (req, res) => {
       },
       expiryStats,
       insurancePending,
+      variantLowStock,
+      warrantySummary,
       fetchedAt: new Date().toISOString(),
     });
 
@@ -452,8 +480,57 @@ const creditAging = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE STATUS (Restaurant only)
+// ─────────────────────────────────────────────────────────────────────────────
+const tableStatus = async (req, res) => {
+  try {
+    const shop = await getOrCreateShop(req.user.id);
+    if (shop.businessType !== 'restaurant') {
+      return res.status(400).json({ message: 'Not applicable' });
+    }
+
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+
+    // Daily reset: mark products available if availability_set_at < today
+    const Product = require('../models/productModel');
+    await Product.updateMany(
+      {
+        shop: shop._id,
+        'metadata.availability_set_at': { $lt: todayStart.toISOString() },
+        'metadata.is_available_today': 'false',
+      },
+      { $set: { 'metadata.is_available_today': 'true', 'metadata.unavailable_reason': '' } }
+    );
+
+    const activeTables = await Sale.find({
+      shop: shop._id,
+      createdAt: { $gte: todayStart },
+      payment_status: { $in: ['unpaid', 'partial'] },
+    }).select('extra_fields invoice_number total_amount createdAt buyer_name items');
+
+    const tableMap = {};
+    activeTables.forEach(sale => {
+      const ef = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
+      const tableNo = ef.table_no;
+      if (!tableNo) return;
+      if (!tableMap[tableNo]) {
+        tableMap[tableNo] = { tableNo, status: 'occupied', orders: [], totalAmount: 0, occupiedSince: sale.createdAt };
+      }
+      tableMap[tableNo].orders.push({ invoiceNo: sale.invoice_number, amount: sale.total_amount, guestName: sale.buyer_name, itemCount: sale.items?.length || 0, time: sale.createdAt });
+      tableMap[tableNo].totalAmount += sale.total_amount;
+      if (sale.createdAt < tableMap[tableNo].occupiedSince) tableMap[tableNo].occupiedSince = sale.createdAt;
+    });
+
+    res.json({ occupiedTables: Object.values(tableMap), occupiedCount: Object.keys(tableMap).length, asOf: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getDashboardSummary,
   workflowCounts,
   creditAging,
+  tableStatus,
 };

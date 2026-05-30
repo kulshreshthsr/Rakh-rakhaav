@@ -198,6 +198,35 @@ export default function SalesPage() {
   const [productBatches,  setProductBatches]  = useState({});
   const [productVariants, setProductVariants] = useState({});
 
+  // Restaurant-specific state
+  const [deliveryFilter, setDeliveryFilter]   = useState('');
+  const [showSplitModal, setShowSplitModal]   = useState(false);
+  const [splitSale, setSplitSale]             = useState(null);
+  const [splitMode, setSplitMode]             = useState('equal');
+  const [splitCount, setSplitCount]           = useState(2);
+  const [splitAssignments, setSplitAssignments] = useState({});
+
+  // Clothing-specific state — exchange workflow
+  const [showExchangeModal,  setShowExchangeModal]  = useState(false);
+  const [exchangeSale,       setExchangeSale]       = useState(null);
+  const [exchangeReturned,   setExchangeReturned]   = useState([]);
+  const [exchangeNewItems,   setExchangeNewItems]   = useState([]);
+  const [exchangeSubmitting, setExchangeSubmitting] = useState(false);
+
+  // Hardware-specific state — contractor selector + document type
+  const [contractors, setContractors]           = useState([]);
+  const [selectedContractor, setSelectedContractor] = useState(null);
+  const [contractorSearch, setContractorSearch] = useState('');
+  const [showContractorDrop, setShowContractorDrop] = useState(false);
+  const [contractorsLoaded, setContractorsLoaded] = useState(false);
+  const [documentType, setDocumentType]         = useState('invoice'); // 'invoice' | 'challan'
+
+  // Salon-specific state
+  const [stylists, setStylists]               = useState([]);
+  const [clientHistory, setClientHistory]     = useState(null);
+  const [clientMemberships, setClientMemberships] = useState([]);
+  const [redemptionMembershipId, setRedemptionMembershipId] = useState(null);
+
   const amountPaidInputRef  = useRef(null);
   const buyerNameInputRef   = useRef(null);
   const customerComboRef    = useRef(null);
@@ -323,6 +352,33 @@ export default function SalesPage() {
     fetchProducts();
   }, [fetchProducts, products.length, showModal]);
 
+  // Fetch contractors for hardware on modal open (once per session)
+  useEffect(() => {
+    if (!showModal || businessType !== 'hardware' || contractorsLoaded) return;
+    const token = getToken();
+    if (!token) return;
+    fetch(apiUrl('/api/contractors'), { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { setContractors(data); setContractorsLoaded(true); })
+      .catch(() => {});
+  }, [showModal, businessType, contractorsLoaded]);
+
+  // Fetch stylists for salon on modal open
+  useEffect(() => {
+    if (!showModal || businessType !== 'salon') return;
+    fetchStylists();
+  }, [showModal, businessType, fetchStylists]);
+
+  // Auto-calculate balance_at_visit for salon when advance_paid or total changes
+  useEffect(() => {
+    if (businessType !== 'salon') return;
+    const advance = parseFloat(extraFields.advance_paid) || 0;
+    if (advance > 0) {
+      const balance = Math.max(0, billTotals.total - advance);
+      setExtraFields(prev => ({ ...prev, balance_at_visit: String(balance.toFixed(2)) }));
+    }
+  }, [extraFields.advance_paid, billTotals.total, businessType]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const handleOnline = () => setIsOnline(true);
@@ -391,19 +447,52 @@ export default function SalesPage() {
     if (variantSales) loadVariantsFor(product._id);
   };
   const addOrIncrementProduct = (product) => {
+    const discPct = (businessType === 'hardware' && selectedContractor?.contractor_discount > 0)
+      ? selectedContractor.contractor_discount : 0;
+    const applyDiscount = (basePrice) => {
+      if (!basePrice || !discPct) return basePrice || '';
+      return parseFloat((Number(basePrice) * (1 - discPct / 100)).toFixed(2));
+    };
     setItems((current) => {
       const existingIndex = current.findIndex((item) => item.product_id === product._id);
-      if (existingIndex >= 0) return current.map((item, itemIndex) => itemIndex === existingIndex ? { ...item, quantity: Math.max(1, Number(item.quantity || 0) + 1), price_per_unit: item.price_per_unit || product.price || '' } : item);
+      if (existingIndex >= 0) return current.map((item, itemIndex) => itemIndex === existingIndex ? { ...item, quantity: Math.max(1, Number(item.quantity || 0) + 1), price_per_unit: item.price_per_unit || applyDiscount(product.price) } : item);
       const emptyIndex = current.findIndex((item) => !item.product_id);
-      if (emptyIndex >= 0) return current.map((item, itemIndex) => itemIndex === emptyIndex ? { ...item, product_id: product._id, quantity: item.quantity || 1, price_per_unit: product.price || item.price_per_unit } : item);
-      return [...current, { product_id: product._id, quantity: 1, price_per_unit: product.price || '' }];
+      const discountedPrice = applyDiscount(product.price);
+      if (emptyIndex >= 0) return current.map((item, itemIndex) => itemIndex === emptyIndex ? { ...item, product_id: product._id, quantity: item.quantity || 1, price_per_unit: discountedPrice } : item);
+      return [...current, { product_id: product._id, quantity: 1, price_per_unit: discountedPrice }];
     });
   };
-  const handleBarcodeDetected = (detectedCode) => {
+  const handleBarcodeDetected = async (detectedCode) => {
     const barcode = normalizeBarcode(detectedCode);
-    const matchedProduct = products.find((product) => normalizeBarcode(product.barcode) === barcode);
-    if (!matchedProduct) { setError('Scanned barcode did not match any product.'); return; }
-    setError(''); addOrIncrementProduct(matchedProduct);
+
+    // Fast path: product-level barcode in client cache
+    const localMatch = products.find((p) => normalizeBarcode(p.barcode) === barcode);
+    if (localMatch) { setError(''); addOrIncrementProduct(localMatch); return; }
+
+    // Slow path: variant-level barcode — hit the API
+    try {
+      const res = await fetch(apiUrl(`/api/products/barcode/${encodeURIComponent(barcode)}`), {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) { setError('Scanned barcode did not match any product.'); return; }
+      const { product: apiProduct, variant, matchType } = await res.json();
+      setError('');
+      if (matchType === 'variant' && variant) {
+        const variantMeta = {};
+        if (variant.size)  variantMeta.size  = variant.size;
+        if (variant.color) variantMeta.color = variant.color;
+        setItems((current) => {
+          const emptyIndex = current.findIndex((item) => !item.product_id);
+          const entry = { product_id: apiProduct._id, quantity: 1, price_per_unit: variant.price ?? apiProduct.price ?? '', item_metadata: variantMeta };
+          if (emptyIndex >= 0) return current.map((item, idx) => idx === emptyIndex ? entry : item);
+          return [...current, entry];
+        });
+      } else {
+        addOrIncrementProduct(apiProduct);
+      }
+    } catch {
+      setError('Barcode lookup failed. Please try again.');
+    }
   };
   const addItem    = () => setItems([...items, emptyItem()]);
   const removeItem = (i) => { if (items.length > 1) setItems(items.filter((_, idx) => idx !== i)); };
@@ -446,7 +535,54 @@ export default function SalesPage() {
     setForm(buildInitialForm({ payment_type: nextPaymentType, amount_paid: '', ...overrides }));
     setGstinTouched(false); setError(''); setExtraFields({}); setCustomerQuery('');
     setShowCustomerInfo(false); setShowCustomerSuggestions(false); setShowMoreCustomerDetails(false);
+    setClientHistory(null); setClientMemberships([]); setRedemptionMembershipId(null);
+    setSelectedContractor(null); setContractorSearch(''); setShowContractorDrop(false);
+    setDocumentType('invoice');
   }
+
+  // ─── KOT Print (Restaurant) ───────────────────────────────────────────────
+  const printKOT = (sale) => {
+    const kotWindow = window.open('', '_blank', 'width=320,height=600');
+    if (!kotWindow) { alert('Pop-up blocked. Please allow pop-ups to print KOT.'); return; }
+    const ef = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
+    const tableNo      = ef.table_no || 'Counter';
+    const orderType    = ef.order_type || 'Dine-In';
+    const specialInstr = ef.special_instructions || '';
+    const waiter       = ef.waiter_name || '';
+    const now          = new Date();
+    const timeStr      = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    const dateStr      = now.toLocaleDateString('en-IN');
+    const kotNo        = `KOT-${sale.invoice_number || Date.now()}`;
+    const itemRows = (sale.items || []).map(item => {
+      const meta = item.item_metadata instanceof Map ? Object.fromEntries(item.item_metadata) : (item.item_metadata || {});
+      const itemNote = meta.item_note || item.item_note || '';
+      return `<tr><td style="padding:4px 2px;font-size:14px;font-weight:bold;">${item.quantity} x</td><td style="padding:4px 2px;font-size:14px;">${item.product_name}${itemNote ? `<br><span style="font-size:11px;color:#555;">* ${itemNote}</span>` : ''}</td></tr>`;
+    }).join('');
+    kotWindow.document.write(`<!DOCTYPE html><html><head><title>KOT - ${kotNo}</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Courier New',monospace;width:280px;padding:8px;}.header{text-align:center;border-bottom:2px dashed #000;padding-bottom:8px;margin-bottom:8px;}.kot-no{font-size:18px;font-weight:bold;}.meta{font-size:12px;margin:2px 0;}.table-big{font-size:22px;font-weight:bold;text-align:center;border:2px solid #000;padding:4px;margin:8px 0;}table{width:100%;border-collapse:collapse;}.special{border:1px dashed #000;padding:6px;margin-top:8px;font-size:12px;font-weight:bold;}.footer{text-align:center;font-size:10px;margin-top:8px;border-top:1px dashed #000;padding-top:6px;}@media print{@page{margin:0;size:80mm auto;}body{width:72mm;}}</style></head><body><div class="header"><div class="kot-no">** KOT **</div><div class="meta">${kotNo}</div><div class="meta">${dateStr} | ${timeStr}</div>${waiter ? `<div class="meta">Waiter: ${waiter}</div>` : ''}</div><div class="table-big">${orderType !== 'Dine-In' ? orderType.toUpperCase() : `Table: ${tableNo}`}</div><table>${itemRows}</table>${specialInstr ? `<div class="special">⚠️ Special: ${specialInstr}</div>` : ''}<div class="footer">---- Kitchen Copy — No Prices ----</div><script>window.onload=function(){window.print();setTimeout(()=>window.close(),1000);};<\/script></body></html>`);
+    kotWindow.document.close();
+  };
+
+  // ─── Fetch stylists (Salon) ───────────────────────────────────────────────
+  const fetchStylists = useCallback(async () => {
+    if (businessType !== 'salon') return;
+    try {
+      const res = await fetch(apiUrl('/api/stylists'), { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (res.ok) { const data = await res.json(); setStylists(Array.isArray(data) ? data : []); }
+    } catch {}
+  }, [businessType]);
+
+  // ─── Fetch client history (Salon) ────────────────────────────────────────
+  const fetchClientHistory = useCallback(async (phone) => {
+    if (businessType !== 'salon' || !phone || phone.replace(/\D/g, '').length < 10) return;
+    try {
+      const [histRes, memRes] = await Promise.all([
+        fetch(apiUrl(`/api/sales/client-history?phone=${phone}`), { headers: { Authorization: `Bearer ${getToken()}` } }),
+        fetch(apiUrl(`/api/memberships/client?phone=${phone}`), { headers: { Authorization: `Bearer ${getToken()}` } }),
+      ]);
+      if (histRes.ok) { const d = await histRes.json(); setClientHistory(d.summary?.visitCount > 0 ? d : null); }
+      if (memRes.ok) { const d = await memRes.json(); setClientMemberships(Array.isArray(d) ? d.filter(m => m.isActive) : []); }
+    } catch {}
+  }, [businessType]);
 
   async function handleSubmit(e) {
     e?.preventDefault(); setError(''); setGstinTouched(true);
@@ -480,15 +616,34 @@ export default function SalesPage() {
     }
     try {
       const isEditing = Boolean(editingSaleId);
-      const res = await fetch(isEditing ? apiUrl(`/api/sales/${editingSaleId}`) : apiUrl('/api/sales'), {
+      const isChallan = businessType === 'hardware' && documentType === 'challan' && !isEditing;
+      const submitUrl = isEditing ? apiUrl(`/api/sales/${editingSaleId}`) : isChallan ? apiUrl('/api/sales/challan') : apiUrl('/api/sales');
+      const res = await fetch(submitUrl, {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ items: validItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total, extra_fields: extraFields }),
+        body: JSON.stringify({ items: validItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total, extra_fields: { ...extraFields, ...(businessType === 'hardware' && selectedContractor ? { contractor_id: String(selectedContractor._id), contractor_name: selectedContractor.name } : {}) } }),
       });
       const data = await res.json();
       if (res.ok) {
         if (isEditing && data?._id) setSales((current) => current.map((sale) => (sale._id === data._id ? data : sale)).sort((a, b) => new Date(b.createdAt || b.sold_at || 0).getTime() - new Date(a.createdAt || a.sold_at || 0).getTime()));
         if (!isEditing) eventBus.emit('INVOICE_CREATED', { saleId: data._id });
+        // Print challan (hardware) — no prices
+        if (isChallan && data?._id) {
+          const challanWin = window.open('', '_blank', 'width=700,height=600');
+          if (challanWin) {
+            const items = (data.items || []).map(i => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${i.product_name || ''}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td></tr>`).join('');
+            challanWin.document.write(`<html><head><title>Delivery Challan</title><style>body{margin:24px;font-family:sans-serif}h1{font-size:22px;text-align:center;letter-spacing:2px}table{width:100%;border-collapse:collapse}th{padding:8px;background:#f5f5f5;text-align:left}@media print{button{display:none}}</style></head><body><h1>DELIVERY CHALLAN</h1><p style="text-align:center;color:#888;margin-bottom:16px">This is not a tax invoice. Invoice will follow.</p><p><strong>Challan No:</strong> ${data.invoice_number || ''} &nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p><p><strong>To:</strong> ${data.buyer_name || 'Customer'} ${data.buyer_phone ? '— ' + data.buyer_phone : ''}</p><br><table><thead><tr><th>Item</th><th style="text-align:center">Qty</th></tr></thead><tbody>${items}</tbody></table><br><button onclick="window.print()">Print</button></body></html>`);
+            challanWin.document.close();
+          }
+        }
+        // Redeem membership session if one was selected
+        if (businessType === 'salon' && redemptionMembershipId && data?._id) {
+          fetch(apiUrl(`/api/memberships/${redemptionMembershipId}/redeem`), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+            body: JSON.stringify({ saleId: data._id, notes: 'Redeemed at visit' }),
+          }).catch(() => {});
+        }
         setShowModal(false); resetForm(); fetchAll();
       } else { setError(data.message || 'Failed'); }
     } catch { setError('Server error'); }
@@ -560,6 +715,11 @@ export default function SalesPage() {
       const updated = await res.json();
       setSales(current => current.map(s => s._id === saleId ? { ...s, extra_fields: updated.extra_fields } : s));
       eventBus.emit('WORKFLOW_ADVANCED', { saleId, newStage: nextStage });
+      // KOT print when restaurant order is sent to kitchen
+      if (businessType === 'restaurant' && nextStage === 'cooking') {
+        const sale = sales.find(s => s._id === saleId);
+        if (sale) printKOT({ ...sale, extra_fields: updated.extra_fields });
+      }
       if (action?.triggerInvoice) {
         const sale = sales.find(s => s._id === saleId);
         if (sale) printInvoice({ ...sale, extra_fields: updated.extra_fields });
@@ -593,7 +753,10 @@ export default function SalesPage() {
     const matchesMonth     = !billMonth || getMonthFilterValue(sale.createdAt || sale.sold_at) === billMonth;
     const matchesWf        = !wfFilter  || getSaleWorkflowStatus(sale, wfc) === wfFilter;
     const matchesInsurance = !insuranceFilter || (sale.insurance_status === 'pending_claim' && sale.insurance_type && sale.insurance_type !== 'none');
-    return matchesSearch && matchesMonth && matchesWf && matchesInsurance;
+    const ef               = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
+    const matchesDelivery  = !deliveryFilter || ef.order_type === deliveryFilter ||
+      (deliveryFilter === 'Delivery' && ['Delivery', 'Swiggy', 'Zomato'].includes(ef.order_type));
+    return matchesSearch && matchesMonth && matchesWf && matchesInsurance && matchesDelivery;
   });
   const hasBillFilters = Boolean(normalizedBillSearch || billMonth || wfFilter || insuranceFilter);
   const pastCustomers = useMemo(() => {
@@ -754,6 +917,21 @@ export default function SalesPage() {
           ))}
         </div>
 
+        {/* ── Restaurant: delivery platform filter tabs ── */}
+        {businessType === 'restaurant' && (
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-hide">
+            {['', 'Dine-In', 'Takeaway', 'Delivery', 'Swiggy', 'Zomato'].map((f) => {
+              const labels = { '': 'All', 'Dine-In': '🍽️ Dine-In', 'Takeaway': '📦 Takeaway', 'Delivery': '🛵 Delivery', 'Swiggy': '🟠 Swiggy', 'Zomato': '🔴 Zomato' };
+              const isActive = deliveryFilter === f;
+              return (
+                <button key={f} type="button" onClick={() => setDeliveryFilter(f)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black border-2 transition-all ${isActive ? 'border-orange-400 bg-orange-50 text-orange-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+                >{labels[f]}</button>
+              );
+            })}
+          </div>
+        )}
+
         {/* ── Filters ── */}
         <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md mb-5">
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -827,7 +1005,15 @@ export default function SalesPage() {
                     {/* Top row */}
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <span className="font-mono text-[13px] font-black text-green-700">{s.invoice_number}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-[13px] font-black text-green-700">{s.invoice_number}</span>
+                          {s.document_type === 'challan' && !s.converted_to_invoice && (
+                            <span className="px-2 py-0.5 rounded-full bg-blue-100 border border-blue-300 text-[10px] font-black text-blue-700">📋 Challan</span>
+                          )}
+                          {s.document_type === 'challan' && s.converted_to_invoice && (
+                            <span className="px-2 py-0.5 rounded-full bg-green-100 border border-green-300 text-[10px] font-black text-green-700">✓ Invoiced</span>
+                          )}
+                        </div>
                         <p className="text-[15px] font-bold text-slate-700 mt-0.5">
                           {s.buyer_name || 'Walk-in Customer'}
                         </p>
@@ -925,6 +1111,62 @@ export default function SalesPage() {
                         className="min-h-[44px] py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
                       >{s._isOffline ? '✕' : '🗑️'}</button>
                     </div>
+
+                    {/* Restaurant extra actions */}
+                    {businessType === 'restaurant' && !s._isOffline && (
+                      <div className="flex gap-2 mt-2">
+                        <button onClick={() => printKOT(s)}
+                          className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-[11px] font-bold text-orange-700 hover:bg-orange-100 transition-all"
+                        >🖨️ KOT</button>
+                        <button onClick={() => { setSplitSale(s); setShowSplitModal(true); setSplitMode('equal'); setSplitCount(2); setSplitAssignments({}); }}
+                          className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-purple-200 bg-purple-50 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-all"
+                        >✂️ Split Bill</button>
+                      </div>
+                    )}
+
+                    {/* Hardware challan → invoice action */}
+                    {businessType === 'hardware' && s.document_type === 'challan' && !s.converted_to_invoice && !s._isOffline && (
+                      <div className="mt-2">
+                        <button onClick={async () => {
+                          if (!confirm('Convert this challan to a tax invoice? This will deduct stock.')) return;
+                          try {
+                            const r = await fetch(apiUrl(`/api/sales/${s._id}/convert-to-invoice`), {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                            });
+                            const d = await r.json();
+                            if (!r.ok) { alert(d.message || 'Conversion failed'); return; }
+                            fetchAll();
+                            if (d.invoice) printInvoice(d.invoice);
+                          } catch { alert('Server error'); }
+                        }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-blue-200 bg-blue-50 text-[11px] font-bold text-blue-700 hover:bg-blue-100 transition-all">
+                          📄 Convert to Invoice →
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Clothing exchange action */}
+                    {businessType === 'clothing' && !s._isOffline && (!s.sale_type || s.sale_type === 'sale') && (
+                      <div className="mt-2">
+                        <button onClick={() => {
+                          const returned = (s.items || []).map(item => ({
+                            product_id: item.product?._id || item.product || '',
+                            product_name: item.product_name || '',
+                            quantity: item.quantity || 1,
+                            price: item.price_per_unit || 0,
+                            size: (() => { const m = item.item_metadata || {}; return m instanceof Map ? (m.get('size') || '') : (m.size || ''); })(),
+                            color: (() => { const m = item.item_metadata || {}; return m instanceof Map ? (m.get('color') || '') : (m.color || ''); })(),
+                            selected: true,
+                          }));
+                          setExchangeSale(s);
+                          setExchangeReturned(returned);
+                          setExchangeNewItems([{ product_id: '', product_name: '', quantity: 1, price: 0, size: '', color: '' }]);
+                          setShowExchangeModal(true);
+                        }}
+                          className="w-full min-h-[38px] py-2 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-700 hover:bg-rose-100 transition-all"
+                        >↩ Exchange / Return</button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -996,6 +1238,17 @@ export default function SalesPage() {
                 >{opt.label}</button>
               ))}
             </div>
+
+            {/* Document type toggle — hardware only, not when editing */}
+            {businessType === 'hardware' && !editingSaleId && (
+              <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mt-2">
+                {[{id:'invoice',label:'Invoice'},{id:'challan',label:'Delivery Challan'}].map(d => (
+                  <button key={d.id} type="button" onClick={() => setDocumentType(d.id)}
+                    className={`flex-1 py-2 rounded-lg text-[12px] font-black transition-all ${documentType === d.id ? (d.id === 'challan' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white') : 'text-slate-500 hover:text-slate-700'}`}
+                  >{d.label}</button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Scrollable body */}
@@ -1033,6 +1286,62 @@ export default function SalesPage() {
                 />
               </div>
             </div>
+
+            {/* ── Contractor selector (hardware only) ── */}
+            {businessType === 'hardware' && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 space-y-2">
+                <p className="text-[12px] font-black text-amber-900 uppercase tracking-wider">Contractor / Walk-in</p>
+                <div className="relative">
+                  <input
+                    className="w-full h-10 px-3 rounded-xl border-2 border-amber-200 bg-white text-[13px] text-slate-900 focus:outline-none focus:border-amber-500 transition-colors"
+                    placeholder="Select Contractor / Walk-in Customer ▾"
+                    value={selectedContractor ? selectedContractor.name : contractorSearch}
+                    onChange={e => { setContractorSearch(e.target.value); setSelectedContractor(null); setShowContractorDrop(true); }}
+                    onFocus={() => setShowContractorDrop(true)}
+                  />
+                  {selectedContractor && (
+                    <button type="button" onClick={() => { setSelectedContractor(null); setContractorSearch(''); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-amber-200 text-amber-700 text-[12px] font-black hover:bg-amber-300 transition-colors">×</button>
+                  )}
+                  {showContractorDrop && !selectedContractor && (
+                    <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-amber-200 shadow-lg max-h-48 overflow-y-auto">
+                      <button type="button" onClick={() => { setSelectedContractor(null); setContractorSearch(''); setShowContractorDrop(false); }}
+                        className="w-full px-4 py-2.5 text-left text-[13px] text-slate-500 hover:bg-slate-50 border-b border-slate-100">Walk-in Customer</button>
+                      {contractors.filter(c => !contractorSearch || c.name.toLowerCase().includes(contractorSearch.toLowerCase())).map(c => (
+                        <button key={c._id} type="button"
+                          onClick={() => { setSelectedContractor(c); setContractorSearch(''); setShowContractorDrop(false); if (c.name) updateForm({ buyer_name: c.name, buyer_phone: c.phone || '' }); }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
+                        >
+                          <p className="text-[13px] font-black text-slate-900">{c.name}</p>
+                          <p className="text-[11px] text-slate-500">{c.contractor_discount > 0 ? `${c.contractor_discount}% discount` : 'No discount'} • Outstanding: ₹{parseFloat(c.current_outstanding || 0).toLocaleString('en-IN')}</p>
+                        </button>
+                      ))}
+                      {contractors.length === 0 && <p className="px-4 py-3 text-[12px] text-slate-400">No contractors found. <a href="/contractors" className="text-amber-600 font-bold">Add one →</a></p>}
+                    </div>
+                  )}
+                </div>
+                {selectedContractor && (
+                  <div className="space-y-1.5">
+                    {selectedContractor.contractor_discount > 0 && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-100 border border-amber-300">
+                        <span className="text-[12px] font-black text-amber-800">🏷️ Contractor discount: {selectedContractor.contractor_discount}% applied to all items</span>
+                      </div>
+                    )}
+                    {selectedContractor.credit_limit > 0 && (() => {
+                      const pct = Math.min(100, (selectedContractor.current_outstanding / selectedContractor.credit_limit) * 100);
+                      const pillCls = pct > 100 ? 'bg-red-100 border-red-300 text-red-800' : pct > 80 ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-green-100 border-green-300 text-green-800';
+                      return (
+                        <div className={`flex items-center justify-between px-3 py-2 rounded-xl border text-[11px] font-bold ${pillCls}`}>
+                          <span>Outstanding: ₹{parseFloat(selectedContractor.current_outstanding || 0).toLocaleString('en-IN')}</span>
+                          <span>Limit: ₹{parseFloat(selectedContractor.credit_limit || 0).toLocaleString('en-IN')}</span>
+                          {pct > 100 && <span>⚠️ CREDIT LIMIT REACHED</span>}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── Customer section ── */}
             <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
@@ -1076,11 +1385,81 @@ export default function SalesPage() {
                     )}
                   </div>
 
-                  <input className={INPUT} placeholder={term('customerPhonePlaceholder', 'Phone number')} value={form.buyer_phone} onChange={(e) => updateForm({ buyer_phone: e.target.value })} />
+                  <input
+                    className={INPUT}
+                    placeholder={term('customerPhonePlaceholder', 'Phone number')}
+                    value={form.buyer_phone}
+                    onChange={(e) => updateForm({ buyer_phone: e.target.value })}
+                    onBlur={(e) => fetchClientHistory(e.target.value)}
+                  />
 
                   <button type="button" onClick={() => setShowMoreCustomerDetails(v => !v)}
                     className="text-[12px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
                   >{showMoreCustomerDetails ? '▴ Less Details' : '▾ More Details (GSTIN, Address)'}</button>
+
+                  {/* Salon: Client history card */}
+                  {businessType === 'salon' && clientHistory && (
+                    <div className="mt-2 rounded-xl border border-purple-200 bg-purple-50/60 p-3 space-y-1.5">
+                      <p className="text-[12px] font-black text-purple-800">👤 Returning Client — {form.buyer_name || 'Known Client'}</p>
+                      <p className="text-[11px] text-purple-700">🗓️ Last visit: {clientHistory.daysSince != null ? `${clientHistory.daysSince} days ago` : '—'}  •  {clientHistory.visitCount} visits</p>
+                      <p className="text-[11px] text-purple-700">💰 Total spent: ₹{clientHistory.totalSpend?.toLocaleString('en-IN') || 0}</p>
+                      {clientHistory.topServices?.length > 0 && (
+                        <p className="text-[11px] text-purple-700">💆 Favourite: {clientHistory.topServices.map(s => `${s.name} (${s.count}x)`).join(', ')}</p>
+                      )}
+                      {clientHistory.lastNotes && (
+                        <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 rounded-lg px-2 py-1">📝 Last visit notes: "{clientHistory.lastNotes}"</p>
+                      )}
+                      {/* Quick-add top services */}
+                      {clientHistory.topServices?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {clientHistory.topServices.slice(0, 3).map(s => {
+                            const prod = products.find(p => p.name === s.name);
+                            if (!prod) return null;
+                            return (
+                              <button key={s.name} type="button" onClick={() => addOrIncrementProduct(prod)}
+                                className="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-[10px] font-bold hover:bg-purple-700 transition-colors"
+                              >+ {s.name}</button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Salon: Active memberships */}
+                  {businessType === 'salon' && clientMemberships.length > 0 && (
+                    <div className="mt-2 rounded-xl border border-teal-200 bg-teal-50/60 p-3 space-y-2">
+                      <p className="text-[11px] font-black text-teal-800">💳 Active Packages</p>
+                      {clientMemberships.map(m => (
+                        <div key={m._id} className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-bold text-teal-900">{m.serviceName}</p>
+                            <p className="text-[10px] text-teal-700">{m.totalSessions - m.usedSessions} sessions remaining</p>
+                          </div>
+                          {redemptionMembershipId === m._id ? (
+                            <span className="text-[10px] font-black text-teal-700 px-2 py-1 bg-teal-100 rounded-lg">✓ Redeeming</span>
+                          ) : (
+                            <button type="button" onClick={() => {
+                              setRedemptionMembershipId(m._id);
+                              const prod = products.find(p => p._id === m.serviceId || p.name === m.serviceName);
+                              if (prod) {
+                                setItems(prev => {
+                                  const exists = prev.findIndex(i => i.product_id === prod._id);
+                                  if (exists >= 0) return prev.map((i, idx) => idx === exists ? { ...i, price_per_unit: '0', _isRedemption: true } : i);
+                                  const emptyIdx = prev.findIndex(i => !i.product_id);
+                                  const entry = { product_id: prod._id, quantity: 1, price_per_unit: '0', item_metadata: { _isRedemption: true } };
+                                  if (emptyIdx >= 0) return prev.map((i, idx) => idx === emptyIdx ? entry : i);
+                                  return [...prev, entry];
+                                });
+                              }
+                            }}
+                              className="text-[10px] font-black text-teal-700 px-2 py-1 bg-teal-100 rounded-lg hover:bg-teal-200 transition-colors flex-shrink-0"
+                            >Redeem Now</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {showMoreCustomerDetails && (
                     <div className="space-y-3">
@@ -1110,16 +1489,37 @@ export default function SalesPage() {
             {config.invoiceExtraFields && config.invoiceExtraFields.length > 0 && (
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700">{term('invoice', 'Invoice')} Details</p>
-                {config.invoiceExtraFields.map((field) => (
-                  <div key={field.key} id={`invoice-field-${field.key}`}>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{field.label}{field.required && <span className="text-rose-500 ml-0.5">*</span>}</p>
-                    <DynamicFormField
-                      field={field}
-                      value={extraFields[field.key] || ''}
-                      onChange={(v) => setExtraFields((prev) => ({ ...prev, [field.key]: v }))}
-                    />
-                  </div>
-                ))}
+                {config.invoiceExtraFields.map((field) => {
+                  // Evaluate showWhen
+                  if (field.showWhen) {
+                    const sw = field.showWhen;
+                    const watchVal = extraFields[sw.field];
+                    if (sw.value !== undefined && watchVal !== sw.value) return null;
+                    if (Array.isArray(sw.values) && !sw.values.includes(watchVal)) return null;
+                    if (sw.notEmpty && (!watchVal || String(watchVal).trim() === '')) return null;
+                  }
+                  // stylist_id: also store stylist name in extra_fields
+                  const handleChange = (v) => {
+                    if (field.key === 'stylist_id') {
+                      const stylist = stylists.find(s => s._id === v);
+                      setExtraFields(prev => ({ ...prev, stylist_id: v, stylist_name: stylist?.name || '' }));
+                    } else {
+                      setExtraFields(prev => ({ ...prev, [field.key]: v }));
+                    }
+                  };
+                  return (
+                    <div key={field.key} id={`invoice-field-${field.key}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{field.label}{field.required && <span className="text-rose-500 ml-0.5">*</span>}</p>
+                      <DynamicFormField
+                        field={field}
+                        value={extraFields[field.key] || ''}
+                        onChange={handleChange}
+                        allValues={extraFields}
+                        availableStylists={stylists}
+                      />
+                    </div>
+                  );
+                })}
                 {/* Prescription confirmed badge */}
                 {businessType === 'pharmacy' && scheduleWarning?.hasControlled && scheduleWarning.prescriptionFilled && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-200 text-[11px] font-semibold text-green-700">
@@ -1326,7 +1726,7 @@ export default function SalesPage() {
                         </div>
                       )}
 
-                      {/* Industry-specific line fields (batch/expiry, size/color, IMEI, etc.) */}
+                      {/* Industry-specific line fields (batch/expiry, size/color, item notes, etc.) */}
                       {config.invoiceLineFields && config.invoiceLineFields.length > 0 && (
                         <div className="pt-1 space-y-2.5 border-t border-slate-200">
                           {config.invoiceLineFields.map((field) => (
@@ -1488,6 +1888,249 @@ export default function SalesPage() {
           </div>
         </aside>
       </div>
+
+      {/* ════════════════════════════════════════════════════════════
+          SPLIT BILL MODAL (Restaurant only)
+      ════════════════════════════════════════════════════════════ */}
+      {showSplitModal && splitSale && businessType === 'restaurant' && (() => {
+        const total = splitSale.total_amount || 0;
+        const saleItems = splitSale.items || [];
+        const perPerson = splitCount > 0 ? (total / splitCount).toFixed(2) : '0.00';
+        const handleCreateSplits = async () => {
+          try {
+            if (splitMode === 'equal') {
+              const splitPromises = Array.from({ length: splitCount }, (_, i) => {
+                const ef = splitSale.extra_fields instanceof Map ? Object.fromEntries(splitSale.extra_fields) : (splitSale.extra_fields || {});
+                return fetch(apiUrl('/api/sales'), {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                  body: JSON.stringify({
+                    items: saleItems,
+                    payment_type: 'cash',
+                    amount_paid: 0,
+                    extra_fields: { ...ef, split_from: splitSale.invoice_number, split_part: `${i + 1} of ${splitCount}` },
+                  }),
+                });
+              });
+              const results = await Promise.all(splitPromises);
+              const created = await Promise.all(results.map(r => r.json()));
+              const nums = created.map(c => c.invoice_number).filter(Boolean).join(', ');
+              alert(`Created ${splitCount} split bills: ${nums}`);
+              setShowSplitModal(false); setSplitSale(null); fetchAll();
+            } else {
+              const bills = {};
+              saleItems.forEach((item, idx) => { const b = splitAssignments[idx] || 1; bills[b] = [...(bills[b] || []), item]; });
+              const splitPromises = Object.entries(bills).map(([, billItems]) => {
+                const ef = splitSale.extra_fields instanceof Map ? Object.fromEntries(splitSale.extra_fields) : (splitSale.extra_fields || {});
+                return fetch(apiUrl('/api/sales'), {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                  body: JSON.stringify({ items: billItems, payment_type: 'cash', amount_paid: 0, extra_fields: { ...ef, split_from: splitSale.invoice_number } }),
+                });
+              });
+              const results = await Promise.all(splitPromises);
+              const created = await Promise.all(results.map(r => r.json()));
+              const nums = created.map(c => c.invoice_number).filter(Boolean).join(', ');
+              alert(`Created ${Object.keys(bills).length} split bills: ${nums}`);
+              setShowSplitModal(false); setSplitSale(null); fetchAll();
+            }
+          } catch { setError('Split bill creation failed'); }
+        };
+        return (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
+              <div className="p-5 border-b border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-[18px] font-black text-slate-900">Split Bill</h3>
+                    <p className="text-[12px] text-slate-500 mt-0.5">{splitSale.invoice_number} — ₹{fmt(total)}</p>
+                  </div>
+                  <button type="button" onClick={() => setShowSplitModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  {['equal', 'custom'].map(m => (
+                    <button key={m} type="button" onClick={() => setSplitMode(m)}
+                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border-2 ${splitMode === m ? 'border-purple-500 bg-purple-50 text-purple-800' : 'border-slate-200 text-slate-600'}`}
+                    >{m === 'equal' ? '⚖️ Equal Split' : '✂️ By Item'}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="p-5 space-y-4 max-h-72 overflow-y-auto">
+                {splitMode === 'equal' ? (
+                  <div className="space-y-3">
+                    <p className="text-[13px] font-bold text-slate-700">Split among how many people?</p>
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={() => setSplitCount(c => Math.max(2, c - 1))} className="w-10 h-10 rounded-xl border-2 border-slate-200 text-[18px] font-black text-slate-600 hover:bg-slate-50">−</button>
+                      <span className="text-[22px] font-black text-slate-900 w-8 text-center">{splitCount}</span>
+                      <button type="button" onClick={() => setSplitCount(c => Math.min(10, c + 1))} className="w-10 h-10 rounded-xl border-2 border-slate-200 text-[18px] font-black text-slate-600 hover:bg-slate-50">+</button>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-purple-50 border border-purple-200">
+                      <span className="text-[12px] font-bold text-purple-800">Each person pays</span>
+                      <span className="text-[16px] font-black text-purple-800">₹{perPerson}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[12px] font-bold text-slate-600">Assign each item to a bill:</p>
+                    {saleItems.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-[12px] font-semibold text-slate-800">{item.product_name} ×{item.quantity}</span>
+                        <select
+                          className="h-8 px-2 rounded-lg border border-slate-200 text-[11px] bg-white"
+                          value={splitAssignments[idx] || 1}
+                          onChange={e => setSplitAssignments(prev => ({ ...prev, [idx]: Number(e.target.value) }))}
+                        >
+                          {[1, 2, 3, 4].map(n => <option key={n} value={n}>Bill {n}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="p-5 border-t border-slate-100">
+                <button type="button" onClick={handleCreateSplits}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-violet-700 text-white font-black text-[14px] shadow-lg shadow-purple-500/30 hover:-translate-y-0.5 transition-all"
+                >Create {splitMode === 'equal' ? `${splitCount} Bills` : 'Split Bills'}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ════════════════════════════════════════════════════════════
+          CLOTHING — EXCHANGE MODAL
+      ════════════════════════════════════════════════════════════ */}
+      {businessType === 'clothing' && showExchangeModal && exchangeSale && (() => {
+        const returnedValue = exchangeReturned.filter(i => i.selected).reduce((s, i) => s + (Number(i.price) * Number(i.quantity || 1)), 0);
+        const exchangeValue = exchangeNewItems.reduce((s, i) => s + (Number(i.price || 0) * Number(i.quantity || 1)), 0);
+        const diff = exchangeValue - returnedValue;
+
+        const handleSubmitExchange = async () => {
+          setExchangeSubmitting(true);
+          try {
+            const res = await fetch(apiUrl('/api/sales/exchange'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+              body: JSON.stringify({
+                original_invoice_no: exchangeSale.invoice_number,
+                returned_items: exchangeReturned.filter(i => i.selected).map(i => ({ product_id: i.product_id, quantity: i.quantity, reason: i.reason || 'exchange' })),
+                exchange_items: exchangeNewItems.filter(i => i.product_id).map(i => ({ product_id: i.product_id, product_name: i.product_name, quantity: i.quantity, price: i.price, size: i.size, color: i.color })),
+                customer_name: exchangeSale.buyer_name,
+                customer_phone: exchangeSale.buyer_phone,
+                price_difference: diff,
+                payment_type: diff > 0 ? 'cash' : 'cash',
+              }),
+            });
+            if (res.ok) {
+              setShowExchangeModal(false);
+              fetchSales();
+            } else {
+              const d = await res.json();
+              setError(d.message || 'Exchange failed');
+            }
+          } catch { setError('Server error during exchange'); }
+          setExchangeSubmitting(false);
+        };
+
+        return (
+          <div className="fixed inset-0 z-[75] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4">
+            <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
+                <div>
+                  <h3 className="text-[18px] font-black text-slate-900">↩ Process Exchange</h3>
+                  <p className="text-[12px] text-slate-500 mt-0.5">Invoice {exchangeSale.invoice_number}</p>
+                </div>
+                <button onClick={() => setShowExchangeModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                {/* Section 1 — Items being returned */}
+                <div>
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest mb-2">Items Being Returned</p>
+                  <div className="space-y-2">
+                    {exchangeReturned.map((item, idx) => (
+                      <div key={idx} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all ${item.selected ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white opacity-50'}`}>
+                        <input type="checkbox" checked={!!item.selected}
+                          onChange={e => setExchangeReturned(prev => prev.map((x, i) => i === idx ? { ...x, selected: e.target.checked } : x))}
+                          className="w-4 h-4 accent-rose-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-bold text-slate-900">{item.product_name}</p>
+                          <p className="text-[11px] text-slate-500">{[item.size, item.color].filter(Boolean).join(' / ')} · ₹{item.price} × {item.quantity}</p>
+                        </div>
+                        {item.selected && (
+                          <select value={item.reason || ''} onChange={e => setExchangeReturned(prev => prev.map((x, i) => i === idx ? { ...x, reason: e.target.value } : x))}
+                            className="h-8 px-2 rounded-lg border border-slate-200 text-[11px] bg-white flex-shrink-0">
+                            <option value="">Reason</option>
+                            {['Wrong Size', 'Wrong Color', 'Defective', 'Changed Mind', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section 2 — Items being taken */}
+                <div>
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest mb-2">Items Being Taken (Exchange)</p>
+                  <div className="space-y-2">
+                    {exchangeNewItems.map((item, idx) => (
+                      <div key={idx} className="flex gap-2 flex-wrap items-center px-3 py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50">
+                        <select value={item.product_id} onChange={e => {
+                          const prod = products.find(p => p._id === e.target.value);
+                          setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, product_id: e.target.value, product_name: prod?.name || '', price: prod?.price || 0 } : x));
+                        }} className="flex-1 h-8 px-2 rounded-lg border border-slate-200 text-[12px] bg-white min-w-[120px]">
+                          <option value="">Select product</option>
+                          {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                        </select>
+                        <input type="text" placeholder="Size" value={item.size}
+                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, size: e.target.value } : x))}
+                          className="h-8 w-16 px-2 rounded-lg border border-slate-200 text-[12px] bg-white" />
+                        <input type="text" placeholder="Color" value={item.color}
+                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, color: e.target.value } : x))}
+                          className="h-8 w-16 px-2 rounded-lg border border-slate-200 text-[12px] bg-white" />
+                        <input type="number" placeholder="Qty" min="1" value={item.quantity}
+                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, quantity: Number(e.target.value) } : x))}
+                          className="h-8 w-14 px-2 rounded-lg border border-slate-200 text-[12px] bg-white text-center" />
+                        <input type="number" placeholder="₹ Price" min="0" value={item.price}
+                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, price: Number(e.target.value) } : x))}
+                          className="h-8 w-20 px-2 rounded-lg border border-slate-200 text-[12px] bg-white text-center" />
+                        {exchangeNewItems.length > 1 && (
+                          <button onClick={() => setExchangeNewItems(prev => prev.filter((_, i) => i !== idx))} className="text-rose-500 text-[12px] font-bold">✕</button>
+                        )}
+                      </div>
+                    ))}
+                    <button onClick={() => setExchangeNewItems(prev => [...prev, { product_id: '', product_name: '', quantity: 1, price: 0, size: '', color: '' }])}
+                      className="w-full py-2 rounded-xl border-2 border-dashed border-emerald-300 text-[12px] font-bold text-emerald-600 hover:bg-emerald-50 transition-colors">
+                      + Add Item
+                    </button>
+                  </div>
+                </div>
+
+                {/* Section 3 — Price difference */}
+                <div className={`px-4 py-3 rounded-2xl border-2 ${diff > 0 ? 'border-amber-300 bg-amber-50' : diff < 0 ? 'border-blue-300 bg-blue-50' : 'border-emerald-300 bg-emerald-50'}`}>
+                  <div className="flex justify-between text-[12px] font-semibold text-slate-700 mb-1">
+                    <span>Returned value</span><span>₹{returnedValue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[12px] font-semibold text-slate-700 mb-2">
+                    <span>Exchange value</span><span>₹{exchangeValue.toFixed(2)}</span>
+                  </div>
+                  <div className={`flex justify-between text-[14px] font-black ${diff > 0 ? 'text-amber-800' : diff < 0 ? 'text-blue-800' : 'text-emerald-800'}`}>
+                    <span>{diff > 0 ? `Customer pays` : diff < 0 ? `Refund to customer` : `Even exchange`}</span>
+                    <span>{diff !== 0 ? `₹${Math.abs(diff).toFixed(2)}` : '✓ No payment'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 border-t border-slate-100 flex-shrink-0">
+                <button onClick={handleSubmitExchange} disabled={exchangeSubmitting || exchangeReturned.filter(i => i.selected).length === 0}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-700 text-white font-black text-[14px] shadow-lg shadow-rose-500/30 hover:-translate-y-0.5 disabled:opacity-60 transition-all"
+                >{exchangeSubmitting ? 'Processing…' : 'Process Exchange'}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Barcode scanner (UNCHANGED) */}
       <CameraBarcodeScanner

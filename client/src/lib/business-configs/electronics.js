@@ -70,7 +70,12 @@ export default {
     { key: 'warranty', label: 'Warranty',    type: 'select', options: ['No Warranty', '6 Months', '1 Year', '2 Years', '3 Years', '5 Years'] },
     { key: 'serial_no',label: 'Serial No.',  type: 'text',   placeholder: 'Serial number' },
   ],
-  invoiceExtraFields: [],
+  invoiceExtraFields: [
+    { key: 'serial_no',       label: 'Serial Number',    type: 'text' },
+    { key: 'imei_no',         label: 'IMEI (if mobile)', type: 'text' },
+    { key: 'warranty_period', label: 'Warranty Period',  type: 'select', options: ['6 months', '1 year', '2 years', '3 years', 'As per brand'] },
+    { key: 'demo_date',       label: 'Demo Date',        type: 'date' },
+  ],
   invoiceLineFields: [
     { key: 'serial_no', label: 'Serial No.', type: 'text', placeholder: 'Serial number' },
   ],
@@ -135,6 +140,7 @@ export default {
       { id: 'serials',   icon: '🔖', label: 'Serial Inventory',  sublabel: 'Device serial numbers', href: '/product',   color: 'indigo', permission: 'MANAGE_INVENTORY' },
       { id: 'sales',     icon: '🧾', label: 'Electronics Sales', sublabel: 'All device sales',      href: '/sales',     color: 'blue',   permission: 'VIEW_SALES'       },
       { id: 'purchases', icon: '🛒', label: 'Stock Purchases',   sublabel: 'Distributor orders',    href: '/purchases', color: 'amber',  permission: 'CREATE_PURCHASE'  },
+      { id: 'warranty',  icon: '🛡️', label: 'Warranty Claims',   sublabel: 'Open claims',           href: '/warranty',  color: 'teal',   permission: 'VIEW_SALES'       },
     ],
     tip: 'Record serial numbers for warranty claims. IMEI tracking reduces pilferage.',
   },
@@ -165,9 +171,29 @@ export default {
   },
 
   invoiceConfig: {
-    accentColor:      '#0f172a',
+    documentTitle:    'Tax Invoice',
+    itemSectionTitle: 'Electronic Items',
     showSerialColumn: true,
-    itemSectionTitle: 'Electronics',
-    footerNote:       'Serial numbers must be intact for warranty claims. Keep this invoice for all service centre visits.',
+    showHsnColumn:    true,
+    showGstColumns:   true,
+    accentColor:      '#0284c7',
+    footerNote:       'Warranty as per manufacturer terms. Keep this invoice for warranty claims.',
+  },
+
+  workflowConfig: {
+    enabled: true,
+    stages: [
+      { key: 'pending',   label: 'Pending',       color: 'gray'  },
+      { key: 'demo',      label: 'Demo Given',     color: 'blue'  },
+      { key: 'confirmed', label: 'Sale Confirmed', color: 'green' },
+      { key: 'invoiced',  label: 'Invoiced',       color: 'green' },
+      { key: 'delivered', label: 'Delivered',      color: 'green' },
+      { key: 'paid',      label: 'Paid',           color: 'green' },
+    ],
+    dashboardWidgets: [
+      { label: 'Pending Sales',    stage: 'pending',   href: '/sales' },
+      { label: 'Demo in Progress', stage: 'demo',      href: '/sales' },
+      { label: 'Ready to Invoice', stage: 'confirmed', href: '/sales' },
+    ],
   },
 };

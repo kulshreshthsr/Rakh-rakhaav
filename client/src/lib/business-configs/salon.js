@@ -125,8 +125,14 @@ export default {
 
   // ─── Invoice-level extra fields ─────────────────────────────────────────────
   invoiceExtraFields: [
-    { key: 'technician',       label: 'Stylist / Staff', type: 'text', placeholder: 'Staff name' },
-    { key: 'appointment_date', label: 'Appointment Date', type: 'date' },
+    { key: 'appointment_date',     label: 'Appointment Date',        type: 'date',          required: false },
+    { key: 'appointment_time',     label: 'Appointment Time',        type: 'time',          required: false },
+    { key: 'appointment_duration', label: 'Duration (minutes)',      type: 'number',        placeholder: '60', required: false },
+    { key: 'stylist_id',           label: 'Stylist / Staff',         type: 'stylist_select',required: false },
+    { key: 'advance_paid',         label: 'Advance Collected (₹)',   type: 'number',        placeholder: '0', required: false },
+    { key: 'advance_mode',         label: 'Advance Payment Mode',    type: 'select',        options: ['Cash', 'UPI', 'Bank Transfer'], showWhen: { field: 'advance_paid', notEmpty: true } },
+    { key: 'balance_at_visit',     label: 'Balance Due at Visit',    type: 'number',        placeholder: 'Auto-calculated', required: false, readOnly: true },
+    { key: 'client_notes',         label: 'Client Notes / Preferences', type: 'text',       placeholder: 'e.g. Allergic to ammonia, prefers head massage, bridal package' },
   ],
 
   // ─── Per-line-item extra fields ─────────────────────────────────────────────
@@ -195,11 +201,14 @@ export default {
       cta: 'New Appointment', href: '/sales?open=1', permission: 'CREATE_INVOICE',
     },
     tiles: [
-      { id: 'appointments', icon: '📅', label: "Today's Slots",   sublabel: 'Appointment queue',    href: '/sales',           color: 'purple', permission: 'CREATE_INVOICE'   },
-      { id: 'services',     icon: '💇', label: 'Services Menu',   sublabel: 'Add or edit services', href: '/product',         color: 'indigo', permission: 'MANAGE_INVENTORY' },
-      { id: 'clients',      icon: '👤', label: 'Client Directory',sublabel: 'All clients',          href: '/sales/customers', color: 'pink',   permission: 'VIEW_SALES'       },
+      { id: 'appointments', icon: '📅', label: "Today's Slots",    sublabel: 'Appointment queue',    href: '/sales',           color: 'purple', permission: 'CREATE_INVOICE'   },
+      { id: 'calendar',     icon: '🗓️', label: 'Appointment Calendar', sublabel: 'Book & manage slots', href: '/appointments',  color: 'indigo', permission: 'CREATE_INVOICE'   },
+      { id: 'services',     icon: '💇', label: 'Services Menu',    sublabel: 'Add or edit services', href: '/product',         color: 'pink',   permission: 'MANAGE_INVENTORY' },
+      { id: 'stylists',     icon: '✂️', label: 'Stylists',         sublabel: 'Staff roster & schedule', href: '/stylists',     color: 'violet', permission: 'MANAGE_INVENTORY' },
+      { id: 'memberships',  icon: '💳', label: 'Memberships',      sublabel: 'Active packages',      href: '/memberships',     color: 'teal',   permission: 'VIEW_SALES'       },
+      { id: 'clients',      icon: '👤', label: 'Client Directory', sublabel: 'All clients',          href: '/sales/customers', color: 'slate',  permission: 'VIEW_SALES'       },
     ],
-    tip: 'Add stylist name and service notes to each appointment bill for better tracking.',
+    tip: 'Add stylist name and appointment time to each booking for better client management.',
   },
 
   roleConfig: {

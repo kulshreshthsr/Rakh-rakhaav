@@ -1,14 +1,18 @@
 export default {
   // Entity labels
-  product:        'Item',
-  products:       'Items',
+  product:        'Material',
+  products:       'Materials',
   productHindi:   'सामान',
-  item:           'Item',
-  items:          'Items',
-  inventory:      'Stock',
+  item:           'Material',
+  items:          'Materials',
+  inventory:      'Material Stock',
+
+  // People
+  customer:       'Customer / Contractor',
+  supplier:       'Supplier / Distributor',
 
   // Actions
-  addProduct:     'Add Item',
+  addProduct:     'Add Material',
   newSale:        'New Invoice',
   editSale:       'Edit Invoice',
 
@@ -52,7 +56,14 @@ export default {
     { key: 'category', label: 'Category', type: 'select', options: ['Pipes & Fittings', 'Electrical', 'Paint', 'Tools', 'Cement & Bricks', 'Steel & Iron', 'Wood', 'Sanitary', 'Wires & Cables', 'Other'] },
     { key: 'size_spec',label: 'Size / Spec', type: 'text', placeholder: 'e.g. 1 inch, 4mm, 10ft' },
   ],
-  invoiceExtraFields: [],
+  invoiceExtraFields: [
+    { key: 'delivery_site',   label: 'Delivery Site / Address',     type: 'text', placeholder: 'Site name or delivery address' },
+    { key: 'challan_no',      label: 'Challan No.',                 type: 'text', placeholder: 'Auto or manual challan number' },
+    { key: 'challan_date',    label: 'Challan Date',                type: 'date' },
+    { key: 'contractor_name', label: 'Contractor / Site In-charge', type: 'text' },
+    { key: 'po_number',       label: 'Purchase Order No.',          type: 'text', placeholder: 'Client PO number if applicable' },
+    { key: 'vehicle_no',      label: 'Delivery Vehicle No.',        type: 'text', placeholder: 'e.g. UP80 AB 1234' },
+  ],
   invoiceLineFields:  [],
 
   productAttributeSections: [
@@ -104,9 +115,10 @@ export default {
       cta: 'Material Stock', href: '/product', permission: 'MANAGE_INVENTORY',
     },
     tiles: [
-      { id: 'bulk_orders', icon: '📦', label: 'Bulk Orders',      sublabel: 'Contractor purchases',    href: '/sales',     color: 'amber',  permission: 'VIEW_SALES'       },
-      { id: 'stock',       icon: '🧱', label: 'Material Stock',   sublabel: 'Building materials',      href: '/product',   color: 'slate',  permission: 'MANAGE_INVENTORY' },
-      { id: 'purchases',   icon: '🛒', label: 'Restock Material', sublabel: 'Purchase from suppliers', href: '/purchases', color: 'orange', permission: 'CREATE_PURCHASE'  },
+      { id: 'bulk_orders',  icon: '📦', label: 'Bulk Orders',      sublabel: 'Contractor purchases',    href: '/sales',        color: 'amber',  permission: 'VIEW_SALES'       },
+      { id: 'stock',        icon: '🧱', label: 'Material Stock',   sublabel: 'Building materials',      href: '/product',      color: 'slate',  permission: 'MANAGE_INVENTORY' },
+      { id: 'purchases',    icon: '🛒', label: 'Restock Material', sublabel: 'Purchase from suppliers', href: '/purchases',    color: 'orange', permission: 'CREATE_PURCHASE'  },
+      { id: 'contractors',  icon: '👷', label: 'Contractors',      sublabel: 'Credit & accounts',       href: '/contractors',  color: 'amber',  permission: 'VIEW_SALES'       },
     ],
     tip: 'Track contractor accounts with udhaar. Bulk discount applies automatically.',
   },
@@ -137,9 +149,12 @@ export default {
   },
 
   invoiceConfig: {
-    documentTitle:    'Material Bill',
-    itemSectionTitle: 'Materials',
-    footerNote:       'Material once sold is not returnable without prior approval. All measurements to be verified at time of delivery.',
+    documentTitle:    'Tax Invoice',
+    itemSectionTitle: 'Materials & Items',
+    accentColor:      '#78716c',
+    showHsnColumn:    true,
+    showGstColumns:   true,
+    footerNote:       'Goods once sold will not be taken back without prior approval. Subject to local jurisdiction.',
   },
 
   kpiConfig: {

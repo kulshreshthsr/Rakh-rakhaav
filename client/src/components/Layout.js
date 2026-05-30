@@ -484,13 +484,27 @@ function LayoutInner({ children }) {
         if (item.key === 'products') return { ...item, label: term('inventory', 'Stock'), sublabel: `${term('products','Products')} & Inventory` };
         return item;
       });
-    // Narcotics register — pharmacy only, injected after isEnabled filter
+    // Narcotics register — pharmacy only
     if (businessType === 'pharmacy' && canAccess('VIEW_REPORTS')) {
-      base.push({
-        href: '/narcotics', key: 'narcotics',
-        label: 'Narcotics Reg.', sublabel: 'Schedule X Dispensing Log',
-        icon: 'reports', permission: 'VIEW_REPORTS',
-      });
+      base.push({ href: '/narcotics', key: 'narcotics', label: 'Narcotics Reg.', sublabel: 'Schedule X Dispensing Log', icon: 'reports', permission: 'VIEW_REPORTS' });
+    }
+    // Salon-specific pages
+    if (businessType === 'salon') {
+      base.push({ href: '/appointments', key: 'appointments', label: 'Calendar',    sublabel: 'Appointment calendar', icon: 'reports', permission: 'VIEW_SALES' });
+      base.push({ href: '/stylists',     key: 'stylists',     label: 'Stylists',    sublabel: 'Staff management',     icon: 'team',    permission: 'MANAGE_INVENTORY' });
+      base.push({ href: '/memberships',  key: 'memberships',  label: 'Memberships', sublabel: 'Package tracking',     icon: 'udhaar',  permission: 'VIEW_SALES' });
+    }
+    // Restaurant-specific pages
+    if (businessType === 'restaurant') {
+      base.push({ href: '/tables', key: 'tables', label: 'Floor View', sublabel: 'Live table status', icon: 'reports', permission: 'VIEW_SALES' });
+    }
+    // Hardware-specific pages
+    if (businessType === 'hardware') {
+      base.push({ href: '/contractors', key: 'contractors', label: 'Contractors', sublabel: 'Account management', icon: 'team', permission: 'VIEW_SALES' });
+    }
+    // Electronics-specific pages
+    if (businessType === 'electronics' || businessType === 'mobile_shop') {
+      base.push({ href: '/warranty', key: 'warranty', label: 'Warranty Claims', sublabel: 'Claim register', icon: 'reports', permission: 'VIEW_SALES' });
     }
     return base;
   }, [canAccess, isEnabled, term, businessType]);
