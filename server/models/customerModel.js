@@ -18,4 +18,7 @@ const customerSchema = new mongoose.Schema({
   notes: { type: String },
 }, { timestamps: true });
 
+customerSchema.index({ shop: 1, isActive: 1 });
+customerSchema.index({ shop: 1, phone: 1 });
+
 module.exports = mongoose.model('Customer', customerSchema);

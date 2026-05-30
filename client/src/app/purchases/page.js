@@ -112,7 +112,7 @@ const getRoundedBillValues = (amount) => {
 };
 
 // Empty item row
-const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
+const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
@@ -1197,7 +1197,7 @@ export default function PurchasesPage() {
                   const prod = products.find((p) => p._id === item.product_id);
 
                   return (
-                    <div key={index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
+                    <div key={item._rowId || index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Item {index + 1}</span>
                         <div className="flex justify-end gap-1.5">

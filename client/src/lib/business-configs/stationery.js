@@ -1,11 +1,14 @@
 export default {
   // Entity labels
-  product:        'Item',
-  products:       'Items',
+  product:        'Stationery Item',
+  products:       'Stationery Items',
   productHindi:   'सामान',
   item:           'Item',
   items:          'Items',
-  inventory:      'Stock',
+  inventory:      'Stationery Stock',
+
+  // People
+  supplier:       'Distributor',
 
   // Transactions
   invoice:        'Bill',
@@ -62,20 +65,30 @@ export default {
   productAttributeSections: [
     {
       title: 'Item Details',
+      icon: '✏️',
       fields: [
-        { key: 'category', label: 'Category', type: 'select', options: ['Pen & Pencil', 'Marker & Highlighter', 'Notebook & Register', 'Paper & Ream', 'File & Folder', 'Art & Craft Supplies', 'Office Supplies', 'Printing & Stationery', 'School Kit', 'Rubber Stamp', 'Other'] },
-        { key: 'brand',    label: 'Brand',    type: 'text',   placeholder: 'e.g. Classmate, Camlin, Reynolds' },
-        { key: 'color',    label: 'Color',    type: 'text',   placeholder: 'Color (e.g. Blue ink, Red cover)' },
-        { key: 'for_use',  label: 'For Use',  type: 'select', options: ['School', 'College', 'Office', 'Art / Creative', 'General'] },
+        { key: 'brand',      label: 'Brand',            type: 'text',   placeholder: 'e.g. Classmate, Natraj, Camlin, Faber-Castell' },
+        { key: 'category',   label: 'Category',         type: 'select', options: ['Pen / Pencil', 'Notebook / Diary', 'Art Supplies', 'Geometry Box', 'Bag / Pouch', 'Printer Paper', 'File / Folder', 'Adhesive / Tape', 'Craft Supplies', 'Other'] },
+        { key: 'for_class',  label: 'For Class / Grade',type: 'select', options: ['Pre-School', 'Class 1-2', 'Class 3-5', 'Class 6-8', 'Class 9-10', 'Class 11-12', 'College', 'General / Office'] },
+        { key: 'color',      label: 'Color / Variant',  type: 'text',   placeholder: 'e.g. Blue, Red, Ruled, Unruled' },
+        { key: 'pack_size',  label: 'Pack Size',        type: 'text',   placeholder: 'e.g. Single, Box of 10, Pack of 5' },
       ],
     },
     {
-      title: 'Packaging',
+      title: 'School Kit',
+      icon: '🎒',
       fields: [
-        { key: 'pack_size', label: 'Pack Size', type: 'text', placeholder: 'e.g. Box of 12, Pack of 100, Single' },
+        { key: 'kit_category', label: 'Kit Category',    type: 'select', options: ['Individual Item', 'School Kit', 'Art Kit', 'Lab Kit', 'Sports Kit'] },
+        { key: 'is_bulk_item', label: 'Bulk Order Item', type: 'boolean' },
+        { key: 'bulk_unit',    label: 'Bulk Unit',       type: 'text',   placeholder: 'e.g. Gross (144), Dozen, Box of 100' },
       ],
     },
   ],
+
+  modules: {
+    udhaar:    true,
+    purchases: true,
+  },
 
   // ─── Inventory behavior ───────────────────────────────────────────────────
   inventoryBehavior: {
@@ -106,9 +119,10 @@ export default {
       cta: 'Stationery Stock', href: '/product', permission: 'MANAGE_INVENTORY',
     },
     tiles: [
-      { id: 'stock',     icon: '📎', label: 'Stationery Stock', sublabel: 'Office & school items',  href: '/product',   color: 'indigo', permission: 'MANAGE_INVENTORY' },
-      { id: 'sales',     icon: '🧾', label: 'Stationery Sales', sublabel: "Today's sales",          href: '/sales',     color: 'green',  permission: 'VIEW_SALES'       },
-      { id: 'purchases', icon: '🛒', label: 'Restock Items',    sublabel: 'Purchase from supplier', href: '/purchases', color: 'amber',  permission: 'CREATE_PURCHASE'  },
+      { id: 'stock',       icon: '✏️', label: 'Stock',       sublabel: 'All stationery',           href: '/product',   color: 'indigo', permission: 'MANAGE_INVENTORY' },
+      { id: 'sales',       icon: '💰', label: 'Sales Today', sublabel: "Today's billing",           href: '/sales',     color: 'green',  permission: 'VIEW_SALES'       },
+      { id: 'school_kits', icon: '🎒', label: 'School Kits', sublabel: 'Bulk orders',              href: '/sales',     color: 'blue',   permission: 'VIEW_SALES'       },
+      { id: 'purchases',   icon: '📦', label: 'Purchases',   sublabel: 'Reorder from supplier',    href: '/purchases', color: 'amber',  permission: 'CREATE_PURCHASE'  },
     ],
     tip: 'Season demand peaks at school opening. Keep notebooks and pens well stocked.',
   },
@@ -139,7 +153,20 @@ export default {
   },
 
   invoiceConfig: {
+    documentTitle:    'Bill',
+    accentColor:      '#0891b2',
     itemSectionTitle: 'Stationery Items',
-    footerNote:       'No returns on opened or used items. Bulk order discounts available on request.',
+    showHsnColumn:    true,
+    showGstColumns:   true,
+    footerNote:       'Goods once sold will not be exchanged without original bill.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: 'Total billed today' },
+    kpi2: { label: 'Bills',        sublabel: 'Customers served'   },
+    kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit today' },
+    kpi4: { label: 'Udhaar',       sublabel: 'School credit'      },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'        },
+    kpi6: { label: 'Stock Alerts', sublabel: 'Low stock items'   },
   },
 };

@@ -118,7 +118,8 @@ const listAdminShops = async (req, res) => {
       total: filtered.length,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -151,7 +152,8 @@ const getAdminStats = async (req, res) => {
 
     res.json(stats);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -183,7 +185,8 @@ const deleteAdminShop = async (req, res) => {
 
     res.json({ message: 'User account and shop data removed successfully.', deletedShopId: String(shopId) });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

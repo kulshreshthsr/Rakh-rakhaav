@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiUrl } from '../lib/api';
 import eventBus from '../lib/eventBus';
 
@@ -119,11 +119,13 @@ export function NotificationProvider({ children }) {
     return () => offs.forEach(off => off());
   }, [refresh]);
 
+  const value = useMemo(
+    () => ({ notifications, unreadCount, taskCount, loading, markRead, markAllRead, dismiss, refresh }),
+    [notifications, unreadCount, taskCount, loading, markRead, markAllRead, dismiss, refresh]
+  );
+
   return (
-    <NotificationContext.Provider value={{
-      notifications, unreadCount, taskCount, loading,
-      markRead, markAllRead, dismiss, refresh,
-    }}>
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );

@@ -28,4 +28,6 @@ const userSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
+userSchema.index({ shopId: 1 });
+
 module.exports = mongoose.model('User', userSchema);

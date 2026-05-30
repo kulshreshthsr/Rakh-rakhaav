@@ -14,4 +14,6 @@ const expenseSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
 }, { timestamps: true });
 
+expenseSchema.index({ shop: 1, date: -1 });
+
 module.exports = mongoose.model('Expense', expenseSchema);

@@ -34,6 +34,7 @@ const productSchema = new mongoose.Schema({
   metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
 
   // ── Stock history log ─────────────────────────────────────────
+  // TODO: move to separate collection at scale — this array grows unboundedly
   stock_history: [stockHistorySchema],
 }, { timestamps: true });
 
@@ -54,7 +55,9 @@ productSchema.virtual('is_out_of_stock').get(function () {
 });
 
 productSchema.index({ shop: 1 });
+productSchema.index({ shop: 1, isActive: 1 });
 productSchema.index({ shop: 1, quantity: 1 });
+productSchema.index({ shop: 1, barcode: 1 }, { sparse: true });
 
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });

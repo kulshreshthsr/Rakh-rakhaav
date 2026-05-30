@@ -147,8 +147,20 @@ export default {
   },
 
   invoiceConfig: {
-    accentColor:      '#db2777',
-    itemSectionTitle: 'Cosmetics',
-    footerNote:       'Check expiry date before use. Do a patch test for sensitive skin. No returns on opened products.',
+    documentTitle:    'Tax Invoice',
+    accentColor:      '#ec4899',
+    itemSectionTitle: 'Products',
+    showHsnColumn:    true,
+    showGstColumns:   true,
+    footerNote:       'Check expiry before use. Not liable for allergic reactions. Keep invoice for exchange.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',   sublabel: 'Total billed today'    },
+    kpi2: { label: 'Bills',         sublabel: 'Customers served'      },
+    kpi3: { label: 'मुनाफा',       sublabel: 'Gross profit'          },
+    kpi4: { label: 'Udhaar',        sublabel: 'Customer credit'       },
+    kpi5: { label: 'GST Payable',   sublabel: 'This month'           },
+    kpi6: { label: 'Expiry Alerts', sublabel: 'Products near expiry' },
   },
 };

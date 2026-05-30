@@ -159,7 +159,20 @@ export default {
   },
 
   invoiceConfig: {
+    documentTitle:    'Book Invoice',
+    accentColor:      '#0369a1',
     itemSectionTitle: 'Books & Items',
-    footerNote:       'Books once sold are not returnable. Please verify edition and syllabus before purchase.',
+    showHsnColumn:    true,
+    showGstColumns:   true,
+    footerNote:       'Books once sold are non-returnable unless damaged at time of purchase.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई', sublabel: 'Total billed today'  },
+    kpi2: { label: 'Books Sold',  sublabel: 'Copies today'        },
+    kpi3: { label: 'मुनाफा',     sublabel: 'Gross profit'        },
+    kpi4: { label: 'Udhaar',      sublabel: 'School/student dues' },
+    kpi5: { label: 'GST Payable', sublabel: 'This month'         },
+    kpi6: { label: 'Stock Alerts',sublabel: 'Low stock books'    },
   },
 };

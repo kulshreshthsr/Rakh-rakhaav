@@ -33,7 +33,8 @@ const getAccountingSummary = async (req, res) => {
 
     res.json(summary);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

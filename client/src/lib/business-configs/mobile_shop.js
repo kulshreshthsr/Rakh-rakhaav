@@ -214,10 +214,15 @@ export default {
     ],
   },
 
+  warrantyEnabled: true,
+
   invoiceConfig: {
+    documentTitle:    'Tax Invoice',
     accentColor:      '#1d4ed8',
     showSerialColumn: true,
-    itemSectionTitle: 'Products',
+    showHsnColumn:    true,
+    showGstColumns:   true,
+    itemSectionTitle: 'Mobile Devices & Accessories',
     footerNote:       'IMEI warranty as per manufacturer policy. Keep this invoice safe for all warranty claims.',
   },
 

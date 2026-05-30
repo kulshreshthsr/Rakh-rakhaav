@@ -11,7 +11,8 @@ router.get('/config', protect, async (req, res) => {
     const businessType = shop?.businessType || 'general';
     res.json({ businessType, config: getIndustryConfig(businessType) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 

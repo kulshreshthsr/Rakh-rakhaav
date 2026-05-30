@@ -87,11 +87,14 @@ export default {
 
   // ─── Invoice-level extra fields ─────────────────────────────────────────────
   invoiceExtraFields: [
-    { key: 'device_model',   label: 'Device / Model',  type: 'text', placeholder: 'e.g. iPhone 14, Dell Inspiron' },
-    { key: 'serial_no',      label: 'Serial / IMEI',   type: 'text', placeholder: 'Device serial number' },
-    { key: 'complaint',      label: 'Complaint',        type: 'textarea', placeholder: 'Customer complaint description' },
-    { key: 'delivery_date',  label: 'Delivery Date',   type: 'date' },
-    { key: 'technician',     label: 'Technician',      type: 'text', placeholder: 'Assigned technician' },
+    { key: 'device_model',        label: 'Device / Model',          type: 'text',     placeholder: 'e.g. iPhone 14, Dell Inspiron' },
+    { key: 'serial_no',           label: 'Serial / IMEI',           type: 'text',     placeholder: 'Device serial number' },
+    { key: 'complaint',           label: 'Complaint',               type: 'textarea', placeholder: 'Customer complaint description' },
+    { key: 'delivery_date',       label: 'Delivery Date',           type: 'date' },
+    { key: 'technician',          label: 'Technician',              type: 'text',     placeholder: 'Assigned technician' },
+    { key: 'advance_collected',   label: 'Advance Collected (₹)',   type: 'number',   placeholder: '0', required: false },
+    { key: 'advance_mode',        label: 'Advance Payment Mode',    type: 'select',   options: ['Cash', 'UPI', 'Bank Transfer'] },
+    { key: 'balance_on_delivery', label: 'Balance Due on Delivery', type: 'number',   placeholder: 'Auto-calculated', required: false },
   ],
 
   // ─── Per-line-item extra fields ─────────────────────────────────────────────

@@ -678,7 +678,8 @@ const getSales = async (req, res) => {
 
     res.json({ sales: page, summary, hasMore, nextCursor });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -1037,7 +1038,8 @@ const getProfitSummary = async (req, res) => {
       purchasesCount: p.purchasesCount,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -1115,7 +1117,8 @@ const getGSTSummary = async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -1166,7 +1169,8 @@ const getGSTComplianceReport = async (req, res) => {
 
     res.json(report);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -1213,7 +1217,8 @@ const updateSaleWorkflow = async (req, res) => {
       details:    { newStage: workflow_status },
     }).catch(() => {});
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -1239,7 +1244,8 @@ const getAppointments = async (req, res) => {
 
     res.json({ appointments, date: dayStr });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -1284,7 +1290,8 @@ const getClientHistory = async (req, res) => {
 
     res.json({ history, summary: { visitCount, totalSpend: round2(totalSpend), daysSince, topServices, lastNotes } });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

@@ -29,17 +29,20 @@ const getStylists = async (req, res) => {
     const result = stylists.map(s => ({ ...s.toJSON(), todayCount: countMap[String(s._id)] || 0 }));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const createStylist = async (req, res) => {
   try {
     const shop = await getOrCreateShop(req.user.id);
-    const stylist = await Stylist.create({ ...req.body, shop: shop._id });
+    const { name, phone, speciality, for_gender, working_days, start_time, end_time, slot_duration, color } = req.body;
+    const stylist = await Stylist.create({ name, phone, speciality, for_gender, working_days, start_time, end_time, slot_duration, color, shop: shop._id });
     res.status(201).json(stylist);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -54,7 +57,8 @@ const updateStylist = async (req, res) => {
     if (!stylist) return res.status(404).json({ message: 'Stylist not found' });
     res.json(stylist);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -69,7 +73,8 @@ const deactivateStylist = async (req, res) => {
     if (!stylist) return res.status(404).json({ message: 'Stylist not found' });
     res.json({ message: 'Stylist deactivated' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

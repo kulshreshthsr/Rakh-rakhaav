@@ -17,7 +17,8 @@ const getSuppliers = async (req, res) => {
       .sort({ name: 1 });
     res.json(suppliers);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -29,7 +30,8 @@ const getSupplierById = async (req, res) => {
     if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
     res.json(supplier);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -57,7 +59,8 @@ const createSupplier = async (req, res) => {
     });
     res.status(201).json(supplier);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -91,7 +94,8 @@ const updateSupplier = async (req, res) => {
     });
     res.json(supplier);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -116,7 +120,8 @@ const deleteSupplier = async (req, res) => {
     }
     res.json({ message: 'Supplier removed' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -135,7 +140,8 @@ const getSupplierLedger = async (req, res) => {
 
     res.json({ supplier, ledger });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -184,7 +190,8 @@ const settleSupplierPayment = async (req, res) => {
 
     res.json({ message: 'Payment recorded', balanceDue: supplier.totalUdhaar });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

@@ -24,4 +24,7 @@ const udhaarSchema = new mongoose.Schema({
   reference_type: { type: String }, // 'sale' | 'manual'
 }, { timestamps: true });
 
+udhaarSchema.index({ shop: 1, customer: 1, date: -1 });
+udhaarSchema.index({ shop: 1, reference_id: 1 });
+
 module.exports = mongoose.model('Udhaar', udhaarSchema);

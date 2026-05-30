@@ -169,9 +169,12 @@ export default {
   },
 
   invoiceConfig: {
-    accentColor:      '#c026d3',
-    itemSectionTitle: 'Sweets & Confections',
-    footerNote:       'Freshly made. Best consumed within the date shown. Store in cool, dry place.',
+    documentTitle:    'Bill',
+    accentColor:      '#f59e0b',
+    itemSectionTitle: 'Items',
+    showHsnColumn:    false,
+    showGstColumns:   true,
+    footerNote:       'Sweets are made fresh daily. Please consume within shelf life.',
   },
 
   kpiConfig: {

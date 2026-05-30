@@ -14,7 +14,8 @@ const getBankEntries = async (req, res) => {
     const entries = await BankEntry.find({ shop: shop._id }).sort({ date: -1 });
     res.json(entries);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -53,7 +54,8 @@ const updateBankEntry = async (req, res) => {
 
     res.json(updatedEntry);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -81,7 +83,8 @@ const createBankEntry = async (req, res) => {
     });
     res.status(201).json(entry);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -104,7 +107,8 @@ const deleteBankEntry = async (req, res) => {
     }
     res.json({ message: 'Bank entry deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

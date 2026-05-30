@@ -69,6 +69,7 @@ const purchaseSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 purchaseSchema.index({ shop: 1, createdAt: -1 });
+purchaseSchema.index({ shop: 1, payment_status: 1 });
 
 purchaseSchema.index(
   { shop: 1, invoice_number: 1 },

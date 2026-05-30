@@ -224,7 +224,8 @@ export default function DashboardPage() {
     hasBootstrappedRef.current = true;
     const token = getToken();
     if (!token) { router.push('/login'); return; }
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let user = {};
+    try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch { user = {}; }
     setUserName(user.name || '');
     if (user.isSubUser) { setIsStaffUser(true); setUserRole(user.role || null); }
 
@@ -1008,6 +1009,27 @@ export default function DashboardPage() {
               </div>
               <span className="text-[11px] font-bold text-teal-700">View Claims →</span>
             </Link>
+          );
+        })()}
+
+        {/* ══════════════════════════════════════
+            4h. REPAIR SHOP: Pending Pickup Alert
+        ══════════════════════════════════════ */}
+        {businessType === 'repair_shop' && (() => {
+          const pickup = data?.pendingPickup || 0;
+          if (pickup === 0) return null;
+          return (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-amber-300 bg-amber-50">
+              <span className="text-3xl flex-shrink-0">📱</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-black text-amber-900">{pickup} device{pickup !== 1 ? 's' : ''} ready for pickup</p>
+                <p className="text-[11px] text-amber-700 mt-0.5">Customer hasn&apos;t collected yet — send a reminder</p>
+              </div>
+              <Link href="/sales?filter=ready"
+                className="flex-shrink-0 text-[11px] font-black text-amber-700 border border-amber-400 rounded-lg px-3 py-1.5 hover:bg-amber-100 transition-colors">
+                View All →
+              </Link>
+            </div>
           );
         })()}
 

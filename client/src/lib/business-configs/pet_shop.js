@@ -1,23 +1,24 @@
 export default {
   // Entity labels
-  product:        'Item / Pet',
-  products:       'Products & Pets',
+  product:        'Pet Product',
+  products:       'Pet Products',
   productHindi:   'पालतू जानवर',
   item:           'Item',
   items:          'Items',
-  inventory:      'Stock',
+  inventory:      'Pet Stock',
 
   // Transactions
-  invoice:        'Bill',
-  invoices:       'Bills',
+  invoice:        'Invoice',
+  invoices:       'Invoices',
 
   // People
   customer:       'Pet Owner',
   customers:      'Pet Owners',
   customerHindi:  'पेट ओनर',
+  supplier:       'Supplier / Breeder',
 
   // Actions
-  addProduct:     'Add Item',
+  addProduct:     'Add Product',
   newSale:        'New Bill',
   editSale:       'Edit Bill',
 
@@ -127,15 +128,16 @@ export default {
     callout: {
       icon: '🐾', color: 'teal',
       title: 'Pet Shop Mode Active',
-      body: 'Pet food, accessories & care product inventory management.',
+      body: 'Pets, food & accessories.',
       cta: 'Pet Stock', href: '/product', permission: 'MANAGE_INVENTORY',
     },
     tiles: [
-      { id: 'pet_food',  icon: '🥩', label: 'Pet Food Stock',    sublabel: 'Food & treats inventory', href: '/product',   color: 'teal',  permission: 'MANAGE_INVENTORY' },
-      { id: 'sales',     icon: '🧾', label: 'Pet Sales',         sublabel: "Today's pet store sales", href: '/sales',     color: 'green', permission: 'VIEW_SALES'       },
-      { id: 'purchases', icon: '🛒', label: 'Restock Pet Items', sublabel: 'Purchase from supplier',  href: '/purchases', color: 'amber', permission: 'CREATE_PURCHASE'  },
+      { id: 'pet_products', icon: '🐾', label: 'Pet Products',  sublabel: 'All stock',                href: '/product',   color: 'teal',  permission: 'MANAGE_INVENTORY' },
+      { id: 'sales',        icon: '💰', label: 'Sales Today',   sublabel: "Today's billing",           href: '/sales',     color: 'green', permission: 'VIEW_SALES'       },
+      { id: 'pet_profiles', icon: '🐕', label: 'Pet Profiles',  sublabel: 'Customer pets',             href: '/pets',      color: 'blue',  permission: 'VIEW_SALES'       },
+      { id: 'purchases',    icon: '📦', label: 'Purchases',     sublabel: 'Restock pet supplies',      href: '/purchases', color: 'amber', permission: 'CREATE_PURCHASE'  },
     ],
-    tip: 'Check expiry on pet food regularly. Track breed-specific products separately.',
+    tip: 'Check expiry on pet food regularly. Track vaccination due dates for pet owner reminders.',
   },
 
   roleConfig: {
@@ -164,8 +166,20 @@ export default {
   },
 
   invoiceConfig: {
+    documentTitle:    'Invoice',
     accentColor:      '#059669',
     itemSectionTitle: 'Pet Products',
+    showHsnColumn:    false,
+    showGstColumns:   true,
     footerNote:       'Consult a veterinarian for pet health concerns. Check expiry before feeding. Store products as directed.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: 'Total billed today' },
+    kpi2: { label: 'Bills',        sublabel: 'Pet owners served'  },
+    kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit'       },
+    kpi4: { label: 'Udhaar',       sublabel: 'Customer credit'    },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'        },
+    kpi6: { label: 'Expiry Alerts',sublabel: 'Pet food expiry'   },
   },
 };

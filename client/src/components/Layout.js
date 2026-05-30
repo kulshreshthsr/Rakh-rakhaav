@@ -506,6 +506,10 @@ function LayoutInner({ children }) {
     if (businessType === 'electronics' || businessType === 'mobile_shop') {
       base.push({ href: '/warranty', key: 'warranty', label: 'Warranty Claims', sublabel: 'Claim register', icon: 'reports', permission: 'VIEW_SALES' });
     }
+    // Pet shop-specific pages
+    if (businessType === 'pet_shop') {
+      base.push({ href: '/pets', key: 'pets', label: 'Pet Profiles', sublabel: 'Health records', icon: 'team', permission: 'VIEW_SALES' });
+    }
     return base;
   }, [canAccess, isEnabled, term, businessType]);
 

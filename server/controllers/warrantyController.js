@@ -48,7 +48,8 @@ const getClaims = async (req, res) => {
     const readyCount = await WarrantyClaim.countDocuments({ shop: shop._id, claimStatus: 'ready' });
 
     res.json({ claims, summary, readyCount });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // POST /api/warranty
@@ -83,7 +84,8 @@ const createClaim = async (req, res) => {
     });
 
     res.status(201).json(claim);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // GET /api/warranty/serial/:sn
@@ -96,7 +98,8 @@ const getBySerial = async (req, res) => {
       claimStatus: { $nin: ['delivered', 'rejected'] },
     }).sort({ claimDate: -1 });
     res.json(claims);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // PATCH /api/warranty/:id
@@ -115,7 +118,8 @@ const updateClaim = async (req, res) => {
 
     await claim.save();
     res.json(claim);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 module.exports = { getClaims, createClaim, getBySerial, updateClaim };

@@ -112,9 +112,10 @@ export default {
       cta: 'Sports Stock', href: '/product', permission: 'MANAGE_INVENTORY',
     },
     tiles: [
-      { id: 'equipment', icon: '🏏', label: 'Equipment Stock', sublabel: 'Sports gear inventory',    href: '/product',   color: 'green', permission: 'MANAGE_INVENTORY' },
-      { id: 'sales',     icon: '🧾', label: 'Sports Sales',    sublabel: "Today's sales",             href: '/sales',     color: 'blue',  permission: 'VIEW_SALES'       },
-      { id: 'purchases', icon: '🛒', label: 'Restock Gear',    sublabel: 'Purchase from distributors',href: '/purchases', color: 'amber', permission: 'CREATE_PURCHASE'  },
+      { id: 'equipment',   icon: '⚽', label: 'Equipment',   sublabel: 'All sports gear',         href: '/product',   color: 'green', permission: 'MANAGE_INVENTORY' },
+      { id: 'sales',       icon: '💰', label: 'Sales Today', sublabel: "Today's billing",          href: '/sales',     color: 'blue',  permission: 'VIEW_SALES'       },
+      { id: 'bulk_orders', icon: '🏃', label: 'Bulk Orders', sublabel: 'Team/school orders',       href: '/sales',     color: 'teal',  permission: 'VIEW_SALES'       },
+      { id: 'purchases',   icon: '📦', label: 'Purchases',   sublabel: 'Restock equipment',        href: '/purchases', color: 'amber', permission: 'CREATE_PURCHASE'  },
     ],
     tip: 'Stock seasonal sports items. Cricket season and monsoon drive demand for different sports.',
   },
@@ -145,9 +146,21 @@ export default {
   },
 
   invoiceConfig: {
+    documentTitle:      'Tax Invoice',
     accentColor:        '#16a34a',
     showVariantColumns: true,
     itemSectionTitle:   'Sports Equipment',
+    showHsnColumn:      true,
+    showGstColumns:     true,
     footerNote:         'Exchange within 7 days with original bill. Equipment once used cannot be returned.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: 'Total billed today'  },
+    kpi2: { label: 'Bills',        sublabel: 'Customers served'    },
+    kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit'        },
+    kpi4: { label: 'Udhaar',       sublabel: 'Team/club credit'    },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'         },
+    kpi6: { label: 'Stock Alerts', sublabel: 'Low stock items'    },
   },
 };

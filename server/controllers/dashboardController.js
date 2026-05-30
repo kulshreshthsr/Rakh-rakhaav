@@ -245,6 +245,16 @@ const getDashboardSummary = async (req, res) => {
       insurancePending = insCount || 0;
     }
 
+    // Repair shop: devices ready for pickup (job status=ready, payment still pending)
+    let pendingPickup = 0;
+    if (shop.businessType === 'repair_shop') {
+      pendingPickup = await Sale.countDocuments({
+        shop: shopId,
+        'extra_fields.workflow_status': 'ready',
+        payment_status: { $in: ['unpaid', 'partial'] },
+      });
+    }
+
     // Electronics/mobile: warranty claims summary
     let warrantySummary = null;
     if (shop.businessType === 'electronics' || shop.businessType === 'mobile_shop') {
@@ -335,13 +345,15 @@ const getDashboardSummary = async (req, res) => {
       insurancePending,
       variantLowStock,
       warrantySummary,
+      pendingPickup,
       fetchedAt: new Date().toISOString(),
     });
 
     // Fire-and-forget rule scan — never blocks the response
     ruleEngine.scanShop(shop._id, shop.businessType || 'general').catch(() => {});
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -384,7 +396,7 @@ const workflowCounts = async (req, res) => {
     res.json({ counts, pendingTotal, asOf: new Date().toISOString() });
   } catch (err) {
     console.error('workflowCounts error:', err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -476,7 +488,7 @@ const creditAging = async (req, res) => {
     });
   } catch (err) {
     console.error('creditAging error:', err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -524,7 +536,8 @@ const tableStatus = async (req, res) => {
 
     res.json({ occupiedTables: Object.values(tableMap), occupiedCount: Object.keys(tableMap).length, asOf: new Date().toISOString() });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

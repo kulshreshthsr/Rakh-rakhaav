@@ -19,7 +19,8 @@ const getCustomers = async (req, res) => {
     }).sort({ name: 1 });
     res.json(customers);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -46,7 +47,8 @@ const createCustomer = async (req, res) => {
     });
     res.status(201).json(customer);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -90,7 +92,8 @@ const updateCustomer = async (req, res) => {
     });
     res.json(customer);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -120,7 +123,8 @@ const deleteCustomer = async (req, res) => {
     });
     res.json({ message: 'Customer removed' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -137,7 +141,8 @@ const getUdhaar = async (req, res) => {
     }).sort({ date: -1 });
     res.json({ customer, entries });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -189,7 +194,8 @@ const addUdhaar = async (req, res) => {
 
     res.status(201).json(entry);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -243,7 +249,8 @@ const settlePayment = async (req, res) => {
       customer,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

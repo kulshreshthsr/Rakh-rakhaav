@@ -36,7 +36,8 @@ router.get('/', protect, async (req, res) => {
 
     res.json({ tasks, pendingCount });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 
@@ -45,7 +46,8 @@ router.post('/', protect, async (req, res) => {
   try {
     const shopId = await getShopId(req.user.id);
     if (!shopId) return res.status(400).json({ message: 'Shop not found' });
-    const task = await Task.create({ shopId, ...req.body });
+    const { title, description, assignedTo, priority, dueAt, relatedEntity } = req.body;
+    const task = await Task.create({ shopId, title, description, assignedTo, priority, dueAt, relatedEntity });
     res.status(201).json(task);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -73,7 +75,8 @@ router.patch('/:id', protect, async (req, res) => {
     if (!task) return res.status(404).json({ message: 'Task not found' });
     res.json(task);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 

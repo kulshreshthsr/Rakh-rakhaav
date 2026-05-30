@@ -16,13 +16,16 @@ async function loadSubscriptionState(req, res, next) {
     req.subscription = getSubscriptionSnapshot(user);
     next();
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 }
 
 async function checkSubscriptionStatus(req, res, next) {
   try {
-    await loadSubscriptionState(req, res, () => {});
+    let settled = false;
+    await loadSubscriptionState(req, res, () => { settled = true; });
+    if (!settled) return; // loadSubscriptionState already sent an error response
 
     if (req.subscription?.isReadOnly) {
       return res.status(402).json({
@@ -34,7 +37,8 @@ async function checkSubscriptionStatus(req, res, next) {
 
     next();
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 }
 

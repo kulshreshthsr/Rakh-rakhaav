@@ -107,7 +107,7 @@ export default function UpgradeModal({
           ondismiss: () => setLoading(false),
         },
         prefill: {
-          name: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}')?.name : '',
+          name: typeof window !== 'undefined' ? (() => { try { return JSON.parse(localStorage.getItem('user') || '{}')?.name || ''; } catch { return ''; } })() : '',
         },
       });
 

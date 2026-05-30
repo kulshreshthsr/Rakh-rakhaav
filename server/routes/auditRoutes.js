@@ -22,7 +22,8 @@ router.get('/', protect, async (req, res) => {
 
     res.json(logs);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 

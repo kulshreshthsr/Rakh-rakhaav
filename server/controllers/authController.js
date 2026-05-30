@@ -64,7 +64,8 @@ const register = async (req, res) => {
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.status(201).json({ user: serializeAuthUser(user), token });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -108,7 +109,8 @@ const login = async (req, res) => {
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.json({ user: serializeAuthUser(user), token });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -120,7 +122,8 @@ const updateProfile = async (req, res) => {
     if (!req.user.isSubUser) ensureTrialDates(user);
     res.json({ id: user._id, name: user.name, username: user.username, subscription: req.user.isSubUser ? null : getSubscriptionSnapshot(user) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -136,7 +139,8 @@ const updatePassword = async (req, res) => {
     await user.save();
     res.json({ message: 'Password updated!' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -145,7 +149,8 @@ const getShop = async (req, res) => {
     const shop = await getOrCreateShop(req.user.id);
     res.json(shop);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -187,7 +192,8 @@ const updateShop = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -230,7 +236,8 @@ const getSubscriptionStatus = async (req, res) => {
       razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

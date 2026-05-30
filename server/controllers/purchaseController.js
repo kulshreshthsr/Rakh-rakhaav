@@ -538,7 +538,8 @@ const getPurchases = async (req, res) => {
 
     res.json({ purchases: page, summary, hasMore, nextCursor });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -764,7 +765,8 @@ const getITCSummary = async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

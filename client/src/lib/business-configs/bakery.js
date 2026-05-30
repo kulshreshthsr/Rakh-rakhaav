@@ -174,10 +174,13 @@ export default {
   },
 
   invoiceConfig: {
+    documentTitle:     'Bill',
     accentColor:       '#d97706',
     showBatchColumns:  true,
-    itemSectionTitle:  'Baked Goods',
-    footerNote:        'Best consumed fresh. Check "Fresh Until" date before purchase. Store as directed on packaging.',
+    itemSectionTitle:  'Bakery Items',
+    showHsnColumn:     false,
+    showGstColumns:    true,
+    footerNote:        'Fresh baked daily. Best consumed within 24-48 hours. No returns on fresh items.',
   },
 
   kpiConfig: {

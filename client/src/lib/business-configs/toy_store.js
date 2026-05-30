@@ -147,8 +147,20 @@ export default {
   },
 
   invoiceConfig: {
-    accentColor:      '#f59e0b',
-    itemSectionTitle: 'Toys',
-    footerNote:       'Check age suitability before purchase. Keep small parts away from children under 3 years. Exchange within 7 days with original bill.',
+    documentTitle:    'Bill',
+    accentColor:      '#7c3aed',
+    itemSectionTitle: 'Toys & Items',
+    showHsnColumn:    false,
+    showGstColumns:   true,
+    footerNote:       'Age recommendations on packaging are for safety. Keep small parts away from children under 3.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई', sublabel: 'Total billed today' },
+    kpi2: { label: 'Toys Sold',   sublabel: 'Units today'        },
+    kpi3: { label: 'मुनाफा',     sublabel: 'Gross profit'       },
+    kpi4: { label: 'Udhaar',      sublabel: 'Customer credit'    },
+    kpi5: { label: 'GST Payable', sublabel: 'This month'        },
+    kpi6: { label: 'Stock Alerts',sublabel: 'Low stock toys'    },
   },
 };

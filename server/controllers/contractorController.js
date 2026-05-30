@@ -17,7 +17,8 @@ const getContractors = async (req, res) => {
     const shop = await getOrCreateShop(req.user.id);
     const contractors = await Contractor.find({ shop: shop._id, isActive: true }).sort({ name: 1 });
     res.json(contractors);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // POST /api/contractors
@@ -38,7 +39,8 @@ const createContractor = async (req, res) => {
       notes,
     });
     res.status(201).json(contractor);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // GET /api/contractors/:id
@@ -48,7 +50,8 @@ const getContractor = async (req, res) => {
     const contractor = await Contractor.findOne({ _id: req.params.id, shop: shop._id });
     if (!contractor) return res.status(404).json({ message: 'Contractor not found' });
     res.json(contractor);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // PATCH /api/contractors/:id
@@ -61,7 +64,8 @@ const updateContractor = async (req, res) => {
     allowed.forEach(key => { if (req.body[key] !== undefined) contractor[key] = req.body[key]; });
     await contractor.save();
     res.json(contractor);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // GET /api/contractors/:id/sales
@@ -79,7 +83,8 @@ const getContractorSales = async (req, res) => {
       ],
     }).sort({ createdAt: -1 }).limit(50);
     res.json(sales);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // POST /api/contractors/:id/payment — record payment, reduce outstanding
@@ -96,7 +101,8 @@ const recordPayment = async (req, res) => {
     await contractor.save();
 
     res.json({ message: 'Payment recorded', contractor });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error(err);
+    res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 module.exports = { getContractors, createContractor, getContractor, updateContractor, getContractorSales, recordPayment };

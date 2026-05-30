@@ -24,7 +24,7 @@ const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli a
 
 const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
-const emptyItem = () => ({ product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
+const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const GSTIN_LENGTH = 15;
 const SALES_CACHE_KEY = 'sales-page';
@@ -221,6 +221,9 @@ export default function SalesPage() {
   const [contractorsLoaded, setContractorsLoaded] = useState(false);
   const [documentType, setDocumentType]         = useState('invoice'); // 'invoice' | 'challan'
 
+  // Pet shop-specific state
+  const [petProfiles, setPetProfiles] = useState([]);
+
   // Salon-specific state
   const [stylists, setStylists]               = useState([]);
   const [clientHistory, setClientHistory]     = useState(null);
@@ -378,6 +381,16 @@ export default function SalesPage() {
       setExtraFields(prev => ({ ...prev, balance_at_visit: String(balance.toFixed(2)) }));
     }
   }, [extraFields.advance_paid, billTotals.total, businessType]);
+
+  // Auto-calculate balance_on_delivery for repair_shop when advance_collected or total changes
+  useEffect(() => {
+    if (businessType !== 'repair_shop') return;
+    const advance = parseFloat(extraFields.advance_collected) || 0;
+    if (advance > 0) {
+      const balance = Math.max(0, billTotals.total - advance);
+      setExtraFields(prev => ({ ...prev, balance_on_delivery: String(balance.toFixed(2)) }));
+    }
+  }, [extraFields.advance_collected, billTotals.total, businessType]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -538,6 +551,7 @@ export default function SalesPage() {
     setClientHistory(null); setClientMemberships([]); setRedemptionMembershipId(null);
     setSelectedContractor(null); setContractorSearch(''); setShowContractorDrop(false);
     setDocumentType('invoice');
+    setPetProfiles([]);
   }
 
   // ─── KOT Print (Restaurant) ───────────────────────────────────────────────
@@ -704,6 +718,20 @@ export default function SalesPage() {
     } catch { setError('Delete failed'); }
   };
 
+  const sendRepairReadyWhatsApp = (sale) => {
+    const ef      = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
+    const phone   = sale.buyer_phone;
+    const device  = ef.device_model || 'your device';
+    const jobNo   = sale.invoice_number;
+    const balance = parseFloat(ef.balance_on_delivery || 0);
+    const message = balance > 0
+      ? `Namaste! 🙏\n\nAapka ${device} repair ho gaya hai aur pickup ke liye ready hai.\n\nJob No: ${jobNo}\nBalance amount: ₹${balance.toFixed(2)}\n\nKripya apna original receipt lekar aayein.\n\nDhanyawad! 🙏`
+      : `Namaste! 🙏\n\nAapka ${device} repair ho gaya hai aur pickup ke liye ready hai.\n\nJob No: ${jobNo}\n\nKripya apna original receipt lekar aayein.\n\nDhanyawad! 🙏`;
+    if (phone) {
+      window.open(`https://wa.me/91${phone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(message)}`, '_blank');
+    }
+  };
+
   const advanceWorkflowStage = async (saleId, nextStage, action) => {
     try {
       const res = await fetch(apiUrl(`/api/sales/${saleId}/workflow`), {
@@ -723,6 +751,14 @@ export default function SalesPage() {
       if (action?.triggerInvoice) {
         const sale = sales.find(s => s._id === saleId);
         if (sale) printInvoice({ ...sale, extra_fields: updated.extra_fields });
+      }
+      // WhatsApp notification when repair job marked Ready
+      if (businessType === 'repair_shop' && nextStage === 'ready') {
+        const sale = sales.find(s => s._id === saleId);
+        if (sale?.buyer_phone) {
+          const shouldSend = window.confirm(`Job ready! Send WhatsApp notification to ${sale.buyer_name || 'customer'} (${sale.buyer_phone})?`);
+          if (shouldSend) sendRepairReadyWhatsApp({ ...sale, extra_fields: updated.extra_fields });
+        }
       }
     } catch { setError('Status update failed'); }
   };
@@ -1145,6 +1181,32 @@ export default function SalesPage() {
                       </div>
                     )}
 
+                    {/* Repair shop: advance/balance summary + notify button */}
+                    {businessType === 'repair_shop' && !s._isOffline && (() => {
+                      const ef = s.extra_fields instanceof Map ? Object.fromEntries(s.extra_fields) : (s.extra_fields || {});
+                      const adv = parseFloat(ef.advance_collected || 0);
+                      const bal = parseFloat(ef.balance_on_delivery || 0);
+                      const status = ef.workflow_status;
+                      return (
+                        <div className="mt-2 space-y-2">
+                          {(adv > 0 || bal > 0) && (
+                            <div className={`flex gap-3 px-3 py-2 rounded-xl ${status === 'ready' ? 'bg-green-50 border border-green-200' : 'bg-slate-50 border border-slate-200'}`}>
+                              {adv > 0 && <span className="text-[11px] font-bold text-slate-600">Adv: ₹{adv.toFixed(2)}</span>}
+                              {bal > 0 && <span className={`text-[11px] font-bold ${status === 'ready' ? 'text-green-700' : 'text-amber-700'}`}>
+                                {status === 'ready' ? `Collect ₹${bal.toFixed(2)} on delivery` : `Bal: ₹${bal.toFixed(2)}`}
+                              </span>}
+                            </div>
+                          )}
+                          {status === 'ready' && s.buyer_phone && (
+                            <button onClick={() => sendRepairReadyWhatsApp(s)}
+                              className="w-full min-h-[38px] py-2 rounded-xl border-2 border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-all">
+                              📱 Notify Customer (WhatsApp)
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {/* Clothing exchange action */}
                     {businessType === 'clothing' && !s._isOffline && (!s.sale_type || s.sale_type === 'sale') && (
                       <div className="mt-2">
@@ -1389,13 +1451,49 @@ export default function SalesPage() {
                     className={INPUT}
                     placeholder={term('customerPhonePlaceholder', 'Phone number')}
                     value={form.buyer_phone}
-                    onChange={(e) => updateForm({ buyer_phone: e.target.value })}
-                    onBlur={(e) => fetchClientHistory(e.target.value)}
+                    onChange={(e) => {
+                      updateForm({ buyer_phone: e.target.value });
+                      if (businessType === 'pet_shop' && e.target.value.replace(/\D/g,'').length < 10) setPetProfiles([]);
+                    }}
+                    onBlur={(e) => {
+                      fetchClientHistory(e.target.value);
+                      if (businessType === 'pet_shop' && e.target.value.replace(/\D/g,'').length >= 10) {
+                        fetch(apiUrl(`/api/pets/owner?phone=${encodeURIComponent(e.target.value)}`), { headers: { Authorization: `Bearer ${getToken()}` } })
+                          .then(r => r.json()).then(d => {
+                            setPetProfiles(Array.isArray(d) ? d : []);
+                            if (Array.isArray(d) && d.length > 0 && !form.buyer_name) {
+                              updateForm({ buyer_name: d[0].ownerName });
+                            }
+                          }).catch(() => {});
+                      }
+                    }}
                   />
 
                   <button type="button" onClick={() => setShowMoreCustomerDetails(v => !v)}
                     className="text-[12px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
                   >{showMoreCustomerDetails ? '▴ Less Details' : '▾ More Details (GSTIN, Address)'}</button>
+
+                  {/* Pet shop: Pet profile card */}
+                  {businessType === 'pet_shop' && petProfiles.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {petProfiles.map(pet => {
+                        const dueVacc = pet.vaccinations?.filter(v => v.nextDueDate).sort((a,b) => new Date(a.nextDueDate) - new Date(b.nextDueDate))[0];
+                        const dueDate = dueVacc?.nextDueDate ? new Date(dueVacc.nextDueDate).toLocaleDateString('en-IN') : null;
+                        const isOverdue = dueVacc?.nextDueDate ? new Date(dueVacc.nextDueDate) < new Date() : false;
+                        return (
+                          <div key={pet._id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-teal-200 bg-teal-50/60">
+                            <span className="text-xl flex-shrink-0">{{'Dog':'🐕','Cat':'🐈','Bird':'🐦','Fish':'🐠','Rabbit':'🐰','Hamster':'🐹','Reptile':'🦎'}[pet.species] || '🐾'}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-black text-teal-900">{pet.petName} {pet.breed ? `(${pet.breed})` : ''}</p>
+                              {dueDate && <p className={`text-[10px] font-bold mt-0.5 ${isOverdue ? 'text-red-600' : 'text-amber-700'}`}>
+                                💉 Next vaccine: {dueDate}{isOverdue ? ' — OVERDUE' : ''}
+                              </p>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Salon: Client history card */}
                   {businessType === 'salon' && clientHistory && (
@@ -1545,7 +1643,7 @@ export default function SalesPage() {
                   const g    = rowGST(item);
                   const prod = products.find((p) => p._id === item.product_id);
                   return (
-                    <div key={index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
+                    <div key={item._rowId || index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
                       {/* Controls row */}
                       <div className="flex justify-end gap-1.5">
                         <button type="button" onClick={() => duplicateItem(index)}

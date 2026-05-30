@@ -47,7 +47,8 @@ const getProducts = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -117,7 +118,8 @@ const createProduct = async (req, res) => {
         : null,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -184,7 +186,8 @@ const updateProduct = async (req, res) => {
         : null,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -205,7 +208,8 @@ const deleteProduct = async (req, res) => {
 
     res.json({ message: 'Product deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -250,7 +254,8 @@ const adjustStock = async (req, res) => {
       is_low_stock: product.quantity <= product.low_stock_threshold,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -269,7 +274,8 @@ const getStockHistory = async (req, res) => {
       history: product.stock_history.sort((a, b) => new Date(b.date) - new Date(a.date)),
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -289,7 +295,8 @@ const toggleAvailability = async (req, res) => {
     await product.save();
     res.json({ message: 'Availability updated', available });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -317,7 +324,8 @@ const getByBarcode = async (req, res) => {
 
     return res.json({ product: product.toJSON(), variant: variant.toJSON(), matchType: 'variant' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

@@ -114,6 +114,9 @@ const saleSchema = new mongoose.Schema({
 saleSchema.path('createdAt').immutable(false);
 
 saleSchema.index({ shop: 1, createdAt: -1 });
+saleSchema.index({ shop: 1, payment_status: 1 });
+saleSchema.index({ shop: 1, buyer_phone: 1 });
+saleSchema.index({ shop: 1, 'extra_fields.workflow_status': 1 });
 
 saleSchema.index(
   { shop: 1, invoice_number: 1 },
@@ -124,6 +127,11 @@ saleSchema.index(
   { shop: 1, offline_operation_id: 1 },
   { unique: true, partialFilterExpression: { offline_operation_id: { $type: 'string' } } }
 );
+
+saleSchema.pre('save', function () {
+  if (this.total_amount) this.total_amount = Math.round(this.total_amount * 100) / 100;
+  if (this.balance_due) this.balance_due = Math.round(this.balance_due * 100) / 100;
+});
 
 saleSchema.pre('save', async function () {
   if (this.amount_paid >= this.total_amount) {

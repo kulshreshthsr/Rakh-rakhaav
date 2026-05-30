@@ -145,8 +145,20 @@ export default {
   },
 
   invoiceConfig: {
-    accentColor:      '#ec4899',
+    documentTitle:    'Gift Invoice',
+    accentColor:      '#db2777',
     itemSectionTitle: 'Gift Items',
-    footerNote:       'Gifts cannot be exchanged or returned once sold. Presentation may vary slightly from display sample.',
+    showHsnColumn:    false,
+    showGstColumns:   true,
+    footerNote:       'Gifts cannot be returned or exchanged. Gift wrapping charges non-refundable.',
+  },
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई', sublabel: 'Total billed today' },
+    kpi2: { label: 'Bills',       sublabel: 'Gifts sold'         },
+    kpi3: { label: 'मुनाफा',     sublabel: 'Gross profit'       },
+    kpi4: { label: 'Udhaar',      sublabel: 'Customer credit'    },
+    kpi5: { label: 'GST Payable', sublabel: 'This month'        },
+    kpi6: { label: 'Stock Alerts',sublabel: 'Low stock items'   },
   },
 };

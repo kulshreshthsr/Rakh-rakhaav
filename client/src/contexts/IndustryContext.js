@@ -15,7 +15,7 @@
  *   isEnabled('batchTracking')  → true for pharmacy
  */
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getIndustryConfig } from '../lib/industries';
 
 const STORAGE_KEY = 'rr-business-type';
@@ -62,8 +62,13 @@ export function IndustryProvider({ children }) {
     return config?.modules?.[moduleKey] !== false;
   }, [config]);
 
+  const value = useMemo(
+    () => ({ businessType, config, term, isEnabled, updateBusinessType }),
+    [businessType, config, term, isEnabled, updateBusinessType]
+  );
+
   return (
-    <IndustryContext.Provider value={{ businessType, config, term, isEnabled, updateBusinessType }}>
+    <IndustryContext.Provider value={value}>
       {children}
     </IndustryContext.Provider>
   );

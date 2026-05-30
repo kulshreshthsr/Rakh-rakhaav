@@ -33,6 +33,7 @@ const stylistRoutes    = require('./routes/stylistRoutes');
 const membershipRoutes = require('./routes/membershipRoutes');
 const contractorRoutes = require('./routes/contractorRoutes');
 const warrantyRoutes   = require('./routes/warrantyRoutes');
+const petRoutes        = require('./routes/petRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -113,7 +114,8 @@ app.use('/api/narcotics', narcoticsRoutes);
 app.use('/api/stylists', stylistRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/contractors', contractorRoutes);
-app.use('/api/warranty', warrantyRoutes);
+app.use('/api/warranty',    warrantyRoutes);
+app.use('/api/pets',        petRoutes);
 
 app.use(errorHandler);
 

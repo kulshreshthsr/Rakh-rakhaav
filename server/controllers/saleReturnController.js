@@ -69,7 +69,8 @@ const getSaleReturns = async (req, res) => {
     const page = hasMore ? returns.slice(0, pageSize) : returns;
     res.json({ returns: page, hasMore, nextCursor: hasMore ? String(page[page.length - 1]._id) : null });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

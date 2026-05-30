@@ -14,7 +14,8 @@ const getIncome = async (req, res) => {
     const income = await Income.find({ shop: shop._id }).sort({ date: -1 });
     res.json(income);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -56,7 +57,8 @@ const updateIncome = async (req, res) => {
 
     res.json(updatedIncome);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -87,7 +89,8 @@ const createIncome = async (req, res) => {
     });
     res.status(201).json(income);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -110,7 +113,8 @@ const deleteIncome = async (req, res) => {
     }
     res.json({ message: 'Income deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

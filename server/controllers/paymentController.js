@@ -79,7 +79,8 @@ const createOrder = async (req, res) => {
       ],
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -136,7 +137,8 @@ const verifyOrder = async (req, res) => {
 
     res.json(buildSubscriptionResponse(user));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -177,7 +179,8 @@ const webhook = async (req, res) => {
 
     res.json({ received: true });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -198,7 +201,8 @@ const getPricingConfig = async (req, res) => {
       keyId: process.env.RAZORPAY_KEY_ID || '',
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 

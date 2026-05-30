@@ -38,7 +38,8 @@ router.get('/', protect, async (req, res) => {
 
     res.json({ notifications, unreadCount });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 
@@ -49,7 +50,8 @@ router.patch('/read-all', protect, async (req, res) => {
     if (shopId) await Notification.updateMany({ shopId, isRead: false }, { $set: { isRead: true } });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 
@@ -65,7 +67,8 @@ router.patch('/:id/read', protect, async (req, res) => {
     }
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 
@@ -76,7 +79,8 @@ router.delete('/:id', protect, async (req, res) => {
     if (shopId) await Notification.findOneAndDelete({ _id: req.params.id, shopId });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 

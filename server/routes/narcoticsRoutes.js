@@ -38,7 +38,8 @@ router.get('/', protect, async (req, res) => {
 
     res.json({ entries, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 
@@ -71,7 +72,8 @@ router.get('/summary', protect, async (req, res) => {
       month: startDate.toLocaleString('default', { month: 'long', year: 'numeric' }),
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 
@@ -96,7 +98,8 @@ router.patch('/:id/void', protect, async (req, res) => {
 
     res.json({ message: 'Entry voided', entry });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 });
 
