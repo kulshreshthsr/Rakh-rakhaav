@@ -29,44 +29,49 @@ function fmtDate(d) {
   return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+const PRIORITY_CARD = {
+  critical: { border: 'border-red-200',    bg: 'bg-red-50',    badge: 'bg-red-100 text-red-800 border-red-200'         },
+  high:     { border: 'border-orange-200', bg: 'bg-orange-50', badge: 'bg-orange-100 text-orange-800 border-orange-200' },
+  medium:   { border: 'border-amber-200',  bg: 'bg-amber-50',  badge: 'bg-amber-100 text-amber-800 border-amber-200'   },
+  low:      { border: 'border-green-200',  bg: 'bg-green-50',  badge: 'bg-green-100 text-green-800 border-green-200'   },
+};
+
 function NotifCard({ notif, onRead, onDismiss }) {
-  const pm = PRIORITY_META[notif.priority] || PRIORITY_META.low;
+  const pm   = PRIORITY_META[notif.priority] || PRIORITY_META.low;
+  const pc   = PRIORITY_CARD[notif.priority] || PRIORITY_CARD.low;
   const icon = TYPE_ICONS[notif.type] || TYPE_ICONS.default;
   return (
     <div
       onClick={() => !notif.isRead && onRead(notif._id)}
-      style={{
-        display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 14,
-        background: notif.isRead ? '#fff' : pm.bg,
-        border: `1px solid ${notif.isRead ? '#e2e8f0' : pm.border}`,
-        cursor: notif.isRead ? 'default' : 'pointer',
-        transition: 'all 0.15s',
-      }}
+      className={`flex gap-3 px-4 py-4 rounded-2xl border-2 transition-all ${
+        notif.isRead
+          ? 'bg-white border-slate-200'
+          : `${pc.bg} ${pc.border} cursor-pointer hover:-translate-y-0.5 hover:shadow-md`
+      }`}
     >
-      <span style={{ fontSize: 22, flexShrink: 0, lineHeight: 1.3 }}>{icon}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: notif.isRead ? 600 : 800, color: '#0f172a', lineHeight: 1.35 }}>
+      <span className="text-[22px] flex-shrink-0 leading-none mt-0.5">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className={`text-[14px] leading-snug ${notif.isRead ? 'font-semibold text-slate-600' : 'font-black text-slate-900'}`}>
             {notif.title}
           </p>
           <button
             onClick={e => { e.stopPropagation(); onDismiss(notif._id); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, padding: 0, flexShrink: 0, lineHeight: 1 }}
-            aria-label="Dismiss">×</button>
+            className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors text-[18px] font-bold leading-none"
+            aria-label="Dismiss"
+          >×</button>
         </div>
-        <p style={{ margin: '4px 0 8px', fontSize: 13, color: '#475569', lineHeight: 1.5 }}>{notif.message}</p>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{
-            fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
-            color: pm.text, background: pm.bg, border: `1px solid ${pm.border}`,
-            borderRadius: 5, padding: '2px 7px',
-          }}>{pm.label}</span>
+        <p className="mt-1 mb-2 text-[13px] text-slate-500 leading-relaxed">{notif.message}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded border ${pc.badge}`}>
+            {pm.label}
+          </span>
           {notif.relatedEntity?.name && (
-            <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
+            <span className="text-[11px] text-slate-500 font-semibold">
               {notif.relatedEntity.type === 'product' ? '📦' : '🧾'} {notif.relatedEntity.name}
             </span>
           )}
-          <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>{fmtDate(notif.createdAt)}</span>
+          <span className="text-[11px] text-slate-400 ml-auto">{fmtDate(notif.createdAt)}</span>
         </div>
       </div>
     </div>
@@ -107,19 +112,27 @@ export default function NotificationsPage() {
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[22px] font-black text-slate-900 leading-tight">Alerts</h1>
-            <p className="text-[12px] text-slate-500 mt-0.5">Business alerts, stock warnings & operational reminders</p>
+        <div className="relative overflow-hidden rounded-2xl border-2 border-red-200 bg-gradient-to-br from-white via-red-50/40 to-orange-50/40 p-6 shadow-lg">
+          <div className="pointer-events-none absolute -top-10 -right-8 w-36 h-36 rounded-full bg-red-200/30 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-[11px] font-black uppercase tracking-widest text-red-700 shadow-sm">
+                🔔 Alerts
+              </span>
+              <h1 className="mt-3 text-[24px] font-black text-slate-900">Notifications</h1>
+              <p className="mt-1 text-[13px] text-slate-500 font-medium">
+                {unreadCount > 0 ? `${unreadCount} unread alert${unreadCount !== 1 ? 's' : ''}` : 'Stock warnings & operational reminders'}
+              </p>
+            </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllRead}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-green-200 bg-green-50 text-[13px] font-black text-green-700 hover:bg-green-100 hover:-translate-y-0.5 transition-all shadow-sm"
+              >
+                ✓ Mark all read
+              </button>
+            )}
           </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllRead}
-              className="text-[12px] font-black text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-2 hover:bg-green-100 transition-colors"
-            >
-              Mark all read
-            </button>
-          )}
         </div>
 
         {/* Tabs */}

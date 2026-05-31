@@ -41,9 +41,9 @@ const MORE_DRAWER_ITEMS = [
   { href: '/bank-entries',  key: 'bank',           label: 'Bank',          sublabel: 'Bank Register',        icon: 'bank',     permission: 'VIEW_BANK'        },
   { href: '/gst',           key: 'gst',            label: 'GST',           sublabel: 'Tax Filing',           icon: 'gst',      permission: 'VIEW_GST'         },
   { href: '/reports',       key: 'reports',        label: 'रिपोर्ट',       sublabel: 'Reports',              icon: 'reports',  permission: 'VIEW_REPORTS'     },
-  { href: '/notifications', key: 'notifications', label: 'Alerts',     sublabel: 'Stock & Operation Alerts', icon: 'reports', permission: 'VIEW_DASHBOARD' },
-  { href: '/tasks',         key: 'tasks',         label: 'Tasks',      sublabel: 'Operational Tasks',        icon: 'reports', permission: 'VIEW_DASHBOARD'  },
-  { href: '/audit',         key: 'audit',         label: 'Activity',   sublabel: 'Audit Trail',              icon: 'reports', permission: 'VIEW_REPORTS'    },
+  { href: '/notifications', key: 'notifications', label: 'Alerts',     sublabel: 'Stock & Operation Alerts', icon: 'bell',      permission: 'VIEW_DASHBOARD' },
+  { href: '/tasks',         key: 'tasks',         label: 'Tasks',      sublabel: 'Operational Tasks',        icon: 'checklist', permission: 'VIEW_DASHBOARD' },
+  { href: '/audit',         key: 'audit',         label: 'Activity',   sublabel: 'Audit Trail',              icon: 'history',   permission: 'VIEW_REPORTS'   },
   { href: '/profile',       key: 'profile',        label: 'Profile',       sublabel: 'दुकान की जानकारी',     icon: 'profile',  permission: null               },
   { href: '/team',          key: 'team',           label: 'Team',          sublabel: 'User Management',      icon: 'team',     permission: 'MANAGE_USERS'     },
   { href: '/roles',         key: 'roles',          label: 'Roles',         sublabel: 'Permissions',          icon: 'roles',    permission: 'MANAGE_ROLES'     },
@@ -95,6 +95,9 @@ function Glyph({ name, size = 20, stroke = 1.8 }) {
     more:       <><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.2" fill="currentColor" stroke="none"/></>,
     team:       <><circle cx="9" cy="7" r="3" /><path d="M3 21v-2a6 6 0 0 1 6-6" /><path d="M16 11c2.2 0 4 1.8 4 4v1.5" /><circle cx="19" cy="8" r="2.5" /></>,
     roles:      <><path d="M12 3 4 7v5c0 5 4 9.7 8 11 4-1.3 8-6 8-11V7z" /><path d="m9 12 2 2 4-4" /></>,
+    bell:       <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></>,
+    checklist:  <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m8 10 2 2 4-4" /><path d="M13 14h3" /><path d="M13 10h3" /></>,
+    history:    <><polyline points="12 8 12 12 14 14" /><path d="M3.05 11a9 9 0 1 1 .5 4M3 15v-4h4" /></>,
   };
   return <svg {...p}>{icons[name] || <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />}</svg>;
 }
@@ -158,15 +161,18 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = M
   }, [open]);
 
   const iconColors = {
-    products:  'bg-emerald-50 text-emerald-700',
-    expenses:  'bg-rose-50 text-rose-700',
-    income:    'bg-green-50 text-green-700',
-    bank:      'bg-blue-50 text-blue-700',
-    reports:   'bg-purple-50 text-purple-700',
-    gst:       'bg-amber-50 text-amber-700',
-    profile:   'bg-slate-100 text-slate-700',
-    team:      'bg-green-50 text-green-700',
-    roles:     'bg-purple-50 text-purple-700',
+    products:      'bg-emerald-50 text-emerald-700',
+    expenses:      'bg-rose-50 text-rose-700',
+    income:        'bg-green-50 text-green-700',
+    bank:          'bg-blue-50 text-blue-700',
+    reports:       'bg-purple-50 text-purple-700',
+    gst:           'bg-amber-50 text-amber-700',
+    profile:       'bg-slate-100 text-slate-700',
+    team:          'bg-green-50 text-green-700',
+    roles:         'bg-purple-50 text-purple-700',
+    notifications: 'bg-red-50 text-red-600',
+    tasks:         'bg-indigo-50 text-indigo-700',
+    audit:         'bg-sky-50 text-sky-700',
   };
 
   return (
@@ -566,11 +572,11 @@ function LayoutInner({ children }) {
             </div>
 
             {/* Notification bell row — desktop sidebar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px 4px' }}>
+            <div className="flex items-center gap-2 px-1 py-2">
               <NotificationBell />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Link href="/notifications" style={{ fontSize: 12, fontWeight: 700, color: '#475569', textDecoration: 'none', display: 'block' }}>Alerts</Link>
-                <Link href="/tasks" style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'none', display: 'block', marginTop: 1 }}>My Tasks</Link>
+              <div className="flex-1 min-w-0">
+                <Link href="/notifications" className="block text-[12px] font-bold text-slate-500 no-underline hover:text-green-700 transition-colors">Alerts</Link>
+                <Link href="/tasks" className="block text-[11px] text-slate-400 no-underline mt-px hover:text-green-600 transition-colors">My Tasks</Link>
               </div>
             </div>
 
@@ -678,7 +684,7 @@ function LayoutInner({ children }) {
                   : <Glyph name="menu" size={21} stroke={2} />
                 }
               </span>
-              <span className={`mobile-nav-label font-bold ${moreOpen ? 'text-green-700' : ''}`}>और</span>
+              <span className={`mobile-nav-label font-bold ${moreOpen ? 'text-green-700' : ''}`}>More</span>
             </button>
 
           </div>

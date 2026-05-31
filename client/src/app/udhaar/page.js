@@ -942,11 +942,12 @@ export default function UdhaarPage() {
       {/* ════════════════════════════════════════════════════════════
           SETTLE PAYMENT MODAL
       ════════════════════════════════════════════════════════════ */}
-      <div className={`fixed inset-0 z-[70] transition-opacity duration-300 ${showSettle ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+      {showSettle && (
+      <div className="fixed inset-0 z-[70]">
         <button type="button" onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash'); }}
           className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         />
-        <div className={`absolute inset-x-0 bottom-0 rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] md:rounded-3xl ${showSettle ? 'translate-y-0' : 'translate-y-full md:translate-y-[-40%] md:opacity-0'}`}>
+        <div className="absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] md:rounded-3xl md:max-h-[90vh]">
 
           {/* Handle */}
           <div className="flex justify-center pt-3 pb-1 md:hidden">
@@ -1075,14 +1076,16 @@ export default function UdhaarPage() {
           </div>
         </div>
       </div>
+      )}
 
-      <div className={`fixed inset-0 z-[75] transition-opacity duration-300 ${showPartyModal ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+      {showPartyModal && (
+      <div className="fixed inset-0 z-[75]">
         <button
           type="button"
           onClick={closePartyModal}
           className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         />
-        <div className={`absolute inset-x-0 bottom-0 rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 md:inset-auto md:top-1/2 md:left-1/2 md:w-[520px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl ${showPartyModal ? 'translate-y-0' : 'translate-y-full md:translate-y-[-40%] md:opacity-0'}`}>
+        <div className="absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl md:inset-auto md:top-1/2 md:left-1/2 md:w-[520px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:max-h-[90vh]">
           <div className="flex justify-center pt-3 pb-1 md:hidden">
             <div className="w-10 h-1 rounded-full bg-slate-200" />
           </div>
@@ -1169,6 +1172,7 @@ export default function UdhaarPage() {
           </div>
         </div>
       </div>
+      )}
     </Layout>
   );
 }

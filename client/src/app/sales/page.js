@@ -983,7 +983,7 @@ export default function SalesPage() {
               onChange={(e) => setBillMonth(e.target.value)}
             />
             {hasBillFilters && (
-              <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); }}
+              <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); setWfFilter(''); setInsuranceFilter(false); }}
                 className="h-11 px-4 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
               >Clear</button>
             )}

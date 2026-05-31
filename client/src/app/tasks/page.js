@@ -30,9 +30,23 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
+const PRIORITY_CARD = {
+  critical: { border: 'border-red-200',    bg: 'bg-red-50',     badge: 'bg-red-100 text-red-800 border-red-200'       },
+  high:     { border: 'border-orange-200', bg: 'bg-orange-50',  badge: 'bg-orange-100 text-orange-800 border-orange-200' },
+  medium:   { border: 'border-amber-200',  bg: 'bg-amber-50',   badge: 'bg-amber-100 text-amber-800 border-amber-200'  },
+  low:      { border: 'border-green-200',  bg: 'bg-green-50',   badge: 'bg-green-100 text-green-800 border-green-200'  },
+};
+const STATUS_CARD = {
+  pending:     { badge: 'bg-amber-100 text-amber-800 border-amber-200' },
+  in_progress: { badge: 'bg-blue-100 text-blue-800 border-blue-200'   },
+  completed:   { badge: 'bg-green-100 text-green-800 border-green-200' },
+  cancelled:   { badge: 'bg-slate-100 text-slate-500 border-slate-200' },
+};
+
 function TaskCard({ task, onUpdate }) {
-  const pm  = PRIORITY_META[task.priority] || PRIORITY_META.low;
-  const sm  = STATUS_META[task.status]     || STATUS_META.pending;
+  const pc = PRIORITY_CARD[task.priority] || PRIORITY_CARD.low;
+  const sc = STATUS_CARD[task.status]     || STATUS_CARD.pending;
+  const sm = STATUS_META[task.status]     || STATUS_META.pending;
   const [updating, setUpdating] = useState(false);
 
   const advance = async (newStatus) => {
@@ -41,49 +55,36 @@ function TaskCard({ task, onUpdate }) {
     setUpdating(false);
   };
 
+  const isDone = task.status === 'completed';
+  const isCancelled = task.status === 'cancelled';
+
   return (
-    <div style={{
-      padding: '14px 16px', borderRadius: 14,
-      background: task.status === 'completed' ? '#f8fafc' : pm.bg,
-      border: `1px solid ${task.status === 'completed' ? '#e2e8f0' : pm.border}`,
-      opacity: task.status === 'cancelled' ? 0.6 : 1,
-    }}>
+    <div className={`rounded-2xl border-2 p-4 transition-all ${isDone ? 'bg-slate-50 border-slate-200' : `${pc.bg} ${pc.border}`} ${isCancelled ? 'opacity-60' : ''}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p style={{
-            margin: 0, fontSize: 14, fontWeight: 800, color: '#0f172a', lineHeight: 1.35,
-            textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-          }}>
+          <p className={`text-[14px] font-black text-slate-900 leading-snug ${isDone ? 'line-through text-slate-400' : ''}`}>
             {task.title}
           </p>
           {task.description && (
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
-              {task.description}
-            </p>
+            <p className="mt-1 text-[12px] text-slate-500 leading-relaxed">{task.description}</p>
           )}
         </div>
-        <span style={{
-          fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
-          color: sm.color, background: sm.bg, border: `1px solid ${sm.border}`,
-          borderRadius: 6, padding: '3px 8px', flexShrink: 0,
-        }}>{sm.label}</span>
+        <span className={`flex-shrink-0 text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border ${sc.badge}`}>
+          {sm.label}
+        </span>
       </div>
 
       <div className="flex items-center gap-2 mt-3 flex-wrap">
-        <span style={{
-          fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-          color: pm.text, background: pm.bg, border: `1px solid ${pm.border}`,
-          borderRadius: 4, padding: '2px 6px',
-        }}>{pm.label}</span>
-        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
+        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded border ${pc.badge}`}>
+          {PRIORITY_META[task.priority]?.label || 'Low'}
+        </span>
+        <span className="text-[11px] text-slate-400 font-semibold">
           → {ROLE_LABELS[task.assignedTo] || task.assignedTo}
         </span>
         {task.relatedEntity?.name && (
-          <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
-            · {task.relatedEntity.name}
-          </span>
+          <span className="text-[11px] text-slate-500 font-semibold">· {task.relatedEntity.name}</span>
         )}
-        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>{fmtDate(task.createdAt)}</span>
+        <span className="text-[11px] text-slate-400 ml-auto">{fmtDate(task.createdAt)}</span>
       </div>
 
       {/* Action buttons */}
@@ -93,7 +94,7 @@ function TaskCard({ task, onUpdate }) {
             <button
               onClick={() => advance('in_progress')}
               disabled={updating}
-              className="text-[11px] font-black px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
+              className="text-[11px] font-black px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
             >
               {updating ? '…' : 'Start'}
             </button>
@@ -101,21 +102,21 @@ function TaskCard({ task, onUpdate }) {
           <button
             onClick={() => advance('completed')}
             disabled={updating}
-            className="text-[11px] font-black px-3 py-1.5 rounded-lg border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
+            className="text-[11px] font-black px-3 py-1.5 rounded-xl border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
           >
             {updating ? '…' : '✓ Done'}
           </button>
           <button
             onClick={() => advance('cancelled')}
             disabled={updating}
-            className="text-[11px] font-black px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-50 ml-auto"
+            className="text-[11px] font-black px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-50 ml-auto"
           >
             {updating ? '…' : 'Cancel'}
           </button>
         </div>
       )}
-      {task.status === 'completed' && task.completedBy && (
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: '#16a34a', fontWeight: 600 }}>
+      {isDone && task.completedBy && (
+        <p className="mt-2 text-[11px] font-semibold text-emerald-600">
           ✓ Done by {task.completedBy} · {fmtDate(task.completedAt)}
         </p>
       )}
@@ -206,19 +207,25 @@ export default function TasksPage() {
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[22px] font-black text-slate-900 leading-tight">Tasks</h1>
-            <p className="text-[12px] text-slate-500 mt-0.5">
-              {pendingCount > 0 ? `${pendingCount} pending task${pendingCount !== 1 ? 's' : ''}` : 'All tasks up to date'}
-            </p>
+        <div className="relative overflow-hidden rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-white via-indigo-50/40 to-blue-50/40 p-6 shadow-lg">
+          <div className="pointer-events-none absolute -top-10 -right-8 w-36 h-36 rounded-full bg-indigo-200/30 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-[11px] font-black uppercase tracking-widest text-indigo-700 shadow-sm">
+                ✅ Tasks
+              </span>
+              <h1 className="mt-3 text-[24px] font-black text-slate-900">Operational Tasks</h1>
+              <p className="mt-1 text-[13px] text-slate-500 font-medium">
+                {pendingCount > 0 ? `${pendingCount} pending task${pendingCount !== 1 ? 's' : ''} need attention` : 'All tasks are up to date'}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="relative inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-indigo-600 to-blue-700 shadow-lg shadow-indigo-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
+            >
+              + Add Task
+            </button>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 text-white font-black text-[13px] shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
-          >
-            + Add Task
-          </button>
         </div>
 
         {/* Tabs */}
@@ -245,7 +252,7 @@ export default function TasksPage() {
         {loading ? (
           <div className="space-y-3">
             {[1,2,3].map(i => (
-              <div key={i} className="skeleton-card border border-slate-200/60" style={{ height: 96 }} />
+              <div key={i} className="skeleton-card border border-slate-200/60 h-24" />
             ))}
           </div>
         ) : shown.length === 0 ? (
