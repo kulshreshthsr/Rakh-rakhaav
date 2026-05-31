@@ -173,6 +173,14 @@ export default function GSTPage() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheLoaded, setCacheLoaded]       = useState(false);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
+  // GSTR-1 portal JSON export
+  const [gstr1Loading, setGstr1Loading] = useState(false);
+  const [gstr1Error,   setGstr1Error]   = useState('');
+  // GSTR-3B detailed worksheet
+  const [gstr3bWs,        setGstr3bWs]        = useState(null);
+  const [gstr3bWsLoading, setGstr3bWsLoading] = useState(false);
+  const [gstr3bWsError,   setGstr3bWsError]   = useState('');
+  const [showGstr3bWs,    setShowGstr3bWs]    = useState(false);
 
   /* ── All logic (100% UNCHANGED) ── */
   const applyCachedSnapshot = (cached) => {
@@ -261,6 +269,47 @@ export default function GSTPage() {
     const blob = new Blob([JSON.stringify(summary,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `GST_${year}_${String(month).padStart(2,'0')}.json`; a.click(); URL.revokeObjectURL(url);
   };
+  // ── GSTR-1 Portal JSON — downloads server-generated GSTN portal JSON ──────
+  const downloadGSTR1JSON = async () => {
+    setGstr1Loading(true); setGstr1Error('');
+    try {
+      const res  = await fetch(apiUrl(`/api/gst/gstr1?month=${month}&year=${year}`), {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      if (!res.ok) { setGstr1Error(data.message || 'GSTR-1 generation failed'); return; }
+      const blob = new Blob([JSON.stringify(data.gstr1, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `GSTR1_${String(month).padStart(2,'0')}${year}_PORTAL.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setGstr1Error('Server error — check if GSTIN is configured in profile');
+    }
+    setGstr1Loading(false);
+  };
+
+  // ── GSTR-3B Detailed Worksheet ────────────────────────────────────────────
+  const fetchGSTR3BWorksheet = async () => {
+    if (gstr3bWs && !showGstr3bWs) { setShowGstr3bWs(true); return; }
+    if (showGstr3bWs) { setShowGstr3bWs(false); return; }
+    setGstr3bWsLoading(true); setGstr3bWsError('');
+    try {
+      const res  = await fetch(apiUrl(`/api/gst/gstr3b?month=${month}&year=${year}`), {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      if (!res.ok) { setGstr3bWsError(data.message || 'GSTR-3B generation failed'); setGstr3bWsLoading(false); return; }
+      setGstr3bWs(data);
+      setShowGstr3bWs(true);
+    } catch {
+      setGstr3bWsError('Server error — check if GSTIN is configured in profile');
+    }
+    setGstr3bWsLoading(false);
+  };
+
   const exportZIP = async () => {
     if (!summary) return;
     if (!isOnline && !window.JSZip) { alert('Offline mode me ZIP export abhi available nahi hai.'); return; }
@@ -638,7 +687,161 @@ export default function GSTPage() {
             </SectionCard>
 
             {/* ══════════════════════════════════════
-                BLOCK 7 — EXPORT FOR CA
+                BLOCK 7 — GSTR-1 PORTAL JSON UPLOAD
+            ══════════════════════════════════════ */}
+            <SectionCard>
+              <SectionHead
+                title="GSTR-1 Portal Upload"
+                subtitle="GSTN portal par directly upload karne ke liye JSON"
+                right={<Pill color="bg-green-50 text-green-700">Portal Format</Pill>}
+              />
+              <div className="p-5 space-y-3">
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200">
+                  <span className="text-base flex-shrink-0">ℹ️</span>
+                  <p className="text-[12px] text-blue-800 leading-relaxed">
+                    यह JSON सीधे <strong>GST portal → Returns → GSTR-1 → Upload JSON</strong> में upload होगा।
+                    Upload करने से पहले अपने CA से verify करवाएं।
+                    GSTIN profile में configure होना चाहिए।
+                  </p>
+                </div>
+                {gstr1Error && (
+                  <div className="px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-semibold text-rose-700">
+                    ⚠️ {gstr1Error}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <ExportBtn onClick={downloadGSTR1JSON} disabled={gstr1Loading} variant="zip">
+                    {gstr1Loading ? '⏳ Generating...' : '⬇️ Download GSTR-1 JSON (Portal)'}
+                  </ExportBtn>
+                  <ExportBtn onClick={() => exportCSV('gstr1')} variant="primary">📄 GSTR-1 CSV</ExportBtn>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* ══════════════════════════════════════
+                BLOCK 8 — GSTR-3B WORKING WORKSHEET
+            ══════════════════════════════════════ */}
+            <SectionCard>
+              <SectionHead
+                title="GSTR-3B Working Sheet"
+                subtitle="Table 3.1, 4 और 6.1 — CA ko dene ke liye"
+                right={
+                  <ExportBtn onClick={fetchGSTR3BWorksheet} disabled={gstr3bWsLoading} variant="blue">
+                    {gstr3bWsLoading ? '⏳' : showGstr3bWs ? '▴ Hide' : '▾ View Worksheet'}
+                  </ExportBtn>
+                }
+              />
+              {gstr3bWsError && (
+                <div className="px-5 py-3 text-[12px] font-semibold text-rose-600">⚠️ {gstr3bWsError}</div>
+              )}
+              {showGstr3bWs && gstr3bWs && (
+                <div className="p-5 space-y-5">
+                  {/* Table 3.1 — Outward Supplies */}
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Table 3.1 — Outward Supplies</p>
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <table className="w-full text-[12px]">
+                        <thead><tr className="bg-slate-50 border-b border-slate-100">
+                          {['Supply Type','Taxable','IGST','CGST','SGST'].map(h => (
+                            <th key={h} className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">{h}</th>
+                          ))}
+                        </tr></thead>
+                        <tbody className="divide-y divide-slate-50">
+                          <tr className="hover:bg-slate-50">
+                            <td className="px-3 py-2 font-semibold text-slate-700">Inter-State (3.1a)</td>
+                            <td className="px-3 py-2">₹{fmt(gstr3bWs.table31?.a?.inter?.txval)}</td>
+                            <td className="px-3 py-2 font-bold text-emerald-600">₹{fmt(gstr3bWs.table31?.a?.inter?.iamt)}</td>
+                            <td className="px-3 py-2">—</td>
+                            <td className="px-3 py-2">—</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="px-3 py-2 font-semibold text-slate-700">Intra-State (3.1a)</td>
+                            <td className="px-3 py-2">₹{fmt(gstr3bWs.table31?.a?.intra?.txval)}</td>
+                            <td className="px-3 py-2">—</td>
+                            <td className="px-3 py-2 font-bold text-emerald-600">₹{fmt(gstr3bWs.table31?.a?.intra?.camt)}</td>
+                            <td className="px-3 py-2 font-bold text-emerald-600">₹{fmt(gstr3bWs.table31?.a?.intra?.samt)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Table 4 — ITC */}
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Table 4 — ITC Available</p>
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <table className="w-full text-[12px]">
+                        <thead><tr className="bg-slate-50 border-b border-slate-100">
+                          {['Category','IGST','CGST','SGST','Total'].map(h => (
+                            <th key={h} className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">{h}</th>
+                          ))}
+                        </tr></thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {[
+                            { label: '4A(c) — RCM Inward',   data: gstr3bWs.table4?.A?.c },
+                            { label: '4A(e) — All Other ITC', data: gstr3bWs.table4?.A?.e },
+                          ].map(row => (
+                            <tr key={row.label} className="hover:bg-slate-50">
+                              <td className="px-3 py-2 font-semibold text-slate-700">{row.label}</td>
+                              <td className="px-3 py-2 text-green-700">₹{fmt(row.data?.iamt)}</td>
+                              <td className="px-3 py-2 text-green-700">₹{fmt(row.data?.camt)}</td>
+                              <td className="px-3 py-2 text-green-700">₹{fmt(row.data?.samt)}</td>
+                              <td className="px-3 py-2 font-bold text-green-700">₹{fmt((row.data?.iamt||0)+(row.data?.camt||0)+(row.data?.samt||0))}</td>
+                            </tr>
+                          ))}
+                          <tr className="bg-green-50 font-black">
+                            <td className="px-3 py-2 text-green-800">4C — Net ITC Available</td>
+                            <td className="px-3 py-2 text-green-800">₹{fmt(gstr3bWs.table4?.C?.iamt)}</td>
+                            <td className="px-3 py-2 text-green-800">₹{fmt(gstr3bWs.table4?.C?.camt)}</td>
+                            <td className="px-3 py-2 text-green-800">₹{fmt(gstr3bWs.table4?.C?.samt)}</td>
+                            <td className="px-3 py-2 text-green-800">₹{fmt((gstr3bWs.table4?.C?.iamt||0)+(gstr3bWs.table4?.C?.camt||0)+(gstr3bWs.table4?.C?.samt||0))}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Table 6.1 — Tax Payable */}
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Table 6.1 — Tax Payable</p>
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <table className="w-full text-[12px]">
+                        <thead><tr className="bg-slate-50 border-b border-slate-100">
+                          {['Head','Payable','By ITC','Cash Required'].map(h => (
+                            <th key={h} className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">{h}</th>
+                          ))}
+                        </tr></thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {[
+                            { label: 'IGST', data: gstr3bWs.table61?.igst },
+                            { label: 'CGST', data: gstr3bWs.table61?.cgst },
+                            { label: 'SGST', data: gstr3bWs.table61?.sgst },
+                          ].map(row => (
+                            <tr key={row.label} className="hover:bg-slate-50">
+                              <td className="px-3 py-2 font-bold text-slate-700">{row.label}</td>
+                              <td className="px-3 py-2">₹{fmt(row.data?.tax_payable)}</td>
+                              <td className="px-3 py-2 text-green-700">₹{fmt(row.data?.paid_through_itc)}</td>
+                              <td className={`px-3 py-2 font-bold ${(row.data?.paid_cash||0)>0?'text-rose-600':'text-emerald-600'}`}>₹{fmt(row.data?.paid_cash)}</td>
+                            </tr>
+                          ))}
+                          <tr className="bg-rose-50 font-black">
+                            <td className="px-3 py-2 text-rose-800">Total Cash Required</td>
+                            <td className="px-3 py-2 text-rose-800">₹{fmt(gstr3bWs.summary?.net_tax_payable)}</td>
+                            <td className="px-3 py-2"></td>
+                            <td className="px-3 py-2 text-rose-800">₹{fmt(gstr3bWs.summary?.net_tax_payable)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <ExportBtn onClick={() => exportCSV('gstr3b')} variant="blue">📄 Export GSTR-3B CSV</ExportBtn>
+                </div>
+              )}
+            </SectionCard>
+
+            {/* ══════════════════════════════════════
+                BLOCK 9 — EXPORT FOR CA
             ══════════════════════════════════════ */}
             <SectionCard>
               <SectionHead
@@ -647,7 +850,6 @@ export default function GSTPage() {
                 right={<Pill color="bg-amber-50 text-amber-700">{monthEn} {year}</Pill>}
               />
               <div className="p-5 space-y-4">
-                {/* Individual exports */}
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">Individual Files</p>
                   <div className="flex flex-wrap gap-2">
@@ -656,13 +858,9 @@ export default function GSTPage() {
                     <ExportBtn onClick={exportJSON} variant="dark">🗂 JSON</ExportBtn>
                   </div>
                 </div>
-
-                {/* ZIP export */}
                 <div className="pt-4 border-t border-slate-100">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">सब एक साथ</p>
-                  <p className="text-[12px] text-slate-500 mb-3">
-                    GSTR1 + GSTR3B — CSV और JSON दोनों एक ZIP में download करो
-                  </p>
+                  <p className="text-[12px] text-slate-500 mb-3">GSTR1 + GSTR3B — CSV और JSON दोनों एक ZIP में</p>
                   <ExportBtn onClick={exportZIP} disabled={zipping} variant="zip">
                     {zipping ? '⏳ Building ZIP...' : '⬇️ Download ZIP (GSTR1 + GSTR3B)'}
                   </ExportBtn>

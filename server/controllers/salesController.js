@@ -1470,6 +1470,254 @@ const convertToInvoice = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CREDIT NOTE
+// POST /api/sales/credit-note
+// Issues a GST credit note against an existing invoice.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const { validateGSTIN: _validateGSTIN, getSupplyType, calculateItemGST } = require('../lib/gstUtils');
+const { generateGSTComplianceReport: _gstReport } = require('../utils/gstReportGenerator');
+
+const generateNoteNumber = async (shopId, docType, session = null) => {
+  const prefix = docType === 'credit_note' ? 'CN' : 'DN';
+  const financialYear = getFinancialYear();
+  let query = DocumentSequence.findOneAndUpdate(
+    { shop: shopId, doc_type: docType, financial_year: financialYear },
+    { $inc: { last_number: 1 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+  if (session) query = query.session(session);
+  const seq = await query;
+  return `${prefix}/${financialYear}/${String(seq.last_number).padStart(4, '0')}`;
+};
+
+const createCreditNote = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    let noteId;
+    await session.withTransaction(async () => {
+      const shop = await getOrCreateShop(req.user.id, session);
+      const {
+        original_invoice_no, original_invoice_date,
+        buyer_name, buyer_gstin, buyer_state_code,
+        reason = 'return_of_goods',
+        items: rawItems = [],
+        note_date,
+      } = req.body;
+
+      if (!original_invoice_no) throw new Error('original_invoice_no is required');
+      if (!rawItems.length)     throw new Error('At least one item is required');
+
+      const originalSale = await Sale.findOne({ shop: shop._id, invoice_number: original_invoice_no }).session(session);
+      if (!originalSale) throw new Error(`Original invoice ${original_invoice_no} not found in this shop`);
+
+      const normalizedBuyerGstin = buyer_gstin ? normalizeGstin(buyer_gstin) : '';
+      if (normalizedBuyerGstin && !GSTIN_REGEX.test(normalizedBuyerGstin)) {
+        throw new Error('Invalid buyer GSTIN format');
+      }
+
+      const shopStateCode   = shop.gst_state_code || (shop.gstin ? shop.gstin.substring(0, 2) : '');
+      const buyerStateCode  = normalizedBuyerGstin ? normalizedBuyerGstin.substring(0, 2) : (buyer_state_code || shopStateCode);
+      const supplyType      = getSupplyType(shopStateCode, buyerStateCode);
+
+      const resolvedItems = [];
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, totalIGST = 0;
+
+      for (const item of rawItems) {
+        const gstCalc = calculateItemGST(
+          Number(item.price_per_unit || 0),
+          Number(item.quantity || 0),
+          Number(item.gst_rate || 0),
+          supplyType
+        );
+        resolvedItems.push({
+          product:      item.product_id,
+          product_name: item.product_name || '',
+          hsn_code:     item.hsn_code     || '',
+          quantity:     Number(item.quantity),
+          price_per_unit: Number(item.price_per_unit),
+          gst_rate:     Number(item.gst_rate || 0),
+          taxable_amount: gstCalc.taxableAmount,
+          cgst_rate:    gstCalc.cgstRate,
+          sgst_rate:    gstCalc.sgstRate,
+          igst_rate:    gstCalc.igstRate,
+          cgst_amount:  gstCalc.cgstAmount,
+          sgst_amount:  gstCalc.sgstAmount,
+          igst_amount:  gstCalc.igstAmount,
+          total_gst:    gstCalc.totalGst,
+          gst_type:     gstCalc.gst_type,
+          total_amount: round2(gstCalc.taxableAmount + gstCalc.totalGst),
+        });
+        totalTaxable += gstCalc.taxableAmount;
+        totalCGST    += gstCalc.cgstAmount;
+        totalSGST    += gstCalc.sgstAmount;
+        totalIGST    += gstCalc.igstAmount;
+      }
+
+      const noteNumber = await generateNoteNumber(shop._id, 'credit_note', session);
+      const noteDate   = note_date ? new Date(note_date) : new Date();
+
+      const [creditNote] = await Sale.create([{
+        shop:                  shop._id,
+        document_type:         'credit_note',
+        invoice_number:        noteNumber,
+        original_invoice_no,
+        original_invoice_date: original_invoice_date ? new Date(original_invoice_date) : originalSale.createdAt,
+        credit_debit_reason:   reason,
+        buyer_name:            buyer_name || originalSale.buyer_name,
+        buyer_gstin:           normalizedBuyerGstin || originalSale.buyer_gstin,
+        buyer_state_code:      buyerStateCode,
+        is_b2b:                !!normalizedBuyerGstin || !!originalSale.buyer_gstin,
+        supply_type:           supplyType,
+        place_of_supply:       buyerStateCode,
+        items:                 resolvedItems,
+        taxable_amount:        round2(totalTaxable),
+        cgst_amount:           round2(totalCGST),
+        sgst_amount:           round2(totalSGST),
+        igst_amount:           round2(totalIGST),
+        total_gst:             round2(totalCGST + totalSGST + totalIGST),
+        total_amount:          round2(totalTaxable + totalCGST + totalSGST + totalIGST),
+        payment_type:          'cash',
+        amount_paid:           round2(totalTaxable + totalCGST + totalSGST + totalIGST),
+        createdAt:             noteDate,
+        invoice_type:          (normalizedBuyerGstin || originalSale.buyer_gstin) ? 'B2B' : 'B2C',
+      }], { session });
+
+      // Restore stock if return_of_goods
+      if (reason === 'return_of_goods') {
+        for (const item of rawItems) {
+          if (item.product_id) {
+            await Product.findByIdAndUpdate(
+              item.product_id,
+              { $inc: { quantity: Number(item.quantity || 0) } },
+              { session }
+            );
+          }
+        }
+      }
+
+      noteId = creditNote._id;
+    });
+
+    const hydratedNote = await Sale.findById(noteId);
+    res.status(201).json(hydratedNote);
+  } catch (err) {
+    res.status(err.statusCode || 400).json({ message: err.message });
+  } finally {
+    await session.endSession();
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEBIT NOTE
+// POST /api/sales/debit-note
+// ─────────────────────────────────────────────────────────────────────────────
+
+const createDebitNote = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    let noteId;
+    await session.withTransaction(async () => {
+      const shop = await getOrCreateShop(req.user.id, session);
+      const {
+        original_invoice_no, original_invoice_date,
+        buyer_name, buyer_gstin, buyer_state_code,
+        reason = 'additional_charges',
+        items: rawItems = [],
+        note_date,
+      } = req.body;
+
+      if (!original_invoice_no) throw new Error('original_invoice_no is required');
+      if (!rawItems.length)     throw new Error('At least one item is required');
+
+      const originalSale = await Sale.findOne({ shop: shop._id, invoice_number: original_invoice_no }).session(session);
+      if (!originalSale) throw new Error(`Original invoice ${original_invoice_no} not found in this shop`);
+
+      const normalizedBuyerGstin = buyer_gstin ? normalizeGstin(buyer_gstin) : '';
+      if (normalizedBuyerGstin && !GSTIN_REGEX.test(normalizedBuyerGstin)) {
+        throw new Error('Invalid buyer GSTIN format');
+      }
+
+      const shopStateCode  = shop.gst_state_code || (shop.gstin ? shop.gstin.substring(0, 2) : '');
+      const buyerStateCode = normalizedBuyerGstin ? normalizedBuyerGstin.substring(0, 2) : (buyer_state_code || shopStateCode);
+      const supplyType     = getSupplyType(shopStateCode, buyerStateCode);
+
+      const resolvedItems = [];
+      let totalTaxable = 0, totalCGST = 0, totalSGST = 0, totalIGST = 0;
+
+      for (const item of rawItems) {
+        const gstCalc = calculateItemGST(
+          Number(item.price_per_unit || 0),
+          Number(item.quantity || 0),
+          Number(item.gst_rate || 0),
+          supplyType
+        );
+        resolvedItems.push({
+          product:        item.product_id,
+          product_name:   item.product_name || '',
+          hsn_code:       item.hsn_code     || '',
+          quantity:       Number(item.quantity),
+          price_per_unit: Number(item.price_per_unit),
+          gst_rate:       Number(item.gst_rate || 0),
+          taxable_amount: gstCalc.taxableAmount,
+          cgst_rate:      gstCalc.cgstRate,
+          sgst_rate:      gstCalc.sgstRate,
+          igst_rate:      gstCalc.igstRate,
+          cgst_amount:    gstCalc.cgstAmount,
+          sgst_amount:    gstCalc.sgstAmount,
+          igst_amount:    gstCalc.igstAmount,
+          total_gst:      gstCalc.totalGst,
+          gst_type:       gstCalc.gst_type,
+          total_amount:   round2(gstCalc.taxableAmount + gstCalc.totalGst),
+        });
+        totalTaxable += gstCalc.taxableAmount;
+        totalCGST    += gstCalc.cgstAmount;
+        totalSGST    += gstCalc.sgstAmount;
+        totalIGST    += gstCalc.igstAmount;
+      }
+
+      const noteNumber = await generateNoteNumber(shop._id, 'debit_note', session);
+      const noteDate   = note_date ? new Date(note_date) : new Date();
+
+      const [debitNote] = await Sale.create([{
+        shop:                  shop._id,
+        document_type:         'debit_note',
+        invoice_number:        noteNumber,
+        original_invoice_no,
+        original_invoice_date: original_invoice_date ? new Date(original_invoice_date) : originalSale.createdAt,
+        credit_debit_reason:   reason,
+        buyer_name:            buyer_name || originalSale.buyer_name,
+        buyer_gstin:           normalizedBuyerGstin || originalSale.buyer_gstin,
+        buyer_state_code:      buyerStateCode,
+        is_b2b:                !!normalizedBuyerGstin || !!originalSale.buyer_gstin,
+        supply_type:           supplyType,
+        place_of_supply:       buyerStateCode,
+        items:                 resolvedItems,
+        taxable_amount:        round2(totalTaxable),
+        cgst_amount:           round2(totalCGST),
+        sgst_amount:           round2(totalSGST),
+        igst_amount:           round2(totalIGST),
+        total_gst:             round2(totalCGST + totalSGST + totalIGST),
+        total_amount:          round2(totalTaxable + totalCGST + totalSGST + totalIGST),
+        payment_type:          'cash',
+        amount_paid:           round2(totalTaxable + totalCGST + totalSGST + totalIGST),
+        createdAt:             noteDate,
+        invoice_type:          (normalizedBuyerGstin || originalSale.buyer_gstin) ? 'B2B' : 'B2C',
+      }], { session });
+
+      noteId = debitNote._id;
+    });
+
+    const hydratedNote = await Sale.findById(noteId);
+    res.status(201).json(hydratedNote);
+  } catch (err) {
+    res.status(err.statusCode || 400).json({ message: err.message });
+  } finally {
+    await session.endSession();
+  }
+};
+
 module.exports = {
   getSales,
   createSale,
@@ -1485,4 +1733,6 @@ module.exports = {
   createExchange,
   createChallan,
   convertToInvoice,
+  createCreditNote,
+  createDebitNote,
 };

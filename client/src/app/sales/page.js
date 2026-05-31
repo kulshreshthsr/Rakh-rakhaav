@@ -17,6 +17,7 @@ import { generateInvoiceHTML } from '../../lib/generateInvoice';
 import { getWorkflowConfig, getStages, getSaleWorkflowStatus, getStageColors } from '../../lib/workflowEngine';
 import WorkflowStatusBadge from '../../components/WorkflowStatusBadge';
 import eventBus from '../../lib/eventBus';
+import { validateGSTIN as _validateGSTINFull, getSupplyType as _getSupplyType, summariseCartGST } from '../../lib/gstValidation';
 
 /* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
@@ -167,8 +168,11 @@ export default function SalesPage() {
   const [sales, setSales]           = useState([]);
   const [summary, setSummary]       = useState({});
   const [products, setProducts]     = useState([]);
-  const [shopName, setShopName]     = useState('');
-  const [shopState, setShopState]   = useState('');
+  const [shopName, setShopName]         = useState('');
+  const [shopState, setShopState]       = useState('');
+  const [shopStateCode, setShopStateCode] = useState(''); // 2-digit GST state code from shop GSTIN
+  const [supplyType, setSupplyType]     = useState('intra_state'); // 'intra_state' | 'inter_state'
+  const [gstinValidation, setGstinValidation] = useState(null); // result of validateGSTIN
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal]   = useState(false);
@@ -347,7 +351,7 @@ export default function SalesPage() {
   useEffect(() => {
     if ((!showModal && !sales.length) || (shopName && shopState) || !localStorage.getItem('token')) return;
     fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } })
-      .then(r => r.json()).then(shop => { setShopName(shop.name || ''); setShopState(shop.state || ''); }).catch(() => {});
+      .then(r => r.json()).then(shop => { setShopName(shop.name || ''); setShopState(shop.state || ''); setShopStateCode(shop.gst_state_code || (shop.gstin ? shop.gstin.substring(0, 2) : '')); }).catch(() => {});
   }, [showModal, sales.length, shopName, shopState]);
 
   useEffect(() => {
@@ -544,6 +548,19 @@ export default function SalesPage() {
     const detectedState = getStateFromGstin(normalized);
     updateForm({ buyer_gstin: normalized, ...(detectedState ? { buyer_state: detectedState } : {}) });
     setGstinTouched(Boolean(normalized));
+    // Compute supply type and validate GSTIN
+    if (normalized.length === GSTIN_LENGTH) {
+      const validation = _validateGSTINFull(normalized);
+      setGstinValidation(validation);
+      if (validation.valid && shopStateCode) {
+        setSupplyType(_getSupplyType(shopStateCode, validation.stateCode));
+      } else {
+        setSupplyType('intra_state');
+      }
+    } else {
+      setGstinValidation(null);
+      setSupplyType('intra_state');
+    }
   };
 
   function resetForm(overrides = {}) {
@@ -1567,13 +1584,31 @@ export default function SalesPage() {
                     <div className="space-y-3">
                       <div>
                         <input
-                          className={`${INPUT} ${showGstinError ? 'border-rose-400 bg-rose-50 focus:ring-rose-500/20 focus:border-rose-400' : ''}`}
-                          placeholder="GSTIN (15 digits)" value={form.buyer_gstin} maxLength={GSTIN_LENGTH}
+                          className={`${INPUT} ${showGstinError ? 'border-rose-400 bg-rose-50 focus:ring-rose-500/20 focus:border-rose-400' : gstinValidation?.valid ? 'border-emerald-400 bg-emerald-50/30' : ''}`}
+                          placeholder="Buyer GSTIN (15 digits) — B2B invoice ke liye"
+                          value={form.buyer_gstin} maxLength={GSTIN_LENGTH}
                           onChange={(e) => handleBuyerGstinChange(e.target.value)}
                           onBlur={() => setGstinTouched(true)}
                         />
-                        {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">Invalid GSTIN format</p>}
-                        {showGstinLengthHint && <p className="mt-1 text-[11px] text-slate-400">{gstinValue.length}/{GSTIN_LENGTH} characters</p>}
+                        {/* Live GSTIN feedback */}
+                        {gstinValidation?.valid && (
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700">
+                              ✓ {gstinValidation.stateName} ({gstinValidation.stateCode})
+                            </span>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-bold ${
+                              supplyType === 'inter_state'
+                                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                : 'bg-green-50 border-green-200 text-green-700'
+                            }`}>
+                              {supplyType === 'inter_state' ? '🔵 Inter-State — IGST only' : '🟢 Intra-State — CGST+SGST'}
+                            </span>
+                          </div>
+                        )}
+                        {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">✗ Invalid GSTIN format</p>}
+                        {showGstinLengthHint && !gstinValidation && (
+                          <p className="mt-1 text-[11px] text-slate-400">{GSTIN_LENGTH - gstinValue.length} more character{GSTIN_LENGTH - gstinValue.length === 1 ? '' : 's'} needed</p>
+                        )}
                       </div>
                       <select className={INPUT} value={form.buyer_state} onChange={(e) => updateForm({ buyer_state: e.target.value })}>
                         <option value="">State / UT चुनें</option>
@@ -1944,6 +1979,45 @@ export default function SalesPage() {
 
             {/* ── Bill summary ── */}
             <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
+              {/* GST breakdown — CGST+SGST for intra-state, IGST for inter-state */}
+              {billTotals.gst > 0 && (() => {
+                const gstBreakdown = summariseCartGST(
+                  items.filter(i => i.product_id && i.quantity && i.price_per_unit).map(item => {
+                    const prod = products.find(p => p._id === item.product_id);
+                    return { price_per_unit: Number(item.price_per_unit || 0), quantity: Number(item.quantity || 0), gst_rate: prod?.gst_rate || 0 };
+                  }),
+                  supplyType
+                );
+                return (
+                  <div className="mb-3 pb-3 border-b border-slate-700 space-y-1.5">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-400">Taxable Amount</span>
+                      <span className="text-white font-bold">₹{fmt(gstBreakdown.taxableAmount)}</span>
+                    </div>
+                    {supplyType === 'inter_state' ? (
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">IGST</span>
+                        <span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.igstAmount)}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">CGST</span>
+                          <span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.cgstAmount)}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">SGST</span>
+                          <span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.sgstAmount)}</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-400">Total Tax</span>
+                      <span className="text-amber-300 font-black">₹{fmt(gstBreakdown.totalTax)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="space-y-1.5 mb-3">
                 {[
                   { label: 'Taxable Amount', val: `₹${fmt(billTotals.taxable)}`, cls: 'text-white' },

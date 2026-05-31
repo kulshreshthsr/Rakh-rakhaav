@@ -9,6 +9,9 @@ const saleItemSchema = new mongoose.Schema({
   price_per_unit: { type: Number, required: true },
   cost_price: { type: Number, default: 0 },      // snapshot at time of sale
   gst_rate: { type: Number, default: 0 },
+  cgst_rate: { type: Number, default: 0 },
+  sgst_rate: { type: Number, default: 0 },
+  igst_rate: { type: Number, default: 0 },
   taxable_amount: { type: Number, default: 0 },
   cgst_amount: { type: Number, default: 0 },
   sgst_amount: { type: Number, default: 0 },
@@ -63,9 +66,22 @@ const saleSchema = new mongoose.Schema({
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', default: null },
   buyer_name: { type: String },
   buyer_phone: { type: String },
-  buyer_gstin: { type: String },
+  buyer_gstin: { type: String, uppercase: true },
   buyer_address: { type: String },
   buyer_state: { type: String },
+  buyer_state_code: { type: String },    // 2-digit code from GSTIN chars 1-2
+  buyer_state_name: { type: String },
+  is_b2b: { type: Boolean, default: false }, // true when buyer_gstin is present
+
+  // ── GST Place of Supply & Supply Type ─────────────────────────
+  place_of_supply: { type: String },      // 2-digit state code
+  place_of_supply_name: { type: String },
+  supply_type: {
+    type: String,
+    enum: ['intra_state', 'inter_state'],
+    default: 'intra_state',
+  },
+  is_reverse_charge: { type: Boolean, default: false },
 
   // ── Insurance billing (pharmacy) ──────────────────────────────
   insurance_type: {
@@ -92,15 +108,20 @@ const saleSchema = new mongoose.Schema({
   },
   exchange_reference: { type: String },   // original invoice number being exchanged
 
-  // ── Challan / Document type (hardware) ───────────────────────
+  // ── Challan / Document type (hardware + GST credit/debit notes) ──
   document_type: {
     type: String,
-    enum: ['invoice', 'challan', 'quotation'],
+    enum: ['invoice', 'challan', 'quotation', 'credit_note', 'debit_note', 'revised_invoice'],
     default: 'invoice',
   },
   converted_to_invoice:     { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
   converted_from_challan:   { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
   challan_date:             { type: Date, default: null },
+
+  // Credit / Debit note reference (required when document_type is credit_note or debit_note)
+  original_invoice_no:   { type: String },
+  original_invoice_date: { type: Date },
+  credit_debit_reason: { type: String }, // 'return_of_goods', 'price_correction', 'post_sale_discount', 'additional_charges', etc.
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true },

@@ -34,6 +34,8 @@ const membershipRoutes = require('./routes/membershipRoutes');
 const contractorRoutes = require('./routes/contractorRoutes');
 const warrantyRoutes   = require('./routes/warrantyRoutes');
 const petRoutes        = require('./routes/petRoutes');
+const gstRoutes        = require('./routes/gstRoutes');
+const itcRoutes        = require('./routes/itcRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -116,6 +118,8 @@ app.use('/api/memberships', membershipRoutes);
 app.use('/api/contractors', contractorRoutes);
 app.use('/api/warranty',    warrantyRoutes);
 app.use('/api/pets',        petRoutes);
+app.use('/api/gst',         gstRoutes);
+app.use('/api/itc',         itcRoutes);
 
 app.use(errorHandler);
 

@@ -770,4 +770,63 @@ const getITCSummary = async (req, res) => {
   }
 };
 
-module.exports = { getPurchases, createPurchase, updatePurchase, deletePurchase, getITCSummary };
+// ─────────────────────────────────────────────────────────────────────────────
+// PURCHASE REGISTER (paginated, full GST breakup)
+// GET /api/purchases/register?from=YYYY-MM-DD&to=YYYY-MM-DD&page=1&limit=50
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getPurchaseRegister = async (req, res) => {
+  try {
+    const shop  = await getOrCreateShop(req.user.id);
+    const { from, to, page: pageParam = '1', limit: limitParam = '50', gstin, itc_only, rcm_only } = req.query;
+
+    const fromDate = from ? new Date(from) : new Date(new Date().setDate(1));
+    const toDate   = to   ? new Date(to)   : new Date();
+    toDate.setHours(23, 59, 59, 999);
+
+    const filter = {
+      shop: shop._id,
+      $or: [
+        { supplier_invoice_date: { $gte: fromDate, $lte: toDate } },
+        { createdAt: { $gte: fromDate, $lte: toDate } },
+      ],
+    };
+    if (gstin) filter.supplier_gstin = new RegExp(gstin, 'i');
+    if (itc_only === 'true') filter.itc_eligible = true;
+    if (rcm_only === 'true') filter.is_reverse_charge = true;
+
+    const page  = Math.max(1, parseInt(pageParam, 10));
+    const limit = Math.min(200, Math.max(1, parseInt(limitParam, 10)));
+    const skip  = (page - 1) * limit;
+
+    const [purchases, total] = await Promise.all([
+      Purchase.find(filter).sort({ supplier_invoice_date: -1, createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Purchase.countDocuments(filter),
+    ]);
+
+    const allForTotals = await Purchase.find(filter).select('taxable_amount cgst_amount sgst_amount igst_amount total_gst total_tax itc_eligible').lean();
+
+    const eligible = allForTotals.filter(p => p.itc_eligible !== false);
+    const blocked  = allForTotals.filter(p => p.itc_eligible === false);
+
+    const sumF = (arr, f) => round2(arr.reduce((s, p) => s + (Number(p[f]) || 0), 0));
+
+    const totals = {
+      taxable_amount:      sumF(allForTotals, 'taxable_amount'),
+      cgst_amount:         sumF(allForTotals, 'cgst_amount'),
+      sgst_amount:         sumF(allForTotals, 'sgst_amount'),
+      igst_amount:         sumF(allForTotals, 'igst_amount'),
+      total_tax:           sumF(allForTotals, 'total_gst'),
+      total_amount:        sumF(allForTotals, 'total_amount'),
+      itc_eligible_total:  sumF(eligible, 'total_gst'),
+      itc_blocked_total:   sumF(blocked,  'total_gst'),
+    };
+
+    res.json({ purchases, totals, page, limit, total, totalPages: Math.ceil(total / limit) });
+  } catch (err) {
+    console.error('getPurchaseRegister error:', err);
+    res.status(500).json({ message: err.message || 'Something went wrong' });
+  }
+};
+
+module.exports = { getPurchases, createPurchase, updatePurchase, deletePurchase, getITCSummary, getPurchaseRegister };

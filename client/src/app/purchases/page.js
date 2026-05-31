@@ -10,6 +10,7 @@ import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getInvBehavior, isBatchMode, isVariantMode, isSerialMode } from '../../lib/inventoryBehavior';
+import { validateGSTIN as _validateGSTIN, RCM_CATEGORIES, ITC_BLOCKED_REASONS } from '../../lib/gstValidation';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -214,6 +215,13 @@ export default function PurchasesPage() {
     supplier_address: '', supplier_state: '', notes: '',
     purchase_date: getDefaultPurchaseDateValue(),
     due_date: '',
+    // GST compliance fields
+    supplier_invoice_no: '',
+    supplier_invoice_date: getDefaultPurchaseDateValue(),
+    itc_eligible: true,
+    itc_blocked_reason: '',
+    is_reverse_charge: false,
+    rcm_category: '',
   });
   const [showInlineProductForm, setShowInlineProductForm] = useState(false);
   const [inlineProductRowIndex, setInlineProductRowIndex] = useState(0);
@@ -685,6 +693,13 @@ export default function PurchasesPage() {
         purchase_date: form.purchase_date,
         due_date: form.payment_type === 'credit' && form.due_date ? form.due_date : undefined,
         notes: form.notes,
+        // GST compliance fields
+        supplier_invoice_no:   form.supplier_invoice_no   || undefined,
+        supplier_invoice_date: form.supplier_invoice_date || undefined,
+        itc_eligible:      form.itc_eligible,
+        itc_blocked_reason: form.itc_eligible ? undefined : (form.itc_blocked_reason || undefined),
+        is_reverse_charge:  form.is_reverse_charge,
+        rcm_category:       form.is_reverse_charge ? (form.rcm_category || undefined) : undefined,
       };
 
       const isEditing = Boolean(editingPurchaseId);
@@ -701,7 +716,7 @@ export default function PurchasesPage() {
       if (res.ok) {
         setShowModal(false);
         setItems([emptyItem()]);
-        setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '' });
+        setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '', supplier_invoice_no: '', supplier_invoice_date: getDefaultPurchaseDateValue(), itc_eligible: true, itc_blocked_reason: '', is_reverse_charge: false, rcm_category: '' });
         setGstinTouched(false);
         fetchPurchases();
       } else {
@@ -769,7 +784,7 @@ export default function PurchasesPage() {
     setShowModal(false);
     setError('');
     setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '' });
+    setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '', supplier_invoice_no: '', supplier_invoice_date: getDefaultPurchaseDateValue(), itc_eligible: true, itc_blocked_reason: '', is_reverse_charge: false, rcm_category: '' });
     setGstinTouched(false);
     resetInlineProductForm();
   }
@@ -806,6 +821,12 @@ export default function PurchasesPage() {
       notes: purchase.notes || '',
       purchase_date: formatDateInputValue(purchase.createdAt || purchase.purchased_at || new Date()),
       due_date: purchase.due_date ? formatDateInputValue(purchase.due_date) : '',
+      supplier_invoice_no:   purchase.supplier_invoice_no   || '',
+      supplier_invoice_date: purchase.supplier_invoice_date ? formatDateInputValue(purchase.supplier_invoice_date) : getDefaultPurchaseDateValue(),
+      itc_eligible:      purchase.itc_eligible      !== false,
+      itc_blocked_reason: purchase.itc_blocked_reason || '',
+      is_reverse_charge:  purchase.is_reverse_charge  || false,
+      rcm_category:       purchase.rcm_category       || '',
     });
     setGstinTouched(false);
     setError('');
@@ -1186,6 +1207,95 @@ export default function PurchasesPage() {
                   </div>
                 </div>
                 <input className={INPUT} placeholder="Supplier address" value={form.supplier_address} onChange={(e) => updateForm({ supplier_address: e.target.value })} />
+
+                {/* ── GST Compliance Fields ── */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Supplier Invoice Details</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">Supplier Invoice No.</label>
+                      <input
+                        className={INPUT}
+                        placeholder="Supplier's bill number"
+                        value={form.supplier_invoice_no}
+                        onChange={(e) => updateForm({ supplier_invoice_no: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">Supplier Invoice Date</label>
+                      <input
+                        className={INPUT}
+                        type="date"
+                        value={form.supplier_invoice_date}
+                        onChange={(e) => updateForm({ supplier_invoice_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ITC Eligibility */}
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 mb-1.5">ITC Eligible?</p>
+                    <div className="flex gap-2">
+                      {[{ value: true, label: 'Yes — Eligible' }, { value: false, label: 'No — Blocked' }].map(opt => (
+                        <button
+                          key={String(opt.value)}
+                          type="button"
+                          onClick={() => updateForm({ itc_eligible: opt.value, itc_blocked_reason: opt.value ? '' : form.itc_blocked_reason })}
+                          className={`flex-1 py-2 rounded-xl border text-[12px] font-bold transition-all ${
+                            form.itc_eligible === opt.value
+                              ? opt.value ? 'border-green-500 bg-green-50 text-green-800' : 'border-rose-400 bg-rose-50 text-rose-800'
+                              : 'border-slate-200 bg-white text-slate-600'
+                          }`}
+                        >{opt.label}</button>
+                      ))}
+                    </div>
+                    {form.itc_eligible === false && (
+                      <select
+                        className={`${INPUT} mt-2`}
+                        value={form.itc_blocked_reason}
+                        onChange={(e) => updateForm({ itc_blocked_reason: e.target.value })}
+                      >
+                        <option value="">Select reason...</option>
+                        {ITC_BLOCKED_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Reverse Charge */}
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 mb-1.5">Reverse Charge (RCM)?</p>
+                    <div className="flex gap-2">
+                      {[{ value: false, label: 'No' }, { value: true, label: 'Yes — RCM' }].map(opt => (
+                        <button
+                          key={String(opt.value)}
+                          type="button"
+                          onClick={() => updateForm({ is_reverse_charge: opt.value, rcm_category: opt.value ? form.rcm_category : '' })}
+                          className={`flex-1 py-2 rounded-xl border text-[12px] font-bold transition-all ${
+                            form.is_reverse_charge === opt.value
+                              ? opt.value ? 'border-amber-500 bg-amber-50 text-amber-800' : 'border-slate-300 bg-white text-slate-700'
+                              : 'border-slate-200 bg-white text-slate-600'
+                          }`}
+                        >{opt.label}</button>
+                      ))}
+                    </div>
+                    {form.is_reverse_charge && (
+                      <select
+                        className={`${INPUT} mt-2`}
+                        value={form.rcm_category}
+                        onChange={(e) => updateForm({ rcm_category: e.target.value })}
+                      >
+                        <option value="">Select RCM category...</option>
+                        {RCM_CATEGORIES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                      </select>
+                    )}
+                    {form.is_reverse_charge && (
+                      <p className="text-[11px] text-amber-700 mt-1.5">
+                        ⚠️ RCM: You must pay GST to government directly. ITC claimable only after actual payment.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 <input className={INPUT} placeholder="Any notes..." value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} />
               </div>
             </div>

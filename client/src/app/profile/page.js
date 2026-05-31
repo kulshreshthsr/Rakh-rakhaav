@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import { validateGSTIN, STATE_CODES } from '../../lib/gstValidation';
 
 /* ─── Constants & pure helpers ───────────────────────────────────── */
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'];
@@ -22,6 +23,10 @@ const emptyShopForm = {
   name:'', address:'', city:'', state:'', pincode:'', gstin:'',
   phone:'', email:'', bank_name:'', bank_account:'', bank_ifsc:'', bank_branch:'',
   cash_opening_balance:'0', bank_opening_balance:'0', owner_photo:'', terms:'',
+  // GST registration
+  gst_type: 'regular',
+  composition_category: null,
+  filing_frequency: 'monthly',
 };
 
 const normalizeGstin = (value = '') => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, GSTIN_LENGTH);
@@ -135,6 +140,9 @@ export default function ProfilePage() {
       bank_opening_balance: String(data?.bank_opening_balance ?? 0),
       owner_photo:  data?.owner_photo  || '',
       terms:        data?.terms        || '',
+      gst_type:     data?.gst_type     || 'regular',
+      composition_category: data?.composition_category || null,
+      filing_frequency:     data?.filing_frequency     || 'monthly',
     });
     setIsDirty(false);
   };
@@ -210,7 +218,8 @@ export default function ProfilePage() {
 
   /* ── Shop helpers (owners only) ── */
   const gstinDetectedState = getStateFromGstin(shopForm.gstin);
-  const gstinInvalid = shopForm.gstin.length > 0 && shopForm.gstin.length === GSTIN_LENGTH && !gstinDetectedState;
+  const _gstinValidation   = shopForm.gstin.length === GSTIN_LENGTH ? validateGSTIN(shopForm.gstin) : null;
+  const gstinInvalid       = shopForm.gstin.length === GSTIN_LENGTH && _gstinValidation && !_gstinValidation.valid;
 
   const handleGstinChange = (value) => {
     const normalized    = normalizeGstin(value);
@@ -611,38 +620,150 @@ export default function ProfilePage() {
                 />
               </Field>
 
-              <Field
-                label="GSTIN"
-                hint="15-digit GST number — state auto-detect होगी"
-                success={gstinDetectedState && shopForm.state ? `State detected: ${shopForm.state}` : ''}
-                error={gstinInvalid ? 'Invalid GSTIN format' : ''}
-              >
-                <input
-                  id="gstin"
-                  className={gstinInvalid ? INPUT_ERR : INPUT}
-                  placeholder="22AAAAA0000A1Z5"
-                  value={shopForm.gstin}
-                  maxLength={GSTIN_LENGTH}
-                  onChange={(e) => handleGstinChange(e.target.value)}
-                />
-                {shopForm.gstin && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 h-1 rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          shopForm.gstin.length === GSTIN_LENGTH
-                            ? gstinInvalid ? 'bg-rose-500' : 'bg-emerald-500'
-                            : 'bg-amber-400'
-                        }`}
-                        style={{ width: `${(shopForm.gstin.length / GSTIN_LENGTH) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400 flex-shrink-0">
-                      {shopForm.gstin.length}/{GSTIN_LENGTH}
-                    </span>
-                  </div>
-                )}
+              {/* ── GST Registration Type ── */}
+              <Field label="GST Registration Type" hint="Aapka GST scheme type select karein">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { value: 'regular',       label: 'Regular',       desc: 'GSTR-1 + 3B' },
+                    { value: 'composition',   label: 'Composition',   desc: 'No ITC, % on turnover' },
+                    { value: 'unregistered',  label: 'Unregistered',  desc: 'No GSTIN yet' },
+                    { value: 'exempt',        label: 'Exempt',        desc: 'GST not applicable' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => patchShop({ gst_type: opt.value, composition_category: null })}
+                      className={`flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl border text-center transition-all ${
+                        shopForm.gst_type === opt.value
+                          ? 'border-green-500 bg-green-50 text-green-800'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-[12px] font-black">{opt.label}</span>
+                      <span className="text-[10px] text-slate-400">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </Field>
+
+              {/* ── Composition: category + rate ── */}
+              {shopForm.gst_type === 'composition' && (
+                <div className="space-y-3">
+                  <Field label="Composition Category">
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: 'trader',     label: 'Trader / Manufacturer', rate: '1%' },
+                        { value: 'restaurant', label: 'Restaurant',             rate: '5%' },
+                        { value: 'service',    label: 'Service Provider',       rate: '6%' },
+                      ].map(cat => (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => patchShop({ composition_category: cat.value })}
+                          className={`flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl border text-center transition-all ${
+                            shopForm.composition_category === cat.value
+                              ? 'border-blue-500 bg-blue-50 text-blue-800'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="text-[12px] font-black">{cat.label}</span>
+                          <span className="text-[11px] font-bold text-blue-600">{cat.rate} on turnover</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                  <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
+                    <span className="text-base flex-shrink-0">⚠️</span>
+                    <p className="text-[12px] text-amber-800 leading-relaxed">
+                      <strong>Composition Scheme:</strong> You cannot collect GST from customers or claim ITC on purchases.
+                      File CMP-08 quarterly (due 18th of month after quarter end).
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Regular: filing frequency ── */}
+              {shopForm.gst_type === 'regular' && (
+                <Field label="Filing Frequency" hint="QRMP = Quarterly GSTR-1 + GSTR-3B (eligible if turnover ≤ ₹5 crore)">
+                  <div className="flex gap-2">
+                    {[
+                      { value: 'monthly',   label: 'Monthly',              desc: 'GSTR-1: 11th, 3B: 20th' },
+                      { value: 'quarterly', label: 'Quarterly (QRMP)',     desc: 'GSTR-1: 13th, 3B: 22nd/24th' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => patchShop({ filing_frequency: opt.value })}
+                        className={`flex-1 flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl border text-center transition-all ${
+                          shopForm.filing_frequency === opt.value
+                            ? 'border-green-500 bg-green-50 text-green-800'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        <span className="text-[13px] font-black">{opt.label}</span>
+                        <span className="text-[10px] text-slate-400">{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+              )}
+
+              {/* ── Unregistered: turnover warning ── */}
+              {shopForm.gst_type === 'unregistered' && (
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
+                  <span className="text-base flex-shrink-0">⚠️</span>
+                  <p className="text-[12px] text-amber-800 leading-relaxed">
+                    If annual turnover exceeds <strong>₹40 lakh</strong> (₹20 lakh for services), GST registration is mandatory.
+                    Contact your CA to register before crossing the threshold.
+                  </p>
+                </div>
+              )}
+
+              {/* ── GSTIN field (show for registered types) ── */}
+              {(shopForm.gst_type === 'regular' || shopForm.gst_type === 'composition') && (
+                <Field
+                  label="GSTIN"
+                  hint="15-digit GST Identification Number"
+                  success={(() => {
+                    const r = validateGSTIN(shopForm.gstin);
+                    return (r.valid && shopForm.gstin.length === 15) ? `✓ ${r.stateName} (${r.stateCode})` : '';
+                  })()}
+                  error={(() => {
+                    if (!shopForm.gstin || shopForm.gstin.length < 15) return '';
+                    const r = validateGSTIN(shopForm.gstin);
+                    return r.valid ? '' : r.error;
+                  })()}
+                >
+                  <input
+                    id="gstin"
+                    className={(() => {
+                      if (!shopForm.gstin || shopForm.gstin.length < 15) return INPUT;
+                      return validateGSTIN(shopForm.gstin).valid ? INPUT : INPUT_ERR;
+                    })()}
+                    placeholder="22AAAAA0000A1Z5"
+                    value={shopForm.gstin}
+                    maxLength={GSTIN_LENGTH}
+                    onChange={(e) => handleGstinChange(e.target.value)}
+                  />
+                  {shopForm.gstin && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 h-1 rounded-full bg-slate-200 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            shopForm.gstin.length === GSTIN_LENGTH
+                              ? validateGSTIN(shopForm.gstin).valid ? 'bg-emerald-500' : 'bg-rose-500'
+                              : 'bg-amber-400'
+                          }`}
+                          style={{ width: `${(shopForm.gstin.length / GSTIN_LENGTH) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 flex-shrink-0">
+                        {shopForm.gstin.length}/{GSTIN_LENGTH}
+                      </span>
+                    </div>
+                  )}
+                </Field>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Phone">
