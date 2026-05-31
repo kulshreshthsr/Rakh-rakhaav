@@ -166,6 +166,16 @@ export default {
     footerNote:       'Delivery as per agreed schedule. Assembly charges if applicable are separate. Warranty as per manufacturer terms.',
   },
 
+  challanConfig: {
+    enabled: true,
+    defaultChallanType: 'supply_of_goods',
+    requireVehicleNumber: true,
+    requirePONumber: false,
+    showEwayBillWarning: true,
+    defaultTerms: 'Furniture dispatched as per order. Please inspect items for transit damage before signing receipt. Assembly service to follow separately.',
+    uomOptions: ['NOS', 'PCS', 'SET', 'PAIR'],
+  },
+
   kpiConfig: {
     kpi1: { label: 'आज की कमाई',    sublabel: "Today's Revenue"    },
     kpi2: { label: 'Bills',           sublabel: 'Invoices today'      },

@@ -19,6 +19,9 @@ const saleItemSchema = new mongoose.Schema({
   total_gst: { type: Number, default: 0 },
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
   total_amount: { type: Number, default: 0 },
+  // Challan-specific per-item fields
+  unit_of_measurement: { type: String, default: 'NOS' }, // NOS, KGS, MTR, LTR, PCS, BOX, BAG, BUNDLE, SET, PAIR
+  remarks: { type: String, default: '' },                // e.g. "Handle with care", "Fragile"
   // Industry-specific line fields (pharmacy: batch_number/expiry, clothing: size/color, etc.)
   item_metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
   notes: { type: String, default: '' },
@@ -60,7 +63,7 @@ const saleSchema = new mongoose.Schema({
   amount_paid: { type: Number, default: 0 },
   amount_paid_mode: { type: String, enum: ['cash', 'bank', 'upi', ''], default: '' },
   balance_due: { type: Number, default: 0 },
-  payment_status: { type: String, enum: ['paid', 'partial', 'unpaid'], default: 'paid' },
+  payment_status: { type: String, enum: ['paid', 'partial', 'unpaid', 'not_applicable'], default: 'paid' },
 
   // ── Buyer / Customer ──────────────────────────────────────────
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', default: null },
@@ -118,6 +121,57 @@ const saleSchema = new mongoose.Schema({
   converted_from_challan:   { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
   challan_date:             { type: Date, default: null },
 
+  // ── Challan-specific fields (GST Rule 55 CGST 2017) ───────────────────────
+  challan_number: { type: String },  // DC-2026-0001 format — auto-generated
+  challan_type: {
+    type: String,
+    enum: ['supply_of_goods', 'job_work', 'supply_on_approval', 'others'],
+    default: 'supply_of_goods',
+  },
+
+  // Transport details
+  vehicle_number:  { type: String },  // UP80 AB 1234
+  transport_name:  { type: String },  // transporter company name
+  lr_number:       { type: String },  // lorry receipt / GR number
+  eway_bill_number:{ type: String },  // mandatory if value > ₹50,000
+  dispatch_from:   { type: String },  // actual dispatch location
+  deliver_to:      { type: String },  // delivery site address
+
+  // Reference documents
+  po_number:    { type: String },  // buyer's purchase order number
+  po_date:      { type: Date },
+  indent_number:{ type: String },  // internal indent/requisition
+
+  // Consignee (who receives the goods — may differ from buyer)
+  consignee_name:    { type: String },
+  consignee_address: { type: String },
+  consignee_gstin:   { type: String },
+  consignee_contact: { type: String },  // site in-charge name
+  consignee_phone:   { type: String },
+
+  // Challan status lifecycle
+  challan_status: {
+    type: String,
+    enum: ['draft', 'dispatched', 'delivered', 'returned', 'converted'],
+    default: 'draft',
+  },
+
+  // Delivery confirmation
+  received_by:        { type: String },
+  received_at:        { type: Date },
+  receiver_signature: { type: String },  // base64 if captured
+
+  // Copy type (for 3-copy system)
+  copy_type: {
+    type: String,
+    enum: ['original', 'duplicate', 'triplicate'],
+    default: 'original',
+  },
+
+  // Special instructions / terms on challan
+  special_instructions: { type: String },
+  challan_terms:        { type: String },
+
   // Credit / Debit note reference (required when document_type is credit_note or debit_note)
   original_invoice_no:   { type: String },
   original_invoice_date: { type: Date },
@@ -155,6 +209,12 @@ saleSchema.pre('save', function () {
 });
 
 saleSchema.pre('save', async function () {
+  // Challans have no payment — skip the payment_status calculation
+  if (this.document_type === 'challan') {
+    this.payment_status = 'not_applicable';
+    this.balance_due = 0;
+    return;
+  }
   if (this.amount_paid >= this.total_amount) {
     this.payment_status = 'paid';
     this.balance_due = 0;
@@ -165,6 +225,25 @@ saleSchema.pre('save', async function () {
     this.payment_status = 'unpaid';
     this.balance_due = this.total_amount;
   }
+});
+
+// Auto-generate DC-YYYY-NNNN challan number on first save
+saleSchema.pre('save', async function (next) {
+  if (this.document_type === 'challan' && !this.challan_number) {
+    const DocumentSequence = require('./documentSequenceModel');
+    const year = new Date().getFullYear();
+    const financialYear = `DC-${year}`;
+    const txSession = this.$session();
+    let query = DocumentSequence.findOneAndUpdate(
+      { shop: this.shop, doc_type: 'challan', financial_year: financialYear },
+      { $inc: { last_number: 1 } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    if (txSession) query = query.session(txSession);
+    const seq = await query;
+    this.challan_number = `DC-${year}-${String(seq.last_number).padStart(4, '0')}`;
+  }
+  next();
 });
 
 module.exports = mongoose.model('Sale', saleSchema);

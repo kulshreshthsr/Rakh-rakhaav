@@ -14,6 +14,7 @@ import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
 import { apiUrl } from '../../lib/api';
 import { getInvBehavior, isBatchMode, isVariantMode, isSerialMode, isRecipeMode } from '../../lib/inventoryBehavior';
 import { generateInvoiceHTML } from '../../lib/generateInvoice';
+import { printDeliveryChallan } from '../../lib/generateChallan';
 import { getWorkflowConfig, getStages, getSaleWorkflowStatus, getStageColors } from '../../lib/workflowEngine';
 import WorkflowStatusBadge from '../../components/WorkflowStatusBadge';
 import eventBus from '../../lib/eventBus';
@@ -25,7 +26,7 @@ const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli a
 
 const getToken = () => localStorage.getItem('token');
 const fmt      = (n) => parseFloat(n || 0).toFixed(2);
-const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
+const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {}, unit_of_measurement: 'NOS', remarks: '' });
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const GSTIN_LENGTH = 15;
 const SALES_CACHE_KEY = 'sales-page';
@@ -171,6 +172,9 @@ export default function SalesPage() {
   const [shopName, setShopName]         = useState('');
   const [shopState, setShopState]       = useState('');
   const [shopStateCode, setShopStateCode] = useState(''); // 2-digit GST state code from shop GSTIN
+  const [shopGstin, setShopGstin]       = useState('');
+  const [shopAddress, setShopAddress]   = useState('');
+  const [shopPhone, setShopPhone]       = useState('');
   const [supplyType, setSupplyType]     = useState('intra_state'); // 'intra_state' | 'inter_state'
   const [gstinValidation, setGstinValidation] = useState(null); // result of validateGSTIN
   const [loading, setLoading]       = useState(true);
@@ -224,6 +228,18 @@ export default function SalesPage() {
   const [showContractorDrop, setShowContractorDrop] = useState(false);
   const [contractorsLoaded, setContractorsLoaded] = useState(false);
   const [documentType, setDocumentType]         = useState('invoice'); // 'invoice' | 'challan'
+  const [challanForm, setChallanForm] = useState({
+    challan_type: 'supply_of_goods', challan_date: getDefaultSaleDateValue(),
+    consignee_name: '', consignee_address: '', consignee_gstin: '',
+    consignee_contact: '', consignee_phone: '',
+    dispatch_from: '', deliver_to: '',
+    vehicle_number: '', transport_name: '', lr_number: '', eway_bill_number: '',
+    po_number: '', po_date: '', indent_number: '',
+    special_instructions: '', challan_terms: '',
+  });
+  const [showDeliveredModal, setShowDeliveredModal] = useState(false);
+  const [deliveredChallan, setDeliveredChallan] = useState(null);
+  const [deliveredForm, setDeliveredForm] = useState({ received_by: '', received_at: getDefaultSaleDateValue(), notes: '' });
 
   // Pet shop-specific state
   const [petProfiles, setPetProfiles] = useState([]);
@@ -351,7 +367,7 @@ export default function SalesPage() {
   useEffect(() => {
     if ((!showModal && !sales.length) || (shopName && shopState) || !localStorage.getItem('token')) return;
     fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } })
-      .then(r => r.json()).then(shop => { setShopName(shop.name || ''); setShopState(shop.state || ''); setShopStateCode(shop.gst_state_code || (shop.gstin ? shop.gstin.substring(0, 2) : '')); }).catch(() => {});
+      .then(r => r.json()).then(shop => { setShopName(shop.name || ''); setShopState(shop.state || ''); setShopStateCode(shop.gst_state_code || (shop.gstin ? shop.gstin.substring(0, 2) : '')); setShopGstin(shop.gstin || ''); setShopAddress(shop.address || ''); setShopPhone(shop.phone || ''); setChallanForm(prev => ({ ...prev, dispatch_from: prev.dispatch_from || shop.address || '' })); }).catch(() => {});
   }, [showModal, sales.length, shopName, shopState]);
 
   useEffect(() => {
@@ -537,6 +553,7 @@ export default function SalesPage() {
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
   const roundedBill = getRoundedBillValues(billTotals.total);
+  const isChallanMode = (businessType === 'hardware' || config?.challanConfig?.enabled) && documentType === 'challan' && !editingSaleId;
   const gstinValue = normalizeGstin(form.buyer_gstin);
   const gstinComplete = gstinValue.length === GSTIN_LENGTH;
   const gstinValid = !gstinValue || (gstinComplete && GSTIN_REGEX.test(gstinValue));
@@ -573,6 +590,7 @@ export default function SalesPage() {
     setSelectedContractor(null); setContractorSearch(''); setShowContractorDrop(false);
     setDocumentType('invoice');
     setPetProfiles([]);
+    setChallanForm({ challan_type: 'supply_of_goods', challan_date: getDefaultSaleDateValue(), consignee_name: '', consignee_address: '', consignee_gstin: '', consignee_contact: '', consignee_phone: '', dispatch_from: shopAddress || '', deliver_to: '', vehicle_number: '', transport_name: '', lr_number: '', eway_bill_number: '', po_number: '', po_date: '', indent_number: '', special_instructions: '', challan_terms: '' });
   }
 
   // ─── KOT Print (Restaurant) ───────────────────────────────────────────────
@@ -629,13 +647,19 @@ export default function SalesPage() {
       fieldEl?.querySelector('input, select, textarea')?.focus();
       return;
     }
-    if (form.payment_type === 'credit' && !form.buyer_name) { setError('Customer name is required for credit sales.'); return; }
+    if (!isChallanMode && form.payment_type === 'credit' && !form.buyer_name) { setError('Customer name is required for credit sales.'); return; }
     if (!gstinValid) { setError('Invalid GSTIN format'); return; }
-    const validItems = items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
+    // For challans: price is optional (defaults to 0 for reference value)
+    const validItems = isChallanMode
+      ? items.filter((i) => i.product_id && i.quantity)
+      : items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
     if (validItems.length === 0) { setError('Select at least one product.'); return; }
-    for (const item of validItems) {
-      const prod = products.find((p) => p._id === item.product_id);
-      if (prod && Number(item.quantity) > (prod.quantity || 0)) { setError(prod.name + ': only ' + prod.quantity + ' items are available in stock.'); return; }
+    // Skip stock check for challans — goods not yet sold
+    if (!isChallanMode) {
+      for (const item of validItems) {
+        const prod = products.find((p) => p._id === item.product_id);
+        if (prod && Number(item.quantity) > (prod.quantity || 0)) { setError(prod.name + ': only ' + prod.quantity + ' items are available in stock.'); return; }
+      }
     }
     setSubmitting(true);
     if (!isOnline) {
@@ -651,25 +675,35 @@ export default function SalesPage() {
     }
     try {
       const isEditing = Boolean(editingSaleId);
-      const isChallan = businessType === 'hardware' && documentType === 'challan' && !isEditing;
+      const isChallan = isChallanMode;
       const submitUrl = isEditing ? apiUrl(`/api/sales/${editingSaleId}`) : isChallan ? apiUrl('/api/sales/challan') : apiUrl('/api/sales');
+      // For challan items, ensure price_per_unit is at least 0
+      const submitItems = isChallan
+        ? validItems.map((i) => ({ ...i, price_per_unit: Number(i.price_per_unit) || 0, unit_of_measurement: i.unit_of_measurement || 'NOS', remarks: i.remarks || '' }))
+        : validItems;
+      const challanPayload = isChallan ? {
+        ...challanForm,
+        challan_date: challanForm.challan_date || form.sale_date,
+        consignee_name: challanForm.consignee_name || form.buyer_name || '',
+        consignee_phone: challanForm.consignee_phone || form.buyer_phone || '',
+      } : {};
       const res = await fetch(submitUrl, {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ items: validItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: form.payment_type === 'credit' ? amountPaidNum : billTotals.total, extra_fields: { ...extraFields, ...(businessType === 'hardware' && selectedContractor ? { contractor_id: String(selectedContractor._id), contractor_name: selectedContractor.name } : {}) } }),
+        body: JSON.stringify({ items: submitItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: isChallan ? 0 : (form.payment_type === 'credit' ? amountPaidNum : billTotals.total), extra_fields: { ...extraFields, ...(businessType === 'hardware' && selectedContractor ? { contractor_id: String(selectedContractor._id), contractor_name: selectedContractor.name } : {}) }, ...challanPayload }),
       });
       const data = await res.json();
       if (res.ok) {
         if (isEditing && data?._id) setSales((current) => current.map((sale) => (sale._id === data._id ? data : sale)).sort((a, b) => new Date(b.createdAt || b.sold_at || 0).getTime() - new Date(a.createdAt || a.sold_at || 0).getTime()));
         if (!isEditing) eventBus.emit('INVOICE_CREATED', { saleId: data._id });
-        // Print challan (hardware) — no prices
+        // Print delivery challan — 3-copy A4 professional template
         if (isChallan && data?._id) {
-          const challanWin = window.open('', '_blank', 'width=700,height=600');
-          if (challanWin) {
-            const items = (data.items || []).map(i => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${i.product_name || ''}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td></tr>`).join('');
-            challanWin.document.write(`<html><head><title>Delivery Challan</title><style>body{margin:24px;font-family:sans-serif}h1{font-size:22px;text-align:center;letter-spacing:2px}table{width:100%;border-collapse:collapse}th{padding:8px;background:#f5f5f5;text-align:left}@media print{button{display:none}}</style></head><body><h1>DELIVERY CHALLAN</h1><p style="text-align:center;color:#888;margin-bottom:16px">This is not a tax invoice. Invoice will follow.</p><p><strong>Challan No:</strong> ${data.invoice_number || ''} &nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p><p><strong>To:</strong> ${data.buyer_name || 'Customer'} ${data.buyer_phone ? '— ' + data.buyer_phone : ''}</p><br><table><thead><tr><th>Item</th><th style="text-align:center">Qty</th></tr></thead><tbody>${items}</tbody></table><br><button onclick="window.print()">Print</button></body></html>`);
-            challanWin.document.close();
-          }
+          printDeliveryChallan(data, { name: shopName, gstin: shopGstin, address: shopAddress, phone: shopPhone, logo: null });
+          // Update challan status to dispatched
+          fetch(apiUrl(`/api/sales/${data._id}/mark-dispatched`), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          }).catch(() => {});
         }
         // Redeem membership session if one was selected
         if (businessType === 'salon' && redemptionMembershipId && data?._id) {
@@ -1064,12 +1098,17 @@ export default function SalesPage() {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-[13px] font-black text-green-700">{s.invoice_number}</span>
-                          {s.document_type === 'challan' && !s.converted_to_invoice && (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-100 border border-blue-300 text-[10px] font-black text-blue-700">📋 Challan</span>
-                          )}
-                          {s.document_type === 'challan' && s.converted_to_invoice && (
-                            <span className="px-2 py-0.5 rounded-full bg-green-100 border border-green-300 text-[10px] font-black text-green-700">✓ Invoiced</span>
-                          )}
+                          {s.document_type === 'challan' && (() => {
+                            const statusMap = {
+                              draft:       { cls: 'bg-slate-100 border-slate-300 text-slate-600',   label: '📋 Draft' },
+                              dispatched:  { cls: 'bg-blue-100 border-blue-300 text-blue-700',       label: '🚚 Dispatched' },
+                              delivered:   { cls: 'bg-green-100 border-green-300 text-green-700',    label: '✓ Delivered' },
+                              returned:    { cls: 'bg-red-100 border-red-300 text-red-700',           label: '↩️ Returned' },
+                              converted:   { cls: 'bg-purple-100 border-purple-300 text-purple-700', label: '📄 Converted' },
+                            };
+                            const st = statusMap[s.challan_status] || statusMap.draft;
+                            return <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black ${st.cls}`}>{st.label}</span>;
+                          })()}
                         </div>
                         <p className="text-[15px] font-bold text-slate-700 mt-0.5">
                           {s.buyer_name || 'Walk-in Customer'}
@@ -1181,24 +1220,44 @@ export default function SalesPage() {
                       </div>
                     )}
 
-                    {/* Hardware challan → invoice action */}
-                    {businessType === 'hardware' && s.document_type === 'challan' && !s.converted_to_invoice && !s._isOffline && (
-                      <div className="mt-2">
-                        <button onClick={async () => {
-                          if (!confirm('Convert this challan to a tax invoice? This will deduct stock.')) return;
-                          try {
-                            const r = await fetch(apiUrl(`/api/sales/${s._id}/convert-to-invoice`), {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                            });
-                            const d = await r.json();
-                            if (!r.ok) { alert(d.message || 'Conversion failed'); return; }
-                            fetchAll();
-                            if (d.invoice) printInvoice(d.invoice);
-                          } catch { alert('Server error'); }
-                        }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-blue-200 bg-blue-50 text-[11px] font-bold text-blue-700 hover:bg-blue-100 transition-all">
-                          📄 Convert to Invoice →
-                        </button>
+                    {/* Challan actions — reprint + mark delivered + convert to invoice */}
+                    {s.document_type === 'challan' && !s._isOffline && (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex gap-2">
+                          {/* Reprint 3-copy challan */}
+                          <button onClick={() => printDeliveryChallan(s, { name: shopName, gstin: shopGstin, address: shopAddress, phone: shopPhone, logo: null })}
+                            className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-blue-200 bg-blue-50 text-[11px] font-bold text-blue-700 hover:bg-blue-100 transition-all">
+                            🖨️ Print Challan
+                          </button>
+                          {/* Mark Delivered */}
+                          {s.challan_status !== 'delivered' && s.challan_status !== 'converted' && (
+                            <button onClick={() => { setDeliveredChallan(s); setDeliveredForm({ received_by: '', received_at: getDefaultSaleDateValue(), notes: '' }); setShowDeliveredModal(true); }}
+                              className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-all">
+                              ✓ Mark Delivered
+                            </button>
+                          )}
+                        </div>
+                        {/* Convert to Invoice */}
+                        {!s.converted_to_invoice && s.challan_status !== 'converted' && (
+                          <button onClick={async () => {
+                            if (!confirm(`Convert Challan ${s.challan_number || s.invoice_number} to a Tax Invoice?\n\nThis will:\n• Generate a proper invoice number\n• Deduct stock from inventory\n• Allow price editing\n\nContinue?`)) return;
+                            try {
+                              const r = await fetch(apiUrl(`/api/sales/${s._id}/convert-to-invoice`), {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                              });
+                              const d = await r.json();
+                              if (!r.ok) { alert(d.message || 'Conversion failed'); return; }
+                              fetchAll();
+                              if (d.invoice) printInvoice(d.invoice);
+                            } catch { alert('Server error'); }
+                          }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-purple-200 bg-purple-50 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-all">
+                            📄 Convert to Tax Invoice →
+                          </button>
+                        )}
+                        {s.converted_to_invoice && (
+                          <p className="text-center text-[10px] font-bold text-purple-600 py-1">✓ Converted to Invoice</p>
+                        )}
                       </div>
                     )}
 
@@ -1666,6 +1725,97 @@ export default function SalesPage() {
               </div>
             )}
 
+            {/* ══ CHALLAN SECTIONS (hardware delivery challan) ══ */}
+            {isChallanMode && (
+              <div className="space-y-4">
+
+                {/* Section 1 — Challan Header */}
+                <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
+                  <p className="text-[12px] font-black text-blue-900 uppercase tracking-wider">Challan Details</p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Challan Type</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {[['supply_of_goods','Supply of Goods'],['job_work','Job Work'],['supply_on_approval','Supply on Approval'],['others','Others']].map(([v,l]) => (
+                        <button key={v} type="button" onClick={() => setChallanForm(p => ({ ...p, challan_type: v }))}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${challanForm.challan_type === v ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-200 text-slate-600 hover:border-blue-300'}`}
+                        >{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Challan Date</p>
+                    <input className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/25 focus:border-blue-600 transition-all"
+                      type="date" value={challanForm.challan_date}
+                      onChange={e => setChallanForm(p => ({ ...p, challan_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Section 2 — Consignee Details */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                  <p className="text-[12px] font-black text-slate-900 uppercase tracking-wider">Consignee (Who Receives Goods)</p>
+                  <input className={INPUT} placeholder="Consignee / Company Name *" value={challanForm.consignee_name}
+                    onChange={e => setChallanForm(p => ({ ...p, consignee_name: e.target.value }))} />
+                  <textarea className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all resize-none"
+                    rows={2} placeholder="Full delivery site address *"
+                    value={challanForm.consignee_address}
+                    onChange={e => setChallanForm(p => ({ ...p, consignee_address: e.target.value }))} />
+                  <input className={INPUT} placeholder="Consignee GSTIN (if registered)" value={challanForm.consignee_gstin}
+                    onChange={e => setChallanForm(p => ({ ...p, consignee_gstin: e.target.value.toUpperCase().slice(0,15) }))} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={INPUT} placeholder="Site In-charge Name" value={challanForm.consignee_contact}
+                      onChange={e => setChallanForm(p => ({ ...p, consignee_contact: e.target.value }))} />
+                    <input className={INPUT} placeholder="Contact Phone" type="tel" value={challanForm.consignee_phone}
+                      onChange={e => setChallanForm(p => ({ ...p, consignee_phone: e.target.value }))} />
+                  </div>
+                </div>
+
+                {/* Section 3 — Dispatch Details */}
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/30 p-4 space-y-3">
+                  <p className="text-[12px] font-black text-amber-900 uppercase tracking-wider">Dispatch & Transport</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={INPUT} placeholder="Dispatch From (your address)" value={challanForm.dispatch_from}
+                      onChange={e => setChallanForm(p => ({ ...p, dispatch_from: e.target.value }))} />
+                    <input className={INPUT} placeholder="Deliver To (site address)" value={challanForm.deliver_to}
+                      onChange={e => setChallanForm(p => ({ ...p, deliver_to: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={INPUT} placeholder="Vehicle No. (UP80 AB 1234)" value={challanForm.vehicle_number}
+                      onChange={e => setChallanForm(p => ({ ...p, vehicle_number: e.target.value.toUpperCase() }))} />
+                    <input className={INPUT} placeholder="Transporter Name" value={challanForm.transport_name}
+                      onChange={e => setChallanForm(p => ({ ...p, transport_name: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={INPUT} placeholder="LR / GR Number" value={challanForm.lr_number}
+                      onChange={e => setChallanForm(p => ({ ...p, lr_number: e.target.value }))} />
+                    <input className={INPUT} placeholder="E-way Bill No." value={challanForm.eway_bill_number}
+                      onChange={e => setChallanForm(p => ({ ...p, eway_bill_number: e.target.value }))} />
+                  </div>
+                  {billTotals.total > 50000 && !challanForm.eway_bill_number && (
+                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-100 border border-amber-300 text-[11px] font-semibold text-amber-800">
+                      <span className="flex-shrink-0">⚠️</span>
+                      <span>Goods value exceeds ₹50,000 — E-way Bill is mandatory under GST rules. Please enter the e-way bill number.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 4 — Reference Documents */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                  <p className="text-[12px] font-black text-slate-700 uppercase tracking-wider">Reference Documents (Optional)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={INPUT} placeholder="Buyer's PO Number" value={challanForm.po_number}
+                      onChange={e => setChallanForm(p => ({ ...p, po_number: e.target.value }))} />
+                    <input className="h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
+                      type="date" value={challanForm.po_date}
+                      onChange={e => setChallanForm(p => ({ ...p, po_date: e.target.value }))} />
+                  </div>
+                  <input className={INPUT} placeholder="Internal Indent / Requisition Number" value={challanForm.indent_number}
+                    onChange={e => setChallanForm(p => ({ ...p, indent_number: e.target.value }))} />
+                </div>
+
+              </div>
+            )}
+
             {/* ── Items section ── */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between mb-3">
@@ -1736,7 +1886,8 @@ export default function SalesPage() {
                           </div>
                         </div>
 
-                        {/* Price */}
+                        {/* Price — hidden for challan (not a tax document) */}
+                        {!isChallanMode && (
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                             Price (₹)
@@ -1752,14 +1903,41 @@ export default function SalesPage() {
                             max={businessType === 'pharmacy' && prod?.metadata?.mrp ? prod.metadata.mrp : undefined}
                           />
                         </div>
+                        )}
+
+                        {/* UOM — challan only */}
+                        {isChallanMode && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Unit</p>
+                          <select
+                            className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-700 focus:outline-none focus:border-blue-500 transition-all"
+                            value={item.unit_of_measurement || 'NOS'}
+                            onChange={e => updateItem(index, 'unit_of_measurement', e.target.value)}
+                          >
+                            {['NOS','KGS','MTR','LTR','PCS','BOX','BAG','BUNDLE','SET','PAIR','SQM','CFT','RMT'].map(u => (
+                              <option key={u} value={u}>{u}</option>
+                            ))}
+                          </select>
+                        </div>
+                        )}
                       </div>
 
-                      {/* GST breakdown */}
-                      {g && (
+                      {/* GST breakdown — hidden for challan */}
+                      {g && !isChallanMode && (
                         <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
                           <span className="text-slate-400">₹{fmt(g.taxable)} + <span className="text-amber-600">₹{fmt(g.gst)} GST</span></span>
                           <span className="font-black text-slate-900">= ₹{fmt(g.total)}</span>
                         </div>
+                      )}
+
+                      {/* Remarks — challan only */}
+                      {isChallanMode && (
+                        <input
+                          className="h-9 w-full px-3 rounded-xl border border-slate-200 bg-white text-[12px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-all"
+                          placeholder="Item remarks (e.g. Handle with care, Fragile)"
+                          value={item.remarks || ''}
+                          onChange={e => updateItem(index, 'remarks', e.target.value)}
+                        />
                       )}
 
                       {/* ── Batch selector (pharmacy, bakery, grocery) ── */}
@@ -1977,8 +2155,39 @@ export default function SalesPage() {
               </div>
             )}
 
-            {/* ── Bill summary ── */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
+            {/* ── Challan value summary + special instructions ── */}
+            {isChallanMode && (
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
+                  <p className="text-[11px] font-black text-blue-800 mb-2">Value Summary (For Reference Only)</p>
+                  <div className="flex justify-between text-[12px] mb-1">
+                    <span className="text-slate-600">Taxable Value</span>
+                    <span className="font-bold text-slate-900">₹{fmt(billTotals.taxable)}</span>
+                  </div>
+                  <div className="flex justify-between text-[12px] mb-2">
+                    <span className="text-slate-600">Applicable GST Rate</span>
+                    <span className="font-bold text-slate-900">{items[0]?.gst_rate || 0}% (not charged on this document)</span>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl bg-slate-900 text-white text-center text-[10px] font-black tracking-wider">
+                    TAX WILL BE CHARGED ON INVOICE — THIS CHALLAN IS FOR GOODS MOVEMENT ONLY
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                  <p className="text-[12px] font-black text-slate-900">Special Instructions</p>
+                  <textarea className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-[12px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all resize-none"
+                    rows={2} placeholder="Handle with care / Temperature sensitive / Fragile goods"
+                    value={challanForm.special_instructions}
+                    onChange={e => setChallanForm(p => ({ ...p, special_instructions: e.target.value }))} />
+                  <textarea className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-[12px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all resize-none"
+                    rows={2} placeholder="Terms (leave blank for default)"
+                    value={challanForm.challan_terms}
+                    onChange={e => setChallanForm(p => ({ ...p, challan_terms: e.target.value }))} />
+                </div>
+              </div>
+            )}
+
+            {/* ── Bill summary — hidden for challan ── */}
+            {!isChallanMode && <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
               {/* GST breakdown — CGST+SGST for intra-state, IGST for inter-state */}
               {billTotals.gst > 0 && (() => {
                 const gstBreakdown = summariseCartGST(
@@ -2040,12 +2249,21 @@ export default function SalesPage() {
                   <span className="text-[14px] font-black text-rose-400">₹{fmt(balanceDue)}</span>
                 </div>
               )}
-            </div>
+            </div>}
           </div>
 
           {/* Sticky footer */}
           <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
             <div className="flex gap-3">
+              {isChallanMode ? (
+                <button type="button" onClick={handleSubmit} disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+                >
+                  {submitting ? (
+                    <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Creating Challan...</>
+                  ) : '🚚 Dispatch — Print 3 Copies'}
+                </button>
+              ) : (
               <button type="button" onClick={handleSubmit} disabled={submitting}
                 className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
               >
@@ -2057,6 +2275,7 @@ export default function SalesPage() {
                   : form.payment_type === 'bank'   ? `🏦 Bank ${term('sale','Sale')} Save करें`
                   : `💵 ${term('sale','Sale')} Save करें`}
               </button>
+              )}
               <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
               >Cancel</button>
@@ -2064,6 +2283,68 @@ export default function SalesPage() {
           </div>
         </aside>
       </div>
+
+      {/* ════════════════════════════════════════════════════════════
+          CHALLAN — MARK DELIVERED MODAL
+      ════════════════════════════════════════════════════════════ */}
+      {showDeliveredModal && deliveredChallan && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-5 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[18px] font-black text-slate-900">Mark as Delivered</h3>
+                  <p className="text-[12px] text-slate-500 mt-0.5">
+                    {deliveredChallan.challan_number || deliveredChallan.invoice_number} — {deliveredChallan.consignee_name || deliveredChallan.buyer_name}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setShowDeliveredModal(false)}
+                  className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+              </div>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Received By *</p>
+                <input className={INPUT} placeholder="Name of person who received the goods"
+                  value={deliveredForm.received_by}
+                  onChange={e => setDeliveredForm(p => ({ ...p, received_by: e.target.value }))} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Delivery Date</p>
+                <input className="h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
+                  type="date" value={deliveredForm.received_at}
+                  onChange={e => setDeliveredForm(p => ({ ...p, received_at: e.target.value }))} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Notes (optional)</p>
+                <input className={INPUT} placeholder="Any delivery notes or observations"
+                  value={deliveredForm.notes}
+                  onChange={e => setDeliveredForm(p => ({ ...p, notes: e.target.value }))} />
+              </div>
+            </div>
+            <div className="px-5 pb-5 flex gap-3">
+              <button type="button" onClick={async () => {
+                if (!deliveredForm.received_by) { alert('Please enter the name of the person who received the goods.'); return; }
+                try {
+                  const r = await fetch(apiUrl(`/api/sales/${deliveredChallan._id}/mark-delivered`), {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                    body: JSON.stringify(deliveredForm),
+                  });
+                  const d = await r.json();
+                  if (!r.ok) { alert(d.message || 'Failed'); return; }
+                  setShowDeliveredModal(false); setDeliveredChallan(null); fetchAll();
+                } catch { alert('Server error'); }
+              }}
+                className="flex-1 py-3 rounded-2xl bg-green-600 text-white text-[14px] font-black hover:bg-green-700 transition-colors"
+              >✓ Confirm Delivery</button>
+              <button type="button" onClick={() => setShowDeliveredModal(false)}
+                className="px-5 py-3 rounded-2xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+              >Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════════
           SPLIT BILL MODAL (Restaurant only)

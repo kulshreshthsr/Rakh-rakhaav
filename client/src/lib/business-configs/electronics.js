@@ -180,6 +180,16 @@ export default {
     footerNote:       'Warranty as per manufacturer terms. Keep this invoice for warranty claims.',
   },
 
+  challanConfig: {
+    enabled: true,
+    defaultChallanType: 'supply_of_goods',
+    requireVehicleNumber: false,
+    requirePONumber: false,
+    showEwayBillWarning: true,
+    defaultTerms: 'Goods dispatched in good condition. Please verify serial numbers and quantity on receipt. Report discrepancies within 24 hours.',
+    uomOptions: ['NOS', 'PCS', 'SET', 'BOX', 'PAIR'],
+  },
+
   workflowConfig: {
     enabled: true,
     stages: [

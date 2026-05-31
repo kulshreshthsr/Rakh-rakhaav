@@ -245,6 +245,16 @@ export default {
     footerNote:       'Warranty on parts as per manufacturer. Labour warranty valid for 30 days from date of service.',
   },
 
+  challanConfig: {
+    enabled: true,
+    defaultChallanType: 'job_work',
+    requireVehicleNumber: true,
+    requirePONumber: false,
+    showEwayBillWarning: true,
+    defaultTerms: 'Vehicle / parts dispatched for job work. Please verify condition on receipt. Returns must be accompanied by this challan.',
+    uomOptions: ['NOS', 'PCS', 'SET', 'KGS', 'LTR', 'BOX'],
+  },
+
   kpiConfig: {
     kpi1: { label: 'आज की कमाई',    sublabel: "Today's Revenue"   },
     kpi2: { label: 'Job Cards',      sublabel: 'Completed today'   },

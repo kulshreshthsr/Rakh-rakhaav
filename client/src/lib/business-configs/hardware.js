@@ -157,6 +157,16 @@ export default {
     footerNote:       'Goods once sold will not be taken back without prior approval. Subject to local jurisdiction.',
   },
 
+  challanConfig: {
+    enabled: true,
+    defaultChallanType: 'supply_of_goods',
+    requireVehicleNumber: true,
+    requirePONumber: false,
+    showEwayBillWarning: true,
+    defaultTerms: 'Goods are dispatched in good condition. Please verify quantity and report discrepancies within 24 hours. Tax invoice will follow upon confirmation of delivery.',
+    uomOptions: ['NOS', 'KGS', 'MTR', 'LTR', 'PCS', 'BOX', 'BAG', 'BUNDLE', 'SET', 'PAIR', 'SQM', 'CFT', 'RMT'],
+  },
+
   kpiConfig: {
     kpi1: { label: 'आज की कमाई',      sublabel: "Today's Revenue"      },
     kpi2: { label: 'Bills',             sublabel: 'Invoices today'        },

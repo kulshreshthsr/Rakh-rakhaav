@@ -15,6 +15,8 @@ const {
   getClientHistory,
   createExchange,
   createChallan,
+  markChallanDispatched,
+  markChallanDelivered,
   convertToInvoice,
   createCreditNote,
   createDebitNote,
@@ -29,6 +31,8 @@ router.post('/exchange',      protect, checkSubscriptionStatus, requirePermissio
 router.post('/challan',       protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createChallan);
 router.post('/credit-note',   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createCreditNote);
 router.post('/debit-note',    protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createDebitNote);
+router.patch('/:id/mark-dispatched', protect, requirePermission('CREATE_INVOICE'), markChallanDispatched);
+router.patch('/:id/mark-delivered', protect, requirePermission('CREATE_INVOICE'), markChallanDelivered);
 router.post('/:id/convert-to-invoice', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), convertToInvoice);
 
 router.get('/',    protect, requirePermission('VIEW_SALES'),   getSales);
