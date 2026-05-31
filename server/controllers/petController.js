@@ -25,7 +25,10 @@ const getPets = async (req, res) => {
     }
     const pets = await PetProfile.find(filter).sort({ createdAt: -1 }).limit(200);
     res.json(pets);
-  } catch (err) { res.status(500).json({ message: console.error(err); res.status(500).json({ message: 'Something went wrong' }); }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
 };
 
 // GET /api/pets/owner?phone=xxx
@@ -36,7 +39,10 @@ const getPetsByOwnerPhone = async (req, res) => {
     if (!phone) return res.json([]);
     const pets = await PetProfile.find({ shop: shop._id, ownerPhone: { $regex: phone.slice(-10), $options: 'i' }, isActive: true }).sort({ createdAt: -1 });
     res.json(pets);
-  } catch (err) { res.status(500).json({ message: console.error(err); res.status(500).json({ message: 'Something went wrong' }); }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
 };
 
 // POST /api/pets
@@ -49,7 +55,10 @@ const createPet = async (req, res) => {
     }
     const pet = await PetProfile.create({ shop: shop._id, ownerName, ownerPhone, petName, species, breed, gender, dateOfBirth, color, weight, microchipNo, ownerAddress, medicalNotes, vetName, vetPhone, groomingFrequency });
     res.status(201).json(pet);
-  } catch (err) { res.status(500).json({ message: console.error(err); res.status(500).json({ message: 'Something went wrong' }); }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
 };
 
 // PATCH /api/pets/:id
@@ -62,7 +71,10 @@ const updatePet = async (req, res) => {
     allowed.forEach(k => { if (req.body[k] !== undefined) pet[k] = req.body[k]; });
     await pet.save();
     res.json(pet);
-  } catch (err) { res.status(500).json({ message: console.error(err); res.status(500).json({ message: 'Something went wrong' }); }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
 };
 
 // POST /api/pets/:id/vaccinate
@@ -76,7 +88,10 @@ const addVaccination = async (req, res) => {
     pet.vaccinations.push({ vaccineName, givenDate, nextDueDate, vetName, notes });
     await pet.save();
     res.json(pet);
-  } catch (err) { res.status(500).json({ message: console.error(err); res.status(500).json({ message: 'Something went wrong' }); }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
 };
 
 module.exports = { getPets, getPetsByOwnerPhone, createPet, updatePet, addVaccination };
