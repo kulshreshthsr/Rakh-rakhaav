@@ -228,7 +228,7 @@ saleSchema.pre('save', async function () {
 });
 
 // Auto-generate DC-YYYY-NNNN challan number on first save
-saleSchema.pre('save', async function (next) {
+saleSchema.pre('save', async function () {
   if (this.document_type === 'challan' && !this.challan_number) {
     const DocumentSequence = require('./documentSequenceModel');
     const year = new Date().getFullYear();
@@ -243,7 +243,6 @@ saleSchema.pre('save', async function (next) {
     const seq = await query;
     this.challan_number = `DC-${year}-${String(seq.last_number).padStart(4, '0')}`;
   }
-  next();
 });
 
 module.exports = mongoose.model('Sale', saleSchema);
