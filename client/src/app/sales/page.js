@@ -366,11 +366,30 @@ export default function SalesPage() {
       .catch(() => {});
   }, [showModal, businessType, contractorsLoaded]);
 
+  // rowGST and billTotals are declared here (before the useEffects that list billTotals.total
+  // in their dependency arrays) to avoid temporal dead zone ReferenceErrors at render time.
+  const rowGST = (item) => {
+    const prod = products.find(p => p._id === item.product_id);
+    if (!prod || !item.quantity || !item.price_per_unit) return null;
+    const taxable  = parseFloat(item.quantity) * parseFloat(item.price_per_unit);
+    const gst_rate = prod.gst_rate || 0;
+    const gst      = (taxable * gst_rate) / 100;
+    const isIGST   = normalizeState(shopState) && normalizeState(form.buyer_state) ? normalizeState(shopState) !== normalizeState(form.buyer_state) : false;
+    return { taxable, gst_rate, gst, total: taxable + gst, half_gst: gst / 2, isIGST };
+  };
+  const billTotals = items.reduce((acc, item) => {
+    const g = rowGST(item);
+    if (!g) return acc;
+    return { taxable: acc.taxable + g.taxable, gst: acc.gst + g.gst, total: acc.total + g.total };
+  }, { taxable: 0, gst: 0, total: 0 });
+
   // Fetch stylists for salon on modal open
   useEffect(() => {
     if (!showModal || businessType !== 'salon') return;
     fetchStylists();
-  }, [showModal, businessType, fetchStylists]);
+  // fetchStylists is a useCallback whose only dep is businessType (already listed here)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showModal, businessType]);
 
   // Auto-calculate balance_at_visit for salon when advance_paid or total changes
   useEffect(() => {
@@ -511,21 +530,6 @@ export default function SalesPage() {
   const removeItem = (i) => { if (items.length > 1) setItems(items.filter((_, idx) => idx !== i)); };
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
 
-  const rowGST = (item) => {
-    const prod = products.find(p => p._id === item.product_id);
-    if (!prod || !item.quantity || !item.price_per_unit) return null;
-    const taxable  = parseFloat(item.quantity) * parseFloat(item.price_per_unit);
-    const gst_rate = prod.gst_rate || 0;
-    const gst      = (taxable * gst_rate) / 100;
-    const isIGST   = normalizeState(shopState) && normalizeState(form.buyer_state) ? normalizeState(shopState) !== normalizeState(form.buyer_state) : false;
-    return { taxable, gst_rate, gst, total: taxable + gst, half_gst: gst / 2, isIGST };
-  };
-
-  const billTotals = items.reduce((acc, item) => {
-    const g = rowGST(item);
-    if (!g) return acc;
-    return { taxable: acc.taxable + g.taxable, gst: acc.gst + g.gst, total: acc.total + g.total };
-  }, { taxable: 0, gst: 0, total: 0 });
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
   const roundedBill = getRoundedBillValues(billTotals.total);
