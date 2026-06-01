@@ -295,7 +295,7 @@ function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = M
 /* ─── Main layout ────────────────────────────────────────────────── */
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
-  const { updateBusinessType, term, isEnabled, businessType } = useIndustry();
+  const { updateBusinessType, updateDashboardMode, term, isEnabled, businessType } = useIndustry();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -333,6 +333,7 @@ function LayoutInner({ children }) {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         if (data.user.businessType) updateBusinessType(data.user.businessType);
+        if (data.user.dashboardMode) updateDashboardMode(data.user.dashboardMode);
       }
       setSubscription(data.subscription || null);
       writeStoredSubscription(data.subscription || null);

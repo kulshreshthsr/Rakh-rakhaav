@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { validateGSTIN, STATE_CODES } from '../../lib/gstValidation';
+import { useIndustry } from '../../contexts/IndustryContext';
 
 /* ─── Constants & pure helpers ───────────────────────────────────── */
 const STATES = ['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'];
@@ -22,11 +23,13 @@ const GST_STATE_CODE_MAP = {
 const emptyShopForm = {
   name:'', address:'', city:'', state:'', pincode:'', gstin:'',
   phone:'', email:'', bank_name:'', bank_account:'', bank_ifsc:'', bank_branch:'',
-  cash_opening_balance:'0', bank_opening_balance:'0', owner_photo:'', terms:'',
+  cash_opening_balance:'0', bank_opening_balance:'0', terms:'',
   // GST registration
   gst_type: 'regular',
   composition_category: null,
   filing_frequency: 'monthly',
+  // Dashboard mode
+  dashboardMode: 'b2c',
 };
 
 const normalizeGstin = (value = '') => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, GSTIN_LENGTH);
@@ -90,6 +93,7 @@ export default function ProfilePage() {
     return stored ? JSON.parse(stored) : null;
   });
   const router = useRouter();
+  const { updateDashboardMode } = useIndustry();
   const isSubUser = user?.isSubUser === true;
 
   /* ── Personal profile state (all users) ── */
@@ -111,7 +115,6 @@ export default function ProfilePage() {
   const [shopMsg,    setShopMsg]    = useState('');
   const [shopError,  setShopError]  = useState('');
   const [savingShop, setSavingShop] = useState(false);
-  const [photoUploading, setPhotoUploading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
   const getToken = () => localStorage.getItem('token');
@@ -138,11 +141,11 @@ export default function ProfilePage() {
       bank_branch:  data?.bank_branch  || '',
       cash_opening_balance: String(data?.cash_opening_balance ?? 0),
       bank_opening_balance: String(data?.bank_opening_balance ?? 0),
-      owner_photo:  data?.owner_photo  || '',
       terms:        data?.terms        || '',
       gst_type:     data?.gst_type     || 'regular',
       composition_category: data?.composition_category || null,
       filing_frequency:     data?.filing_frequency     || 'monthly',
+      dashboardMode: data?.dashboardMode || 'b2c',
     });
     setIsDirty(false);
   };
@@ -247,6 +250,7 @@ export default function ProfilePage() {
       const data = await res.json();
       if (res.ok) {
         setShop(data); loadShopIntoForm(data);
+        if (data?.dashboardMode) updateDashboardMode(data.dashboardMode);
         setShopMsg('Shop details saved successfully ✓');
         setIsDirty(false);
       } else {
@@ -257,29 +261,6 @@ export default function ProfilePage() {
   };
 
   const resetShopForm = () => { loadShopIntoForm(shop || emptyShopForm); setShopMsg(''); setShopError(''); };
-
-  const handleOwnerPhotoChange = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { setShopError('Please select an image file.'); return; }
-    if (file.size > 5 * 1024 * 1024) { setShopError('Photo size should be 5MB or less.'); return; }
-    setPhotoUploading(true); setShopError(''); setShopMsg('');
-    try {
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('Image read failed'));
-        reader.readAsDataURL(file);
-      });
-      patchShop({ owner_photo: dataUrl });
-      setShopMsg('Photo selected. Save changes to update dashboard.');
-    } catch {
-      setShopError('Photo upload nahi ho paaya.');
-    } finally {
-      setPhotoUploading(false);
-    }
-  };
 
   const completeness = useMemo(() => {
     const fields = [shopForm.name, shopForm.phone, shopForm.gstin, shopForm.state, shopForm.address, shopForm.bank_name, shopForm.bank_account, shopForm.bank_ifsc, shopForm.cash_opening_balance, shopForm.bank_opening_balance];
@@ -467,17 +448,9 @@ export default function ProfilePage() {
             <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/15 blur-3xl" />
 
             <div className="relative flex items-start gap-4">
-              {shopForm.owner_photo ? (
-                <img
-                  src={shopForm.owner_photo}
-                  alt={user?.name || 'Shopkeeper'}
-                  className="w-16 h-16 rounded-2xl object-cover shadow-lg flex-shrink-0 border border-white/60"
-                />
-              ) : (
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[22px] shadow-lg flex-shrink-0`}>
-                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
-                </div>
-              )}
+              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[22px] shadow-lg flex-shrink-0`}>
+                {user?.name?.charAt(0)?.toUpperCase() || '?'}
+              </div>
 
               <div className="flex-1 min-w-0">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-green-200 text-[10px] font-bold uppercase tracking-widest text-green-700 mb-2">
@@ -577,37 +550,6 @@ export default function ProfilePage() {
 
             {/* ══ SHOP DETAILS ════════════════════════════════════ */}
             <Section icon="🏪" title="Shop Details" subtitle="GST, billing identity और printed invoice information">
-
-              <Field label="Shopkeeper Photo" hint="Dashboard ke Namaste card par yahi photo dikhegi">
-                <div className="flex items-center gap-4 flex-wrap">
-                  {shopForm.owner_photo ? (
-                    <img
-                      src={shopForm.owner_photo}
-                      alt={user?.name || 'Shopkeeper'}
-                      className="w-20 h-20 rounded-2xl object-cover border border-slate-200 shadow-sm"
-                    />
-                  ) : (
-                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[28px] shadow-sm`}>
-                      {user?.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2">
-                    <label className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[13px] font-bold cursor-pointer hover:from-green-700 hover:to-emerald-800 transition-all shadow-md shadow-green-500/20">
-                      {photoUploading ? 'Uploading...' : 'Upload Photo'}
-                      <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={handleOwnerPhotoChange} />
-                    </label>
-                    {shopForm.owner_photo && (
-                      <button
-                        type="button"
-                        onClick={() => patchShop({ owner_photo: '' })}
-                        className="px-4 py-2 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-600 bg-white hover:bg-slate-50 transition-colors"
-                      >
-                        Remove Photo
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </Field>
 
               <Field label="Shop Name" required>
                 <input
@@ -911,6 +853,60 @@ export default function ProfilePage() {
                   </ol>
                 </div>
               )}
+            </Section>
+
+            {/* ══ DASHBOARD MODE ══════════════════════════════════ */}
+            <Section icon="📊" title="Dashboard का प्रकार" subtitle="आपका business किस तरह काम करता है?">
+              <div className="grid grid-cols-1 gap-3">
+                {[
+                  {
+                    value: 'b2c',
+                    emoji: '🛍️',
+                    label: 'केवल Retail (B2C)',
+                    desc: 'सीधे ग्राहकों को बेचते हो',
+                    subdesc: 'Fast cash billing, Udhaar, Stock alerts',
+                  },
+                  {
+                    value: 'b2b',
+                    emoji: '🏭',
+                    label: 'Wholesale / B2B',
+                    desc: 'दुकानदारों / dealers को बेचते हो',
+                    subdesc: 'Tax invoice, Challan, Outstanding receivables',
+                  },
+                  {
+                    value: 'hybrid',
+                    emoji: '🔄',
+                    label: 'दोनों (Hybrid)',
+                    desc: 'Retail भी, Wholesale भी',
+                    subdesc: 'Full feature access, smart panels',
+                  },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => patchShop({ dashboardMode: opt.value })}
+                    className={`flex items-center gap-4 px-4 py-4 rounded-2xl border-2 text-left transition-all ${
+                      shopForm.dashboardMode === opt.value
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="text-2xl flex-shrink-0">{opt.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[14px] font-black leading-tight ${shopForm.dashboardMode === opt.value ? 'text-green-800' : 'text-slate-900'}`}>
+                        {opt.label}
+                      </p>
+                      <p className={`text-[12px] font-medium mt-0.5 ${shopForm.dashboardMode === opt.value ? 'text-green-700' : 'text-slate-500'}`}>
+                        {opt.desc}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{opt.subdesc}</p>
+                    </div>
+                    {shopForm.dashboardMode === opt.value && (
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-[11px] font-black">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </Section>
 
             {/* ══ SAVE ACTIONS ════════════════════════════════════ */}

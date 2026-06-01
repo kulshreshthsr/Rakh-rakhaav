@@ -133,6 +133,7 @@ const updatePassword = async (req, res) => {
   const userId = req.user.subUserId || req.user.id;
   try {
     const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
     user.password = await bcrypt.hash(newPassword, 10);
@@ -154,19 +155,21 @@ const getShop = async (req, res) => {
   }
 };
 
+const VALID_DASHBOARD_MODES = ['b2c', 'b2b', 'hybrid'];
+
 const updateShop = async (req, res) => {
   const {
     name, address, city, state, pincode, gstin, phone, email,
     bank_name, bank_account, bank_ifsc, bank_branch,
     cash_opening_balance, bank_opening_balance,
-    owner_photo, terms, businessType,
+    terms, businessType, dashboardMode,
   } = req.body;
   try {
-    if (!isValidOwnerPhoto(owner_photo)) {
-      return res.status(400).json({ message: 'Owner photo must be a PNG, JPG, JPEG, or WEBP image up to 5MB.' });
-    }
     if (businessType && !BUSINESS_TYPES.includes(businessType)) {
       return res.status(400).json({ message: 'Invalid business type.' });
+    }
+    if (dashboardMode && !VALID_DASHBOARD_MODES.includes(dashboardMode)) {
+      return res.status(400).json({ message: 'Invalid dashboard mode.' });
     }
 
     const shop = await getOrCreateShop(req.user.id);
@@ -176,10 +179,10 @@ const updateShop = async (req, res) => {
       bank_name, bank_account, bank_ifsc, bank_branch,
       cash_opening_balance: Number(cash_opening_balance || 0),
       bank_opening_balance: Number(bank_opening_balance || 0),
-      owner_photo,
       terms,
     };
     if (businessType) updatePayload.businessType = businessType;
+    if (dashboardMode) updatePayload.dashboardMode = dashboardMode;
     const updated = await Shop.findByIdAndUpdate(shop._id, updatePayload, { new: true });
     await logAuditEvent({
       shopId: updated._id,
@@ -225,9 +228,10 @@ const getSubscriptionStatus = async (req, res) => {
       }
     }
 
-    // Include businessType from shop so frontend IndustryContext stays fresh
-    const shopForBiz = await Shop.findOne({ owner: req.user.id }).select('businessType');
+    // Include businessType and dashboardMode from shop so frontend context stays fresh
+    const shopForBiz = await Shop.findOne({ owner: req.user.id }).select('businessType dashboardMode');
     responseUser.businessType = shopForBiz?.businessType || 'general';
+    responseUser.dashboardMode = shopForBiz?.dashboardMode || 'b2c';
 
     res.json({
       user: responseUser,

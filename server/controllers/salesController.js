@@ -823,7 +823,7 @@ const createSale = async (req, res) => {
         return res.status(200).json(existingSale);
       }
     }
-    res.status(500).json({ message: err.message });
+    res.status(err.statusCode || err.status || 500).json({ message: err.message });
   } finally {
     await session.endSession();
   }

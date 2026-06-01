@@ -19,6 +19,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { getIndustryConfig } from '../lib/industries';
 
 const STORAGE_KEY = 'rr-business-type';
+const DASHBOARD_MODE_KEY = 'rr-dashboard-mode';
 
 function readStoredBusinessType() {
   if (typeof window === 'undefined') return 'general';
@@ -30,10 +31,21 @@ export function writeStoredBusinessType(type) {
   try { localStorage.setItem(STORAGE_KEY, type || 'general'); } catch {}
 }
 
+function readStoredDashboardMode() {
+  if (typeof window === 'undefined') return 'b2c';
+  try { return localStorage.getItem(DASHBOARD_MODE_KEY) || 'b2c'; } catch { return 'b2c'; }
+}
+
+export function writeStoredDashboardMode(mode) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(DASHBOARD_MODE_KEY, mode || 'b2c'); } catch {}
+}
+
 const IndustryContext = createContext(null);
 
 export function IndustryProvider({ children }) {
   const [businessType, setBusinessType] = useState(readStoredBusinessType);
+  const [dashboardMode, setDashboardMode] = useState(readStoredDashboardMode);
   const config = getIndustryConfig(businessType);
 
   // Called from Layout.js after subscription-status refresh returns businessType
@@ -43,11 +55,20 @@ export function IndustryProvider({ children }) {
     writeStoredBusinessType(type);
   }, []);
 
+  const updateDashboardMode = useCallback((mode) => {
+    if (!mode) return;
+    setDashboardMode(mode);
+    writeStoredDashboardMode(mode);
+  }, []);
+
   // Keep in sync if localStorage changes in another tab
   useEffect(() => {
     function onStorage(e) {
       if (e.key === STORAGE_KEY && e.newValue) {
         setBusinessType(e.newValue);
+      }
+      if (e.key === DASHBOARD_MODE_KEY && e.newValue) {
+        setDashboardMode(e.newValue);
       }
     }
     window.addEventListener('storage', onStorage);
@@ -63,8 +84,8 @@ export function IndustryProvider({ children }) {
   }, [config]);
 
   const value = useMemo(
-    () => ({ businessType, config, term, isEnabled, updateBusinessType }),
-    [businessType, config, term, isEnabled, updateBusinessType]
+    () => ({ businessType, config, term, isEnabled, updateBusinessType, dashboardMode, updateDashboardMode }),
+    [businessType, config, term, isEnabled, updateBusinessType, dashboardMode, updateDashboardMode]
   );
 
   return (

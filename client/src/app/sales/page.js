@@ -318,6 +318,7 @@ export default function SalesPage() {
     setLoadingMore(true);
     try {
       const res = await fetch(apiUrl(`/api/sales?cursor=${salesCursor}`), { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!res.ok) { setError('Could not load older sales'); return; }
       const data = await res.json();
       setHasMoreSales(data.hasMore || false);
       setSalesCursor(data.nextCursor || null);
@@ -476,7 +477,7 @@ export default function SalesPage() {
   const loadBatchesFor = async (pid) => {
     if (productBatches[pid]) return;
     try {
-      const res  = await fetch(apiUrl(`/inventory/batches/${pid}`), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res  = await fetch(apiUrl(`/api/inventory/batches/${pid}`), { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
       setProductBatches(prev => ({ ...prev, [pid]: (Array.isArray(data) ? data : []).filter(b => !b.is_depleted && b.quantity > 0) }));
     } catch {}
@@ -485,7 +486,7 @@ export default function SalesPage() {
   const loadVariantsFor = async (pid) => {
     if (productVariants[pid]) return;
     try {
-      const res  = await fetch(apiUrl(`/inventory/variants/${pid}`), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res  = await fetch(apiUrl(`/api/inventory/variants/${pid}`), { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
       setProductVariants(prev => ({ ...prev, [pid]: Array.isArray(data) ? data : [] }));
     } catch {}

@@ -72,29 +72,29 @@ const authHeaders = () => ({ 'Content-Type': 'application/json', Authorization: 
 
 export const invApi = {
   // Batch
-  getBatches:  (pid)         => fetch(apiUrl(`/inventory/batches/${pid}`),                  { headers: authHeaders() }),
-  addBatch:    (pid, data)   => fetch(apiUrl(`/inventory/batches/${pid}`),                  { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
-  updateBatch: (bid, data)   => fetch(apiUrl(`/inventory/batches/item/${bid}`),             { method: 'PUT',  headers: authHeaders(), body: JSON.stringify(data) }),
-  deleteBatch: (bid)         => fetch(apiUrl(`/inventory/batches/item/${bid}`),             { method: 'DELETE', headers: authHeaders() }),
-  getExpiring: (days = 30)   => fetch(apiUrl(`/inventory/batches/expiring?days=${days}`),   { headers: authHeaders() }),
+  getBatches:  (pid)         => fetch(apiUrl(`/api/inventory/batches/${pid}`),                  { headers: authHeaders() }),
+  addBatch:    (pid, data)   => fetch(apiUrl(`/api/inventory/batches/${pid}`),                  { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
+  updateBatch: (bid, data)   => fetch(apiUrl(`/api/inventory/batches/item/${bid}`),             { method: 'PUT',  headers: authHeaders(), body: JSON.stringify(data) }),
+  deleteBatch: (bid)         => fetch(apiUrl(`/api/inventory/batches/item/${bid}`),             { method: 'DELETE', headers: authHeaders() }),
+  getExpiring: (days = 30)   => fetch(apiUrl(`/api/inventory/batches/expiring?days=${days}`),   { headers: authHeaders() }),
 
   // Variant
-  getVariants:  (pid)        => fetch(apiUrl(`/inventory/variants/${pid}`),                 { headers: authHeaders() }),
-  saveVariants: (pid, data)  => fetch(apiUrl(`/inventory/variants/${pid}`),                 { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
-  updateVariant:(vid, data)  => fetch(apiUrl(`/inventory/variants/item/${vid}`),            { method: 'PUT',  headers: authHeaders(), body: JSON.stringify(data) }),
+  getVariants:  (pid)        => fetch(apiUrl(`/api/inventory/variants/${pid}`),                 { headers: authHeaders() }),
+  saveVariants: (pid, data)  => fetch(apiUrl(`/api/inventory/variants/${pid}`),                 { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
+  updateVariant:(vid, data)  => fetch(apiUrl(`/api/inventory/variants/item/${vid}`),            { method: 'PUT',  headers: authHeaders(), body: JSON.stringify(data) }),
 
   // Recipe
-  getRecipe:    (pid)        => fetch(apiUrl(`/inventory/recipe/${pid}`),                   { headers: authHeaders() }),
-  saveRecipe:   (pid, data)  => fetch(apiUrl(`/inventory/recipe/${pid}`),                   { method: 'PUT',  headers: authHeaders(), body: JSON.stringify(data) }),
-  deleteRecipe: (pid)        => fetch(apiUrl(`/inventory/recipe/${pid}`),                   { method: 'DELETE', headers: authHeaders() }),
+  getRecipe:    (pid)        => fetch(apiUrl(`/api/inventory/recipe/${pid}`),                   { headers: authHeaders() }),
+  saveRecipe:   (pid, data)  => fetch(apiUrl(`/api/inventory/recipe/${pid}`),                   { method: 'PUT',  headers: authHeaders(), body: JSON.stringify(data) }),
+  deleteRecipe: (pid)        => fetch(apiUrl(`/api/inventory/recipe/${pid}`),                   { method: 'DELETE', headers: authHeaders() }),
 
   // Serial
-  getSerials:   (pid, status) => fetch(apiUrl(`/inventory/serials/${pid}${status ? `?status=${status}` : ''}`), { headers: authHeaders() }),
-  addSerials:   (pid, data)   => fetch(apiUrl(`/inventory/serials/${pid}`),                 { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
-  deleteSerial: (sid)         => fetch(apiUrl(`/inventory/serials/item/${sid}`),            { method: 'DELETE', headers: authHeaders() }),
+  getSerials:   (pid, status) => fetch(apiUrl(`/api/inventory/serials/${pid}${status ? `?status=${status}` : ''}`), { headers: authHeaders() }),
+  addSerials:   (pid, data)   => fetch(apiUrl(`/api/inventory/serials/${pid}`),                 { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) }),
+  deleteSerial: (sid)         => fetch(apiUrl(`/api/inventory/serials/item/${sid}`),            { method: 'DELETE', headers: authHeaders() }),
 
   // Summary
-  getSummary:   (pid)        => fetch(apiUrl(`/inventory/summary/${pid}`),                  { headers: authHeaders() }),
+  getSummary:   (pid)        => fetch(apiUrl(`/api/inventory/summary/${pid}`),                  { headers: authHeaders() }),
 };
 
 /** Parse JSON from a fetch Response and throw on errors. */
