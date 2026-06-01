@@ -23,9 +23,8 @@ const taskSchema = new mongoose.Schema({
   dedupeKey:   { type: String },
 }, { timestamps: true });
 
-taskSchema.pre('save', function (next) {
+taskSchema.pre('save', function () {
   this.priorityOrder = PRIORITY_ORDER[this.priority] ?? 2;
-  next();
 });
 
 taskSchema.index({ shopId: 1, status: 1, priorityOrder: 1, createdAt: -1 });

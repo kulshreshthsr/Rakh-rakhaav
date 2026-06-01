@@ -70,7 +70,7 @@ const shopSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-extract state code from GSTIN and set composition rate
-shopSchema.pre('save', function (next) {
+shopSchema.pre('save', function () {
   if (this.gstin && this.gstin.length === 15) {
     this.gst_state_code = this.gstin.substring(0, 2);
     this.gst_state_name = STATE_CODES[this.gst_state_code] || 'Unknown';
@@ -82,7 +82,6 @@ shopSchema.pre('save', function (next) {
   } else {
     if (!this.isModified('itc_eligible')) this.itc_eligible = true;
   }
-  next();
 });
 
 const Shop = mongoose.model('Shop', shopSchema);
