@@ -11,6 +11,12 @@ import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getInvBehavior, isBatchMode, isVariantMode, isSerialMode } from '../../lib/inventoryBehavior';
 import { validateGSTIN as _validateGSTIN, RCM_CATEGORIES, ITC_BLOCKED_REASONS } from '../../lib/gstValidation';
+import usePurchasesData from './hooks/usePurchasesData';
+import usePurchaseForm from './hooks/usePurchaseForm';
+import PurchaseFormModal from './components/PurchaseFormModal';
+import PurchaseCard from './components/PurchaseCard';
+import PurchaseSummary from './components/PurchaseSummary';
+import InlineProductForm from './components/InlineProductForm';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -189,177 +195,19 @@ export default function PurchasesPage() {
   const batchPurch   = isBatchMode(inv);
   const variantPurch = isVariantMode(inv);
   const serialPurch  = isSerialMode(inv);
-  const [purchases, setPurchases] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [summary, setSummary] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [editingPurchaseId, setEditingPurchaseId] = useState('');
-  const [error, setError] = useState('');
-  const [gstinTouched, setGstinTouched] = useState(false);
-  const [shopState, setShopState] = useState('');
-  const [highlightedPurchaseId, setHighlightedPurchaseId] = useState('');
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
   const router = useRouter();
 
-  // â”€â”€ Form state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const [items, setItems] = useState([emptyItem()]);
-  const [form, setForm] = useState({
-    payment_type: 'cash',
-    amount_paid: '',
-    supplier_name: '', supplier_phone: '', supplier_gstin: '',
-    supplier_address: '', supplier_state: '', notes: '',
-    purchase_date: getDefaultPurchaseDateValue(),
-    due_date: '',
-    // GST compliance fields
-    supplier_invoice_no: '',
-    supplier_invoice_date: getDefaultPurchaseDateValue(),
-    itc_eligible: true,
-    itc_blocked_reason: '',
-    is_reverse_charge: false,
-    rcm_category: '',
-  });
-  const [showInlineProductForm, setShowInlineProductForm] = useState(false);
-  const [inlineProductRowIndex, setInlineProductRowIndex] = useState(0);
-  const [creatingProduct, setCreatingProduct] = useState(false);
-  const [newProductForm, setNewProductForm] = useState({
-    name: '',
-    price: '',
-    gst_rate: '0',
-    unit: 'pcs',
-    hsn_code: '',
-  });
+  /* ── State that stays in page.js ── */
+  const [products, setProducts] = useState([]);
+  const [shopState, setShopState] = useState('');
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth] = useState('');
-  const [hasMorePurchases, setHasMorePurchases] = useState(false);
-  const [purchasesCursor, setPurchasesCursor] = useState(null);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const hasBootstrappedRef = useRef(false);
 
-  const loadPendingOfflinePurchases = useCallback(async () => {
-    try {
-      const queueItems = await getDisplayQueue();
-
-      if (!Array.isArray(queueItems) || queueItems.length === 0) {
-        return [];
-      }
-
-      return queueItems
-        .filter((operation) => operation?.type === 'CREATE_PURCHASE')
-        .map((operation) => {
-          const queuedItems = Array.isArray(operation?.payload?.items)
-            ? operation.payload.items
-            : [];
-          const taxableAmount = queuedItems.reduce((sum, item) => {
-            return sum + Number(item.quantity || 0) * Number(item.price_per_unit || 0);
-          }, 0);
-          const totalGst = queuedItems.reduce((sum, item) => {
-            const product = products.find((prod) => prod._id === item.product_id);
-            const taxable = Number(item.quantity || 0) * Number(item.price_per_unit || 0);
-            const gstRate = Number(item.gst_rate ?? product?.gst_rate ?? 0);
-            return sum + (taxable * gstRate) / 100;
-          }, 0);
-          const amountPaid = Number(operation?.payload?.amount_paid || 0);
-          const totalAmount = taxableAmount + totalGst;
-
-          return {
-            _id: operation.id,
-            invoice_number: operation.tempId,
-            _queueStatus: operation.status || 'pending',
-            _queueError: operation.error || '',
-            items: queuedItems.map((item) => {
-              const product = products.find((prod) => prod._id === item.product_id);
-              return {
-                product_name: item.product_name || product?.name || 'Product',
-                quantity: item.quantity,
-                price_per_unit: item.price_per_unit,
-                total_amount: Number(item.quantity || 0) * Number(item.price_per_unit || 0),
-              };
-            }),
-            product_name: queuedItems[0]?.product_name || products.find((prod) => prod._id === queuedItems[0]?.product_id)?.name || 'Product',
-            total_amount: totalAmount,
-            taxable_amount: taxableAmount,
-            total_gst: totalGst,
-            amount_paid: amountPaid,
-            balance_due: Math.max(0, totalAmount - amountPaid),
-            payment_type: operation?.payload?.payment_type,
-            supplier_name: operation?.payload?.supplier_name || '',
-            supplier_phone: operation?.payload?.supplier_phone,
-            createdAt: operation?.createdAt || new Date().toISOString(),
-            _isOffline: true,
-          };
-        });
-    } catch {
-      return [];
-    }
-  }, [products]);
-
-  const mergePurchasesWithPendingQueue = useCallback(async (nextPurchases) => {
-    try {
-      const pendingOfflinePurchases = await loadPendingOfflinePurchases();
-
-      if (!pendingOfflinePurchases.length) {
-        return nextPurchases;
-      }
-
-      const seenIds = new Set((nextPurchases || []).map((purchase) => purchase._id));
-      const mergedOfflinePurchases = pendingOfflinePurchases.filter((purchase) => !seenIds.has(purchase._id));
-
-      return [...mergedOfflinePurchases, ...(nextPurchases || [])].sort(
-        (a, b) => new Date(b.createdAt || b.purchased_at || 0).getTime() - new Date(a.createdAt || a.purchased_at || 0).getTime()
-      );
-    } catch {
-      return nextPurchases;
-    }
-  }, [loadPendingOfflinePurchases]);
-
-  const fetchPurchases = useCallback(async () => {
-    try {
-      const res = await fetch(apiUrl('/api/purchases'), {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (res.status === 401) { router.push('/login'); return; }
-      const data = await res.json();
-      setHasMorePurchases(data.hasMore || false);
-      setPurchasesCursor(data.nextCursor || null);
-      const nextPurchases = data.purchases || [];
-      const nextSummary = data.summary || {};
-      const mergedPurchases = await mergePurchasesWithPendingQueue(nextPurchases);
-      setPurchases(mergedPurchases);
-      setSummary(nextSummary);
-      writePageCache(PURCHASES_CACHE_KEY, { purchases: mergedPurchases, summary: nextSummary });
-    } catch { setError('Purchases could not be loaded'); }
-  }, [mergePurchasesWithPendingQueue, router]);
-
-  const loadMorePurchases = useCallback(async () => {
-    if (!purchasesCursor || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const res = await fetch(apiUrl(`/api/purchases?cursor=${purchasesCursor}`), { headers: { Authorization: `Bearer ${getToken()}` } });
-      const data = await res.json();
-      setHasMorePurchases(data.hasMore || false);
-      setPurchasesCursor(data.nextCursor || null);
-      const more = data.purchases || [];
-      setPurchases(prev => [...prev, ...more.filter(p => !prev.some(existing => existing._id === p._id))]);
-    } catch { setError('Could not load older purchases'); }
-    setLoadingMore(false);
-  }, [purchasesCursor, loadingMore]);
-
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    await fetchPurchases();
-    setLoading(false);
-  }, [fetchPurchases]);
-
+  /* ── Callbacks that stay in page.js ── */
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch(apiUrl('/api/products'), {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const res = await fetch(apiUrl('/api/products'), { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
       const productList = Array.isArray(data) ? data : data.products || [];
       setProducts(productList);
@@ -374,37 +222,53 @@ export default function PurchasesPage() {
 
   const fetchShopMeta = useCallback(async () => {
     try {
-      const res = await fetch(apiUrl('/api/auth/shop'), {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      const res = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } });
       const shop = await res.json();
       setShopState(shop.state || '');
     } catch {}
   }, []);
 
+  /* ── Hooks ── */
+  const { purchases, setPurchases, summary, loading, refreshing, hasMorePurchases, loadingMore, highlightedPurchaseId, setHighlightedPurchaseId, fetchPurchases, loadMorePurchases, fetchAll } = usePurchasesData({ router, isOnline, products, setProducts, fetchProducts });
+
+  const { showModal, setShowModal, submitting, editingPurchaseId, error, setError, gstinTouched, items, setItems, form, updateForm, showInlineProductForm, inlineProductRowIndex, creatingProduct, newProductForm, setNewProductForm, billTotals, roundedBill, balanceDue, gstinValue, gstinValid, showGstinError, showGstinLengthHint, calcRowGST, resetModal, updateItem, addItem, removeItem, handleSupplierGstinChange, handleSubmit, startEditPurchase, resetInlineProductForm, openInlineProductForm, createInlineProduct, sendPurchaseWhatsApp } = usePurchaseForm({ shopState, isOnline, fetchAll, products, setProducts, setPurchases });
+
+  /* ── Functions that stay in page.js ── */
+  const handleDelete = async (purchase) => {
+    if (purchase?._isOffline) {
+      if (!confirm('Is pending offline purchase ko local queue se hatana hai?')) return;
+      const removed = await removeQueuedOperation(purchase._id);
+      if (!removed) { setError('Pending offline purchase remove nahi ho paayi'); return; }
+      setPurchases((current) => current.filter((entry) => entry._id !== purchase._id));
+      setError(''); return;
+    }
+    if (!confirm('Delete this purchase? Stock will be restored.')) return;
+    try {
+      const res = await fetch(apiUrl(`/api/purchases/${purchase._id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!res.ok) { const data = await res.json().catch(() => ({})); setError(data.message || 'Could not delete purchase'); return; }
+      fetchPurchases();
+    } catch { setError('Could not delete purchase'); }
+  };
+
+  const focusPendingPurchase = () => {
+    const pendingPurchase = purchases.find((purchase) => Number(purchase.balance_due || 0) > 0);
+    if (!pendingPurchase) return;
+    setHighlightedPurchaseId(pendingPurchase._id);
+    const anchors = Array.from(document.querySelectorAll(`[data-purchase-anchor="${pendingPurchase._id}"]`));
+    const visibleAnchor = anchors.find((node) => node.offsetParent !== null) || anchors[0];
+    visibleAnchor?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => setHighlightedPurchaseId(''), 2200);
+  };
+
+  /* ── Effects that stay in page.js ── */
   useEffect(() => {
-    if (hasBootstrappedRef.current) {
-      return undefined;
-    }
-    hasBootstrappedRef.current = true;
-    if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    const cached = readPageCache(PURCHASES_CACHE_KEY);
-    if (cached?.purchases) {
-      mergePurchasesWithPendingQueue(cached.purchases).then((mergedPurchases) => {
-        setPurchases(mergedPurchases);
-      });
-      setSummary(cached.summary || {});
-      setLoading(false);
-    }
-
-    const deferredId = scheduleDeferred(async () => {
-      setRefreshing(Boolean(cached?.purchases));
-      await fetchAll();
-      setRefreshing(false);
-    });
-
-    return () => cancelDeferred(deferredId);
-  }, [fetchAll, mergePurchasesWithPendingQueue, router]);
+    if (typeof window === 'undefined') return undefined;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
+  }, []);
 
   useEffect(() => {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
@@ -416,428 +280,13 @@ export default function PurchasesPage() {
     fetchShopMeta();
   }, [fetchShopMeta, shopState]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !localStorage.getItem('token')) {
-      return undefined;
-    }
-
-    const handleSyncComplete = () => {
-      fetchAll();
-    };
-
-    window.addEventListener('offline-sync-complete', handleSyncComplete);
-    return () => {
-      window.removeEventListener('offline-sync-complete', handleSyncComplete);
-    };
-  }, [fetchAll]);
-
-  // â”€â”€ Item row handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const updateItem = (index, field, value) => {
-    const updated = [...items];
-    updated[index][field] = value;
-    // Auto-fill price when product selected
-    if (field === 'product_id' && value) {
-      const prod = products.find(p => p._id === value);
-      if (prod) updated[index].price_per_unit = prod.cost_price || prod.price || '';
-    }
-    setItems(updated);
-  };
-
-  const addItem = () => setItems([...items, emptyItem()]);
-  const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
-  const updateNewProductForm = (patch) => setNewProductForm((current) => ({ ...current, ...patch }));
-
-  const removeItem = (index) => {
-    if (items.length === 1) return; // keep at least 1
-    setItems(items.filter((_, i) => i !== index));
-  };
-
-  const resetInlineProductForm = () => {
-    setShowInlineProductForm(false);
-    setInlineProductRowIndex(0);
-    setCreatingProduct(false);
-    setNewProductForm({
-      name: '',
-      price: '',
-      gst_rate: '0',
-      unit: 'pcs',
-      hsn_code: '',
-    });
-  };
-
-  const openInlineProductForm = (rowIndex) => {
-    setError('');
-    setInlineProductRowIndex(rowIndex);
-    setShowInlineProductForm(true);
-    setNewProductForm({
-      name: '',
-      price: '',
-      gst_rate: '0',
-      unit: 'pcs',
-      hsn_code: '',
-    });
-  };
-
-  const createInlineProduct = async () => {
-    if (!isOnline) {
-      setError('Offline mode me naya product add nahi ho sakta. Internet on karke try karein.');
-      return;
-    }
-
-    if (!newProductForm.name.trim()) {
-      setError('Product name required hai');
-      return;
-    }
-
-    const sellingPrice = Number(newProductForm.price);
-    if (!Number.isFinite(sellingPrice) || sellingPrice < 0) {
-      setError('Valid selling price dijiye');
-      return;
-    }
-
-    const purchasePrice = Number(items[inlineProductRowIndex]?.price_per_unit || 0);
-    setCreatingProduct(true);
-    setError('');
-
-    try {
-      const res = await fetch(apiUrl('/api/products'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
-          name: newProductForm.name.trim(),
-          price: sellingPrice,
-          cost_price: Number.isFinite(purchasePrice) ? purchasePrice : 0,
-          quantity: 0,
-          unit: newProductForm.unit || 'pcs',
-          hsn_code: newProductForm.hsn_code || '',
-          gst_rate: Number(newProductForm.gst_rate || 0),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || 'Product create nahi ho paaya');
-        setCreatingProduct(false);
-        return;
-      }
-
-      const nextProducts = [...products, data].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-      setProducts(nextProducts);
-      await cacheProducts(nextProducts);
-      updateItem(inlineProductRowIndex, 'product_id', data._id);
-      resetInlineProductForm();
-    } catch {
-      setError('Product create karte waqt server error aayi');
-      setCreatingProduct(false);
-      return;
-    }
-
-    setCreatingProduct(false);
-  };
-
-  // â”€â”€ GST calculation per row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const calcRowGST = (item) => {
-    const prod = products.find(p => p._id === item.product_id);
-    if (!prod || !item.quantity || !item.price_per_unit) return null;
-    const taxable = parseFloat(item.quantity) * parseFloat(item.price_per_unit);
-    const gst_rate = prod.gst_rate || 0;
-    const gst = (taxable * gst_rate) / 100;
-    const isIGST = normalizeState(shopState) && normalizeState(form.supplier_state)
-      ? normalizeState(shopState) !== normalizeState(form.supplier_state)
-      : false;
-    return {
-      taxable,
-      gst_rate,
-      gst,
-      total: taxable + gst,
-      half_gst: gst / 2,
-      isIGST,
-    };
-  };
-
-  // â”€â”€ Bill totals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const billTotals = items.reduce((acc, item) => {
-    const g = calcRowGST(item);
-    if (!g) return acc;
-    return {
-      taxable: acc.taxable + g.taxable,
-      gst: acc.gst + g.gst,
-      total: acc.total + g.total,
-    };
-  }, { taxable: 0, gst: 0, total: 0 });
-
-  const amountPaidNum = parseFloat(form.amount_paid) || 0;
-  const balanceDue = Math.max(0, billTotals.total - amountPaidNum);
-  const roundedBill = getRoundedBillValues(billTotals.total);
-  const gstinValue = normalizeGstin(form.supplier_gstin);
-  const gstinComplete = gstinValue.length === GSTIN_LENGTH;
-  const gstinValid = !gstinValue || (gstinComplete && GSTIN_REGEX.test(gstinValue));
-  const showGstinError = gstinTouched && gstinComplete && !gstinValid;
-  const showGstinLengthHint = gstinTouched && !!gstinValue && !gstinComplete;
-  const handleSupplierGstinChange = (value) => {
-    const normalized = normalizeGstin(value);
-    const detectedState = getStateFromGstin(normalized);
-    updateForm({
-      supplier_gstin: normalized,
-      ...(detectedState ? { supplier_state: detectedState } : {}),
-    });
-    setGstinTouched(Boolean(normalized));
-  };
-
-  // â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const handleSubmit = async (e) => {
-    e?.preventDefault();
-    setError('');
-    setGstinTouched(true);
-
-    if (form.payment_type === 'credit' && !form.supplier_name) {
-      setError('Supplier name is required for credit purchases');
-      return;
-    }
-    if (!gstinValid) {
-      setError('Invalid GSTIN format');
-      return;
-    }
-    const validItems = items.filter(i => i.product_id && i.quantity && i.price_per_unit);
-    if (validItems.length === 0) {
-      setError('Select at least one product');
-      return;
-    }
-
-    setSubmitting(true);
-
-    if (!isOnline) {
-      try {
-        const offlineItems = buildOfflinePurchaseItems(validItems, products);
-        const payload = {
-          items: offlineItems,
-          payment_type: form.payment_type,
-          amount_paid: form.payment_type === 'credit'
-            ? (amountPaidNum || 0)
-            : billTotals.total,
-          supplier_name: form.supplier_name,
-          supplier_phone: form.supplier_phone,
-          supplier_gstin: gstinValue,
-          supplier_address: form.supplier_address,
-          supplier_state: form.supplier_state,
-          purchase_date: form.purchase_date,
-          notes: form.notes,
-        };
-
-        const operation = await queuePurchase(payload, offlineItems);
-        if (!operation) {
-          throw new Error('Unable to save purchase offline');
-        }
-
-        resetModal();
-
-        setPurchases(prev => [{
-          _id: operation.id,
-          invoice_number: operation.tempId,
-          items: offlineItems.map((item) => ({
-            product_name: item.product_name,
-            quantity: item.quantity,
-            price_per_unit: item.price_per_unit,
-            total_amount: Number(item.quantity) * Number(item.price_per_unit),
-          })),
-          product_name: offlineItems[0]?.product_name || 'Product',
-          total_amount: billTotals.total,
-          taxable_amount: billTotals.taxable,
-          total_gst: billTotals.gst,
-          amount_paid: form.payment_type === 'credit'
-            ? amountPaidNum
-            : billTotals.total,
-          balance_due: form.payment_type === 'credit'
-            ? balanceDue
-            : 0,
-          payment_type: form.payment_type,
-          supplier_name: form.supplier_name,
-          supplier_phone: form.supplier_phone,
-          createdAt: getPurchaseRecordDateISO(form.purchase_date),
-          _isOffline: true,
-        }, ...prev]);
-
-      } catch (err) {
-        setError('Offline save failed: ' + (err?.message || 'Unknown error'));
-      }
-      setSubmitting(false);
-      return;
-    }
-
-    try {
-      const payload = {
-        items: validItems,
-        payment_type: form.payment_type,
-        amount_paid: ['credit', 'upi', 'bank'].includes(form.payment_type) ? (amountPaidNum || 0) : billTotals.total,
-        amount_paid_mode: ['upi', 'bank'].includes(form.payment_type) ? form.payment_type : undefined,
-        supplier_name: form.supplier_name,
-        supplier_phone: form.supplier_phone,
-        supplier_gstin: gstinValue,
-        supplier_address: form.supplier_address,
-        supplier_state: form.supplier_state,
-        purchase_date: form.purchase_date,
-        due_date: form.payment_type === 'credit' && form.due_date ? form.due_date : undefined,
-        notes: form.notes,
-        // GST compliance fields
-        supplier_invoice_no:   form.supplier_invoice_no   || undefined,
-        supplier_invoice_date: form.supplier_invoice_date || undefined,
-        itc_eligible:      form.itc_eligible,
-        itc_blocked_reason: form.itc_eligible ? undefined : (form.itc_blocked_reason || undefined),
-        is_reverse_charge:  form.is_reverse_charge,
-        rcm_category:       form.is_reverse_charge ? (form.rcm_category || undefined) : undefined,
-      };
-
-      const isEditing = Boolean(editingPurchaseId);
-      const res = await fetch(
-        isEditing ? apiUrl(`/api/purchases/${editingPurchaseId}`) : apiUrl('/api/purchases'),
-        {
-          method: isEditing ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-          body: JSON.stringify(payload),
-        }
-      );
-      const data = await res.json();
-
-      if (res.ok) {
-        setShowModal(false);
-        setItems([emptyItem()]);
-        setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '', supplier_invoice_no: '', supplier_invoice_date: getDefaultPurchaseDateValue(), itc_eligible: true, itc_blocked_reason: '', is_reverse_charge: false, rcm_category: '' });
-        setGstinTouched(false);
-        fetchPurchases();
-      } else {
-        setError(data.message || 'Request failed');
-      }
-    } catch {
-      setError('Server error');
-    }
-    setSubmitting(false);
-  };
-
-  const handleDelete = async (purchase) => {
-    if (purchase?._isOffline) {
-      if (!confirm('Is pending offline purchase ko local queue se hatana hai?')) return;
-
-      const removed = await removeQueuedOperation(purchase._id);
-      if (!removed) {
-        setError('Pending offline purchase remove nahi ho paayi');
-        return;
-      }
-
-      setPurchases((current) => current.filter((entry) => entry._id !== purchase._id));
-      setError('');
-      return;
-    }
-
-    if (!confirm('Delete this purchase? Stock will be restored.')) return;
-    try {
-      const res = await fetch(apiUrl(`/api/purchases/${purchase._id}`), {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.message || 'Could not delete purchase');
-        return;
-      }
-      fetchPurchases();
-    } catch { setError('Could not delete purchase'); }
-  };
-
-  const sendPurchaseWhatsApp = (purchase) => {
-    const phone = cleanPhone(purchase.supplier_phone || '');
-    if (!phone) {
-      setError('Supplier phone number is missing');
-      return;
-    }
-    setError('');
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(buildPurchaseWhatsAppMessage(purchase))}`, '_blank');
-  };
-
-  const focusPendingPurchase = () => {
-    const pendingPurchase = purchases.find((purchase) => Number(purchase.balance_due || 0) > 0);
-    if (!pendingPurchase) return;
-
-    setHighlightedPurchaseId(pendingPurchase._id);
-    const anchors = Array.from(document.querySelectorAll(`[data-purchase-anchor="${pendingPurchase._id}"]`));
-    const visibleAnchor = anchors.find((node) => node.offsetParent !== null) || anchors[0];
-    visibleAnchor?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    window.setTimeout(() => setHighlightedPurchaseId(''), 2200);
-  };
-
-  const resetModal = () => {
-    setEditingPurchaseId('');
-    setShowModal(false);
-    setError('');
-    setItems([emptyItem()]);
-    setForm({ payment_type: 'cash', amount_paid: '', supplier_name: '', supplier_phone: '', supplier_gstin: '', supplier_address: '', supplier_state: '', notes: '', purchase_date: getDefaultPurchaseDateValue(), due_date: '', supplier_invoice_no: '', supplier_invoice_date: getDefaultPurchaseDateValue(), itc_eligible: true, itc_blocked_reason: '', is_reverse_charge: false, rcm_category: '' });
-    setGstinTouched(false);
-    resetInlineProductForm();
-  }
-
-  const startEditPurchase = (purchase) => {
-    if (purchase._isOffline) {
-      setError('Yeh entry abhi sync nahi hui — internet aane pe edit kar sakte hain');
-      return;
-    }
-
-    const sourceItems = purchase.items && purchase.items.length > 0
-      ? purchase.items
-      : [{
-          product: purchase.product,
-          quantity: purchase.quantity,
-          price_per_unit: purchase.price_per_unit,
-        }];
-
-    setEditingPurchaseId(purchase._id);
-    setItems(sourceItems.map((item) => ({
-      product_id: item.product?._id || item.product || '',
-      quantity: item.quantity || 1,
-      price_per_unit: item.price_per_unit || '',
-      item_metadata: item.item_metadata && typeof item.item_metadata === 'object' ? { ...item.item_metadata } : {},
-    })));
-    setForm({
-      payment_type: purchase.payment_type || 'cash',
-      amount_paid: purchase.payment_type === 'credit' ? String(purchase.amount_paid || '') : '',
-      supplier_name: purchase.supplier_name || '',
-      supplier_phone: purchase.supplier_phone || '',
-      supplier_gstin: purchase.supplier_gstin || '',
-      supplier_address: purchase.supplier_address || '',
-      supplier_state: purchase.supplier_state || '',
-      notes: purchase.notes || '',
-      purchase_date: formatDateInputValue(purchase.createdAt || purchase.purchased_at || new Date()),
-      due_date: purchase.due_date ? formatDateInputValue(purchase.due_date) : '',
-      supplier_invoice_no:   purchase.supplier_invoice_no   || '',
-      supplier_invoice_date: purchase.supplier_invoice_date ? formatDateInputValue(purchase.supplier_invoice_date) : getDefaultPurchaseDateValue(),
-      itc_eligible:      purchase.itc_eligible      !== false,
-      itc_blocked_reason: purchase.itc_blocked_reason || '',
-      is_reverse_charge:  purchase.is_reverse_charge  || false,
-      rcm_category:       purchase.rcm_category       || '',
-    });
-    setGstinTouched(false);
-    setError('');
-    setShowModal(true);
-  };
-
+  /* ── PayBadge (kept for potential direct use) ── */
   const PayBadge = ({ type }) => {
     const s = PAY_BADGE[type] || PAY_BADGE.cash;
     return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border ${s.cls}`}>{s.label}</span>;
   };
 
+  /* ── Derived values ── */
   const pendingOfflinePurchases = purchases.filter((purchase) => purchase?._isOffline);
   const offlinePurchaseValue = pendingOfflinePurchases.reduce((sum, purchase) => sum + Number(purchase?.total_amount || 0), 0);
   const offlineItc = pendingOfflinePurchases.reduce((sum, purchase) => sum + Number(purchase?.total_gst || 0), 0);
@@ -989,106 +438,16 @@ export default function PurchasesPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {filteredPurchases.map((p) => {
-              const meta = p._isOffline ? getOfflineBadgeMeta(p._queueStatus) : null;
-              const isHighlighted = highlightedPurchaseId === p._id;
-              const itemLabel = p.items && p.items.length > 1 ? `${p.items.length} products` : p.product_name;
-              const itemNames = p.items && p.items.length > 1 ? p.items.map((item) => item.product_name).join(', ') : p.product_name;
-
+              const isHighlighted = p._id === highlightedPurchaseId;
               return (
-                <div
+                <PurchaseCard
                   key={p._id}
-                  data-purchase-anchor={p._id}
-                  className={`group relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 hover:-translate-y-[2px] ${p._isOffline ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.1)]' : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.1)] hover:border-slate-300/80'} ${isHighlighted ? 'ring-2 ring-green-400 ring-offset-1 shadow-[0_4px_16px_rgba(22,163,74,0.14)]' : ''}`}
-                >
-                  {/* Gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />
-                  
-                  {meta && (
-                    <div className={`flex items-center gap-2 px-4 py-2 border-b text-[11px] font-black ${meta.color}`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                      {meta.label}
-                      {p._queueError && <span className="font-normal text-rose-600 ml-1">{p._queueError}</span>}
-                    </div>
-                  )}
-
-                  <div className="relative p-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="min-w-0">
-                        <span className="font-mono text-[13px] font-black text-green-700">{p.invoice_number}</span>
-                        <p className="text-[15px] font-bold text-slate-700 truncate mt-0.5">{itemLabel}</p>
-                      </div>
-                      <div className="text-[22px] font-black text-green-700 ml-3">₹{fmt(p.total_amount)}</div>
-                    </div>
-
-                    <div className="flex gap-2 mb-4 text-[12px]">
-                      <span className="text-slate-500">
-                        {p.supplier_name ? `${p.supplier_name}` : 'Supplier not added'}
-                      </span>
-                      <PayBadge type={p.payment_type} />
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-500">
-                        {p.items && p.items.length > 1 ? `${p.items.length} items` : `${p.quantity || 1} pcs`}
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-[11px] font-semibold text-emerald-700">
-                        ITC ₹{fmt(p.total_gst)}
-                      </span>
-                      <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${(p.balance_due || 0) > 0 ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                        {(p.balance_due || 0) > 0 ? `Due ₹${fmt(p.balance_due)}` : 'Paid'}
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] text-slate-400">
-                        {formatFullDateTime(p.createdAt || p.purchased_at)}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
-                        <div className="text-slate-400">Taxable</div>
-                        <div className="font-black text-slate-900">₹{fmt(p.taxable_amount)}</div>
-                      </div>
-                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
-                        <div className="text-slate-400">Paid</div>
-                        <div className="font-black text-emerald-600">₹{fmt(p.amount_paid)}</div>
-                      </div>
-                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
-                        <div className="text-slate-400">GST</div>
-                        <div className="font-black text-emerald-700">₹{fmt(p.total_gst)}</div>
-                      </div>
-                      <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
-                        <div className="text-slate-400">Items</div>
-                        <div className="font-black text-slate-900 truncate">{itemNames}</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => sendPurchaseWhatsApp(p)}
-                        disabled={!p.supplier_phone}
-                        title={p.supplier_phone ? `Send WhatsApp to ${p.supplier_phone}` : 'Supplier phone number not added'}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                      >
-                        📤 WA
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => startEditPurchase(p)}
-                        disabled={Boolean(p._isOffline)}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(p)}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
-                      >
-                        {p._isOffline ? '✕' : '🗑️'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  p={p}
+                  isHighlighted={isHighlighted}
+                  sendPurchaseWhatsApp={sendPurchaseWhatsApp}
+                  startEditPurchase={startEditPurchase}
+                  handleDelete={handleDelete}
+                />
               );
             })}
 
@@ -1106,444 +465,46 @@ export default function PurchasesPage() {
         )}
       </div>
 
-      <div className={`fixed inset-0 z-[70] transition-all duration-300 ${showModal ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-        <button
-          type="button"
-          aria-label="Close purchase modal overlay"
-          onClick={resetModal}
-          className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${showModal ? 'opacity-100' : 'opacity-0'}`}
+      {/* PURCHASE MODAL */}
+      <PurchaseFormModal
+          showModal={showModal}
+          resetModal={resetModal}
+          editingPurchaseId={editingPurchaseId}
+          term={term}
+          form={form}
+          updateForm={updateForm}
+          error={error}
+          submitting={submitting}
+          gstinValue={gstinValue}
+          gstinTouched={gstinTouched}
+          showGstinError={showGstinError}
+          showGstinLengthHint={showGstinLengthHint}
+          handleSupplierGstinChange={handleSupplierGstinChange}
+          items={items}
+          setItems={setItems}
+          products={products}
+          updateItem={updateItem}
+          addItem={addItem}
+          removeItem={removeItem}
+          openInlineProductForm={openInlineProductForm}
+          showInlineProductForm={showInlineProductForm}
+          inlineProductRowIndex={inlineProductRowIndex}
+          newProductForm={newProductForm}
+          setNewProductForm={setNewProductForm}
+          creatingProduct={creatingProduct}
+          resetInlineProductForm={resetInlineProductForm}
+          createInlineProduct={createInlineProduct}
+          calcRowGST={calcRowGST}
+          batchPurch={batchPurch}
+          variantPurch={variantPurch}
+          serialPurch={serialPurch}
+          inv={inv}
+          billTotals={billTotals}
+          roundedBill={roundedBill}
+          balanceDue={balanceDue}
+          handleSubmit={handleSubmit}
+          isOnline={isOnline}
         />
-        <aside className={`absolute inset-x-0 bottom-0 top-14 flex max-h-[calc(100dvh-56px)] flex-col rounded-t-3xl bg-white shadow-2xl transition-transform duration-300 ${showModal ? 'translate-y-0' : 'translate-y-full'}`}>
-          <div className="flex justify-center pt-3 pb-1 md:hidden flex-shrink-0">
-            <div className="w-10 h-1 rounded-full bg-slate-200" />
-          </div>
-          <div className="flex-shrink-0 border-b border-slate-100 px-5 pt-3 pb-4">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {editingPurchaseId ? term('editPurchase', 'Edit Purchase') : term('newPurchase', 'New Purchase')}
-                </p>
-                <h3 className="text-[20px] font-black text-slate-900 mt-0.5">{editingPurchaseId ? term('editPurchase', 'Edit Purchase') : term('newPurchase', 'Record Purchase')}</h3>
-                <p className="text-[12px] text-slate-500 mt-1">Ek hi compact form me items, payment aur supplier details.</p>
-              </div>
-              <button
-                type="button"
-                onClick={resetModal}
-                className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
-                aria-label="Close purchase modal"
-              >
-                ×
-              </button>
-            </div>
-            <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl">
-              {[
-                { type: 'cash',   label: '💵 Cash',   active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg' },
-                { type: 'upi',    label: '📱 UPI',    active: 'bg-gradient-to-r from-violet-600 to-purple-700 text-white shadow-lg' },
-                { type: 'bank',   label: '🏦 Bank',   active: 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg' },
-                { type: 'credit', label: '📒 Udhaar', active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg' },
-              ].map((opt) => (
-                <button
-                  key={opt.type}
-                  type="button"
-                  onClick={() => updateForm({ payment_type: opt.type, amount_paid: opt.type === 'credit' ? form.amount_paid : '' })}
-                  className={`flex-1 py-2 rounded-lg text-[11px] font-black tracking-wide transition-all ${form.payment_type === opt.type ? opt.active : 'text-slate-600 hover:text-slate-700'}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <form onSubmit={(e) => e.preventDefault()} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-            {error && (
-              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">
-                <span className="text-base leading-none">!</span>
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-[13px] font-black text-slate-900">{term('supplierSection', 'Supplier Info')}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {form.payment_type === 'credit' ? 'Required for credit purchases' : 'Optional details for supplier record'}
-                  </p>
-                </div>
-                {form.payment_type === 'credit' && (
-                  <span className="px-2.5 py-1 rounded-full bg-rose-100 text-[10px] font-black text-rose-700 border border-rose-200">Required *</span>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <input className={INPUT} placeholder={term('supplierNamePlaceholder', 'Supplier ka naam')} value={form.supplier_name} onChange={(e) => updateForm({ supplier_name: e.target.value })} required={form.payment_type === 'credit'} />
-                <div className="grid grid-cols-2 gap-3">
-                  <input className={INPUT} placeholder={term('supplierPhonePlaceholder', 'Mobile number')} value={form.supplier_phone} onChange={(e) => updateForm({ supplier_phone: e.target.value })} />
-                  <div>
-                    <input className={INPUT} placeholder="Supplier GSTIN" value={form.supplier_gstin} maxLength={GSTIN_LENGTH} onChange={(e) => handleSupplierGstinChange(e.target.value)} onBlur={() => setGstinTouched(true)} />
-                    {showGstinError && <p className="mt-1 text-[11px] font-semibold text-rose-600">Invalid GSTIN format</p>}
-                    {showGstinLengthHint && <p className="mt-1 text-[11px] text-slate-400">GSTIN should be 15 characters</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-500 mb-1 block">Purchase Date</label>
-                    <input className={INPUT} type="date" value={form.purchase_date} onChange={(e) => updateForm({ purchase_date: e.target.value })} />
-                  </div>
-                  {form.payment_type === 'credit' && (
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">Payment Due Date</label>
-                      <input className={INPUT} type="date" value={form.due_date || ''} onChange={(e) => updateForm({ due_date: e.target.value })} placeholder="Optional due date" />
-                    </div>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <select className={INPUT} value={form.supplier_state} onChange={(e) => updateForm({ supplier_state: e.target.value })}>
-                      <option value="">Select State/UT</option>
-                      <optgroup label="States">{STATES.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
-                      <optgroup label="Union Territories">{UTS.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
-                    </select>
-                    {gstinValid && gstinValue.length >= 2 && form.supplier_state && <p className="mt-1 text-[11px] font-semibold text-emerald-600">State auto-detected from GSTIN</p>}
-                  </div>
-                </div>
-                <input className={INPUT} placeholder="Supplier address" value={form.supplier_address} onChange={(e) => updateForm({ supplier_address: e.target.value })} />
-
-                {/* ── GST Compliance Fields ── */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Supplier Invoice Details</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">Supplier Invoice No.</label>
-                      <input
-                        className={INPUT}
-                        placeholder="Supplier's bill number"
-                        value={form.supplier_invoice_no}
-                        onChange={(e) => updateForm({ supplier_invoice_no: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-500 mb-1 block">Supplier Invoice Date</label>
-                      <input
-                        className={INPUT}
-                        type="date"
-                        value={form.supplier_invoice_date}
-                        onChange={(e) => updateForm({ supplier_invoice_date: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  {/* ITC Eligibility */}
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-500 mb-1.5">ITC Eligible?</p>
-                    <div className="flex gap-2">
-                      {[{ value: true, label: 'Yes — Eligible' }, { value: false, label: 'No — Blocked' }].map(opt => (
-                        <button
-                          key={String(opt.value)}
-                          type="button"
-                          onClick={() => updateForm({ itc_eligible: opt.value, itc_blocked_reason: opt.value ? '' : form.itc_blocked_reason })}
-                          className={`flex-1 py-2 rounded-xl border text-[12px] font-bold transition-all ${
-                            form.itc_eligible === opt.value
-                              ? opt.value ? 'border-green-500 bg-green-50 text-green-800' : 'border-rose-400 bg-rose-50 text-rose-800'
-                              : 'border-slate-200 bg-white text-slate-600'
-                          }`}
-                        >{opt.label}</button>
-                      ))}
-                    </div>
-                    {form.itc_eligible === false && (
-                      <select
-                        className={`${INPUT} mt-2`}
-                        value={form.itc_blocked_reason}
-                        onChange={(e) => updateForm({ itc_blocked_reason: e.target.value })}
-                      >
-                        <option value="">Select reason...</option>
-                        {ITC_BLOCKED_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                      </select>
-                    )}
-                  </div>
-
-                  {/* Reverse Charge */}
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-500 mb-1.5">Reverse Charge (RCM)?</p>
-                    <div className="flex gap-2">
-                      {[{ value: false, label: 'No' }, { value: true, label: 'Yes — RCM' }].map(opt => (
-                        <button
-                          key={String(opt.value)}
-                          type="button"
-                          onClick={() => updateForm({ is_reverse_charge: opt.value, rcm_category: opt.value ? form.rcm_category : '' })}
-                          className={`flex-1 py-2 rounded-xl border text-[12px] font-bold transition-all ${
-                            form.is_reverse_charge === opt.value
-                              ? opt.value ? 'border-amber-500 bg-amber-50 text-amber-800' : 'border-slate-300 bg-white text-slate-700'
-                              : 'border-slate-200 bg-white text-slate-600'
-                          }`}
-                        >{opt.label}</button>
-                      ))}
-                    </div>
-                    {form.is_reverse_charge && (
-                      <select
-                        className={`${INPUT} mt-2`}
-                        value={form.rcm_category}
-                        onChange={(e) => updateForm({ rcm_category: e.target.value })}
-                      >
-                        <option value="">Select RCM category...</option>
-                        {RCM_CATEGORIES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                      </select>
-                    )}
-                    {form.is_reverse_charge && (
-                      <p className="text-[11px] text-amber-700 mt-1.5">
-                        ⚠️ RCM: You must pay GST to government directly. ITC claimable only after actual payment.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <input className={INPUT} placeholder="Any notes..." value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} />
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="space-y-3">
-                {items.map((item, index) => {
-                  const rowGST = calcRowGST(item);
-                  const prod = products.find((p) => p._id === item.product_id);
-
-                  return (
-                    <div key={item._rowId || index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Item {index + 1}</span>
-                        <div className="flex justify-end gap-1.5">
-                          <button type="button" onClick={() => openInlineProductForm(index)} className="px-2.5 py-1 rounded-lg border border-green-200 bg-green-50 text-[10px] text-green-700 hover:bg-green-100 transition-colors">+ New Product</button>
-                          {items.length > 1 && (
-                            <button type="button" onClick={() => removeItem(index)} className="px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] text-rose-600 hover:bg-rose-100 transition-colors">Remove</button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Product</p>
-                        <SearchableProductSelect products={products} value={item.product_id} onChange={(id) => updateItem(index, 'product_id', id)} placeholder={term('searchProduct', 'Search product...')} />
-                      </div>
-
-                      {showInlineProductForm && inlineProductRowIndex === index && (
-                        <div className="rounded-2xl border border-green-200 bg-green-50/50 p-4 space-y-3">
-                          <p className="text-[13px] font-black text-green-700">Naya product yahin add karein</p>
-                          <input className={INPUT} placeholder="Jaise: New Chips 45g" value={newProductForm.name} onChange={(e) => updateNewProductForm({ name: e.target.value })} />
-                          <div className="grid grid-cols-2 gap-3">
-                            <input className={INPUT} type="number" min="0" step="0.01" placeholder="MRP / selling price" value={newProductForm.price} onChange={(e) => updateNewProductForm({ price: e.target.value })} />
-                            <select className={INPUT} value={newProductForm.gst_rate} onChange={(e) => updateNewProductForm({ gst_rate: e.target.value })}>
-                              {[0, 5, 12, 18, 28].map((rate) => <option key={rate} value={String(rate)}>{rate}%</option>)}
-                            </select>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <input className={INPUT} placeholder="pcs / box / kg" value={newProductForm.unit} onChange={(e) => updateNewProductForm({ unit: e.target.value })} />
-                            <input className={INPUT} placeholder="Optional HSN" value={newProductForm.hsn_code} onChange={(e) => updateNewProductForm({ hsn_code: e.target.value })} />
-                          </div>
-                          <div className="flex gap-3">
-                            <button type="button" onClick={createInlineProduct} disabled={creatingProduct} className="flex-1 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-md hover:shadow-lg disabled:opacity-60 transition-all">{creatingProduct ? 'Adding...' : 'Save Product'}</button>
-                            <button type="button" onClick={resetInlineProductForm} disabled={creatingProduct} className="px-4 py-3 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white transition-colors">Cancel</button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Qty</p>
-                          <input className={INPUT} type="number" min="1" placeholder="1" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} required />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Cost Price (₹)</p>
-                          <input className={INPUT} type="number" step="0.01" placeholder="0.00" value={item.price_per_unit} onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)} required />
-                        </div>
-                      </div>
-
-                      {prod && <div className="text-[11px] text-slate-500">GST {prod.gst_rate || 0}% {prod.hsn_code ? `• HSN ${prod.hsn_code}` : ''} {prod.unit ? `• ${prod.unit}` : ''}</div>}
-
-                      {rowGST && (
-                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
-                          <span className="text-slate-400">₹{fmt(rowGST.taxable)} + <span className="text-amber-600">₹{fmt(rowGST.gst)} GST</span></span>
-                          <span className="font-black text-slate-900">= ₹{fmt(rowGST.total)}</span>
-                        </div>
-                      )}
-
-                      {/* ── Batch fields on purchase (pharmacy, bakery, grocery) ── */}
-                      {batchPurch && prod && (
-                        <div className="pt-2 border-t border-slate-200 space-y-2">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{inv.batchLabel || 'Batch'} Details</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <p className="text-[10px] font-bold text-slate-400 mb-1">Batch No. *</p>
-                              <input
-                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400"
-                                placeholder="e.g. BT2024001"
-                                value={(item.item_metadata || {}).batch_number || ''}
-                                onChange={e => {
-                                  const updated = [...items];
-                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), batch_number: e.target.value } };
-                                  setItems(updated);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-slate-400 mb-1">{inv.expiryLabel || 'Expiry Date'}</p>
-                              <input
-                                type="date"
-                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white"
-                                value={(item.item_metadata || {}).expiry_date || ''}
-                                onChange={e => {
-                                  const updated = [...items];
-                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), expiry_date: e.target.value } };
-                                  setItems(updated);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-slate-400 mb-1">MRP (₹)</p>
-                              <input
-                                type="number"
-                                step="0.01"
-                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400"
-                                placeholder="0.00"
-                                value={(item.item_metadata || {}).mrp || ''}
-                                onChange={e => {
-                                  const updated = [...items];
-                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), mrp: e.target.value } };
-                                  setItems(updated);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-slate-400 mb-1">Manufacturer</p>
-                              <input
-                                className="h-9 w-full rounded-xl border-2 border-slate-200 px-3 text-[12px] text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400"
-                                placeholder="Company name"
-                                value={(item.item_metadata || {}).manufacturer || ''}
-                                onChange={e => {
-                                  const updated = [...items];
-                                  updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), manufacturer: e.target.value } };
-                                  setItems(updated);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Variant fields on purchase (clothing, footwear, sports) ── */}
-                      {variantPurch && prod && (
-                        <div className="pt-2 border-t border-slate-200 space-y-2">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{inv.variantLabel || 'Variant'} Details</p>
-                          <div className="flex gap-2">
-                            {inv.variantDimensions?.includes('size') && inv.sizeOptions?.length > 0 && (
-                              <div className="flex-1">
-                                <p className="text-[10px] text-slate-400 mb-0.5">Size</p>
-                                <select
-                                  className="h-9 w-full rounded-xl border-2 border-slate-200 px-2 text-[12px] text-slate-700 bg-white focus:outline-none focus:border-green-600"
-                                  value={(item.item_metadata || {}).size || ''}
-                                  onChange={e => {
-                                    const updated = [...items];
-                                    updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), size: e.target.value } };
-                                    setItems(updated);
-                                  }}
-                                >
-                                  <option value="">Size</option>
-                                  {inv.sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                              </div>
-                            )}
-                            {inv.variantDimensions?.includes('color') && inv.colorOptions?.length > 0 && (
-                              <div className="flex-1">
-                                <p className="text-[10px] text-slate-400 mb-0.5">Color</p>
-                                <select
-                                  className="h-9 w-full rounded-xl border-2 border-slate-200 px-2 text-[12px] text-slate-700 bg-white focus:outline-none focus:border-green-600"
-                                  value={(item.item_metadata || {}).color || ''}
-                                  onChange={e => {
-                                    const updated = [...items];
-                                    updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), color: e.target.value } };
-                                    setItems(updated);
-                                  }}
-                                >
-                                  <option value="">Color</option>
-                                  {inv.colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── Serial fields on purchase (electronics, mobile_shop) ── */}
-                      {serialPurch && prod && (
-                        <div className="pt-2 border-t border-slate-200 space-y-1.5">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{inv.serialLabel || 'Serial No.'} Numbers</p>
-                          <textarea
-                            className="h-16 w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-[12px] font-mono text-slate-800 focus:outline-none focus:border-green-600 bg-white placeholder-slate-400 resize-none"
-                            placeholder="One serial per line or comma-separated"
-                            value={((item.item_metadata || {}).serial_numbers || []).join('\n')}
-                            onChange={e => {
-                              const vals = e.target.value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-                              const updated = [...items];
-                              updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), serial_numbers: vals } };
-                              setItems(updated);
-                            }}
-                          />
-                          <p className="text-[10px] text-slate-400">Each serial number will be added to stock</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <button type="button" onClick={addItem} className="w-full mt-3 py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-green-700 hover:bg-green-50/40 transition-all">
-                + Add Another Product
-              </button>
-            </div>
-
-            {form.payment_type === 'credit' && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
-                <p className="text-[13px] font-black text-slate-900 mb-0.5">Advance Payment</p>
-                <p className="text-[11px] text-slate-400 mb-3">Supplier ko abhi kitna payment diya?</p>
-                <input className="h-11 w-full px-4 rounded-xl border border-rose-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all" type="number" step="0.01" min="0" placeholder={`Max ₹${fmt(billTotals.total)}`} value={form.amount_paid} onChange={(e) => updateForm({ amount_paid: e.target.value })} />
-                <div className="mt-3 flex items-center justify-between px-3 py-2.5 rounded-xl bg-rose-100 border border-rose-200">
-                  <span className="text-[12px] font-bold text-rose-700">Balance Due</span>
-                  <span className="text-[16px] font-black text-rose-700">₹{fmt(balanceDue)}</span>
-                </div>
-              </div>
-            )}
-
-            {billTotals.total > 0 && (
-              <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
-                <div className="space-y-1.5 mb-3">
-                  <div className="flex justify-between text-[12px]"><span className="text-slate-400">Taxable Amount</span><span className="font-bold text-white">₹{fmt(billTotals.taxable)}</span></div>
-                  <div className="flex justify-between text-[12px]"><span className="text-slate-400">Total GST / ITC</span><span className="font-bold text-amber-400">₹{fmt(billTotals.gst)}</span></div>
-                  <div className="flex justify-between text-[12px]"><span className="text-slate-400">Round Off</span><span className="font-bold text-emerald-400">{roundedBill.roundOff >= 0 ? '+' : ''}₹{fmt(roundedBill.roundOff)}</span></div>
-                </div>
-                <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
-                  <span className="text-[14px] font-black">Grand Total</span>
-                  <span className="text-[24px] font-black text-green-600">₹{fmt(billTotals.total)}</span>
-                </div>
-                {form.payment_type === 'credit' && (
-                  <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
-                    <span className="text-[12px] text-rose-300">Balance Due</span>
-                    <span className="text-[14px] font-black text-rose-400">₹{fmt(balanceDue)}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-          </form>
-
-          <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
-            <div className="flex gap-3">
-              <button type="button" onClick={handleSubmit} disabled={submitting} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all">
-                {submitting ? 'Saving...' : !isOnline ? 'Offline Save' : editingPurchaseId ? `Update ${term('purchase', 'Purchase')}` : form.payment_type === 'credit' ? `Credit ${term('purchase', 'Purchase')}` : term('newPurchase', 'Record Purchase')}
-              </button>
-              <button type="button" onClick={resetModal} className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </aside>
-      </div>
     </Layout>
   );
 }
