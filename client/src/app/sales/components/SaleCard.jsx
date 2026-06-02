@@ -57,6 +57,7 @@ export default function SaleCard({
   setExchangeReturned,
   setExchangeNewItems,
   setShowExchangeModal,
+  onReturnClick,
 }) {
   const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
 
@@ -180,7 +181,7 @@ export default function SaleCard({
             className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
           >📤 Send</button>
           <button
-            onClick={() => window.location.href = `/sale-returns?saleId=${s._id}&invoice=${s.invoice_number}`}
+            onClick={() => onReturnClick && onReturnClick(s)}
             disabled={Boolean(s._isOffline)}
             title="Process a return for this sale"
             className="min-h-[44px] py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50 text-[11px] font-bold text-amber-700 hover:bg-amber-100 disabled:opacity-40 transition-all"

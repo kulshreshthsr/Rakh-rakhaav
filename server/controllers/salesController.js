@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const Sale     = require('../models/salesModel');
+const Sale       = require('../models/salesModel');
+const SaleReturn = require('../models/saleReturnModel');
 const Product  = require('../models/productModel');
 const Shop     = require('../models/shopModel');
 const Purchase = require('../models/purchaseModel');
@@ -686,7 +687,29 @@ const getSales = async (req, res) => {
       return acc;
     }, { totalRevenue: 0, totalGST: 0, totalCOGS: 0, totalProfit: 0 });
 
-    res.json({ sales: page, summary, hasMore, nextCursor });
+    // Fetch return totals for the same period to compute net figures
+    const returnFilter = { shop: shop._id, status: { $ne: 'cancelled' } };
+    if (filter.createdAt) returnFilter.createdAt = filter.createdAt;
+    const returnAgg = await SaleReturn.aggregate([
+      { $match: returnFilter },
+      { $group: {
+        _id: null,
+        totalReturnedAmount: { $sum: '$total_amount' },
+        totalReturnedGST:    { $sum: '$total_gst'    },
+      }},
+    ]);
+    const returnTotals = returnAgg[0] || { totalReturnedAmount: 0, totalReturnedGST: 0 };
+
+    const netSummary = {
+      totalRevenue: parseFloat((summary.totalRevenue - returnTotals.totalReturnedAmount).toFixed(2)),
+      totalGST:     parseFloat((summary.totalGST     - returnTotals.totalReturnedGST   ).toFixed(2)),
+      totalCOGS:    parseFloat(summary.totalCOGS.toFixed(2)),
+      totalProfit:  parseFloat(summary.totalProfit.toFixed(2)),
+      totalReturnedAmount: parseFloat(returnTotals.totalReturnedAmount.toFixed(2)),
+      totalReturnedGST:    parseFloat(returnTotals.totalReturnedGST.toFixed(2)),
+    };
+
+    res.json({ sales: page, summary: netSummary, hasMore, nextCursor });
   } catch (err) {
     logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });

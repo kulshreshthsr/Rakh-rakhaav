@@ -358,22 +358,35 @@ export default function PurchasesPage() {
         )}
 
         <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3 mb-5">
-          {[
-            { label: 'Spend', value: `₹${fmt(totalSpendDisplay)}`, gradient: 'from-amber-50 to-orange-100', text: 'text-amber-800', icon: '💸', border: 'border-amber-200' },
-            { label: 'ITC', value: `₹${fmt(totalItcDisplay)}`, gradient: 'from-blue-50 to-sky-100', text: 'text-blue-800', icon: '📊', border: 'border-blue-200' },
-            { label: 'Due', value: `₹${fmt(totalDueDisplay)}`, gradient: totalDueDisplay > 0 ? 'from-rose-50 to-red-100' : 'from-emerald-50 to-green-100', text: totalDueDisplay > 0 ? 'text-rose-800' : 'text-emerald-800', icon: totalDueDisplay > 0 ? '⚠️' : '✅', border: totalDueDisplay > 0 ? 'border-rose-200' : 'border-emerald-200' },
-          ].map((k) => (
-            <div key={k.label} className={`relative overflow-hidden bg-gradient-to-br ${k.gradient} border-2 ${k.border} rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
-              <div className="absolute top-2 right-2 text-3xl opacity-10">{k.icon}</div>
-              <div className={`text-[24px] font-black ${k.text}`}>{k.value}</div>
-              <div className="text-[11px] font-bold text-slate-600 uppercase">{k.label}</div>
-              {k.label === 'Due' && totalDueDisplay > 0 && (
-                <button type="button" onClick={focusPendingPurchase} className="mt-2 text-[11px] font-black text-green-700 hover:text-green-800">
-                  Pay Now
-                </button>
-              )}
-            </div>
-          ))}
+          {/* Spend card — net after returns */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 border-2 border-amber-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            <div className="absolute top-2 right-2 text-3xl opacity-10">💸</div>
+            <div className="text-[24px] font-black text-amber-800">₹{fmt(totalSpendDisplay)}</div>
+            <div className="text-[11px] font-bold text-slate-600 uppercase">Net Spend</div>
+            {Number(summary.totalReturnedAmount || 0) > 0 && (
+              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -₹{fmt(Number(summary.totalReturnedAmount || 0))} returned</div>
+            )}
+          </div>
+          {/* ITC card — net after returns */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-sky-100 border-2 border-blue-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            <div className="absolute top-2 right-2 text-3xl opacity-10">📊</div>
+            <div className="text-[24px] font-black text-blue-800">₹{fmt(totalItcDisplay)}</div>
+            <div className="text-[11px] font-bold text-slate-600 uppercase">Net ITC</div>
+            {Number(summary.totalReturnedGST || 0) > 0 && (
+              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -{fmt(Number(summary.totalReturnedGST || 0))} adj.</div>
+            )}
+          </div>
+          {/* Due card */}
+          <div className={`relative overflow-hidden bg-gradient-to-br ${totalDueDisplay > 0 ? 'from-rose-50 to-red-100 border-rose-200' : 'from-emerald-50 to-green-100 border-emerald-200'} border-2 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
+            <div className="absolute top-2 right-2 text-3xl opacity-10">{totalDueDisplay > 0 ? '⚠️' : '✅'}</div>
+            <div className={`text-[24px] font-black ${totalDueDisplay > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>₹{fmt(totalDueDisplay)}</div>
+            <div className="text-[11px] font-bold text-slate-600 uppercase">Due</div>
+            {totalDueDisplay > 0 && (
+              <button type="button" onClick={focusPendingPurchase} className="mt-2 text-[11px] font-black text-green-700 hover:text-green-800">
+                Pay Now
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md mb-5">

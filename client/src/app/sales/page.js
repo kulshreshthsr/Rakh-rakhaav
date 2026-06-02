@@ -25,6 +25,7 @@ import MarkDeliveredModal from './components/MarkDeliveredModal';
 import SplitBillModal from './components/SplitBillModal';
 import ExchangeModal from './components/ExchangeModal';
 import SaleFormModal from './components/SaleFormModal';
+import SaleReturnModal from './components/SaleReturnModal';
 import useSalesData from './hooks/useSalesData';
 import useSaleForm from './hooks/useSaleForm';
 import useIndustrySideData from './hooks/useIndustrySideData';
@@ -191,6 +192,10 @@ export default function SalesPage() {
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [showMoreCustomerDetails, setShowMoreCustomerDetails] = useState(false);
+
+  /* ── Return modal state ── */
+  const [returnSale, setReturnSale]     = useState(null);
+  const [returnToast, setReturnToast]   = useState('');
 
   /* ── Split/exchange/delivery modal state stays in page.js ── */
   const [showSplitModal, setShowSplitModal]     = useState(false);
@@ -425,6 +430,7 @@ export default function SalesPage() {
   const offlineGst     = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_gst || 0), 0);
   const revenueDisplay = Number(summary.totalRevenue || 0) + offlineRevenue;
   const gstDisplay     = Number(summary.totalGST || 0) + offlineGst;
+  const returnsDisplay = Number(summary.totalReturnedAmount || 0);
   const normalizedBillSearch = billSearch.trim().toLowerCase();
   const filteredSales = sales.filter((sale) => {
     const matchesSearch    = !normalizedBillSearch || getSaleSearchText(sale).includes(normalizedBillSearch);
@@ -538,17 +544,30 @@ export default function SalesPage() {
 
         {/* ── KPI strip ── */}
         <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3 mb-5">
-          {[
-            { label: 'Revenue', value: `₹${fmt(revenueDisplay)}`, gradient: 'from-green-50 to-emerald-100', text: 'text-green-800', icon: '💰', border: 'border-green-200' },
-            { label: 'GST', value: `₹${fmt(gstDisplay)}`, gradient: 'from-amber-50 to-orange-100', text: 'text-amber-800', icon: '📊', border: 'border-amber-200' },
-            { label: term('kpiInvoices', 'Invoices'), value: filteredSales.length, gradient: 'from-slate-50 to-gray-100', text: 'text-slate-800', icon: '🧾', border: 'border-slate-200' },
-          ].map((k) => (
-            <div key={k.label} className={`relative overflow-hidden bg-gradient-to-br ${k.gradient} border-2 ${k.border} rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
-              <div className="absolute top-2 right-2 text-3xl opacity-10">{k.icon}</div>
-              <div className={`text-[24px] font-black ${k.text}`}>{k.value}</div>
-              <div className="text-[11px] font-bold text-slate-600 uppercase">{k.label}</div>
-            </div>
-          ))}
+          {/* Revenue card — shows net revenue with return deduction hint */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            <div className="absolute top-2 right-2 text-3xl opacity-10">💰</div>
+            <div className="text-[24px] font-black text-green-800">₹{fmt(revenueDisplay)}</div>
+            <div className="text-[11px] font-bold text-slate-600 uppercase">Net Revenue</div>
+            {returnsDisplay > 0 && (
+              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -₹{fmt(returnsDisplay)} returned</div>
+            )}
+          </div>
+          {/* GST card */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 border-2 border-amber-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            <div className="absolute top-2 right-2 text-3xl opacity-10">📊</div>
+            <div className="text-[24px] font-black text-amber-800">₹{fmt(gstDisplay)}</div>
+            <div className="text-[11px] font-bold text-slate-600 uppercase">Net GST</div>
+            {returnsDisplay > 0 && (
+              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -{fmt(Number(summary.totalReturnedGST || 0))} adj.</div>
+            )}
+          </div>
+          {/* Invoices card */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-slate-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            <div className="absolute top-2 right-2 text-3xl opacity-10">🧾</div>
+            <div className="text-[24px] font-black text-slate-800">{filteredSales.length}</div>
+            <div className="text-[11px] font-bold text-slate-600 uppercase">{term('kpiInvoices', 'Invoices')}</div>
+          </div>
         </div>
 
         {/* ── Restaurant: delivery platform filter tabs ── */}
@@ -657,6 +676,7 @@ export default function SalesPage() {
                 setExchangeReturned={setExchangeReturned}
                 setExchangeNewItems={setExchangeNewItems}
                 setShowExchangeModal={setShowExchangeModal}
+                onReturnClick={setReturnSale}
               />
             ))}
 
@@ -784,6 +804,28 @@ export default function SalesPage() {
           onClose={() => setShowDeliveredModal(false)}
           onConfirm={handleMarkDelivered}
           INPUT={INPUT}
+        />
+      )}
+
+      {/* RETURN SUCCESS TOAST */}
+      {returnToast && (
+        <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border-2 border-green-300 shadow-xl text-[13px] font-bold text-green-800 whitespace-nowrap">
+          <span className="text-base">✅</span>
+          {returnToast}
+        </div>
+      )}
+
+      {/* SALE RETURN MODAL */}
+      {returnSale && (
+        <SaleReturnModal
+          sale={returnSale}
+          onClose={() => setReturnSale(null)}
+          onSuccess={(ret) => {
+            setReturnSale(null);
+            fetchSales();
+            setReturnToast(`Return ${ret.return_number} — ₹${Number(ret.total_amount || 0).toFixed(2)} refunded`);
+            window.setTimeout(() => setReturnToast(''), 4000);
+          }}
         />
       )}
 

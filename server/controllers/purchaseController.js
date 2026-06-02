@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const Purchase = require('../models/purchaseModel');
+const Purchase       = require('../models/purchaseModel');
+const PurchaseReturn = require('../models/purchaseReturnModel');
 const Product = require('../models/productModel');
 const Shop = require('../models/shopModel');
 const Supplier = require('../models/supplierModel');
@@ -528,7 +529,29 @@ const getPurchases = async (req, res) => {
       { totalPurchaseValue: 0, totalITC: 0, totalPaid: 0, totalDue: 0 }
     );
 
-    res.json({ purchases: page, summary, hasMore, nextCursor });
+    // Fetch return totals for the same period to compute net figures
+    const returnFilter = { shop: shop._id, status: { $ne: 'cancelled' } };
+    if (filter.createdAt) returnFilter.createdAt = filter.createdAt;
+    const returnAgg = await PurchaseReturn.aggregate([
+      { $match: returnFilter },
+      { $group: {
+        _id: null,
+        totalReturnedAmount: { $sum: '$total_amount' },
+        totalReturnedGST:    { $sum: '$total_gst'    },
+      }},
+    ]);
+    const returnTotals = returnAgg[0] || { totalReturnedAmount: 0, totalReturnedGST: 0 };
+
+    const netSummary = {
+      totalPurchaseValue:  parseFloat((summary.totalPurchaseValue - returnTotals.totalReturnedAmount).toFixed(2)),
+      totalITC:            parseFloat((summary.totalITC           - returnTotals.totalReturnedGST   ).toFixed(2)),
+      totalPaid:           parseFloat(summary.totalPaid.toFixed(2)),
+      totalDue:            parseFloat(summary.totalDue.toFixed(2)),
+      totalReturnedAmount: parseFloat(returnTotals.totalReturnedAmount.toFixed(2)),
+      totalReturnedGST:    parseFloat(returnTotals.totalReturnedGST.toFixed(2)),
+    };
+
+    res.json({ purchases: page, summary: netSummary, hasMore, nextCursor });
   } catch (err) {
     logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });

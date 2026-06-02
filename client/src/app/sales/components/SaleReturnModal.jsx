@@ -6,33 +6,33 @@ const getToken = () => localStorage.getItem('token');
 const fmt = (n) => Number(n || 0).toFixed(2);
 
 const REFUND_MODES = [
-  { value: 'adjust', label: 'Adjust Against Next Purchase' },
-  { value: 'cash',   label: 'Cash Refund' },
-  { value: 'bank',   label: 'Bank Transfer' },
-  { value: 'upi',    label: 'UPI' },
+  { value: 'cash',        label: '💵 Cash' },
+  { value: 'upi',         label: '📱 UPI' },
+  { value: 'bank',        label: '🏦 Bank Transfer' },
+  { value: 'credit_note', label: '📋 Credit Note' },
 ];
 
 const INPUT = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
-export default function PurchaseReturnModal({ purchase, onClose, onSuccess }) {
-  const [quantities, setQuantities]         = useState({});
-  const [reason, setReason]                 = useState('');
-  const [refundMode, setRefundMode]         = useState('adjust');
-  const [submitting, setSubmitting]         = useState(false);
-  const [error, setError]                   = useState('');
+export default function SaleReturnModal({ sale, onClose, onSuccess }) {
+  const [quantities, setQuantities]             = useState({});
+  const [reason, setReason]                     = useState('');
+  const [refundMode, setRefundMode]             = useState('cash');
+  const [submitting, setSubmitting]             = useState(false);
+  const [error, setError]                       = useState('');
   const [maxReturnableMap, setMaxReturnableMap] = useState({});
-  const [loadingMax, setLoadingMax]         = useState(true);
+  const [loadingMax, setLoadingMax]             = useState(true);
 
-  const allItems = purchase?.items?.length > 0
-    ? purchase.items
-    : (purchase?.product
-      ? [{ product: purchase.product, product_name: purchase.product_name, quantity: purchase.quantity, price_per_unit: purchase.price_per_unit, gst_rate: purchase.gst_rate }]
+  const allItems = sale?.items?.length > 0
+    ? sale.items
+    : (sale?.product
+      ? [{ product: sale.product, product_name: sale.product_name, quantity: sale.quantity, price_per_unit: sale.price_per_unit, gst_rate: sale.gst_rate }]
       : []);
 
   useEffect(() => {
-    if (!purchase?._id) return;
+    if (!sale?._id) return;
     setLoadingMax(true);
-    fetch(apiUrl(`/api/purchase-returns/purchase/${purchase._id}`), {
+    fetch(apiUrl(`/api/sale-returns/sale/${sale._id}`), {
       headers: { Authorization: `Bearer ${getToken()}` },
     })
       .then(r => r.json())
@@ -62,7 +62,7 @@ export default function PurchaseReturnModal({ purchase, onClose, onSuccess }) {
       .catch(() => setError('Could not load return history'))
       .finally(() => setLoadingMax(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [purchase?._id]);
+  }, [sale?._id]);
 
   const handleQtyChange = (pid, value) => {
     setQuantities(q => ({ ...q, [pid]: Math.max(0, Math.min(Number(value) || 0, maxReturnableMap[pid] || 0)) }));
@@ -83,11 +83,11 @@ export default function PurchaseReturnModal({ purchase, onClose, onSuccess }) {
     if (selectedItems.length === 0) { setError('Please enter a return quantity for at least one item.'); return; }
     setSubmitting(true);
     try {
-      const res = await fetch(apiUrl('/api/purchase-returns'), {
+      const res = await fetch(apiUrl('/api/sale-returns'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({
-          purchase_id: purchase._id,
+          sale_id:     sale._id,
           refund_mode: refundMode,
           reason,
           items: selectedItems.map(item => ({ product_id: item._pid, quantity: item._qty, price_per_unit: item.price_per_unit, gst_rate: item.gst_rate })),
@@ -103,20 +103,19 @@ export default function PurchaseReturnModal({ purchase, onClose, onSuccess }) {
     }
   };
 
-  if (!purchase) return null;
+  if (!sale) return null;
 
   return (
-    /* Extra bottom padding on mobile keeps the modal above the bottom navbar */
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pt-4 pb-20 sm:p-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[80vh] sm:max-h-[85vh]">
 
-        {/* Header — never scrolls */}
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
-            <h2 className="text-[17px] font-black text-slate-900">Purchase Return</h2>
+            <h2 className="text-[17px] font-black text-slate-900">Sale Return</h2>
             <p className="text-[12px] text-slate-500 mt-0.5">
-              Bill: <span className="font-mono font-bold text-green-700">{purchase.invoice_number}</span>
-              {purchase.supplier_name && <span> · {purchase.supplier_name}</span>}
+              Invoice: <span className="font-mono font-bold text-green-700">{sale.invoice_number}</span>
+              {sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' && <span> · {sale.buyer_name}</span>}
             </p>
           </div>
           <button type="button" onClick={onClose}
@@ -146,7 +145,8 @@ export default function PurchaseReturnModal({ purchase, onClose, onSuccess }) {
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-bold text-slate-800 truncate">{item.product_name}</p>
                           <p className="text-[11px] text-slate-400">
-                            ₹{fmt(item.price_per_unit)} · GST {item.gst_rate || 0}% · max {max} returnable
+                            ₹{fmt(item.price_per_unit)} · GST {item.gst_rate || 0}%
+                            {max === 0 ? ' · fully returned' : ` · max ${max}`}
                           </p>
                         </div>
                         <input type="number" min={0} max={max} step={1}
@@ -178,7 +178,7 @@ export default function PurchaseReturnModal({ purchase, onClose, onSuccess }) {
             {/* Reason */}
             <div>
               <label className="block text-[12px] font-black text-slate-500 uppercase tracking-wider mb-2">Reason (optional)</label>
-              <input type="text" className={INPUT} placeholder="e.g. Damaged goods, Wrong product..."
+              <input type="text" className={INPUT} placeholder="e.g. Defective product, wrong size..."
                 value={reason} onChange={e => setReason(e.target.value)} />
             </div>
 
@@ -200,7 +200,7 @@ export default function PurchaseReturnModal({ purchase, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Footer — always visible, never scrolls */}
+          {/* Footer — always visible */}
           <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 flex-shrink-0">
             <button type="button" onClick={onClose} disabled={submitting}
               className="flex-1 h-11 rounded-xl border-2 border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white disabled:opacity-50 transition-all">
