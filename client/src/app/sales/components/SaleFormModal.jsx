@@ -36,7 +36,7 @@ export default function SaleFormModal({
   customerQuery, setCustomerQuery, showCustomerSuggestions, setShowCustomerSuggestions,
   filteredPastCustomers, selectPastCustomer,
   customerInfoVisible, customerSummary,
-  buyerNameInputRef, amountPaidInputRef, customerComboRef,
+  buyerNameInputRef, amountPaidInputRef, customerComboRef, saleDateInputRef,
 }) {
   return (
       <div className={`fixed inset-0 z-[70] transition-all duration-300 ${showModal ? 'pointer-events-auto' : 'pointer-events-none'}`}>

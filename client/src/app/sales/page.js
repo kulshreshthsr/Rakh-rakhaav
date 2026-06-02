@@ -770,6 +770,7 @@ export default function SalesPage() {
         buyerNameInputRef={buyerNameInputRef}
         amountPaidInputRef={amountPaidInputRef}
         customerComboRef={customerComboRef}
+        saleDateInputRef={saleDateInputRef}
       />
 
       {/* ════════════════════════════════════════════════════════════
