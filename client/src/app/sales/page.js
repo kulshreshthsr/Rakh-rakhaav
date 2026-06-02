@@ -19,6 +19,11 @@ import { getWorkflowConfig, getStages, getSaleWorkflowStatus, getStageColors } f
 import WorkflowStatusBadge from '../../components/WorkflowStatusBadge';
 import eventBus from '../../lib/eventBus';
 import { validateGSTIN as _validateGSTINFull, getSupplyType as _getSupplyType, summariseCartGST } from '../../lib/gstValidation';
+import SaleCard from './components/SaleCard';
+import ChallanSection from './components/ChallanSection';
+import MarkDeliveredModal from './components/MarkDeliveredModal';
+import SplitBillModal from './components/SplitBillModal';
+import ExchangeModal from './components/ExchangeModal';
 
 /* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
@@ -819,6 +824,20 @@ export default function SalesPage() {
     } catch { setError('Status update failed'); }
   };
 
+  const handleMarkDelivered = async () => {
+    if (!deliveredForm.received_by) { alert('Please enter the name of the person who received the goods.'); return; }
+    try {
+      const r = await fetch(apiUrl(`/api/sales/${deliveredChallan._id}/mark-delivered`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify(deliveredForm),
+      });
+      const d = await r.json();
+      if (!r.ok) { alert(d.message || 'Failed'); return; }
+      setShowDeliveredModal(false); setDeliveredChallan(null); fetchAll();
+    } catch { alert('Server error'); }
+  };
+
   const printInvoice = async (sale) => {
     if (sale?._isOffline) { setError('Pending offline sale ka invoice sync ke baad print hoga'); return; }
     try { const shopRes = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } }); const shop = await shopRes.json(); generateInvoiceHTML(sale, shop, config, true); }
@@ -1077,243 +1096,46 @@ export default function SalesPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {filteredSales.map((s) => {
-              const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
-              return (
-                <div key={s._id} className={`group relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 hover:-translate-y-[2px] ${s._isOffline ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.1)]' : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.1)] hover:border-slate-300/80'}`}>
-                  {/* Gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />
-                  
-                  {/* Offline banner */}
-                  {s._isOffline && (
-                    <div className={`flex items-center gap-2 px-4 py-2 border-b text-[11px] font-black ${meta.color}`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                      {meta.label}
-                      {s._queueError && <span className="font-normal text-rose-600 ml-1">{s._queueError}</span>}
-                    </div>
-                  )}
-
-                  <div className="relative p-5">
-                    {/* Top row */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-[13px] font-black text-green-700">{s.invoice_number}</span>
-                          {s.document_type === 'challan' && (() => {
-                            const statusMap = {
-                              draft:       { cls: 'bg-slate-100 border-slate-300 text-slate-600',   label: '📋 Draft' },
-                              dispatched:  { cls: 'bg-blue-100 border-blue-300 text-blue-700',       label: '🚚 Dispatched' },
-                              delivered:   { cls: 'bg-green-100 border-green-300 text-green-700',    label: '✓ Delivered' },
-                              returned:    { cls: 'bg-red-100 border-red-300 text-red-700',           label: '↩️ Returned' },
-                              converted:   { cls: 'bg-purple-100 border-purple-300 text-purple-700', label: '📄 Converted' },
-                            };
-                            const st = statusMap[s.challan_status] || statusMap.draft;
-                            return <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black ${st.cls}`}>{st.label}</span>;
-                          })()}
-                        </div>
-                        <p className="text-[15px] font-bold text-slate-700 mt-0.5">
-                          {s.buyer_name || 'Walk-in Customer'}
-                        </p>
-                      </div>
-                      <div className="text-[22px] font-black text-green-700">₹{fmt(s.total_amount)}</div>
-                    </div>
-
-                    {/* Items summary + payment badge */}
-                    <div className="flex gap-2 mb-4 text-[12px]">
-                      <span className="text-slate-500">
-                        {s.items && s.items.length > 1
-                          ? `${s.items.length} items`
-                          : s.product_name || s.items?.[0]?.product_name || '—'}
-                      </span>
-                      <PayBadge type={s.payment_type} />
-                    </div>
-
-                    {/* Info chips */}
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-500">
-                        Taxable ₹{fmt(s.taxable_amount)}
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[11px] font-semibold text-amber-600">
-                        GST ₹{fmt(s.total_gst)}
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] text-slate-400">
-                        {formatFullDateTime(s.createdAt || s.sold_at)}
-                      </span>
-                    </div>
-
-                    {/* Workflow status badge + one-tap stage actions */}
-                    {wfc && !s._isOffline && (
-                      <div className="mb-4">
-                        <WorkflowStatusBadge
-                          sale={s}
-                          wfc={wfc}
-                          onAdvance={advanceWorkflowStage}
-                        />
-                      </div>
-                    )}
-
-                    {/* Invoice-level extra field chips (restaurant: Table/Order Type, automobile: Vehicle No/Model…) */}
-                    {config.invoiceExtraFields && config.invoiceExtraFields.length > 0 && s.extra_fields && (() => {
-                      const chips = config.invoiceExtraFields
-                        .map(f => ({ label: f.label, value: s.extra_fields?.[f.key] }))
-                        .filter(c => c.value);
-                      if (!chips.length) return null;
-                      return (
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {chips.map(chip => (
-                            <span key={chip.label} className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-[11px] font-semibold text-indigo-600">
-                              {chip.label}: {chip.value}
-                            </span>
-                          ))}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Per-line field chips for single-item sales (pharmacy: Batch/Expiry, clothing: Size/Color…) */}
-                    {config.invoiceLineFields && config.invoiceLineFields.length > 0 && s.items?.length === 1 && (() => {
-                      const meta = s.items[0]?.item_metadata || {};
-                      const chips = config.invoiceLineFields
-                        .map(f => ({ label: f.label, value: meta[f.key] }))
-                        .filter(c => c.value);
-                      if (!chips.length) return null;
-                      return (
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {chips.map(chip => (
-                            <span key={chip.label} className="px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-100 text-[11px] font-semibold text-violet-600">
-                              {chip.label}: {chip.value}
-                            </span>
-                          ))}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Action buttons */}
-                    <div className="grid grid-cols-2 min-[480px]:grid-cols-5 gap-2">
-                      <button onClick={() => startEditSale(s)} disabled={Boolean(s._isOffline)}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
-                      >✏️ Edit</button>
-                      <button onClick={() => printInvoice(s)} disabled={Boolean(s._isOffline)}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-slate-200 text-[11px] font-bold text-slate-600 hover:border-green-300 hover:bg-green-50 disabled:opacity-40 transition-all"
-                      >🖨️ Print</button>
-                      <button onClick={() => shareWhatsApp(s)} disabled={Boolean(s._isOffline)}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 transition-all"
-                      >📤 Send</button>
-                      <button
-                        onClick={() => window.location.href = `/sale-returns?saleId=${s._id}&invoice=${s.invoice_number}`}
-                        disabled={Boolean(s._isOffline)}
-                        title="Process a return for this sale"
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50 text-[11px] font-bold text-amber-700 hover:bg-amber-100 disabled:opacity-40 transition-all"
-                      >↩️ Return</button>
-                      <button onClick={() => handleDelete(s)}
-                        className="min-h-[44px] py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
-                      >{s._isOffline ? '✕' : '🗑️'}</button>
-                    </div>
-
-                    {/* Restaurant extra actions */}
-                    {businessType === 'restaurant' && !s._isOffline && (
-                      <div className="flex gap-2 mt-2">
-                        <button onClick={() => printKOT(s)}
-                          className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-[11px] font-bold text-orange-700 hover:bg-orange-100 transition-all"
-                        >🖨️ KOT</button>
-                        <button onClick={() => { setSplitSale(s); setShowSplitModal(true); setSplitMode('equal'); setSplitCount(2); setSplitAssignments({}); }}
-                          className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-purple-200 bg-purple-50 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-all"
-                        >✂️ Split Bill</button>
-                      </div>
-                    )}
-
-                    {/* Challan actions — reprint + mark delivered + convert to invoice */}
-                    {s.document_type === 'challan' && !s._isOffline && (
-                      <div className="mt-2 space-y-2">
-                        <div className="flex gap-2">
-                          {/* Reprint 3-copy challan */}
-                          <button onClick={() => printDeliveryChallan(s, { name: shopName, gstin: shopGstin, address: shopAddress, phone: shopPhone, logo: null })}
-                            className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-blue-200 bg-blue-50 text-[11px] font-bold text-blue-700 hover:bg-blue-100 transition-all">
-                            🖨️ Print Challan
-                          </button>
-                          {/* Mark Delivered */}
-                          {s.challan_status !== 'delivered' && s.challan_status !== 'converted' && (
-                            <button onClick={() => { setDeliveredChallan(s); setDeliveredForm({ received_by: '', received_at: getDefaultSaleDateValue(), notes: '' }); setShowDeliveredModal(true); }}
-                              className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-all">
-                              ✓ Mark Delivered
-                            </button>
-                          )}
-                        </div>
-                        {/* Convert to Invoice */}
-                        {!s.converted_to_invoice && s.challan_status !== 'converted' && (
-                          <button onClick={async () => {
-                            if (!confirm(`Convert Challan ${s.challan_number || s.invoice_number} to a Tax Invoice?\n\nThis will:\n• Generate a proper invoice number\n• Deduct stock from inventory\n• Allow price editing\n\nContinue?`)) return;
-                            try {
-                              const r = await fetch(apiUrl(`/api/sales/${s._id}/convert-to-invoice`), {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                              });
-                              const d = await r.json();
-                              if (!r.ok) { alert(d.message || 'Conversion failed'); return; }
-                              fetchAll();
-                              if (d.invoice) printInvoice(d.invoice);
-                            } catch { alert('Server error'); }
-                          }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-purple-200 bg-purple-50 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-all">
-                            📄 Convert to Tax Invoice →
-                          </button>
-                        )}
-                        {s.converted_to_invoice && (
-                          <p className="text-center text-[10px] font-bold text-purple-600 py-1">✓ Converted to Invoice</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Repair shop: advance/balance summary + notify button */}
-                    {businessType === 'repair_shop' && !s._isOffline && (() => {
-                      const ef = s.extra_fields instanceof Map ? Object.fromEntries(s.extra_fields) : (s.extra_fields || {});
-                      const adv = parseFloat(ef.advance_collected || 0);
-                      const bal = parseFloat(ef.balance_on_delivery || 0);
-                      const status = ef.workflow_status;
-                      return (
-                        <div className="mt-2 space-y-2">
-                          {(adv > 0 || bal > 0) && (
-                            <div className={`flex gap-3 px-3 py-2 rounded-xl ${status === 'ready' ? 'bg-green-50 border border-green-200' : 'bg-slate-50 border border-slate-200'}`}>
-                              {adv > 0 && <span className="text-[11px] font-bold text-slate-600">Adv: ₹{adv.toFixed(2)}</span>}
-                              {bal > 0 && <span className={`text-[11px] font-bold ${status === 'ready' ? 'text-green-700' : 'text-amber-700'}`}>
-                                {status === 'ready' ? `Collect ₹${bal.toFixed(2)} on delivery` : `Bal: ₹${bal.toFixed(2)}`}
-                              </span>}
-                            </div>
-                          )}
-                          {status === 'ready' && s.buyer_phone && (
-                            <button onClick={() => sendRepairReadyWhatsApp(s)}
-                              className="w-full min-h-[38px] py-2 rounded-xl border-2 border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-all">
-                              📱 Notify Customer (WhatsApp)
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Clothing exchange action */}
-                    {businessType === 'clothing' && !s._isOffline && (!s.sale_type || s.sale_type === 'sale') && (
-                      <div className="mt-2">
-                        <button onClick={() => {
-                          const returned = (s.items || []).map(item => ({
-                            product_id: item.product?._id || item.product || '',
-                            product_name: item.product_name || '',
-                            quantity: item.quantity || 1,
-                            price: item.price_per_unit || 0,
-                            size: (() => { const m = item.item_metadata || {}; return m instanceof Map ? (m.get('size') || '') : (m.size || ''); })(),
-                            color: (() => { const m = item.item_metadata || {}; return m instanceof Map ? (m.get('color') || '') : (m.color || ''); })(),
-                            selected: true,
-                          }));
-                          setExchangeSale(s);
-                          setExchangeReturned(returned);
-                          setExchangeNewItems([{ product_id: '', product_name: '', quantity: 1, price: 0, size: '', color: '' }]);
-                          setShowExchangeModal(true);
-                        }}
-                          className="w-full min-h-[38px] py-2 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-700 hover:bg-rose-100 transition-all"
-                        >↩ Exchange / Return</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {filteredSales.map((s) => (
+              <SaleCard
+                key={s._id}
+                s={s}
+                businessType={businessType}
+                config={config}
+                wfc={wfc}
+                shopName={shopName}
+                shopGstin={shopGstin}
+                shopAddress={shopAddress}
+                shopPhone={shopPhone}
+                fmt={fmt}
+                formatFullDateTime={formatFullDateTime}
+                getDefaultSaleDateValue={getDefaultSaleDateValue}
+                INPUT={INPUT}
+                apiUrl={apiUrl}
+                getToken={getToken}
+                printInvoice={printInvoice}
+                shareWhatsApp={shareWhatsApp}
+                sendRepairReadyWhatsApp={sendRepairReadyWhatsApp}
+                printKOT={printKOT}
+                startEditSale={startEditSale}
+                handleDelete={handleDelete}
+                advanceWorkflowStage={advanceWorkflowStage}
+                fetchAll={fetchAll}
+                fetchSales={fetchSales}
+                setSplitSale={setSplitSale}
+                setShowSplitModal={setShowSplitModal}
+                setSplitMode={setSplitMode}
+                setSplitCount={setSplitCount}
+                setSplitAssignments={setSplitAssignments}
+                setDeliveredChallan={setDeliveredChallan}
+                setDeliveredForm={setDeliveredForm}
+                setShowDeliveredModal={setShowDeliveredModal}
+                setExchangeSale={setExchangeSale}
+                setExchangeReturned={setExchangeReturned}
+                setExchangeNewItems={setExchangeNewItems}
+                setShowExchangeModal={setShowExchangeModal}
+              />
+            ))}
 
             {/* Load more / pagination */}
             {hasMoreSales && !hasBillFilters && (
@@ -1728,93 +1550,13 @@ export default function SalesPage() {
 
             {/* ══ CHALLAN SECTIONS (hardware delivery challan) ══ */}
             {isChallanMode && (
-              <div className="space-y-4">
-
-                {/* Section 1 — Challan Header */}
-                <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
-                  <p className="text-[12px] font-black text-blue-900 uppercase tracking-wider">Challan Details</p>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Challan Type</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {[['supply_of_goods','Supply of Goods'],['job_work','Job Work'],['supply_on_approval','Supply on Approval'],['others','Others']].map(([v,l]) => (
-                        <button key={v} type="button" onClick={() => setChallanForm(p => ({ ...p, challan_type: v }))}
-                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${challanForm.challan_type === v ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-200 text-slate-600 hover:border-blue-300'}`}
-                        >{l}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Challan Date</p>
-                    <input className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/25 focus:border-blue-600 transition-all"
-                      type="date" value={challanForm.challan_date}
-                      onChange={e => setChallanForm(p => ({ ...p, challan_date: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                {/* Section 2 — Consignee Details */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                  <p className="text-[12px] font-black text-slate-900 uppercase tracking-wider">Consignee (Who Receives Goods)</p>
-                  <input className={INPUT} placeholder="Consignee / Company Name *" value={challanForm.consignee_name}
-                    onChange={e => setChallanForm(p => ({ ...p, consignee_name: e.target.value }))} />
-                  <textarea className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all resize-none"
-                    rows={2} placeholder="Full delivery site address *"
-                    value={challanForm.consignee_address}
-                    onChange={e => setChallanForm(p => ({ ...p, consignee_address: e.target.value }))} />
-                  <input className={INPUT} placeholder="Consignee GSTIN (if registered)" value={challanForm.consignee_gstin}
-                    onChange={e => setChallanForm(p => ({ ...p, consignee_gstin: e.target.value.toUpperCase().slice(0,15) }))} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={INPUT} placeholder="Site In-charge Name" value={challanForm.consignee_contact}
-                      onChange={e => setChallanForm(p => ({ ...p, consignee_contact: e.target.value }))} />
-                    <input className={INPUT} placeholder="Contact Phone" type="tel" value={challanForm.consignee_phone}
-                      onChange={e => setChallanForm(p => ({ ...p, consignee_phone: e.target.value }))} />
-                  </div>
-                </div>
-
-                {/* Section 3 — Dispatch Details */}
-                <div className="rounded-2xl border border-amber-200 bg-amber-50/30 p-4 space-y-3">
-                  <p className="text-[12px] font-black text-amber-900 uppercase tracking-wider">Dispatch & Transport</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={INPUT} placeholder="Dispatch From (your address)" value={challanForm.dispatch_from}
-                      onChange={e => setChallanForm(p => ({ ...p, dispatch_from: e.target.value }))} />
-                    <input className={INPUT} placeholder="Deliver To (site address)" value={challanForm.deliver_to}
-                      onChange={e => setChallanForm(p => ({ ...p, deliver_to: e.target.value }))} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={INPUT} placeholder="Vehicle No. (UP80 AB 1234)" value={challanForm.vehicle_number}
-                      onChange={e => setChallanForm(p => ({ ...p, vehicle_number: e.target.value.toUpperCase() }))} />
-                    <input className={INPUT} placeholder="Transporter Name" value={challanForm.transport_name}
-                      onChange={e => setChallanForm(p => ({ ...p, transport_name: e.target.value }))} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={INPUT} placeholder="LR / GR Number" value={challanForm.lr_number}
-                      onChange={e => setChallanForm(p => ({ ...p, lr_number: e.target.value }))} />
-                    <input className={INPUT} placeholder="E-way Bill No." value={challanForm.eway_bill_number}
-                      onChange={e => setChallanForm(p => ({ ...p, eway_bill_number: e.target.value }))} />
-                  </div>
-                  {billTotals.total > 50000 && !challanForm.eway_bill_number && (
-                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-100 border border-amber-300 text-[11px] font-semibold text-amber-800">
-                      <span className="flex-shrink-0">⚠️</span>
-                      <span>Goods value exceeds ₹50,000 — E-way Bill is mandatory under GST rules. Please enter the e-way bill number.</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Section 4 — Reference Documents */}
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                  <p className="text-[12px] font-black text-slate-700 uppercase tracking-wider">Reference Documents (Optional)</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={INPUT} placeholder="Buyer's PO Number" value={challanForm.po_number}
-                      onChange={e => setChallanForm(p => ({ ...p, po_number: e.target.value }))} />
-                    <input className="h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
-                      type="date" value={challanForm.po_date}
-                      onChange={e => setChallanForm(p => ({ ...p, po_date: e.target.value }))} />
-                  </div>
-                  <input className={INPUT} placeholder="Internal Indent / Requisition Number" value={challanForm.indent_number}
-                    onChange={e => setChallanForm(p => ({ ...p, indent_number: e.target.value }))} />
-                </div>
-
-              </div>
+              <ChallanSection
+                challanForm={challanForm}
+                setChallanForm={setChallanForm}
+                form={form}
+                INPUT={INPUT}
+                billTotals={billTotals}
+              />
             )}
 
             {/* ── Items section ── */}
@@ -2289,306 +2031,57 @@ export default function SalesPage() {
           CHALLAN — MARK DELIVERED MODAL
       ════════════════════════════════════════════════════════════ */}
       {showDeliveredModal && deliveredChallan && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
-            <div className="p-5 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-[18px] font-black text-slate-900">Mark as Delivered</h3>
-                  <p className="text-[12px] text-slate-500 mt-0.5">
-                    {deliveredChallan.challan_number || deliveredChallan.invoice_number} — {deliveredChallan.consignee_name || deliveredChallan.buyer_name}
-                  </p>
-                </div>
-                <button type="button" onClick={() => setShowDeliveredModal(false)}
-                  className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
-              </div>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Received By *</p>
-                <input className={INPUT} placeholder="Name of person who received the goods"
-                  value={deliveredForm.received_by}
-                  onChange={e => setDeliveredForm(p => ({ ...p, received_by: e.target.value }))} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Delivery Date</p>
-                <input className="h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
-                  type="date" value={deliveredForm.received_at}
-                  onChange={e => setDeliveredForm(p => ({ ...p, received_at: e.target.value }))} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Notes (optional)</p>
-                <input className={INPUT} placeholder="Any delivery notes or observations"
-                  value={deliveredForm.notes}
-                  onChange={e => setDeliveredForm(p => ({ ...p, notes: e.target.value }))} />
-              </div>
-            </div>
-            <div className="px-5 pb-5 flex gap-3">
-              <button type="button" onClick={async () => {
-                if (!deliveredForm.received_by) { alert('Please enter the name of the person who received the goods.'); return; }
-                try {
-                  const r = await fetch(apiUrl(`/api/sales/${deliveredChallan._id}/mark-delivered`), {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                    body: JSON.stringify(deliveredForm),
-                  });
-                  const d = await r.json();
-                  if (!r.ok) { alert(d.message || 'Failed'); return; }
-                  setShowDeliveredModal(false); setDeliveredChallan(null); fetchAll();
-                } catch { alert('Server error'); }
-              }}
-                className="flex-1 py-3 rounded-2xl bg-green-600 text-white text-[14px] font-black hover:bg-green-700 transition-colors"
-              >✓ Confirm Delivery</button>
-              <button type="button" onClick={() => setShowDeliveredModal(false)}
-                className="px-5 py-3 rounded-2xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-              >Cancel</button>
-            </div>
-          </div>
-        </div>
+        <MarkDeliveredModal
+          deliveredChallan={deliveredChallan}
+          deliveredForm={deliveredForm}
+          setDeliveredForm={setDeliveredForm}
+          onClose={() => setShowDeliveredModal(false)}
+          onConfirm={handleMarkDelivered}
+          INPUT={INPUT}
+        />
       )}
 
       {/* ════════════════════════════════════════════════════════════
           SPLIT BILL MODAL (Restaurant only)
       ════════════════════════════════════════════════════════════ */}
-      {showSplitModal && splitSale && businessType === 'restaurant' && (() => {
-        const total = splitSale.total_amount || 0;
-        const saleItems = splitSale.items || [];
-        const perPerson = splitCount > 0 ? (total / splitCount).toFixed(2) : '0.00';
-        const handleCreateSplits = async () => {
-          try {
-            if (splitMode === 'equal') {
-              const splitPromises = Array.from({ length: splitCount }, (_, i) => {
-                const ef = splitSale.extra_fields instanceof Map ? Object.fromEntries(splitSale.extra_fields) : (splitSale.extra_fields || {});
-                return fetch(apiUrl('/api/sales'), {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                  body: JSON.stringify({
-                    items: saleItems,
-                    payment_type: 'cash',
-                    amount_paid: 0,
-                    extra_fields: { ...ef, split_from: splitSale.invoice_number, split_part: `${i + 1} of ${splitCount}` },
-                  }),
-                });
-              });
-              const results = await Promise.all(splitPromises);
-              const created = await Promise.all(results.map(r => r.json()));
-              const nums = created.map(c => c.invoice_number).filter(Boolean).join(', ');
-              alert(`Created ${splitCount} split bills: ${nums}`);
-              setShowSplitModal(false); setSplitSale(null); fetchAll();
-            } else {
-              const bills = {};
-              saleItems.forEach((item, idx) => { const b = splitAssignments[idx] || 1; bills[b] = [...(bills[b] || []), item]; });
-              const splitPromises = Object.entries(bills).map(([, billItems]) => {
-                const ef = splitSale.extra_fields instanceof Map ? Object.fromEntries(splitSale.extra_fields) : (splitSale.extra_fields || {});
-                return fetch(apiUrl('/api/sales'), {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                  body: JSON.stringify({ items: billItems, payment_type: 'cash', amount_paid: 0, extra_fields: { ...ef, split_from: splitSale.invoice_number } }),
-                });
-              });
-              const results = await Promise.all(splitPromises);
-              const created = await Promise.all(results.map(r => r.json()));
-              const nums = created.map(c => c.invoice_number).filter(Boolean).join(', ');
-              alert(`Created ${Object.keys(bills).length} split bills: ${nums}`);
-              setShowSplitModal(false); setSplitSale(null); fetchAll();
-            }
-          } catch { setError('Split bill creation failed'); }
-        };
-        return (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
-              <div className="p-5 border-b border-slate-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-[18px] font-black text-slate-900">Split Bill</h3>
-                    <p className="text-[12px] text-slate-500 mt-0.5">{splitSale.invoice_number} — ₹{fmt(total)}</p>
-                  </div>
-                  <button type="button" onClick={() => setShowSplitModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  {['equal', 'custom'].map(m => (
-                    <button key={m} type="button" onClick={() => setSplitMode(m)}
-                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border-2 ${splitMode === m ? 'border-purple-500 bg-purple-50 text-purple-800' : 'border-slate-200 text-slate-600'}`}
-                    >{m === 'equal' ? '⚖️ Equal Split' : '✂️ By Item'}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="p-5 space-y-4 max-h-72 overflow-y-auto">
-                {splitMode === 'equal' ? (
-                  <div className="space-y-3">
-                    <p className="text-[13px] font-bold text-slate-700">Split among how many people?</p>
-                    <div className="flex items-center gap-3">
-                      <button type="button" onClick={() => setSplitCount(c => Math.max(2, c - 1))} className="w-10 h-10 rounded-xl border-2 border-slate-200 text-[18px] font-black text-slate-600 hover:bg-slate-50">−</button>
-                      <span className="text-[22px] font-black text-slate-900 w-8 text-center">{splitCount}</span>
-                      <button type="button" onClick={() => setSplitCount(c => Math.min(10, c + 1))} className="w-10 h-10 rounded-xl border-2 border-slate-200 text-[18px] font-black text-slate-600 hover:bg-slate-50">+</button>
-                    </div>
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-purple-50 border border-purple-200">
-                      <span className="text-[12px] font-bold text-purple-800">Each person pays</span>
-                      <span className="text-[16px] font-black text-purple-800">₹{perPerson}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[12px] font-bold text-slate-600">Assign each item to a bill:</p>
-                    {saleItems.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200">
-                        <span className="text-[12px] font-semibold text-slate-800">{item.product_name} ×{item.quantity}</span>
-                        <select
-                          className="h-8 px-2 rounded-lg border border-slate-200 text-[11px] bg-white"
-                          value={splitAssignments[idx] || 1}
-                          onChange={e => setSplitAssignments(prev => ({ ...prev, [idx]: Number(e.target.value) }))}
-                        >
-                          {[1, 2, 3, 4].map(n => <option key={n} value={n}>Bill {n}</option>)}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="p-5 border-t border-slate-100">
-                <button type="button" onClick={handleCreateSplits}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-violet-700 text-white font-black text-[14px] shadow-lg shadow-purple-500/30 hover:-translate-y-0.5 transition-all"
-                >Create {splitMode === 'equal' ? `${splitCount} Bills` : 'Split Bills'}</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {showSplitModal && splitSale && businessType === 'restaurant' && (
+        <SplitBillModal
+          splitSale={splitSale}
+          splitMode={splitMode}
+          setSplitMode={setSplitMode}
+          splitCount={splitCount}
+          setSplitCount={setSplitCount}
+          splitAssignments={splitAssignments}
+          setSplitAssignments={setSplitAssignments}
+          onClose={() => { setShowSplitModal(false); setSplitSale(null); }}
+          onSplitComplete={() => { setShowSplitModal(false); setSplitSale(null); fetchAll(); }}
+          apiUrl={apiUrl}
+          getToken={getToken}
+          fmt={fmt}
+        />
+      )}
 
       {/* ════════════════════════════════════════════════════════════
           CLOTHING — EXCHANGE MODAL
       ════════════════════════════════════════════════════════════ */}
-      {businessType === 'clothing' && showExchangeModal && exchangeSale && (() => {
-        const returnedValue = exchangeReturned.filter(i => i.selected).reduce((s, i) => s + (Number(i.price) * Number(i.quantity || 1)), 0);
-        const exchangeValue = exchangeNewItems.reduce((s, i) => s + (Number(i.price || 0) * Number(i.quantity || 1)), 0);
-        const diff = exchangeValue - returnedValue;
-
-        const handleSubmitExchange = async () => {
-          setExchangeSubmitting(true);
-          try {
-            const res = await fetch(apiUrl('/api/sales/exchange'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-              body: JSON.stringify({
-                original_invoice_no: exchangeSale.invoice_number,
-                returned_items: exchangeReturned.filter(i => i.selected).map(i => ({ product_id: i.product_id, quantity: i.quantity, reason: i.reason || 'exchange' })),
-                exchange_items: exchangeNewItems.filter(i => i.product_id).map(i => ({ product_id: i.product_id, product_name: i.product_name, quantity: i.quantity, price: i.price, size: i.size, color: i.color })),
-                customer_name: exchangeSale.buyer_name,
-                customer_phone: exchangeSale.buyer_phone,
-                price_difference: diff,
-                payment_type: diff > 0 ? 'cash' : 'cash',
-              }),
-            });
-            if (res.ok) {
-              setShowExchangeModal(false);
-              fetchSales();
-            } else {
-              const d = await res.json();
-              setError(d.message || 'Exchange failed');
-            }
-          } catch { setError('Server error during exchange'); }
-          setExchangeSubmitting(false);
-        };
-
-        return (
-          <div className="fixed inset-0 z-[75] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4">
-            <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92dvh] flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
-                <div>
-                  <h3 className="text-[18px] font-black text-slate-900">↩ Process Exchange</h3>
-                  <p className="text-[12px] text-slate-500 mt-0.5">Invoice {exchangeSale.invoice_number}</p>
-                </div>
-                <button onClick={() => setShowExchangeModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                {/* Section 1 — Items being returned */}
-                <div>
-                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest mb-2">Items Being Returned</p>
-                  <div className="space-y-2">
-                    {exchangeReturned.map((item, idx) => (
-                      <div key={idx} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all ${item.selected ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white opacity-50'}`}>
-                        <input type="checkbox" checked={!!item.selected}
-                          onChange={e => setExchangeReturned(prev => prev.map((x, i) => i === idx ? { ...x, selected: e.target.checked } : x))}
-                          className="w-4 h-4 accent-rose-600 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-bold text-slate-900">{item.product_name}</p>
-                          <p className="text-[11px] text-slate-500">{[item.size, item.color].filter(Boolean).join(' / ')} · ₹{item.price} × {item.quantity}</p>
-                        </div>
-                        {item.selected && (
-                          <select value={item.reason || ''} onChange={e => setExchangeReturned(prev => prev.map((x, i) => i === idx ? { ...x, reason: e.target.value } : x))}
-                            className="h-8 px-2 rounded-lg border border-slate-200 text-[11px] bg-white flex-shrink-0">
-                            <option value="">Reason</option>
-                            {['Wrong Size', 'Wrong Color', 'Defective', 'Changed Mind', 'Other'].map(r => <option key={r} value={r}>{r}</option>)}
-                          </select>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Section 2 — Items being taken */}
-                <div>
-                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-widest mb-2">Items Being Taken (Exchange)</p>
-                  <div className="space-y-2">
-                    {exchangeNewItems.map((item, idx) => (
-                      <div key={idx} className="flex gap-2 flex-wrap items-center px-3 py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50">
-                        <select value={item.product_id} onChange={e => {
-                          const prod = products.find(p => p._id === e.target.value);
-                          setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, product_id: e.target.value, product_name: prod?.name || '', price: prod?.price || 0 } : x));
-                        }} className="flex-1 h-8 px-2 rounded-lg border border-slate-200 text-[12px] bg-white min-w-[120px]">
-                          <option value="">Select product</option>
-                          {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                        </select>
-                        <input type="text" placeholder="Size" value={item.size}
-                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, size: e.target.value } : x))}
-                          className="h-8 w-16 px-2 rounded-lg border border-slate-200 text-[12px] bg-white" />
-                        <input type="text" placeholder="Color" value={item.color}
-                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, color: e.target.value } : x))}
-                          className="h-8 w-16 px-2 rounded-lg border border-slate-200 text-[12px] bg-white" />
-                        <input type="number" placeholder="Qty" min="1" value={item.quantity}
-                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, quantity: Number(e.target.value) } : x))}
-                          className="h-8 w-14 px-2 rounded-lg border border-slate-200 text-[12px] bg-white text-center" />
-                        <input type="number" placeholder="₹ Price" min="0" value={item.price}
-                          onChange={e => setExchangeNewItems(prev => prev.map((x, i) => i === idx ? { ...x, price: Number(e.target.value) } : x))}
-                          className="h-8 w-20 px-2 rounded-lg border border-slate-200 text-[12px] bg-white text-center" />
-                        {exchangeNewItems.length > 1 && (
-                          <button onClick={() => setExchangeNewItems(prev => prev.filter((_, i) => i !== idx))} className="text-rose-500 text-[12px] font-bold">✕</button>
-                        )}
-                      </div>
-                    ))}
-                    <button onClick={() => setExchangeNewItems(prev => [...prev, { product_id: '', product_name: '', quantity: 1, price: 0, size: '', color: '' }])}
-                      className="w-full py-2 rounded-xl border-2 border-dashed border-emerald-300 text-[12px] font-bold text-emerald-600 hover:bg-emerald-50 transition-colors">
-                      + Add Item
-                    </button>
-                  </div>
-                </div>
-
-                {/* Section 3 — Price difference */}
-                <div className={`px-4 py-3 rounded-2xl border-2 ${diff > 0 ? 'border-amber-300 bg-amber-50' : diff < 0 ? 'border-blue-300 bg-blue-50' : 'border-emerald-300 bg-emerald-50'}`}>
-                  <div className="flex justify-between text-[12px] font-semibold text-slate-700 mb-1">
-                    <span>Returned value</span><span>₹{returnedValue.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-[12px] font-semibold text-slate-700 mb-2">
-                    <span>Exchange value</span><span>₹{exchangeValue.toFixed(2)}</span>
-                  </div>
-                  <div className={`flex justify-between text-[14px] font-black ${diff > 0 ? 'text-amber-800' : diff < 0 ? 'text-blue-800' : 'text-emerald-800'}`}>
-                    <span>{diff > 0 ? `Customer pays` : diff < 0 ? `Refund to customer` : `Even exchange`}</span>
-                    <span>{diff !== 0 ? `₹${Math.abs(diff).toFixed(2)}` : '✓ No payment'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-5 border-t border-slate-100 flex-shrink-0">
-                <button onClick={handleSubmitExchange} disabled={exchangeSubmitting || exchangeReturned.filter(i => i.selected).length === 0}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-700 text-white font-black text-[14px] shadow-lg shadow-rose-500/30 hover:-translate-y-0.5 disabled:opacity-60 transition-all"
-                >{exchangeSubmitting ? 'Processing…' : 'Process Exchange'}</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {businessType === 'clothing' && showExchangeModal && exchangeSale && (
+        <ExchangeModal
+          exchangeSale={exchangeSale}
+          exchangeReturned={exchangeReturned}
+          setExchangeReturned={setExchangeReturned}
+          exchangeNewItems={exchangeNewItems}
+          setExchangeNewItems={setExchangeNewItems}
+          exchangeSubmitting={exchangeSubmitting}
+          setExchangeSubmitting={setExchangeSubmitting}
+          products={products}
+          onClose={() => setShowExchangeModal(false)}
+          onExchangeComplete={fetchSales}
+          apiUrl={apiUrl}
+          getToken={getToken}
+          setError={setError}
+          fmt={fmt}
+        />
+      )}
 
       {/* Barcode scanner (UNCHANGED) */}
       <CameraBarcodeScanner
