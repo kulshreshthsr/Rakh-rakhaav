@@ -553,7 +553,7 @@ const getPurchases = async (req, res) => {
 
     res.json({ purchases: page, summary: netSummary, hasMore, nextCursor });
   } catch (err) {
-    logger.error(err);
+    logger.error('[purchaseController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -620,7 +620,10 @@ const createPurchase = async (req, res) => {
       }).populate('supplier', 'name phone gstin');
       if (existingPurchase) return res.status(200).json(existingPurchase);
     }
-    res.status(500).json({ message: err.message });
+    const _sc = err.statusCode || err.status || 500;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -641,7 +644,7 @@ const updatePurchase = async (req, res) => {
       const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id }).session(session);
-      if (!purchase) throw new Error('Purchase not found');
+      if (!purchase) throw new Error('Purchase नहीं मिली');
       beforeValue = cloneForAudit(purchase);
 
       const { data, itemNames } = await buildPurchaseRecordData({
@@ -670,8 +673,8 @@ const updatePurchase = async (req, res) => {
     });
     res.json(hydratedPurchase);
   } catch (err) {
-    if (err.message === 'Purchase not found') return res.status(404).json({ message: err.message });
-    res.status(500).json({ message: err.message });
+    if (err.message === 'Purchase नहीं मिली') return res.status(404).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production'; res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -690,7 +693,7 @@ const deletePurchase = async (req, res) => {
       const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id }).session(session);
-      if (!purchase) throw new Error('Purchase not found');
+      if (!purchase) throw new Error('Purchase नहीं मिली');
       deletedPurchase = cloneForAudit(purchase);
 
       // Reverse stock with history logging
@@ -738,8 +741,8 @@ const deletePurchase = async (req, res) => {
 
     res.json({ message: 'Purchase deleted and stock reversed' });
   } catch (err) {
-    if (err.message === 'Purchase not found') return res.status(404).json({ message: err.message });
-    res.status(500).json({ message: err.message });
+    if (err.message === 'Purchase नहीं मिली') return res.status(404).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production'; res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -780,7 +783,7 @@ const getITCSummary = async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    logger.error(err);
+    logger.error('[purchaseController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -839,8 +842,8 @@ const getPurchaseRegister = async (req, res) => {
 
     res.json({ purchases, totals, page, limit, total, totalPages: Math.ceil(total / limit) });
   } catch (err) {
-    logger.error('getPurchaseRegister error:', err);
-    res.status(500).json({ message: err.message || 'Something went wrong' });
+    logger.error('[purchaseController] getPurchaseRegister:', err.message || err);
+    const isDev = process.env.NODE_ENV !== 'production'; res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 

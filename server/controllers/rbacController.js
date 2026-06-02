@@ -88,7 +88,7 @@ const getRoles = async (req, res) => {
 
     res.json({ roles: [...systemList, ...customList] });
   } catch (err) {
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -113,7 +113,7 @@ const createRole = async (req, res) => {
     res.status(201).json({ role });
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ message: 'A role with this name already exists' });
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -129,7 +129,7 @@ const updateRole = async (req, res) => {
   try {
     const shop = await getOwnerShop(req.user.id);
     const role = await Role.findOne({ _id: id, shopId: shop._id });
-    if (!role) return res.status(404).json({ message: 'Role not found' });
+    if (!role) return res.status(404).json({ message: 'Role नहीं मिला' });
     if (role.isSystem) return res.status(400).json({ message: 'System roles cannot be modified' });
 
     role.label = label ?? role.label;
@@ -141,7 +141,7 @@ const updateRole = async (req, res) => {
 
     res.json({ role });
   } catch (err) {
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -156,7 +156,7 @@ const deleteRole = async (req, res) => {
   try {
     const shop = await getOwnerShop(req.user.id);
     const role = await Role.findOne({ _id: id, shopId: shop._id });
-    if (!role) return res.status(404).json({ message: 'Role not found' });
+    if (!role) return res.status(404).json({ message: 'Role नहीं मिला' });
     if (role.isSystem) return res.status(400).json({ message: 'System roles cannot be deleted' });
 
     // Safety: ensure no active members use this role
@@ -170,7 +170,7 @@ const deleteRole = async (req, res) => {
     await role.deleteOne();
     res.json({ message: 'Role deleted' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -186,7 +186,7 @@ const getTeamMembers = async (req, res) => {
 
     res.json({ members: members.map(serializeMember) });
   } catch (err) {
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -234,7 +234,7 @@ const createTeamMember = async (req, res) => {
     });
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ message: 'Username already taken. Please choose another.' });
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -246,7 +246,7 @@ const updateTeamMember = async (req, res) => {
   try {
     const shop = await getOwnerShop(req.user.id);
     const member = await User.findOne({ _id: id, shopId: shop._id, isSubUser: true });
-    if (!member) return res.status(404).json({ message: 'Team member not found' });
+    if (!member) return res.status(404).json({ message: 'User नहीं मिला' });
 
     if (name !== undefined) member.name = name;
     if (role !== undefined) {
@@ -260,7 +260,7 @@ const updateTeamMember = async (req, res) => {
 
     res.json({ member: serializeMember(member) });
   } catch (err) {
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -272,7 +272,7 @@ const resetMemberPassword = async (req, res) => {
   try {
     const shop = await getOwnerShop(req.user.id);
     const member = await User.findOne({ _id: id, shopId: shop._id, isSubUser: true });
-    if (!member) return res.status(404).json({ message: 'Team member not found' });
+    if (!member) return res.status(404).json({ message: 'User नहीं मिला' });
 
     const tempPassword = newPassword || generateTempPassword();
     member.password = await bcrypt.hash(tempPassword, 10);
@@ -280,7 +280,7 @@ const resetMemberPassword = async (req, res) => {
 
     res.json({ message: 'Password reset successful', tempPassword });
   } catch (err) {
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -291,12 +291,12 @@ const deleteTeamMember = async (req, res) => {
   try {
     const shop = await getOwnerShop(req.user.id);
     const member = await User.findOne({ _id: id, shopId: shop._id, isSubUser: true });
-    if (!member) return res.status(404).json({ message: 'Team member not found' });
+    if (!member) return res.status(404).json({ message: 'User नहीं मिला' });
 
     await member.deleteOne();
     res.json({ message: 'Team member removed' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[rbacController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

@@ -9,7 +9,7 @@ const getContractors = async (req, res) => {
     const shop = await getShopOrFail(req.user.id);
     const contractors = await Contractor.find({ shop: shop._id, isActive: true }).sort({ name: 1 });
     res.json(contractors);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[contractorController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -31,7 +31,7 @@ const createContractor = async (req, res) => {
       notes,
     });
     res.status(201).json(contractor);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[contractorController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -42,7 +42,7 @@ const getContractor = async (req, res) => {
     const contractor = await Contractor.findOne({ _id: req.params.id, shop: shop._id });
     if (!contractor) return res.status(404).json({ message: 'Contractor not found' });
     res.json(contractor);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[contractorController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -56,7 +56,7 @@ const updateContractor = async (req, res) => {
     allowed.forEach(key => { if (req.body[key] !== undefined) contractor[key] = req.body[key]; });
     await contractor.save();
     res.json(contractor);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[contractorController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -75,7 +75,7 @@ const getContractorSales = async (req, res) => {
       ],
     }).sort({ createdAt: -1 }).limit(50);
     res.json(sales);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[contractorController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -93,7 +93,7 @@ const recordPayment = async (req, res) => {
     await contractor.save();
 
     res.json({ message: 'Payment recorded', contractor });
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[contractorController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 

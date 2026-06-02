@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import PageShell from '../../components/ui/PageShell';
+import PageHeader from '../../components/ui/PageHeader';
 
 const getToken = () => localStorage.getItem('token');
 
@@ -130,10 +132,17 @@ export default function TasksPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'completed'
+  const [success, setSuccess] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: 'manager', priority: 'medium' });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!success) return undefined;
+    const id = setTimeout(() => setSuccess(''), 2400);
+    return () => clearTimeout(id);
+  }, [success]);
 
   const fetchTasks = useCallback(async () => {
     const token = getToken();
@@ -166,7 +175,10 @@ export default function TasksPage() {
     if (res.ok) {
       const updated = await res.json();
       setTasks(prev => prev.map(t => t._id === id ? updated : t));
-      if (status === 'completed') setPendingCount(p => Math.max(0, p - 1));
+      if (status === 'completed') {
+        setPendingCount(p => Math.max(0, p - 1));
+        setSuccess('✅ काम पूरा हुआ');
+      }
     }
   }, []);
 
@@ -192,58 +204,60 @@ export default function TasksPage() {
     }
   };
 
-  const activeTasks    = tasks.filter(t => !['completed', 'cancelled'].includes(t.status));
-  const completedTasks = tasks.filter(t => t.status === 'completed');
-
-  const shown = activeTab === 'active' ? activeTasks : completedTasks;
-
-  const TABS = [
-    { id: 'active',    label: 'Active',    count: activeTasks.length },
-    { id: 'completed', label: 'Completed', count: completedTasks.length },
+  const STATUS_TABS = [
+    { id: 'all',       label: 'सब' },
+    { id: 'pending',   label: 'बाकी' },
+    { id: 'completed', label: 'पूरे हुए' },
   ];
+
+  const filteredTasks = tasks.filter(t => {
+    if (statusFilter === 'pending') return ['pending', 'in_progress'].includes(t.status);
+    if (statusFilter === 'completed') return t.status === 'completed';
+    return true;
+  });
+
+  const emptyIcon = statusFilter === 'completed' ? '✅' : '📋';
+  const emptyTitle = statusFilter === 'completed' ? 'अभी कोई पूरा काम नहीं' : 'कोई काम नहीं';
+  const emptySubtitle = statusFilter === 'completed'
+    ? 'काम पूरे होने पर यहाँ दिखेंगे'
+    : 'नया काम नीचे दिए फ़ॉर्म से जोड़ें';
 
   return (
     <Layout>
-      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
-
-        {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-white via-indigo-50/40 to-blue-50/40 p-6 shadow-lg">
-          <div className="pointer-events-none absolute -top-10 -right-8 w-36 h-36 rounded-full bg-indigo-200/30 blur-3xl" />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-[11px] font-black uppercase tracking-widest text-indigo-700 shadow-sm">
-                ✅ Tasks
-              </span>
-              <h1 className="mt-3 text-[24px] font-black text-slate-900">Operational Tasks</h1>
-              <p className="mt-1 text-[13px] text-slate-500 font-medium">
-                {pendingCount > 0 ? `${pendingCount} pending task${pendingCount !== 1 ? 's' : ''} need attention` : 'All tasks are up to date'}
-              </p>
-            </div>
+      <PageShell>
+        <PageHeader
+          title="काम की सूची"
+          subtitle="ज़रूरी काम — प्राथमिकता के अनुसार"
+          action={
             <button
               onClick={() => setShowAddModal(true)}
-              className="relative inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-indigo-600 to-blue-700 shadow-lg shadow-indigo-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-indigo-600 to-blue-700 shadow-lg shadow-indigo-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
             >
-              + Add Task
+              + नया काम
             </button>
-          </div>
-        </div>
+          }
+        />
 
-        {/* Tabs */}
-        <div className="flex gap-2">
-          {TABS.map(tab => (
+        {/* Success / error banner */}
+        {(error || success) && (
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-[13px] font-semibold ${error ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+            {error ? '⚠️' : '✅'} {error || success}
+          </div>
+        )}
+
+        {/* Status filter tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {STATUS_TABS.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-black transition-all border ${
-                activeTab === tab.id
+              onClick={() => setStatusFilter(tab.id)}
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-[12px] font-black transition-all border ${
+                statusFilter === tab.id
                   ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
               }`}
             >
               {tab.label}
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-              }`}>{tab.count}</span>
             </button>
           ))}
         </div>
@@ -255,19 +269,15 @@ export default function TasksPage() {
               <div key={i} className="skeleton-card border border-slate-200/60 h-24" />
             ))}
           </div>
-        ) : shown.length === 0 ? (
+        ) : filteredTasks.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[24px]">{activeTab === 'active' ? '✅' : '📋'}</div>
-            <p className="text-[14px] font-extrabold text-slate-800">
-              {activeTab === 'active' ? 'No active tasks' : 'No completed tasks yet'}
-            </p>
-            <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
-              {activeTab === 'active' ? 'Tasks from business rules will appear here automatically' : 'Completed tasks will be archived here'}
-            </p>
+            <div className="empty-state-icon mx-auto mb-4 text-[24px]">{emptyIcon}</div>
+            <p className="text-[14px] font-extrabold text-slate-800">{emptyTitle}</p>
+            <p className="text-[12px] text-slate-400 mt-1">{emptySubtitle}</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {shown.map(task => (
+            {filteredTasks.map(task => (
               <TaskCard key={task._id} task={task} onUpdate={handleUpdate} />
             ))}
           </div>
@@ -283,13 +293,13 @@ export default function TasksPage() {
               </div>
               <input
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-[14px] font-semibold focus:outline-none focus:border-green-400"
-                placeholder="Task title"
+                placeholder="काम का नाम"
                 value={newTask.title}
                 onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))}
               />
               <textarea
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-[13px] focus:outline-none focus:border-green-400 resize-none"
-                placeholder="Description (optional)"
+                placeholder="विवरण (वैकल्पिक)"
                 rows={2}
                 value={newTask.description}
                 onChange={e => setNewTask(p => ({ ...p, description: e.target.value }))}
@@ -332,7 +342,7 @@ export default function TasksPage() {
             </div>
           </div>
         )}
-      </div>
+      </PageShell>
     </Layout>
   );
 }

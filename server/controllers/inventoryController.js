@@ -158,7 +158,8 @@ const getExpiringBatches = async (req, res) => {
       .limit(50);
     res.json(batches);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 
@@ -329,7 +330,8 @@ const deleteRecipe = async (req, res) => {
     await Recipe.findOneAndDelete({ shop: shop._id, dish: req.params.productId });
     res.json({ message: 'Recipe deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 
@@ -408,7 +410,8 @@ const updateSerial = async (req, res) => {
     if (!serial) return res.status(404).json({ message: 'Serial not found' });
     res.json(serial);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 

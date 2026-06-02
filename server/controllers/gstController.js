@@ -275,7 +275,8 @@ const generateGSTR1 = async (req, res) => {
     res.json({ gstr1: gstr1JSON, summary });
   } catch (err) {
     logger.error('generateGSTR1 error:', err);
-    res.status(500).json({ message: err.message || 'Something went wrong' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 
@@ -468,7 +469,8 @@ const generateGSTR3B = async (req, res) => {
     res.json(gstr3bWorking);
   } catch (err) {
     logger.error('generateGSTR3B error:', err);
-    res.status(500).json({ message: err.message || 'Something went wrong' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 
@@ -495,7 +497,8 @@ const getFilingPeriodInfo = async (req, res) => {
     const period = getCurrentFilingPeriod(shop);
     res.json({ period, shop: { gstin: shop.gstin, gst_type: shop.gst_type, filing_frequency: shop.filing_frequency } });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 

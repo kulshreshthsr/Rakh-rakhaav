@@ -54,7 +54,7 @@ function Section({ icon, title, subtitle, badge, children }) {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-[14px] font-black text-slate-900">{title}</p>
+            <p className="text-[16px] font-black text-slate-900">{title}</p>
             {badge && <span className="px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-[10px] font-bold text-green-700">{badge}</span>}
           </div>
           {subtitle && <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>}
@@ -116,6 +116,8 @@ export default function ProfilePage() {
   const [shopError,  setShopError]  = useState('');
   const [savingShop, setSavingShop] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [nameSubmitAttempted, setNameSubmitAttempted] = useState(false);
+  const [gstinError, setGstinError] = useState('');
 
   const getToken = () => localStorage.getItem('token');
 
@@ -211,9 +213,9 @@ export default function ProfilePage() {
       const data = await res.json();
       if (res.ok) {
         setPwForm({ current: '', newPwd: '', confirm: '' });
-        setPwMsg('Password changed successfully');
+        setPwMsg('✅ Password बदला गया');
       } else {
-        setPwError(data.message || 'Failed to change password');
+        setPwError('❌ ' + (data.message || 'Password नहीं बदला। दोबारा try करें।'));
       }
     } catch { setPwError('Server error'); }
     setSavingPw(false);
@@ -239,6 +241,8 @@ export default function ProfilePage() {
 
   const updateShop = async (e) => {
     e.preventDefault(); setShopMsg(''); setShopError('');
+    setNameSubmitAttempted(true);
+    if (!shopForm.name.trim()) { return; }
     if (gstinInvalid) { setShopError('Please enter a valid GSTIN before saving.'); return; }
     setSavingShop(true);
     try {
@@ -251,7 +255,7 @@ export default function ProfilePage() {
       if (res.ok) {
         setShop(data); loadShopIntoForm(data);
         if (data?.dashboardMode) updateDashboardMode(data.dashboardMode);
-        setShopMsg('Shop details saved successfully ✓');
+        setShopMsg('✅ दुकान की जानकारी सेव हुई');
         setIsDirty(false);
       } else {
         setShopError(data.message || 'Failed to update shop details.');
@@ -260,7 +264,7 @@ export default function ProfilePage() {
     setSavingShop(false);
   };
 
-  const resetShopForm = () => { loadShopIntoForm(shop || emptyShopForm); setShopMsg(''); setShopError(''); };
+  const resetShopForm = () => { loadShopIntoForm(shop || emptyShopForm); setShopMsg(''); setShopError(''); setNameSubmitAttempted(false); setGstinError(''); };
 
   const completeness = useMemo(() => {
     const fields = [shopForm.name, shopForm.phone, shopForm.gstin, shopForm.state, shopForm.address, shopForm.bank_name, shopForm.bank_account, shopForm.bank_ifsc, shopForm.cash_opening_balance, shopForm.bank_opening_balance];
@@ -560,6 +564,9 @@ export default function ProfilePage() {
                   onChange={(e) => patchShop({ name: e.target.value })}
                   required
                 />
+                {nameSubmitAttempted && !shopForm.name.trim() && (
+                  <p className="text-[11px] text-rose-600 mt-1 px-1">दुकान का नाम ज़रूरी है</p>
+                )}
               </Field>
 
               {/* ── GST Registration Type ── */}
@@ -686,6 +693,14 @@ export default function ProfilePage() {
                     value={shopForm.gstin}
                     maxLength={GSTIN_LENGTH}
                     onChange={(e) => handleGstinChange(e.target.value)}
+                    onBlur={() => {
+                      if (shopForm.gstin.length > 0 && !GSTIN_REGEX.test(shopForm.gstin)) {
+                        setGstinError('GSTIN format सही नहीं है (उदाहरण: 22AAAAA0000A1Z5)');
+                      } else {
+                        setGstinError('');
+                      }
+                    }}
+                    onFocus={() => setGstinError('')}
                   />
                   {shopForm.gstin && (
                     <div className="flex items-center gap-2 mt-1">
@@ -704,6 +719,7 @@ export default function ProfilePage() {
                       </span>
                     </div>
                   )}
+                  {gstinError && <p className="text-[11px] text-rose-600 mt-1 px-1">{gstinError}</p>}
                 </Field>
               )}
 

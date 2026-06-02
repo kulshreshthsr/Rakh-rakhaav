@@ -42,7 +42,7 @@ const getProducts = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -113,7 +113,7 @@ const createProduct = async (req, res) => {
         : null,
     });
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -127,7 +127,7 @@ const updateProduct = async (req, res) => {
 
     // ✅ Security fix: verify product belongs to this shop
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
     const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold, barcode } = req.body;
     const normalizedBarcode = normalizeBarcode(barcode);
@@ -181,7 +181,7 @@ const updateProduct = async (req, res) => {
         : null,
     });
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -195,7 +195,7 @@ const deleteProduct = async (req, res) => {
 
     // ✅ Security fix: verify product belongs to this shop
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
     // Soft delete — preserve sales/purchase history
     product.isActive = false;
@@ -203,7 +203,7 @@ const deleteProduct = async (req, res) => {
 
     res.json({ message: 'Product deleted' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -223,7 +223,7 @@ const adjustStock = async (req, res) => {
     }
 
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
     const qty = Number(quantity);
     const change = type === 'manual_remove' ? -qty : qty;
@@ -249,7 +249,7 @@ const adjustStock = async (req, res) => {
       is_low_stock: product.quantity <= product.low_stock_threshold,
     });
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -262,14 +262,14 @@ const getStockHistory = async (req, res) => {
     const shop = await getShopOrFail(req.user.id);
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id })
       .select('name stock_history quantity unit');
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
     res.json({
       product: { name: product.name, quantity: product.quantity, unit: product.unit },
       history: product.stock_history.sort((a, b) => new Date(b.date) - new Date(a.date)),
     });
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -282,7 +282,7 @@ const toggleAvailability = async (req, res) => {
     const { available, unavailable_reason } = req.body;
     const shop = await getShopOrFail(req.user.id);
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
     product.metadata.set('is_available_today', available ? 'true' : 'false');
     product.metadata.set('unavailable_reason', unavailable_reason || '');
@@ -290,7 +290,7 @@ const toggleAvailability = async (req, res) => {
     await product.save();
     res.json({ message: 'Availability updated', available });
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -315,11 +315,11 @@ const getByBarcode = async (req, res) => {
     if (!variant) return res.status(404).json({ message: 'Barcode not found' });
 
     const product = await Product.findOne({ _id: variant.product, shop: shop._id, isActive: { $ne: false } }).select('-stock_history');
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
     return res.json({ product: product.toJSON(), variant: variant.toJSON(), matchType: 'variant' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[productController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

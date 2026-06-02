@@ -66,7 +66,8 @@ const getITCRegister = async (req, res) => {
     });
   } catch (err) {
     logger.error('getITCRegister error:', err);
-    res.status(500).json({ message: err.message || 'Something went wrong' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 
@@ -144,7 +145,8 @@ const getITCSummary = async (req, res) => {
     });
   } catch (err) {
     logger.error('getITCSummary error:', err);
-    res.status(500).json({ message: err.message || 'Something went wrong' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 

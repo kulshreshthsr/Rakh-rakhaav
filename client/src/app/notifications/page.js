@@ -83,10 +83,17 @@ export default function NotificationsPage() {
   const { notifications, unreadCount, markRead, markAllRead, dismiss, refresh } = useNotifications();
   const [filter, setFilter] = useState('all'); // 'all' | 'unread' | 'critical'
   const [loading, setLoading] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('token')) router.push('/login');
   }, [router]);
+
+  const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    await markAllRead();
+    setTimeout(() => setMarkingAll(false), 1500);
+  };
 
   const filtered = notifications
     .filter(n => {
@@ -102,10 +109,16 @@ export default function NotificationsPage() {
     });
 
   const TABS = [
-    { id: 'all',      label: 'All',      count: notifications.length },
-    { id: 'unread',   label: 'Unread',   count: unreadCount },
-    { id: 'critical', label: 'Urgent',   count: notifications.filter(n => ['critical','high'].includes(n.priority)).length },
+    { id: 'all',      label: 'सब',    count: notifications.length },
+    { id: 'unread',   label: 'अपठित', count: unreadCount },
+    { id: 'critical', label: 'ज़रूरी', count: notifications.filter(n => ['critical','high'].includes(n.priority)).length },
   ];
+
+  const emptySubtitle = filter === 'unread'
+    ? 'सभी अलर्ट पढ़े जा चुके हैं'
+    : filter === 'critical'
+      ? 'अभी कोई urgent अलर्ट नहीं'
+      : 'कोई अलर्ट नहीं — सब ठीक है';
 
   return (
     <Layout>
@@ -119,17 +132,18 @@ export default function NotificationsPage() {
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-[11px] font-black uppercase tracking-widest text-red-700 shadow-sm">
                 🔔 Alerts
               </span>
-              <h1 className="mt-3 text-[24px] font-black text-slate-900">Notifications</h1>
+              <h1 className="mt-3 text-[24px] font-black text-slate-900">सूचनाएँ</h1>
               <p className="mt-1 text-[13px] text-slate-500 font-medium">
                 {unreadCount > 0 ? `${unreadCount} unread alert${unreadCount !== 1 ? 's' : ''}` : 'Stock warnings & operational reminders'}
               </p>
             </div>
             {unreadCount > 0 && (
               <button
-                onClick={markAllRead}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-green-200 bg-green-50 text-[13px] font-black text-green-700 hover:bg-green-100 hover:-translate-y-0.5 transition-all shadow-sm"
+                onClick={handleMarkAllRead}
+                disabled={markingAll}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-green-200 bg-green-50 text-[13px] font-black text-green-700 hover:bg-green-100 hover:-translate-y-0.5 transition-all shadow-sm disabled:opacity-70"
               >
-                ✓ Mark all read
+                {markingAll ? '✓ सब पढ़ा' : '✓ सभी पढ़ें'}
               </button>
             )}
           </div>
@@ -161,10 +175,8 @@ export default function NotificationsPage() {
         {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon mx-auto mb-4 text-[24px]">✅</div>
-            <p className="text-[14px] font-extrabold text-slate-800">All clear</p>
-            <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
-              No {filter === 'unread' ? 'unread ' : filter === 'critical' ? 'urgent ' : ''}alerts right now — you&apos;re on top of everything
-            </p>
+            <p className="text-[14px] font-extrabold text-slate-800">सब ठीक है</p>
+            <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">{emptySubtitle}</p>
           </div>
         ) : (
           <div className="space-y-2">

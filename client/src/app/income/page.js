@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import PageShell from '../../components/ui/PageShell';
+import PageHeader from '../../components/ui/PageHeader';
 
 /* ── Constants & helpers (UNCHANGED) ── */
 const getToken = () => localStorage.getItem('token');
@@ -88,8 +90,8 @@ export default function IncomePage() {
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
       if (!res.ok) { setError(data.message || 'Income save nahi hui.'); return; }
-      if (editingId) { setEntries((c) => c.map((en) => (en._id === editingId ? data : en))); setSuccess('Income updated successfully.'); }
-      else           { setEntries((c) => [data, ...c]); setSuccess('Income saved successfully.'); }
+      if (editingId) { setEntries((c) => c.map((en) => (en._id === editingId ? data : en))); setSuccess('✅ आय बदली गई'); }
+      else           { setEntries((c) => [data, ...c]); setSuccess('✅ आय जोड़ी गई'); }
       resetForm();
     } catch { setError('Income save nahi hui.'); }
     finally   { setSaving(false); }
@@ -102,7 +104,7 @@ export default function IncomePage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Is income entry ko delete karna hai?')) return;
+    if (!window.confirm('क्या आप यह आय entry हटाना चाहते हैं?')) return;
     try {
       setDeletingId(id);
       const res = await fetch(apiUrl(`/api/income/${id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
@@ -111,14 +113,14 @@ export default function IncomePage() {
       if (!res.ok) { setError(data.message || 'Income delete nahi hui.'); return; }
       setEntries((c) => c.filter((en) => en._id !== id));
       if (editingId === id) resetForm();
-      setSuccess('Income deleted.');
+      setSuccess('✅ आय हटाई गई');
     } catch { setError('Income delete nahi hui.'); }
     finally   { setDeletingId(''); }
   };
 
   return (
     <Layout>
-      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+      <PageShell>
 
         {/* ── Header ── */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-emerald-50/40 to-green-50/30 border border-slate-200 p-5 shadow-sm">
@@ -127,10 +129,7 @@ export default function IncomePage() {
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold uppercase tracking-widest text-emerald-700">
               💰 Other Income
             </span>
-            <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight">Income / आमदनी</h1>
-            <p className="mt-1 text-[13px] text-slate-500">
-              Interest, commission, rent और extra receipts को अलग register में रखो।
-            </p>
+            <PageHeader title="आय" subtitle="बिक्री के अलावा अन्य आय" />
             <div className="flex flex-wrap gap-2 mt-3">
               {[{ href: '/expenses', label: '💸 Expenses' }, { href: '/bank-entries', label: '🏦 Bank' }, { href: '/reports', label: '📊 Reports' }].map((l) => (
                 <Link key={l.href} href={l.href}
@@ -178,7 +177,7 @@ export default function IncomePage() {
             {/* Source */}
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Source *</p>
-              <input className={INP} placeholder="Interest, commission, rent..." value={form.source} onChange={(e) => setForm((c) => ({ ...c, source: e.target.value }))} required />
+              <input className={INP} placeholder="ब्याज, कमीशन, किराया..." value={form.source} onChange={(e) => setForm((c) => ({ ...c, source: e.target.value }))} required />
             </div>
 
             {/* Category pills */}
@@ -221,13 +220,13 @@ export default function IncomePage() {
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Reference</p>
-                <input className={INP} placeholder="Voucher / note ref" value={form.reference_id} onChange={(e) => setForm((c) => ({ ...c, reference_id: e.target.value }))} />
+                <input className={INP} placeholder="वाउचर / नोट reference" value={form.reference_id} onChange={(e) => setForm((c) => ({ ...c, reference_id: e.target.value }))} />
               </div>
             </div>
 
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Narration</p>
-              <input className={INP} placeholder="Extra details..." value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
+              <input className={INP} placeholder="अतिरिक्त जानकारी..." value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
             </div>
 
             <button type="submit" disabled={saving}
@@ -249,7 +248,7 @@ export default function IncomePage() {
           {/* Filters */}
           <div className="px-4 py-3 border-b border-slate-50 space-y-2">
             <input className="h-10 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
-              placeholder="🔍 Search source, note or reference..."
+              placeholder="🔍 source, नोट या reference खोजें..."
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
             <div className="flex gap-2">
@@ -269,10 +268,10 @@ export default function IncomePage() {
           {loading ? (
             <div className="p-4 space-y-2.5">{[...Array(4)].map((_, i) => <div key={i} className="skeleton-row" />)}</div>
           ) : filteredEntries.length === 0 ? (
-            <div className="empty-state rounded-none border-0 bg-transparent py-12">
-              <div className="empty-state-icon mx-auto mb-4 text-[22px]">💰</div>
-              <p className="text-[13px] font-extrabold text-slate-700">No income found</p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Filter बदलो या नई income add करो</p>
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[24px]">💰</div>
+              <p className="text-[14px] font-extrabold text-slate-800">कोई आय नहीं</p>
+              <p className="text-[12px] text-slate-400 mt-1">बिक्री के अलावा अन्य आय यहाँ जोड़ें</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">
@@ -310,7 +309,7 @@ export default function IncomePage() {
             </div>
           )}
         </div>
-      </div>
+      </PageShell>
     </Layout>
   );
 }

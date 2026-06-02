@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import PageShell from '../../components/ui/PageShell';
+import PageHeader from '../../components/ui/PageHeader';
 
 /* ── Constants & helpers (UNCHANGED) ── */
 const getToken = () => localStorage.getItem('token');
@@ -87,8 +89,8 @@ export default function BankEntriesPage() {
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
       if (!res.ok) { setError(data.message || 'Bank entry save nahi hui.'); return; }
-      if (editingId) { setEntries((c) => c.map((en) => (en._id === editingId ? data : en))); setSuccess('Bank entry updated successfully.'); }
-      else           { setEntries((c) => [data, ...c]); setSuccess('Bank entry saved successfully.'); }
+      if (editingId) { setEntries((c) => c.map((en) => (en._id === editingId ? data : en))); setSuccess('✅ Bank entry बदली गई'); }
+      else           { setEntries((c) => [data, ...c]); setSuccess('✅ Bank entry जोड़ी गई'); }
       resetForm();
     } catch { setError('Bank entry save nahi hui.'); }
     finally   { setSaving(false); }
@@ -101,7 +103,7 @@ export default function BankEntriesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Is bank entry ko delete karna hai?')) return;
+    if (!window.confirm('क्या आप यह bank entry हटाना चाहते हैं?')) return;
     try {
       setDeletingId(id);
       const res = await fetch(apiUrl(`/api/bank-entries/${id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
@@ -110,14 +112,14 @@ export default function BankEntriesPage() {
       if (!res.ok) { setError(data.message || 'Bank entry delete nahi hui.'); return; }
       setEntries((c) => c.filter((en) => en._id !== id));
       if (editingId === id) resetForm();
-      setSuccess('Bank entry deleted.');
+      setSuccess('✅ Bank entry हटाई गई');
     } catch { setError('Bank entry delete nahi hui.'); }
     finally   { setDeletingId(''); }
   };
 
   return (
     <Layout>
-      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+      <PageShell>
 
         {/* ── Header ── */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border border-slate-200 p-5 shadow-sm">
@@ -126,10 +128,7 @@ export default function BankEntriesPage() {
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[10px] font-bold uppercase tracking-widest text-green-700">
               🏦 Bank Movement
             </span>
-            <h1 className="mt-2.5 text-[22px] font-black text-slate-900 leading-tight">Bank Entries</h1>
-            <p className="mt-1 text-[13px] text-slate-500">
-              Deposits, withdrawals, charges, interest और transfers को bank register में रखो।
-            </p>
+            <PageHeader title="बैंक" subtitle="बैंक में आना-जाना का हिसाब" />
             <div className="flex flex-wrap gap-2 mt-3">
               {[{ href: '/expenses', label: '💸 Expenses' }, { href: '/income', label: '💰 Income' }, { href: '/reports', label: '📊 Reports' }].map((l) => (
                 <Link key={l.href} href={l.href}
@@ -213,13 +212,13 @@ export default function BankEntriesPage() {
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Reference</p>
-                <input className={INP} placeholder="Cheque / transfer ref" value={form.reference_id} onChange={(e) => setForm((c) => ({ ...c, reference_id: e.target.value }))} />
+                <input className={INP} placeholder="Cheque / transfer reference" value={form.reference_id} onChange={(e) => setForm((c) => ({ ...c, reference_id: e.target.value }))} />
               </div>
             </div>
 
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Narration</p>
-              <input className={INP} placeholder="Bank note, charge reason, transfer details..." value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
+              <input className={INP} placeholder="बैंक नोट, charge कारण, transfer विवरण..." value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
             </div>
 
             <button type="submit" disabled={saving}
@@ -241,7 +240,7 @@ export default function BankEntriesPage() {
           {/* Filters */}
           <div className="px-4 py-3 border-b border-slate-50 space-y-2">
             <input className="h-10 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/25 focus:border-green-400 transition-all"
-              placeholder="🔍 Search type, note or reference..."
+              placeholder="🔍 type, नोट या reference खोजें..."
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
             <select className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none transition-all"
@@ -254,10 +253,10 @@ export default function BankEntriesPage() {
           {loading ? (
             <div className="p-4 space-y-2.5">{[...Array(4)].map((_, i) => <div key={i} className="skeleton-row" />)}</div>
           ) : filteredEntries.length === 0 ? (
-            <div className="empty-state rounded-none border-0 bg-transparent py-12">
-              <div className="empty-state-icon mx-auto mb-4 text-[22px]">🏦</div>
-              <p className="text-[13px] font-extrabold text-slate-700">No bank entries found</p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Filter बदलो या नई entry add करो</p>
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[24px]">🏦</div>
+              <p className="text-[14px] font-extrabold text-slate-800">कोई bank entry नहीं</p>
+              <p className="text-[12px] text-slate-400 mt-1">पहली entry ऊपर के फ़ॉर्म से जोड़ें</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">
@@ -301,7 +300,7 @@ export default function BankEntriesPage() {
             </div>
           )}
         </div>
-      </div>
+      </PageShell>
     </Layout>
   );
 }

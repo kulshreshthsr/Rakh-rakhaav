@@ -9,7 +9,7 @@ const getExpenses = async (req, res) => {
     const expenses = await Expense.find({ shop: shop._id }).sort({ date: -1 });
     res.json(expenses);
   } catch (err) {
-    logger.error(err);
+    logger.error('[expenseController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -52,7 +52,7 @@ const updateExpense = async (req, res) => {
 
     res.json(expense);
   } catch (err) {
-    logger.error(err);
+    logger.error('[expenseController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -84,7 +84,7 @@ const createExpense = async (req, res) => {
     });
     res.status(201).json(expense);
   } catch (err) {
-    logger.error(err);
+    logger.error('[expenseController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -108,7 +108,7 @@ const deleteExpense = async (req, res) => {
     }
     res.json({ message: 'Expense deleted' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[expenseController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

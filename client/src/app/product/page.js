@@ -9,6 +9,7 @@ import { useIndustry } from '../../contexts/IndustryContext';
 import DynamicFormField from '../../components/DynamicFormField';
 import DynamicFormSection, { flattenSectionFields, formatMetaValue, validateSections } from '../../components/DynamicFormSection';
 import { getInvBehavior, hasInventoryPanel, isBatchMode, isVariantMode, isSerialMode, isRecipeMode, getPrimaryPanelLabel } from '../../lib/inventoryBehavior';
+import PageHeader from '../../components/ui/PageHeader';
 import BatchInventoryPanel from '../../components/BatchInventoryPanel';
 import VariantInventoryPanel from '../../components/VariantInventoryPanel';
 import RecipePanel from '../../components/RecipePanel';
@@ -29,7 +30,7 @@ const SEL = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text
 function stockStatus(p) {
   if (p.quantity === 0) return { label: 'खत्म',    cls: 'bg-rose-100 text-rose-700 border-rose-200',     dot: 'bg-rose-500'   };
   if (p.is_low_stock)   return { label: `कम (${p.quantity})`, cls: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500' };
-  return                       { label: 'In Stock', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' };
+  return                       { label: 'उपलब्ध', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' };
 }
 function marginColor(m) {
   if (m == null) return 'text-slate-400';
@@ -323,13 +324,7 @@ export default function ProductsPage() {
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
                 📦 {term('inventory', 'Stock')}
               </span>
-              <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">स्टॉक / {term('products', 'Products')}</h1>
-              <p className="mt-2 text-[13px] text-slate-600 font-medium">
-                {refreshing ? '🔄 Refreshing...'
-                  : !isOnline ? `📶 Offline snapshot${cacheLabel ? ` · ${cacheLabel}` : ''}`
-                  : cacheLabel ? `✓ Last synced ${cacheLabel}`
-                  : 'Aapka poora stock yahan ready hai'}
-              </p>
+              <PageHeader title="स्टॉक" subtitle="सामान और इन्वेंटरी" />
             </div>
             <button onClick={openAdd} disabled={!isOnline}
               className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 transition-all"
@@ -390,7 +385,7 @@ export default function ProductsPage() {
         {/* ── TOOLBAR ── */}
         <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md space-y-3">
           <input className="h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
-            placeholder={`🔍 ${term('searchProduct', 'Search name, barcode, description...')}`}
+            placeholder="🔍 नाम, barcode या category..."
             value={search} onChange={e => setSearch(e.target.value)}
           />
           <div className="flex gap-2">
@@ -436,16 +431,14 @@ export default function ProductsPage() {
         {/* ── EMPTY STATE ── */}
         {!loading && filtered.length === 0 && (
           <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[26px]">📦</div>
+            <div className="empty-state-icon mx-auto mb-4 text-[26px]">
+              {search || filterStock !== 'all' ? '🔍' : '📦'}
+            </div>
             <p className="text-[14px] font-extrabold text-slate-700 mb-1">
-              {search || filterStock !== 'all'
-                ? `कोई ${term('product', 'product')} नहीं मिला`
-                : `अभी कोई ${term('product', 'product')} नहीं है`}
+              {search || filterStock !== 'all' ? 'कोई सामान नहीं मिला' : 'अभी कोई सामान नहीं'}
             </p>
             <p className="text-[12px] text-slate-400 leading-relaxed">
-              {search || filterStock !== 'all'
-                ? 'Search बदलें या filter हटाएं — कुछ मिलेगा'
-                : `पहला ${term('product', 'product')} add करो और अपना ${term('inventory', 'inventory')} शुरू करो`}
+              {search || filterStock !== 'all' ? 'अलग keyword try करें' : '+ बटन दबाकर पहला product जोड़ें'}
             </p>
             {!search && filterStock === 'all' && (
               <button onClick={openAdd} className="empty-action-btn mt-4">
@@ -491,8 +484,8 @@ export default function ProductsPage() {
                       {/* Stats grid */}
                       <div className="grid grid-cols-5 gap-2 mb-3">
                         {[
-                          { label: 'Cost',   value: p.cost_price ? `₹${p.cost_price}` : '—',  cls: 'text-slate-600' },
-                          { label: 'Price',  value: `₹${p.price}`,                             cls: 'text-slate-900 font-black' },
+                          { label: 'Cost',   value: p.cost_price ? '₹' + parseFloat(p.cost_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—', cls: 'text-slate-600' },
+                          { label: 'Price',  value: '₹' + parseFloat(p.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), cls: 'text-slate-900 font-black' },
                           { label: 'Margin', value: p.margin != null ? `${p.margin}%` : '—',  cls: marginColor(p.margin) + ' font-black' },
                           { label: 'Qty',    value: `${p.quantity}`,                           cls: (p.quantity === 0 ? 'text-rose-600' : p.is_low_stock ? 'text-amber-600' : 'text-emerald-600') + ' font-black text-[16px]' },
                           { label: 'GST',    value: p.gst_rate > 0 ? `${p.gst_rate}%` : 'NIL', cls: 'text-green-700 font-bold' },

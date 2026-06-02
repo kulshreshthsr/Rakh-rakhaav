@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 import PermissionGuard from '../../components/PermissionGuard';
 import { apiUrl } from '../../lib/api';
 import { getRoleColor } from '../../lib/permissions';
+import PageHeader from '../../components/ui/PageHeader';
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : '');
@@ -29,28 +30,28 @@ const PERMISSION_GROUPS = {
 };
 
 const PERM_LABELS = {
-  VIEW_DASHBOARD: 'View Dashboard',
-  MANAGE_INVENTORY: 'Manage Inventory',
-  CREATE_INVOICE: 'Create Invoice',
-  VIEW_SALES: 'View Sales',
-  MANAGE_SALES: 'Edit/Delete Sales',
-  CREATE_PURCHASE: 'Create Purchase',
-  VIEW_PURCHASES: 'View Purchases',
-  MANAGE_PURCHASES: 'Edit/Delete Purchases',
-  VIEW_EXPENSES: 'View Expenses',
-  MANAGE_EXPENSES: 'Add/Edit Expenses',
-  VIEW_INCOME: 'View Income',
-  MANAGE_INCOME: 'Add/Edit Income',
-  VIEW_BANK: 'View Bank',
-  MANAGE_BANK: 'Add/Edit Bank Entries',
-  VIEW_REPORTS: 'View Reports',
-  VIEW_GST: 'View GST',
-  VIEW_UDHAAR: 'View Udhaar',
-  MANAGE_UDHAAR: 'Manage Udhaar',
-  MANAGE_CUSTOMERS: 'Manage Customers',
-  MANAGE_SUPPLIERS: 'Manage Suppliers',
-  MANAGE_USERS: 'Manage Team Members',
-  MANAGE_ROLES: 'Manage Roles',
+  VIEW_DASHBOARD:    'Dashboard देखें',
+  MANAGE_INVENTORY:  'Stock manage करें',
+  CREATE_INVOICE:    'Invoice बनाएँ',
+  VIEW_SALES:        'Sales देखें',
+  MANAGE_SALES:      'Sales manage करें',
+  CREATE_PURCHASE:   'Purchase बनाएँ',
+  VIEW_PURCHASES:    'Purchases देखें',
+  MANAGE_PURCHASES:  'Purchases manage करें',
+  VIEW_EXPENSES:     'खर्च देखें',
+  MANAGE_EXPENSES:   'खर्च manage करें',
+  VIEW_INCOME:       'आय देखें',
+  MANAGE_INCOME:     'आय manage करें',
+  VIEW_BANK:         'Bank देखें',
+  MANAGE_BANK:       'Bank manage करें',
+  VIEW_REPORTS:      'Reports देखें',
+  VIEW_GST:          'GST देखें',
+  VIEW_UDHAAR:       'उधार देखें',
+  MANAGE_UDHAAR:     'उधार manage करें',
+  MANAGE_CUSTOMERS:  'Customers manage करें',
+  MANAGE_SUPPLIERS:  'Suppliers manage करें',
+  MANAGE_USERS:      'Users manage करें',
+  MANAGE_ROLES:      'Roles manage करें',
 };
 
 const COLORS = ['green', 'blue', 'purple', 'orange', 'slate', 'rose', 'amber'];
@@ -249,6 +250,7 @@ function EditRolePanel({ role, onClose, onUpdated, onDeleted }) {
   };
 
   const handleDelete = async () => {
+    if (!window.confirm('क्या आप यह भूमिका हटाना चाहते हैं? यह action वापस नहीं होगा।')) return;
     setSaving(true);
     try {
       const res = await authFetch(apiUrl(`/api/rbac/roles/${role._id}`), { method: 'DELETE' });
@@ -374,8 +376,7 @@ export default function RolesPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-green-700 mb-1">Settings</p>
-              <h1 className="text-[26px] font-black text-slate-900 leading-tight">Roles & Permissions</h1>
-              <p className="text-[13px] text-slate-400 mt-1">Define what each role can access in your shop</p>
+              <PageHeader title="भूमिकाएँ" subtitle="टीम के लिए permission sets" />
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <button onClick={() => router.push('/team')} className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-[13px] hover:bg-slate-50 transition-all">
@@ -434,7 +435,11 @@ export default function RolesPage() {
                 })}
 
                 {roles.length === 0 && (
-                  <div className="text-center py-8 text-[13px] text-slate-400">No roles yet</div>
+                  <div className="empty-state">
+                    <div className="empty-state-icon mx-auto mb-4 text-[24px]">🔐</div>
+                    <p className="text-[14px] font-extrabold text-slate-800">कोई custom भूमिका नहीं</p>
+                    <p className="text-[12px] text-slate-400 mt-1">नीचे के फ़ॉर्म से पहली भूमिका बनाएँ</p>
+                  </div>
                 )}
               </div>
 

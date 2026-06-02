@@ -61,7 +61,7 @@ const register = async (req, res) => {
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.status(201).json({ user: serializeAuthUser(user), token });
   } catch (err) {
-    logger.error(err);
+    logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -106,7 +106,7 @@ const login = async (req, res) => {
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.json({ user: serializeAuthUser(user), token });
   } catch (err) {
-    logger.error(err);
+    logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -119,7 +119,7 @@ const updateProfile = async (req, res) => {
     if (!req.user.isSubUser) ensureTrialDates(user);
     res.json({ id: user._id, name: user.name, username: user.username, subscription: req.user.isSubUser ? null : getSubscriptionSnapshot(user) });
   } catch (err) {
-    logger.error(err);
+    logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -130,14 +130,14 @@ const updatePassword = async (req, res) => {
   const userId = req.user.subUserId || req.user.id;
   try {
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User नहीं मिला' });
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
     res.json({ message: 'Password updated!' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -147,7 +147,7 @@ const getShop = async (req, res) => {
     const shop = await getShopOrFail(req.user.id);
     res.json(shop);
   } catch (err) {
-    logger.error(err);
+    logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -192,7 +192,7 @@ const updateShop = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    logger.error(err);
+    logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -201,7 +201,7 @@ const getSubscriptionStatus = async (req, res) => {
   try {
     // For sub-users req.user.id is the owner's ID — correct for subscription checks
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(401).json({ message: 'User not found' });
+    if (!user) return res.status(401).json({ message: 'User नहीं मिला' });
 
     ensureTrialDates(user);
     if (syncSubscriptionState(user) || user.isModified()) {
@@ -237,7 +237,7 @@ const getSubscriptionStatus = async (req, res) => {
       razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
     });
   } catch (err) {
-    logger.error(err);
+    logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

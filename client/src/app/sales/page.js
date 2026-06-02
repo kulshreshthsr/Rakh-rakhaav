@@ -29,20 +29,14 @@ import SaleReturnModal from './components/SaleReturnModal';
 import useSalesData from './hooks/useSalesData';
 import useSaleForm from './hooks/useSaleForm';
 import useIndustrySideData from './hooks/useIndustrySideData';
+import { INDIAN_STATES as STATES, UNION_TERRITORIES as UTS, GSTIN_REGEX, normalizeGstin, normalizeState, fmt } from '../../lib/constants';
 
 /* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
-const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
-const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
-
 const getToken = () => localStorage.getItem('token');
-const fmt      = (n) => parseFloat(n || 0).toFixed(2);
 const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {}, unit_of_measurement: 'NOS', remarks: '' });
-const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const GSTIN_LENGTH = 15;
 const SALES_CACHE_KEY = 'sales-page';
 const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
-const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
-const normalizeState = (value = '') => value.trim().toLowerCase();
 const formatDateInputValue = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';

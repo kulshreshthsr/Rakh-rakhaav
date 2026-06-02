@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
+import { fmt, fmtINR } from '../../lib/constants';
+import PageHeader from '../../components/ui/PageHeader';
 
 /* ─── Constants & pure helpers (ALL 100% UNCHANGED) ─────────────── */
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -11,7 +13,6 @@ const MONTHS_HI = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','
 
 const getToken  = () => localStorage.getItem('token');
 const GST_CACHE_PREFIX = 'gst-page-v1';
-const fmt       = (n) => parseFloat(n || 0).toFixed(2);
 const round2    = (value) => parseFloat(Number(value || 0).toFixed(2));
 const getGSTCacheKey = (month, year) => `${GST_CACHE_PREFIX}:${year}:${month}`;
 const safeText  = (value = '') => String(value || '')
@@ -391,10 +392,7 @@ export default function GSTPage() {
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
                 📊 Tax & Compliance
               </span>
-              <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">GST / Tax Summary</h1>
-              <p className="mt-2 text-[14px] text-slate-600 font-medium">
-                GST collect किया, ITC क्लेम किया, filing-ready exports — सब यहाँ
-              </p>
+              <PageHeader title="GST" subtitle="Tax filing और ITC हिसाब" />
               {!isOnline
                 ? <p className="mt-2 text-[11px] font-semibold text-amber-700">📶 Offline — cached data{cacheLabel ? ` · ${cacheLabel}` : ''}</p>
                 : cacheLoaded && cacheLabel
@@ -404,10 +402,10 @@ export default function GSTPage() {
 
             {/* Month / Year selectors */}
             <div className="flex gap-2 flex-shrink-0">
-              <select className={INPUT_CLS} style={{ width: 130 }} value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
+              <select className={INPUT_CLS} style={{ width: 130 }} disabled={loading} value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
                 {MONTHS.map((m, i) => <option key={m} value={i+1}>{MONTHS_HI[i]} / {m}</option>)}
               </select>
-              <select className={INPUT_CLS} style={{ width: 90 }} value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))}>
+              <select className={INPUT_CLS} style={{ width: 90 }} disabled={loading} value={year} onChange={(e) => setYear(parseInt(e.target.value, 10))}>
                 {[2023,2024,2025,2026,2027].map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
@@ -434,10 +432,10 @@ export default function GSTPage() {
 
         {/* ── No data ── */}
         {!loading && !summary && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
-            <div className="text-4xl mb-3">📋</div>
-            <p className="text-[14px] font-bold text-slate-700">Summary unavailable</p>
-            <p className="text-[12px] text-slate-400 mt-1">Month/year बदलकर देखें या internet check करें</p>
+          <div className="empty-state">
+            <div className="empty-state-icon mx-auto mb-3 text-[20px]">📄</div>
+            <p className="text-[13px] font-bold text-slate-700">इस महीने का कोई data नहीं</p>
+            <p className="text-[12px] text-slate-400 mt-1">Period बदलकर देखें</p>
           </div>
         )}
 
@@ -463,15 +461,15 @@ export default function GSTPage() {
                   {isPayable ? 'Net GST Payable' : 'ITC Balance / No Liability'}
                 </p>
                 <p className={`text-[38px] font-black leading-none tracking-tight mb-4 ${isPayable ? 'text-rose-700' : 'text-emerald-700'}`}>
-                  ₹{fmt(isPayable ? payableTotal : excessCreditTotal)}
+                  {fmtINR(isPayable ? payableTotal : excessCreditTotal)}
                 </p>
 
                 {/* 3-column breakdown */}
                 <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-3">
                   {[
-                    { label: 'Output GST', sublabel: 'Sales से collect हुआ', value: `₹${fmt(gstCollected)}`, color: 'text-slate-800' },
-                    { label: 'Input ITC',  sublabel: 'Purchase से credit',   value: `₹${fmt(gstITC)}`,       color: 'text-green-700'  },
-                    { label: isPayable ? 'Payable' : 'Excess ITC', sublabel: 'After set-off', value: `₹${fmt(isPayable ? payableTotal : excessCreditTotal)}`, color: isPayable ? 'text-rose-700' : 'text-emerald-700' },
+                    { label: 'Output GST', sublabel: 'Sales से collect हुआ', value: fmtINR(gstCollected), color: 'text-slate-800' },
+                    { label: 'Input ITC',  sublabel: 'Purchase से credit',   value: fmtINR(gstITC),       color: 'text-green-700'  },
+                    { label: isPayable ? 'Payable' : 'Excess ITC', sublabel: 'After set-off', value: fmtINR(isPayable ? payableTotal : excessCreditTotal), color: isPayable ? 'text-rose-700' : 'text-emerald-700' },
                   ].map((s) => (
                     <div key={s.label} className="bg-white/70 rounded-xl p-3 border border-white">
                       <p className={`text-[17px] font-black leading-none ${s.color}`}>{s.value}</p>
@@ -492,8 +490,8 @@ export default function GSTPage() {
               {/* Output GST */}
               <NumberRow
                 label="GST Collected (Output)"
-                note={`Sales से। CGST ₹${fmt(summary.sales.cgst)} + SGST ₹${fmt(summary.sales.sgst)} + IGST ₹${fmt(summary.sales.igst)}`}
-                value={`₹${fmt(gstCollected)}`}
+                note={`Sales से। CGST ${fmtINR(summary.sales.cgst)} + SGST ${fmtINR(summary.sales.sgst)} + IGST ${fmtINR(summary.sales.igst)}`}
+                value={fmtINR(gstCollected)}
                 valueColor="text-emerald-600"
               />
               <div className="px-5 pb-3">
@@ -512,8 +510,8 @@ export default function GSTPage() {
               {/* ITC */}
               <NumberRow
                 label="GST Input Credit (ITC)"
-                note={`Purchases से। CGST ₹${fmt(summary.purchases.cgst)} + SGST ₹${fmt(summary.purchases.sgst)} + IGST ₹${fmt(summary.purchases.igst)}`}
-                value={`₹${fmt(gstITC)}`}
+                note={`Purchases से। CGST ${fmtINR(summary.purchases.cgst)} + SGST ${fmtINR(summary.purchases.sgst)} + IGST ${fmtINR(summary.purchases.igst)}`}
+                value={fmtINR(gstITC)}
                 valueColor="text-green-700"
               />
               {gstITC === 0 && (
@@ -544,7 +542,7 @@ export default function GSTPage() {
                   <p className="text-[11px] text-slate-400 mt-0.5">ITC set-off के बाद बचा हुआ</p>
                 </div>
                 <p className={`text-[22px] font-black ${isPayable ? 'text-rose-700' : 'text-emerald-600'}`}>
-                  ₹{fmt(isPayable ? payableTotal : excessCreditTotal)}
+                  {fmtINR(isPayable ? payableTotal : excessCreditTotal)}
                 </p>
               </div>
             </SectionCard>
@@ -612,10 +610,10 @@ export default function GSTPage() {
             ══════════════════════════════════════ */}
             {summary.gstr1.b2b_invoices.length === 0 ? (
               <SectionCard>
-                <div className="p-8 text-center">
-                  <div className="text-3xl mb-2">🏢</div>
-                  <p className="text-[13px] font-bold text-slate-600">No B2B Invoices</p>
-                  <p className="text-[11px] text-slate-400 mt-1">Sales में customer का GSTIN add करो to B2B invoice बनेगा</p>
+                <div className="empty-state rounded-none border-0 bg-transparent py-10">
+                  <div className="empty-state-icon mx-auto mb-3 text-[20px]">📄</div>
+                  <p className="text-[13px] font-bold text-slate-700">इस महीने का कोई data नहीं</p>
+                  <p className="text-[12px] text-slate-400 mt-1">Sales में customer का GSTIN add करें — B2B invoices यहाँ आएंगे</p>
                 </div>
               </SectionCard>
             ) : (

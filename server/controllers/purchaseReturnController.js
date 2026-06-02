@@ -266,7 +266,8 @@ const createPurchaseReturn = async (req, res) => {
     if (err.message.includes('not found') || err.message.includes('can only return') || err.message.includes('required')) {
       return res.status(400).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -282,7 +283,8 @@ const getReturnsForPurchase = async (req, res) => {
     res.json(returns);
   } catch (err) {
     if (err.code === 'SHOP_NOT_CONFIGURED') return res.status(400).json({ code: err.code, message: err.message });
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 

@@ -4,20 +4,64 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { hasPermission } from '../../lib/permissions';
+import PageShell from '../../components/ui/PageShell';
+import PageHeader from '../../components/ui/PageHeader';
 
 const getToken = () => localStorage.getItem('token');
 
 const ACTION_META = {
-  WORKFLOW_ADVANCED:  { icon: '⚡', color: '#7c3aed', label: 'Workflow Advance' },
-  INVOICE_CREATED:    { icon: '🧾', color: '#16a34a', label: 'Invoice Created'  },
-  STOCK_UPDATED:      { icon: '📦', color: '#d97706', label: 'Stock Updated'    },
-  INVOICE_DELETED:    { icon: '🗑️', color: '#dc2626', label: 'Invoice Deleted'  },
-  TASK_COMPLETED:     { icon: '✅', color: '#16a34a', label: 'Task Completed'   },
+  WORKFLOW_ADVANCED:       { icon: '⚡', color: '#7c3aed', label: 'Workflow Advance'  },
+  INVOICE_CREATED:         { icon: '🧾', color: '#16a34a', label: 'Invoice Created'   },
+  STOCK_UPDATED:           { icon: '📦', color: '#d97706', label: 'Stock Updated'     },
+  INVOICE_DELETED:         { icon: '🗑️', color: '#dc2626', label: 'Invoice Deleted'   },
+  TASK_COMPLETED:          { icon: '✅', color: '#16a34a', label: 'Task Completed'    },
+  PURCHASE_CREATED:        { icon: '🛒', color: '#d97706', label: 'खरीद बनाई'         },
+  PURCHASE_UPDATED:        { icon: '✏️', color: '#d97706', label: 'खरीद बदली'         },
+  SALE_RETURN_CREATED:     { icon: '↩️', color: '#dc2626', label: 'Sale Return'       },
+  PURCHASE_RETURN_CREATED: { icon: '↩️', color: '#ea580c', label: 'Purchase Return'   },
+  USER_LOGIN:              { icon: '🔑', color: '#7c3aed', label: 'Login'             },
+  STOCK_ADJUSTED:          { icon: '⚖️', color: '#0369a1', label: 'Stock Adjust'      },
+  TASK_CREATED:            { icon: '📋', color: '#16a34a', label: 'काम बनाया'         },
+  SETTINGS_UPDATED:        { icon: '⚙️', color: '#475569', label: 'Settings'          },
 };
 
 function fmtDate(d) {
   if (!d) return '';
   return new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function DetailChips({ details }) {
+  if (!details || typeof details !== 'object') return null;
+  const entries = Object.entries(details);
+  if (entries.length === 0) return null;
+  const shown = entries.slice(0, 4);
+  const extra = entries.length - shown.length;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {shown.map(([key, value]) => {
+        const isAmount = /amount|total|price/i.test(key);
+        const isBadBool = (key === 'deleted' || key === 'cancelled') && value === true;
+        let cls = 'bg-slate-100 text-slate-600 border border-slate-200';
+        let display = String(value);
+        if (isAmount && !isNaN(Number(value))) {
+          cls = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+          display = '₹' + Number(value).toLocaleString('en-IN');
+        } else if (isBadBool) {
+          cls = 'bg-rose-50 text-rose-700 border border-rose-200';
+        }
+        return (
+          <span key={key} className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${cls}`}>
+            {key}: {display}
+          </span>
+        );
+      })}
+      {extra > 0 && (
+        <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 border border-slate-200">
+          +{extra} more
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function AuditPage() {
@@ -26,6 +70,8 @@ export default function AuditPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [entityFilter, setEntityFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
@@ -37,9 +83,11 @@ export default function AuditPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const url = entityFilter
-        ? apiUrl(`/api/audit?entity=${entityFilter}&limit=100`)
-        : apiUrl('/api/audit?limit=100');
+      const params = new URLSearchParams({ limit: '100' });
+      if (entityFilter) params.set('entity', entityFilter);
+      if (dateFrom) params.set('from', dateFrom);
+      if (dateTo) params.set('to', dateTo);
+      const url = apiUrl(`/api/audit?${params.toString()}`);
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error('Failed to load audit logs');
       setLogs(await res.json());
@@ -48,7 +96,7 @@ export default function AuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [entityFilter]);
+  }, [entityFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -61,12 +109,8 @@ export default function AuditPage() {
 
   return (
     <Layout>
-      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
-
-        <div>
-          <h1 className="text-[22px] font-black text-slate-900 leading-tight">Activity Log</h1>
-          <p className="text-[12px] text-slate-500 mt-0.5">Who did what and when — last 90 days</p>
-        </div>
+      <PageShell>
+        <PageHeader title="गतिविधि लॉग" subtitle="किसने क्या किया — पिछले 90 दिन" />
 
         {/* Entity filter tabs */}
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -85,6 +129,22 @@ export default function AuditPage() {
           ))}
         </div>
 
+        {/* Date range filter */}
+        <div className="flex gap-2 flex-wrap">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
+          />
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
+          />
+        </div>
+
         {loading ? (
           <div className="space-y-2">
             {[1,2,3,4,5].map(i => <div key={i} className="h-16 rounded-2xl bg-slate-100 animate-pulse" />)}
@@ -92,10 +152,10 @@ export default function AuditPage() {
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-[13px] text-red-700 font-semibold">{error}</div>
         ) : logs.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 px-6 py-12 text-center">
-            <p className="text-4xl mb-3">📋</p>
-            <p className="text-[15px] font-black text-slate-800">No activity logged yet</p>
-            <p className="text-[13px] text-slate-400 mt-1">Actions like workflow transitions and stock updates appear here</p>
+          <div className="empty-state">
+            <div className="empty-state-icon mx-auto mb-4 text-[24px]">📋</div>
+            <p className="text-[14px] font-extrabold text-slate-800">कोई गतिविधि नहीं</p>
+            <p className="text-[12px] text-slate-400 mt-1">इस filter के लिए कोई log नहीं मिला</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-50">
@@ -110,13 +170,14 @@ export default function AuditPage() {
                       {log.entityName && (
                         <span className="text-[11px] text-slate-500 font-semibold">· {log.entityName}</span>
                       )}
-                      {log.details && Object.keys(log.details).length > 0 && (
-                        <span className="text-[11px] text-slate-400">
-                          {JSON.stringify(log.details).replace(/[{}"]/g, '').slice(0, 40)}
-                        </span>
-                      )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <DetailChips details={log.details} />
+                    )}
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                        {(log.username || 'S').charAt(0).toUpperCase()}
+                      </div>
                       <span className="text-[11px] text-slate-500 font-semibold">{log.username || 'System'}</span>
                       <span className="text-[10px] text-slate-400">{fmtDate(log.createdAt)}</span>
                     </div>
@@ -126,7 +187,7 @@ export default function AuditPage() {
             })}
           </div>
         )}
-      </div>
+      </PageShell>
     </Layout>
   );
 }

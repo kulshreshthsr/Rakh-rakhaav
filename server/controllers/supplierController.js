@@ -12,7 +12,7 @@ const getSuppliers = async (req, res) => {
       .sort({ name: 1 });
     res.json(suppliers);
   } catch (err) {
-    logger.error(err);
+    logger.error('[supplierController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -22,10 +22,10 @@ const getSupplierById = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
-    if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
+    if (!supplier) return res.status(404).json({ message: 'Supplier नहीं मिला' });
     res.json(supplier);
   } catch (err) {
-    logger.error(err);
+    logger.error('[supplierController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -54,7 +54,7 @@ const createSupplier = async (req, res) => {
     });
     res.status(201).json(supplier);
   } catch (err) {
-    logger.error(err);
+    logger.error('[supplierController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -64,7 +64,7 @@ const updateSupplier = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
     const existingSupplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
-    if (!existingSupplier) return res.status(404).json({ message: 'Supplier not found' });
+    if (!existingSupplier) return res.status(404).json({ message: 'Supplier नहीं मिला' });
     const updatePayload = { ...req.body };
     if (Object.prototype.hasOwnProperty.call(updatePayload, 'opening_balance')) {
       const nextOpening = Number(updatePayload.opening_balance || 0);
@@ -89,7 +89,7 @@ const updateSupplier = async (req, res) => {
     });
     res.json(supplier);
   } catch (err) {
-    logger.error(err);
+    logger.error('[supplierController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -115,7 +115,7 @@ const deleteSupplier = async (req, res) => {
     }
     res.json({ message: 'Supplier removed' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[supplierController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -125,7 +125,7 @@ const getSupplierLedger = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
-    if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
+    if (!supplier) return res.status(404).json({ message: 'Supplier नहीं मिला' });
 
     const ledger = await SupplierUdhaar.find({
       shop: shop._id,
@@ -135,7 +135,7 @@ const getSupplierLedger = async (req, res) => {
 
     res.json({ supplier, ledger });
   } catch (err) {
-    logger.error(err);
+    logger.error('[supplierController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -147,7 +147,7 @@ const settleSupplierPayment = async (req, res) => {
     const { amount, note, payment_mode } = req.body;
 
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
-    if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
+    if (!supplier) return res.status(404).json({ message: 'Supplier नहीं मिला' });
 
     if (!Number.isFinite(Number(amount)) || Number(amount) <= 0)
       return res.status(400).json({ message: 'Amount must be a positive number' });
@@ -185,7 +185,7 @@ const settleSupplierPayment = async (req, res) => {
 
     res.json({ message: 'Payment recorded', balanceDue: supplier.totalUdhaar });
   } catch (err) {
-    logger.error(err);
+    logger.error('[supplierController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

@@ -14,7 +14,7 @@ const getCustomers = async (req, res) => {
     }).sort({ name: 1 });
     res.json(customers);
   } catch (err) {
-    logger.error(err);
+    logger.error('[customerController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -42,7 +42,7 @@ const createCustomer = async (req, res) => {
     });
     res.status(201).json(customer);
   } catch (err) {
-    logger.error(err);
+    logger.error('[customerController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -52,7 +52,7 @@ const updateCustomer = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
     const existingCustomer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
-    if (!existingCustomer) return res.status(404).json({ message: 'Customer not found' });
+    if (!existingCustomer) return res.status(404).json({ message: 'Customer नहीं मिला' });
     const { name, phone, email, address, gstin, notes, opening_balance } = req.body;
     const updatePayload = {};
     if (name !== undefined) updatePayload.name = name;
@@ -87,7 +87,7 @@ const updateCustomer = async (req, res) => {
     });
     res.json(customer);
   } catch (err) {
-    logger.error(err);
+    logger.error('[customerController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -97,7 +97,7 @@ const deleteCustomer = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
-    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
 
     // Warn if balance still due
     if (customer.totalUdhaar > 0) {
@@ -118,7 +118,7 @@ const deleteCustomer = async (req, res) => {
     });
     res.json({ message: 'Customer removed' });
   } catch (err) {
-    logger.error(err);
+    logger.error('[customerController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -128,7 +128,7 @@ const getUdhaar = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
-    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
 
     const entries = await Udhaar.find({
       shop: shop._id,
@@ -136,7 +136,7 @@ const getUdhaar = async (req, res) => {
     }).sort({ date: -1 });
     res.json({ customer, entries });
   } catch (err) {
-    logger.error(err);
+    logger.error('[customerController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -150,7 +150,7 @@ const addUdhaar = async (req, res) => {
     }
     const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
-    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
 
     // Normalise legacy 'diya'/'liya' to 'debit'/'credit'
     const normalType = type === 'diya' ? 'debit' : type === 'liya' ? 'credit' : type;
@@ -189,7 +189,7 @@ const addUdhaar = async (req, res) => {
 
     res.status(201).json(entry);
   } catch (err) {
-    logger.error(err);
+    logger.error('[customerController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -201,7 +201,7 @@ const settlePayment = async (req, res) => {
     const { amount, note, payment_mode } = req.body;
     const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
-    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
 
     if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
       return res.status(400).json({ message: 'Amount must be a positive number' });
@@ -244,7 +244,7 @@ const settlePayment = async (req, res) => {
       customer,
     });
   } catch (err) {
-    logger.error(err);
+    logger.error('[customerController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

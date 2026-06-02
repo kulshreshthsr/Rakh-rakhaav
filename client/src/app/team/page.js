@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 import PermissionGuard from '../../components/PermissionGuard';
 import { apiUrl } from '../../lib/api';
 import { SYSTEM_ROLES, getRoleColor, getRoleLabel } from '../../lib/permissions';
+import PageHeader from '../../components/ui/PageHeader';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getSuggestedRoles } from '../../lib/roleConfig';
 
@@ -279,7 +280,7 @@ export default function TeamPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id) => {
-    if (!confirm('Remove this team member? They will no longer be able to log in.')) return;
+    if (!confirm('क्या आप इस team member को हटाना चाहते हैं?')) return;
     setDeletingId(id);
     try {
       const res = await authFetch(apiUrl(`/api/rbac/team/${id}`), { method: 'DELETE' });
@@ -301,8 +302,7 @@ export default function TeamPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-green-700 mb-1">Settings</p>
-              <h1 className="text-[26px] font-black text-slate-900 leading-tight">Team Members</h1>
-              <p className="text-[13px] text-slate-400 mt-1">Manage who has access to your shop</p>
+              <PageHeader title="टीम" subtitle="दुकान के users और permissions" />
             </div>
             <button
               onClick={() => { setAddDefaultRole(null); setShowAdd(true); }}
@@ -361,15 +361,10 @@ export default function TeamPage() {
 
           {/* Empty state */}
           {!loading && !error && members.length === 0 && (
-            <div className="text-center py-16 space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center text-3xl">👥</div>
-              <div>
-                <p className="text-[16px] font-black text-slate-900">No team members yet</p>
-                <p className="text-[13px] text-slate-400 mt-1">Add staff members to give them controlled access to your shop</p>
-              </div>
-              <button onClick={() => setShowAdd(true)} className="px-6 py-3 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 text-white font-black text-[14px] shadow-md hover:shadow-lg transition-all">
-                Add First Member
-              </button>
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[24px]">👥</div>
+              <p className="text-[14px] font-extrabold text-slate-800">कोई team member नहीं</p>
+              <p className="text-[12px] text-slate-400 mt-1">पहला member invite करें</p>
             </div>
           )}
 

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import PageShell from '../../components/ui/PageShell';
+import PageHeader from '../../components/ui/PageHeader';
 
 /* ── Constants & helpers (UNCHANGED) ── */
 const getToken = () => localStorage.getItem('token');
@@ -98,8 +100,8 @@ export default function ExpensesPage() {
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
       if (!res.ok) { setError(data.message || 'Expense save nahi hua.'); return; }
-      if (editingId) { setExpenses((c) => c.map((ex) => (ex._id === editingId ? data : ex))); setSuccess('Expense updated successfully.'); }
-      else           { setExpenses((c) => [data, ...c]); setSuccess('Expense saved successfully.'); }
+      if (editingId) { setExpenses((c) => c.map((ex) => (ex._id === editingId ? data : ex))); setSuccess('✅ खर्च बदला गया'); }
+      else           { setExpenses((c) => [data, ...c]); setSuccess('✅ खर्च जोड़ा गया'); }
       resetForm();
     } catch { setError('Expense save nahi hua.'); }
     finally   { setSaving(false); }
@@ -112,7 +114,7 @@ export default function ExpensesPage() {
   };
 
   const handleDeleteExpense = async (expenseId) => {
-    if (!window.confirm('Is expense entry ko delete karna hai?')) return;
+    if (!window.confirm('क्या आप यह खर्च हटाना चाहते हैं?')) return;
     try {
       setDeletingId(expenseId); setError('');
       const res = await fetch(apiUrl(`/api/expenses/${expenseId}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
@@ -121,7 +123,7 @@ export default function ExpensesPage() {
       if (!res.ok) { setError(data.message || 'Expense delete nahi hua.'); return; }
       setExpenses((c) => c.filter((ex) => ex._id !== expenseId));
       if (editingId === expenseId) resetForm();
-      setSuccess('Expense deleted.');
+      setSuccess('✅ खर्च हटाया गया');
     } catch { setError('Expense delete nahi hua.'); }
     finally   { setDeletingId(''); }
   };
@@ -131,22 +133,19 @@ export default function ExpensesPage() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
+      <PageShell>
 
         {/* ── Header ── */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
           {/* Green decorative orbs */}
           <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-green-200/40 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-emerald-200/30 blur-3xl" />
-          
+
           <div className="relative">
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
               💸 Expense Management
             </span>
-            <h1 className="mt-3 text-[26px] font-black text-slate-900 leading-tight">Expenses / खर्च</h1>
-            <p className="mt-2 text-[14px] text-slate-600 font-medium">
-              Daily खर्च को category, payment mode और reference के साथ track करो।
-            </p>
+            <PageHeader title="खर्च" subtitle="रोज़ के खर्च का हिसाब" />
             {/* Nav links */}
             <div className="flex flex-wrap gap-2 mt-3">
               {[{ href: '/income', label: '📈 Income' }, { href: '/bank-entries', label: '🏦 Bank' }, { href: '/reports', label: '📊 Reports' }, { href: '/gst', label: '🧾 GST' }].map((l) => (
@@ -238,13 +237,13 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Reference</p>
-                <input className={INP} placeholder="Bill / cheque ref" value={form.reference_id} onChange={(e) => setForm((c) => ({ ...c, reference_id: e.target.value }))} />
+                <input className={INP} placeholder="Bill / cheque reference" value={form.reference_id} onChange={(e) => setForm((c) => ({ ...c, reference_id: e.target.value }))} />
               </div>
             </div>
 
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Narration</p>
-              <input className={INP} placeholder="Rent for April, delivery van, repair, etc." value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
+              <input className={INP} placeholder="किराया, वाहन, मरम्मत, आदि" value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
             </div>
 
             <button type="submit" disabled={saving}
@@ -291,7 +290,7 @@ export default function ExpensesPage() {
           {/* Filters */}
           <div className="px-4 py-3 border-b border-slate-50 space-y-2">
             <input className="h-10 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all"
-              placeholder="🔍 Search note, category or reference..."
+              placeholder="🔍 नोट, श्रेणी या reference खोजें..."
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
             <div className="flex gap-2">
@@ -313,10 +312,10 @@ export default function ExpensesPage() {
               {[...Array(4)].map((_, i) => <div key={i} className="skeleton-row" />)}
             </div>
           ) : filteredExpenses.length === 0 ? (
-            <div className="empty-state rounded-none border-0 bg-transparent py-12">
-              <div className="empty-state-icon mx-auto mb-4 text-[22px]">💸</div>
-              <p className="text-[13px] font-extrabold text-slate-700">No expenses found</p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Filter बदलो या नया expense add करो</p>
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[24px]">💸</div>
+              <p className="text-[14px] font-extrabold text-slate-800">कोई खर्च नहीं</p>
+              <p className="text-[12px] text-slate-400 mt-1">ऊपर दिए फ़ॉर्म से पहला खर्च जोड़ें</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-50">
@@ -359,7 +358,7 @@ export default function ExpensesPage() {
             </div>
           )}
         </div>
-      </div>
+      </PageShell>
     </Layout>
   );
 }

@@ -637,10 +637,10 @@ const getSaleById = async (req, res) => {
     const shop = await getShopOrFail(req.user.id);
     const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id })
       .populate('customer', 'name phone');
-    if (!sale) return res.status(404).json({ message: 'Sale not found' });
+    if (!sale) return res.status(404).json({ message: 'Sale नहीं मिली' });
     res.json(sale);
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -711,7 +711,7 @@ const getSales = async (req, res) => {
 
     res.json({ sales: page, summary: netSummary, hasMore, nextCursor });
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -855,7 +855,10 @@ const createSale = async (req, res) => {
         return res.status(200).json(existingSale);
       }
     }
-    res.status(err.statusCode || err.status || 500).json({ message: err.message });
+    const _sc = err.statusCode || err.status || 500;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -873,7 +876,7 @@ const updateSale = async (req, res) => {
       const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id }).session(session);
-      if (!sale) throw new Error('Sale not found');
+      if (!sale) throw new Error('Sale नहीं मिली');
       beforeValue = cloneForAudit(sale);
 
       const { data, itemNames } = await buildSaleRecordData({
@@ -919,10 +922,10 @@ const updateSale = async (req, res) => {
     });
     res.json(hydratedSale);
   } catch (err) {
-    if (err.message === 'Sale not found') {
+    if (err.message === 'Sale नहीं मिली') {
       return res.status(404).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production'; res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -940,7 +943,7 @@ const deleteSale = async (req, res) => {
       const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id }).session(session);
-      if (!sale) throw new Error('Sale not found');
+      if (!sale) throw new Error('Sale नहीं मिली');
       deletedSale = cloneForAudit(sale);
 
       const itemsToReverse = sale.items && sale.items.length > 0
@@ -987,10 +990,10 @@ const deleteSale = async (req, res) => {
 
     res.json({ message: 'Sale deleted and stock reversed' });
   } catch (err) {
-    if (err.message === 'Sale not found') {
+    if (err.message === 'Sale नहीं मिली') {
       return res.status(404).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production'; res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -1071,7 +1074,7 @@ const getProfitSummary = async (req, res) => {
       purchasesCount: p.purchasesCount,
     });
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1150,7 +1153,7 @@ const getGSTSummary = async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1202,7 +1205,7 @@ const getGSTComplianceReport = async (req, res) => {
 
     res.json(report);
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1221,7 +1224,7 @@ const updateSaleWorkflow = async (req, res) => {
     }
     const shop = await getShopOrFail(req.user.id);
     const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
-    if (!sale) return res.status(404).json({ message: 'Sale not found' });
+    if (!sale) return res.status(404).json({ message: 'Sale नहीं मिली' });
 
     // extra_fields is a Mongoose Map — use .set()
     if (!sale.extra_fields) sale.extra_fields = new Map();
@@ -1250,7 +1253,7 @@ const updateSaleWorkflow = async (req, res) => {
       details:    { newStage: workflow_status },
     }).catch(() => {});
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1277,7 +1280,7 @@ const getAppointments = async (req, res) => {
 
     res.json({ appointments, date: dayStr });
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1323,7 +1326,7 @@ const getClientHistory = async (req, res) => {
 
     res.json({ history, summary: { visitCount, totalSpend: round2(totalSpend), daysSince, topServices, lastNotes } });
   } catch (err) {
-    logger.error(err);
+    logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1427,7 +1430,10 @@ const createExchange = async (req, res) => {
 
     res.status(201).json({ exchangeSale, message: 'Exchange processed successfully' });
   } catch (err) {
-    res.status(err.status || 500).json({ message: err.message });
+    const _sc = err.status || 500;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -1517,7 +1523,10 @@ const createChallan = async (req, res) => {
     const challan = await Sale.findById(createdChallanId);
     res.status(201).json(challan);
   } catch (err) {
-    res.status(err.statusCode || 500).json({ message: err.message });
+    const _sc = err.statusCode || 500;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -1535,7 +1544,7 @@ const markChallanDispatched = async (req, res) => {
     await challan.save();
     res.json({ challan, message: 'Marked as dispatched' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production'; res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 
@@ -1563,7 +1572,7 @@ const markChallanDelivered = async (req, res) => {
 
     res.json({ challan, message: 'Marked as delivered' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production'; res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 
@@ -1608,7 +1617,10 @@ const convertToInvoice = async (req, res) => {
     const invoice = await Sale.findById(invoiceId);
     res.json({ invoice, message: 'Challan converted to invoice' });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ message: err.message });
+    const _sc = err.statusCode || 500;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -1747,7 +1759,10 @@ const createCreditNote = async (req, res) => {
     const hydratedNote = await Sale.findById(noteId);
     res.status(201).json(hydratedNote);
   } catch (err) {
-    res.status(err.statusCode || 400).json({ message: err.message });
+    const _sc = err.statusCode || 400;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -1856,7 +1871,10 @@ const createDebitNote = async (req, res) => {
     const hydratedNote = await Sale.findById(noteId);
     res.status(201).json(hydratedNote);
   } catch (err) {
-    res.status(err.statusCode || 400).json({ message: err.message });
+    const _sc = err.statusCode || 400;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }

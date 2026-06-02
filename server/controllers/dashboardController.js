@@ -531,7 +531,7 @@ const tableStatus = async (req, res) => {
 
     res.json({ occupiedTables: Object.values(tableMap), occupiedCount: Object.keys(tableMap).length, asOf: new Date().toISOString() });
   } catch (err) {
-    logger.error(err);
+    logger.error('[dashboardController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

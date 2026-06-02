@@ -59,7 +59,7 @@ const getSaleReturns = async (req, res) => {
     const page = hasMore ? returns.slice(0, pageSize) : returns;
     res.json({ returns: page, hasMore, nextCursor: hasMore ? String(page[page.length - 1]._id) : null });
   } catch (err) {
-    logger.error(err);
+    logger.error('[saleReturnController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -268,7 +268,8 @@ const createSaleReturn = async (req, res) => {
     if (err.message.includes('not found') || err.message.includes('can only return')) {
       return res.status(400).json({ message: err.message });
     }
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
@@ -283,7 +284,8 @@ const getReturnsForSale = async (req, res) => {
     }).sort({ createdAt: -1 });
     res.json(returns);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   }
 };
 

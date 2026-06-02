@@ -18,7 +18,7 @@ const getPets = async (req, res) => {
     const pets = await PetProfile.find(filter).sort({ createdAt: -1 }).limit(200);
     res.json(pets);
   } catch (err) {
-    logger.error(err);
+    logger.error('[petController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -32,7 +32,7 @@ const getPetsByOwnerPhone = async (req, res) => {
     const pets = await PetProfile.find({ shop: shop._id, ownerPhone: { $regex: phone.slice(-10), $options: 'i' }, isActive: true }).sort({ createdAt: -1 });
     res.json(pets);
   } catch (err) {
-    logger.error(err);
+    logger.error('[petController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -48,7 +48,7 @@ const createPet = async (req, res) => {
     const pet = await PetProfile.create({ shop: shop._id, ownerName, ownerPhone, petName, species, breed, gender, dateOfBirth, color, weight, microchipNo, ownerAddress, medicalNotes, vetName, vetPhone, groomingFrequency });
     res.status(201).json(pet);
   } catch (err) {
-    logger.error(err);
+    logger.error('[petController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -64,7 +64,7 @@ const updatePet = async (req, res) => {
     await pet.save();
     res.json(pet);
   } catch (err) {
-    logger.error(err);
+    logger.error('[petController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -81,7 +81,7 @@ const addVaccination = async (req, res) => {
     await pet.save();
     res.json(pet);
   } catch (err) {
-    logger.error(err);
+    logger.error('[petController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

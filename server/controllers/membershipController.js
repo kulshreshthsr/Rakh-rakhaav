@@ -12,7 +12,7 @@ const getMemberships = async (req, res) => {
     const memberships = await Membership.find(filter).sort({ createdAt: -1 });
     res.json(memberships);
   } catch (err) {
-    logger.error(err);
+    logger.error('[membershipController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -29,7 +29,7 @@ const getClientMemberships = async (req, res) => {
     });
     res.json(memberships);
   } catch (err) {
-    logger.error(err);
+    logger.error('[membershipController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -41,7 +41,7 @@ const createMembership = async (req, res) => {
     const membership = await Membership.create({ clientName, clientPhone, packageName, serviceId, serviceName, totalSessions, pricePaid, purchasedAt, validUntil, shop: shop._id });
     res.status(201).json(membership);
   } catch (err) {
-    logger.error(err);
+    logger.error('[membershipController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -62,7 +62,7 @@ const redeemSession = async (req, res) => {
     await membership.save();
     res.json(membership);
   } catch (err) {
-    logger.error(err);
+    logger.error('[membershipController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -74,7 +74,7 @@ const getMembership = async (req, res) => {
     if (!membership) return res.status(404).json({ message: 'Membership not found' });
     res.json(membership);
   } catch (err) {
-    logger.error(err);
+    logger.error('[membershipController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

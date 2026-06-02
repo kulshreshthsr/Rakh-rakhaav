@@ -7,6 +7,8 @@ import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getReportConfig, computeInsights } from '../../lib/reportConfig';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import PageHeader from '../../components/ui/PageHeader';
+import { fmtINR } from '../../lib/constants';
 
 /* ─── Helpers (ALL UNCHANGED) ───────────────────────────────────── */
 const getToken = () => localStorage.getItem('token');
@@ -546,7 +548,7 @@ export default function ReportsPage() {
             {/* Left */}
             <div className="reports-hero-copy">
               <p className="rr-page-eyebrow">Business analytics</p>
-              <h1 className="page-title reports-hero-title">{reportCfg.pageTitle}</h1>
+              <PageHeader title="रिपोर्ट" subtitle="पूरा हिसाब-किताब" />
               <p className="reports-hero-subtitle">
                 {label.toLowerCase()} ke liye revenue, profit, GST aur customer trends ek clean view mein.
               </p>
@@ -1001,7 +1003,8 @@ export default function ReportsPage() {
               >
                 {expensesList.length === 0 ? (
                   <div className="empty-state" style={{ padding: '32px 16px' }}>
-                    <p style={{ fontWeight: 700, color: '#334155' }}>No expenses recorded</p>
+                    <div className="empty-state-icon mx-auto mb-3 text-[20px]">📄</div>
+                    <p className="text-[13px] font-bold text-slate-700">इस अवधि का कोई data नहीं</p>
                   </div>
                 ) : (
                   <div className="reports-stack-list">
@@ -1131,9 +1134,8 @@ export default function ReportsPage() {
               >
                 {topProducts.length === 0 ? (
                   <div className="empty-state" style={{ padding: '32px 16px' }}>
-                    <div className="empty-state-icon" style={{ fontSize: 28 }}>{reportCfg.topItemsIcon}</div>
-                    <p style={{ fontWeight: 700, color: '#334155' }}>No {reportCfg.topItemsLabel.replace('Top ', '').toLowerCase()} data</p>
-                    <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi sale nahi mili</p>
+                    <div className="empty-state-icon mx-auto mb-3 text-[20px]">📄</div>
+                    <p className="text-[13px] font-bold text-slate-700">इस अवधि का कोई data नहीं</p>
                   </div>
                 ) : (
                   <div className="reports-stack-list">
@@ -1173,9 +1175,8 @@ export default function ReportsPage() {
               >
                 {topCustomers.length === 0 ? (
                   <div className="empty-state" style={{ padding: '32px 16px' }}>
-                    <div className="empty-state-icon" style={{ fontSize: 28 }}>👥</div>
-                    <p style={{ fontWeight: 700, color: '#334155' }}>No {reportCfg.topBuyersLabel.replace('Top ', '').toLowerCase()} data</p>
-                    <p className="page-subtitle" style={{ marginTop: 4 }}>Is period mein koi named sale nahi mili</p>
+                    <div className="empty-state-icon mx-auto mb-3 text-[20px]">📄</div>
+                    <p className="text-[13px] font-bold text-slate-700">इस अवधि का कोई data नहीं</p>
                   </div>
                 ) : (
                   <div className="reports-stack-list">

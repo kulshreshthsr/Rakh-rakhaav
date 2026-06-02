@@ -40,7 +40,7 @@ const getClaims = async (req, res) => {
     const readyCount = await WarrantyClaim.countDocuments({ shop: shop._id, claimStatus: 'ready' });
 
     res.json({ claims, summary, readyCount });
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[warrantyController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -76,7 +76,7 @@ const createClaim = async (req, res) => {
     });
 
     res.status(201).json(claim);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[warrantyController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -90,7 +90,7 @@ const getBySerial = async (req, res) => {
       claimStatus: { $nin: ['delivered', 'rejected'] },
     }).sort({ claimDate: -1 });
     res.json(claims);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[warrantyController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
@@ -110,7 +110,7 @@ const updateClaim = async (req, res) => {
 
     await claim.save();
     res.json(claim);
-  } catch (err) { logger.error(err);
+  } catch (err) { logger.error('[warrantyController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 

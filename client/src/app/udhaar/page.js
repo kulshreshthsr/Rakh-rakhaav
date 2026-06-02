@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
+import PageHeader from '../../components/ui/PageHeader';
 
 /* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
 const getToken  = () => localStorage.getItem('token');
@@ -11,6 +12,7 @@ const LEDGER_CACHE_KEY = 'udhaar-page-v1';
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const fmtShort = (n) => {
   const v = parseFloat(n || 0);
+  if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
   if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
   if (v >= 1000)   return `₹${(v / 1000).toFixed(1)}K`;
   return `₹${v.toFixed(0)}`;
@@ -426,12 +428,7 @@ export default function UdhaarPage() {
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
                 💸 Credit Ledger
               </span>
-              <h1 className="mt-3 text-[26px] lg:text-[28px] font-black text-slate-900 leading-tight tracking-tight">
-                उधार — Parties & Dues
-              </h1>
-              <p className="mt-2 text-[14px] text-slate-600 font-medium">
-                Customer और Supplier का पूरा हिसाब — collect, pay, remind — सब यहाँ
-              </p>
+              <PageHeader title="उधार" subtitle="ग्राहक और supplier का हिसाब" />
               {!isOnline
                 ? <p className="mt-2 text-[11px] font-semibold text-amber-700">📶 Offline snapshot{cacheLabel ? ` · ${cacheLabel}` : ''}</p>
                 : cacheLoaded && cacheLabel
@@ -550,7 +547,7 @@ export default function UdhaarPage() {
               <div className="px-4 py-3 border-b border-slate-100 space-y-3">
                 <input
                   className="h-11 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 focus:border-rose-400 transition-all"
-                  placeholder={isCustomer ? '🔍 Name, phone, GSTIN...' : '🔍 Supplier name, phone...'}
+                  placeholder="🔍 नाम या नंबर से खोजें..."
                   value={partySearch}
                   onChange={(e) => setPartySearch(e.target.value)}
                 />
@@ -605,14 +602,10 @@ export default function UdhaarPage() {
                 </div>
               ) : processedList.length === 0 ? (
                 <div className="empty-state rounded-none border-0 bg-transparent py-14">
-                  <div className="empty-state-icon mx-auto mb-4 text-[24px]">{isCustomer ? '👥' : '🏪'}</div>
-                  <p className="text-[14px] font-extrabold text-slate-700 mb-1">
-                    {isCustomer ? 'कोई customer नहीं' : 'कोई supplier नहीं'}
-                  </p>
+                  <div className="empty-state-icon mx-auto mb-4 text-[24px]">👥</div>
+                  <p className="text-[14px] font-extrabold text-slate-700 mb-1">कोई party नहीं</p>
                   <p className="text-[12px] text-slate-400 leading-relaxed max-w-[240px] mx-auto">
-                    {isCustomer
-                      ? 'Credit sale बनाने पर customers यहाँ automatically दिखेंगे'
-                      : 'Credit purchase करने पर suppliers यहाँ automatically आएंगे'}
+                    नई party जोड़ें ऊपर के फ़ॉर्म से
                   </p>
                   {isCustomer && (
                     <button onClick={() => router.push('/sales?open=1&payment=credit')}
@@ -785,9 +778,8 @@ export default function UdhaarPage() {
                               ) : filteredLedger.length === 0 ? (
                                 <div className="py-10 text-center">
                                   <div className="text-2xl mb-2">📒</div>
-                                  <div className="text-[13px] font-bold text-slate-600">
-                                    {hasLedgerFilters ? 'कोई entry नहीं मिली' : 'No transactions yet'}
-                                  </div>
+                                  <div className="text-[13px] font-bold text-slate-600">कोई entry नहीं</div>
+                                  <div className="text-[11px] text-slate-400 mt-1">पहली transaction होने पर यहाँ दिखेगी</div>
                                 </div>
                               ) : (
                                 <div className="divide-y divide-slate-50">
