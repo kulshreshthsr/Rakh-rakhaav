@@ -12,14 +12,8 @@ const {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) {
-    const created = await Shop.create([{ name: 'My Shop', owner: userId }]);
-    shop = created[0];
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const sumField = (arr, field) => arr.reduce((s, i) => s + (Number(i[field]) || 0), 0);
 
@@ -32,7 +26,7 @@ const sumField = (arr, field) => arr.reduce((s, i) => s + (Number(i[field]) || 0
 
 const generateGSTR1 = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
 
     if (!shop.gstin) {
       return res.status(400).json({
@@ -280,7 +274,7 @@ const generateGSTR1 = async (req, res) => {
 
     res.json({ gstr1: gstr1JSON, summary });
   } catch (err) {
-    console.error('generateGSTR1 error:', err);
+    logger.error('generateGSTR1 error:', err);
     res.status(500).json({ message: err.message || 'Something went wrong' });
   }
 };
@@ -292,7 +286,7 @@ const generateGSTR1 = async (req, res) => {
 
 const generateGSTR3B = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
 
     if (!shop.gstin) {
       return res.status(400).json({ message: 'Shop GSTIN not configured. Please update your profile first.' });
@@ -473,7 +467,7 @@ const generateGSTR3B = async (req, res) => {
 
     res.json(gstr3bWorking);
   } catch (err) {
-    console.error('generateGSTR3B error:', err);
+    logger.error('generateGSTR3B error:', err);
     res.status(500).json({ message: err.message || 'Something went wrong' });
   }
 };
@@ -496,7 +490,7 @@ const validateGSTINEndpoint = (req, res) => {
 
 const getFilingPeriodInfo = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { getCurrentFilingPeriod } = require('../lib/gstUtils');
     const period = getCurrentFilingPeriod(shop);
     res.json({ period, shop: { gstin: shop.gstin, gst_type: shop.gst_type, filing_frequency: shop.filing_frequency } });

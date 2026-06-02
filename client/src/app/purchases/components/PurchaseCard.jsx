@@ -35,6 +35,7 @@ export default function PurchaseCard({
   sendPurchaseWhatsApp,
   startEditPurchase,
   handleDelete,
+  onReturnClick,
 }) {
   const meta = p._isOffline ? getOfflineBadgeMeta(p._queueStatus) : null;
   const itemLabel = p.items && p.items.length > 1 ? `${p.items.length} products` : p.product_name;
@@ -106,7 +107,7 @@ export default function PurchaseCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 min-[480px]:grid-cols-4 gap-2">
           <button
             type="button"
             onClick={() => sendPurchaseWhatsApp(p)}
@@ -124,6 +125,16 @@ export default function PurchaseCard({
           >
             ✏️ Edit
           </button>
+          {!p._isOffline && p.payment_status !== 'unpaid' && (
+            <button
+              type="button"
+              onClick={() => onReturnClick(p)}
+              title="Process a return for this purchase"
+              className="min-h-[44px] py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50 text-[11px] font-bold text-amber-700 hover:bg-amber-100 transition-all"
+            >
+              ↩️ Return
+            </button>
+          )}
           <button
             type="button"
             onClick={() => handleDelete(p)}

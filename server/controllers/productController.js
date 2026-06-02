@@ -1,12 +1,7 @@
 const Product = require('../models/productModel');
 const ProductVariant = require('../models/productVariantModel');
-const Shop = require('../models/shopModel');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
 
@@ -15,7 +10,7 @@ const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim(
 // ─────────────────────────────────────────────────────────────────────────────
 const getProducts = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { search, limit: limitParam, cursor } = req.query;
 
     const filter = { shop: shop._id, isActive: { $ne: false } };
@@ -47,7 +42,7 @@ const getProducts = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -60,7 +55,7 @@ const createProduct = async (req, res) => {
   try {
     if (!name) return res.status(400).json({ message: 'Product name is required' });
 
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const qty = Number(quantity) || 0;
     const normalizedBarcode = normalizeBarcode(barcode);
 
@@ -118,7 +113,7 @@ const createProduct = async (req, res) => {
         : null,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -128,7 +123,7 @@ const createProduct = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const updateProduct = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
 
     // ✅ Security fix: verify product belongs to this shop
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
@@ -186,7 +181,7 @@ const updateProduct = async (req, res) => {
         : null,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -196,7 +191,7 @@ const updateProduct = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const deleteProduct = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
 
     // ✅ Security fix: verify product belongs to this shop
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
@@ -208,7 +203,7 @@ const deleteProduct = async (req, res) => {
 
     res.json({ message: 'Product deleted' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -218,7 +213,7 @@ const deleteProduct = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const adjustStock = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { type, quantity, note } = req.body;
     // type: 'manual_add' | 'manual_remove' | 'adjustment'
     // quantity: always positive number
@@ -254,7 +249,7 @@ const adjustStock = async (req, res) => {
       is_low_stock: product.quantity <= product.low_stock_threshold,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -264,7 +259,7 @@ const adjustStock = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const getStockHistory = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id })
       .select('name stock_history quantity unit');
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -274,7 +269,7 @@ const getStockHistory = async (req, res) => {
       history: product.stock_history.sort((a, b) => new Date(b.date) - new Date(a.date)),
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -285,7 +280,7 @@ const getStockHistory = async (req, res) => {
 const toggleAvailability = async (req, res) => {
   try {
     const { available, unavailable_reason } = req.body;
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
@@ -295,7 +290,7 @@ const toggleAvailability = async (req, res) => {
     await product.save();
     res.json({ message: 'Availability updated', available });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -305,7 +300,7 @@ const toggleAvailability = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const getByBarcode = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const barcode = normalizeBarcode(req.params.barcode);
     if (!barcode) return res.status(400).json({ message: 'Barcode required' });
 
@@ -324,7 +319,7 @@ const getByBarcode = async (req, res) => {
 
     return res.json({ product: product.toJSON(), variant: variant.toJSON(), matchType: 'variant' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

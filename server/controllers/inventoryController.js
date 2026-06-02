@@ -19,14 +19,8 @@ const Recipe         = require('../models/recipeModel');
 const SerialInventory = require('../models/serialInventoryModel');
 const Shop           = require('../models/shopModel');
 
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) {
-    const created = await Shop.create([{ name: 'My Shop', owner: userId }]);
-    shop = created[0];
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const assertProduct = async (productId, shopId) => {
   const product = await Product.findOne({ _id: productId, shop: shopId });
@@ -40,7 +34,7 @@ const assertProduct = async (productId, shopId) => {
 
 const getBatches = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     await assertProduct(req.params.productId, shop._id);
     const batches = await ProductBatch.find({ shop: shop._id, product: req.params.productId })
       .sort({ expiry_date: 1, createdAt: -1 });
@@ -55,7 +49,7 @@ const addBatch = async (req, res) => {
   try {
     let batch;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const product = await assertProduct(req.params.productId, shop._id);
       const { batch_number, expiry_date, manufacture_date, quantity, mrp, cost_price, manufacturer, notes, purchase_invoice } = req.body;
 
@@ -92,7 +86,7 @@ const updateBatch = async (req, res) => {
   try {
     let updated;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const batch = await ProductBatch.findOne({ _id: req.params.batchId, shop: shop._id }).session(session);
       if (!batch) throw Object.assign(new Error('Batch not found'), { status: 404 });
 
@@ -130,7 +124,7 @@ const deleteBatch = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const batch = await ProductBatch.findOne({ _id: req.params.batchId, shop: shop._id }).session(session);
       if (!batch) throw Object.assign(new Error('Batch not found'), { status: 404 });
 
@@ -150,7 +144,7 @@ const deleteBatch = async (req, res) => {
 // Expiring batches across the whole shop (for dashboard alerts)
 const getExpiringBatches = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const days = Number(req.query.days) || 30;
     const cutoff = new Date(Date.now() + days * 86400000);
     const batches = await ProductBatch.find({
@@ -174,7 +168,7 @@ const getExpiringBatches = async (req, res) => {
 
 const getVariants = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     await assertProduct(req.params.productId, shop._id);
     const variants = await ProductVariant.find({ shop: shop._id, product: req.params.productId, isActive: true })
       .sort({ size: 1, color: 1 });
@@ -190,7 +184,7 @@ const saveVariants = async (req, res) => {
   try {
     let variants;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const product = await assertProduct(req.params.productId, shop._id);
       const incoming = Array.isArray(req.body) ? req.body : [req.body];
 
@@ -261,7 +255,7 @@ const updateVariantQty = async (req, res) => {
   try {
     let variant;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const v = await ProductVariant.findOne({ _id: req.params.variantId, shop: shop._id }).session(session);
       if (!v) throw Object.assign(new Error('Variant not found'), { status: 404 });
 
@@ -291,7 +285,7 @@ const updateVariantQty = async (req, res) => {
 
 const getRecipe = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     await assertProduct(req.params.productId, shop._id);
     const recipe = await Recipe.findOne({ shop: shop._id, dish: req.params.productId })
       .populate('ingredients.ingredient', 'name unit quantity');
@@ -303,7 +297,7 @@ const getRecipe = async (req, res) => {
 
 const saveRecipe = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const product = await assertProduct(req.params.productId, shop._id);
     const { serving_quantity, ingredients, notes } = req.body;
 
@@ -331,7 +325,7 @@ const saveRecipe = async (req, res) => {
 
 const deleteRecipe = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     await Recipe.findOneAndDelete({ shop: shop._id, dish: req.params.productId });
     res.json({ message: 'Recipe deleted' });
   } catch (err) {
@@ -345,7 +339,7 @@ const deleteRecipe = async (req, res) => {
 
 const getSerials = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     await assertProduct(req.params.productId, shop._id);
     const { status } = req.query;
     const filter = { shop: shop._id, product: req.params.productId };
@@ -363,7 +357,7 @@ const addSerials = async (req, res) => {
   try {
     let created;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const product = await assertProduct(req.params.productId, shop._id);
       const serials = Array.isArray(req.body) ? req.body : [req.body];
 
@@ -396,7 +390,7 @@ const addSerials = async (req, res) => {
 
 const updateSerial = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     // Whitelist only editable fields to prevent injection of shop/product/status overrides
     const allowed = ['color', 'storage', 'ram', 'warranty_expiry', 'imei_number', 'notes'];
     const update = {};
@@ -422,7 +416,7 @@ const deleteSerial = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const serial = await SerialInventory.findOne({ _id: req.params.serialId, shop: shop._id }).session(session);
       if (!serial) throw Object.assign(new Error('Serial not found'), { status: 404 });
       if (serial.status === 'in_stock') {
@@ -444,7 +438,7 @@ const deleteSerial = async (req, res) => {
 
 const getProductInventorySummary = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const productId = req.params.productId;
     await assertProduct(productId, shop._id);
 

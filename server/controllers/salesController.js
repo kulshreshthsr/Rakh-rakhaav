@@ -59,16 +59,8 @@ const GST_STATE_CODE_MAP = {
   '38': 'Ladakh',
 };
 
-const getOrCreateShop = async (userId, session = null) => {
-  let query = Shop.findOne({ owner: userId });
-  if (session) query = query.session(session);
-  let shop = await query;
-  if (!shop) {
-    const created = await Shop.create([{ name: 'My Shop', owner: userId }], session ? { session } : {});
-    shop = created[0];
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getFinancialYear = (date = new Date()) => {
   const year = date.getFullYear();
@@ -636,12 +628,29 @@ const buildSaleRecordData = async ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET SINGLE SALE BY ID
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getSaleById = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id })
+      .populate('customer', 'name phone');
+    if (!sale) return res.status(404).json({ message: 'Sale not found' });
+    res.json(sale);
+  } catch (err) {
+    logger.error(err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET ALL SALES
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getSales = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { payment_type, from, to, limit: limitParam, cursor } = req.query;
 
     const filter = { shop: shop._id };
@@ -679,7 +688,7 @@ const getSales = async (req, res) => {
 
     res.json({ sales: page, summary, hasMore, nextCursor });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -697,7 +706,7 @@ const createSale = async (req, res) => {
     const offlineOperationId = normalizeOfflineOperationId(req.body?.offline_operation_id);
 
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       createdShop = shop;
       auditShopId = shop._id;
       if (offlineOperationId) {
@@ -797,7 +806,7 @@ const createSale = async (req, res) => {
           };
         });
         await NarcoticsRegister.insertMany(entries).catch(err =>
-          console.error('Narcotics register auto-log failed:', err.message)
+          logger.error('Narcotics register auto-log failed:', err.message)
         );
       }
     }
@@ -814,7 +823,7 @@ const createSale = async (req, res) => {
     return res.status(201).json(hydratedSale);
   } catch (err) {
     if (err?.code === 11000 && req.body?.offline_operation_id) {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const existingSale = await Sale.findOne({
         shop: shop._id,
         offline_operation_id: normalizeOfflineOperationId(req.body.offline_operation_id),
@@ -838,7 +847,7 @@ const updateSale = async (req, res) => {
     let auditShopId = null;
 
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!sale) throw new Error('Sale not found');
@@ -905,7 +914,7 @@ const deleteSale = async (req, res) => {
     let deletedSale = null;
     let auditShopId = null;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!sale) throw new Error('Sale not found');
@@ -970,7 +979,7 @@ const deleteSale = async (req, res) => {
 
 const getProfitSummary = async (req, res) => {
   try {
-    const shop         = await getOrCreateShop(req.user.id);
+    const shop         = await getShopOrFail(req.user.id);
     const { month, year, from, to } = req.query;
     const filter       = { shop: shop._id };
 
@@ -1039,7 +1048,7 @@ const getProfitSummary = async (req, res) => {
       purchasesCount: p.purchasesCount,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1050,7 +1059,7 @@ const getProfitSummary = async (req, res) => {
 
 const getGSTSummary = async (req, res) => {
   try {
-    const shop           = await getOrCreateShop(req.user.id);
+    const shop           = await getShopOrFail(req.user.id);
     const { month, year } = req.query;
 
     const startDate = new Date(year, month - 1, 1);
@@ -1118,14 +1127,14 @@ const getGSTSummary = async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const getGSTComplianceReport = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { month, year, from, to } = req.query;
     const filter = { shop: shop._id };
 
@@ -1170,7 +1179,7 @@ const getGSTComplianceReport = async (req, res) => {
 
     res.json(report);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1187,7 +1196,7 @@ const updateSaleWorkflow = async (req, res) => {
     if (!workflow_status || typeof workflow_status !== 'string') {
       return res.status(400).json({ message: 'workflow_status is required' });
     }
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
     if (!sale) return res.status(404).json({ message: 'Sale not found' });
 
@@ -1218,7 +1227,7 @@ const updateSaleWorkflow = async (req, res) => {
       details:    { newStage: workflow_status },
     }).catch(() => {});
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1229,7 +1238,7 @@ const updateSaleWorkflow = async (req, res) => {
 const getAppointments = async (req, res) => {
   try {
     const { date, stylist_id } = req.query;
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const targetDate = date ? new Date(date) : new Date();
     const dayStr = targetDate.toISOString().split('T')[0];
 
@@ -1245,7 +1254,7 @@ const getAppointments = async (req, res) => {
 
     res.json({ appointments, date: dayStr });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1257,7 +1266,7 @@ const getClientHistory = async (req, res) => {
   try {
     const { phone, name } = req.query;
     if (!phone && !name) return res.status(400).json({ message: 'Phone or name required' });
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
 
     const match = { shop: shop._id };
     if (phone) match.buyer_phone = { $regex: phone.replace(/\D/g, '').slice(-10) };
@@ -1291,7 +1300,7 @@ const getClientHistory = async (req, res) => {
 
     res.json({ history, summary: { visitCount, totalSpend: round2(totalSpend), daysSince, topServices, lastNotes } });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1304,7 +1313,7 @@ const createExchange = async (req, res) => {
   try {
     let exchangeSale;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       const shopId = shop._id;
 
       const {
@@ -1409,7 +1418,7 @@ const createChallan = async (req, res) => {
   try {
     let createdChallanId;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
 
       // Build item data — no stock check (goods still with supplier)
       const { data } = await buildSaleRecordData({
@@ -1493,7 +1502,7 @@ const createChallan = async (req, res) => {
 
 const markChallanDispatched = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const challan = await Sale.findOne({ _id: req.params.id, shop: shop._id, document_type: 'challan' });
     if (!challan) return res.status(404).json({ message: 'Challan not found' });
     if (challan.challan_status === 'converted') {
@@ -1509,7 +1518,7 @@ const markChallanDispatched = async (req, res) => {
 
 const markChallanDelivered = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { received_by, received_at, notes } = req.body;
     if (!received_by) return res.status(400).json({ message: 'received_by is required' });
 
@@ -1540,7 +1549,7 @@ const convertToInvoice = async (req, res) => {
   try {
     let invoiceId;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       const challan = await Sale.findOne({ _id: req.params.id, shop: shop._id, document_type: 'challan' }).session(session);
       if (!challan) throw Object.assign(new Error('Challan not found'), { statusCode: 404 });
       if (challan.converted_to_invoice) throw Object.assign(new Error('Already converted to invoice'), { statusCode: 400 });
@@ -1609,7 +1618,7 @@ const createCreditNote = async (req, res) => {
   try {
     let noteId;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       const {
         original_invoice_no, original_invoice_date,
         buyer_name, buyer_gstin, buyer_state_code,
@@ -1731,7 +1740,7 @@ const createDebitNote = async (req, res) => {
   try {
     let noteId;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       const {
         original_invoice_no, original_invoice_date,
         buyer_name, buyer_gstin, buyer_state_code,
@@ -1831,6 +1840,7 @@ const createDebitNote = async (req, res) => {
 };
 
 module.exports = {
+  getSaleById,
   getSales,
   createSale,
   updateSale,

@@ -34,7 +34,7 @@ const productSchema = new mongoose.Schema({
   metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
 
   // ── Stock history log ─────────────────────────────────────────
-  // TODO: move to separate collection at scale — this array grows unboundedly
+  // TODO: run scripts/migrateStockHistory.js when ready to migrate — StockMovementModel is prepared.
   stock_history: [stockHistorySchema],
 }, { timestamps: true });
 

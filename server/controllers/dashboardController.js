@@ -8,13 +8,8 @@ const WarrantyClaim = require('../models/warrantyClaimModel');
 const ruleEngine = require('../services/ruleEngine');
 const { calculateGSTR3BSummary } = require('./salesController');
 
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) {
-    shop = await Shop.create({ name: 'My Shop', owner: userId });
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getDateRange = (month, year) => {
   if (!month || !year) return null;
@@ -84,7 +79,7 @@ const aggregatePurchaseSummary = async (match) => {
 
 const getDashboardSummary = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { month, year } = req.query;
     const requestedRange = getDateRange(month, year);
     const monthRange = requestedRange || getCurrentMonthRange();
@@ -352,7 +347,7 @@ const getDashboardSummary = async (req, res) => {
     // Fire-and-forget rule scan — never blocks the response
     ruleEngine.scanShop(shop._id, shop.businessType || 'general').catch(() => {});
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -361,7 +356,7 @@ const FINAL_WORKFLOW_STATUSES = new Set(['paid', 'delivered', 'completed', 'sold
 
 const workflowCounts = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -395,14 +390,14 @@ const workflowCounts = async (req, res) => {
 
     res.json({ counts, pendingTotal, asOf: new Date().toISOString() });
   } catch (err) {
-    console.error('workflowCounts error:', err);
+    logger.error('workflowCounts error:', err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const creditAging = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const shopId = shop._id;
     const now = new Date();
 
@@ -487,7 +482,7 @@ const creditAging = async (req, res) => {
       asOf: now.toISOString(),
     });
   } catch (err) {
-    console.error('creditAging error:', err);
+    logger.error('creditAging error:', err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -497,7 +492,7 @@ const creditAging = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const tableStatus = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     if (shop.businessType !== 'restaurant') {
       return res.status(400).json({ message: 'Not applicable' });
     }
@@ -536,7 +531,7 @@ const tableStatus = async (req, res) => {
 
     res.json({ occupiedTables: Object.values(tableMap), occupiedCount: Object.keys(tableMap).length, asOf: new Date().toISOString() });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

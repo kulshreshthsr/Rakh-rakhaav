@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
 const Shop = require('../models/shopModel');
 const User = require('../models/userModel');
@@ -118,7 +119,7 @@ const listAdminShops = async (req, res) => {
       total: filtered.length,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -152,7 +153,7 @@ const getAdminStats = async (req, res) => {
 
     res.json(stats);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -185,7 +186,7 @@ const deleteAdminShop = async (req, res) => {
 
     res.json({ message: 'User account and shop data removed successfully.', deletedShopId: String(shopId) });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

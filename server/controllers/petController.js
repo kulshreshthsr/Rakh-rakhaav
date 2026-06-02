@@ -1,19 +1,11 @@
 const PetProfile = require('../models/petProfileModel');
-const Shop       = require('../models/shopModel');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) {
-    const created = await Shop.create([{ name: 'My Shop', owner: userId }]);
-    shop = created[0];
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 // GET /api/pets
 const getPets = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { search } = req.query;
     const filter = { shop: shop._id, isActive: true };
     if (search) {
@@ -26,7 +18,7 @@ const getPets = async (req, res) => {
     const pets = await PetProfile.find(filter).sort({ createdAt: -1 }).limit(200);
     res.json(pets);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -34,13 +26,13 @@ const getPets = async (req, res) => {
 // GET /api/pets/owner?phone=xxx
 const getPetsByOwnerPhone = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { phone } = req.query;
     if (!phone) return res.json([]);
     const pets = await PetProfile.find({ shop: shop._id, ownerPhone: { $regex: phone.slice(-10), $options: 'i' }, isActive: true }).sort({ createdAt: -1 });
     res.json(pets);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -48,7 +40,7 @@ const getPetsByOwnerPhone = async (req, res) => {
 // POST /api/pets
 const createPet = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { ownerName, ownerPhone, petName, species, breed, gender, dateOfBirth, color, weight, microchipNo, ownerAddress, medicalNotes, vetName, vetPhone, groomingFrequency } = req.body;
     if (!ownerName || !ownerPhone || !petName || !species) {
       return res.status(400).json({ message: 'ownerName, ownerPhone, petName and species are required' });
@@ -56,7 +48,7 @@ const createPet = async (req, res) => {
     const pet = await PetProfile.create({ shop: shop._id, ownerName, ownerPhone, petName, species, breed, gender, dateOfBirth, color, weight, microchipNo, ownerAddress, medicalNotes, vetName, vetPhone, groomingFrequency });
     res.status(201).json(pet);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -64,7 +56,7 @@ const createPet = async (req, res) => {
 // PATCH /api/pets/:id
 const updatePet = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const pet = await PetProfile.findOne({ _id: req.params.id, shop: shop._id });
     if (!pet) return res.status(404).json({ message: 'Pet profile not found' });
     const allowed = ['ownerName', 'ownerPhone', 'ownerAddress', 'petName', 'species', 'breed', 'gender', 'dateOfBirth', 'color', 'weight', 'microchipNo', 'medicalNotes', 'vetName', 'vetPhone', 'groomingFrequency', 'lastGroomedAt', 'allergies', 'isActive'];
@@ -72,7 +64,7 @@ const updatePet = async (req, res) => {
     await pet.save();
     res.json(pet);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -80,7 +72,7 @@ const updatePet = async (req, res) => {
 // POST /api/pets/:id/vaccinate
 const addVaccination = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const pet = await PetProfile.findOne({ _id: req.params.id, shop: shop._id });
     if (!pet) return res.status(404).json({ message: 'Pet profile not found' });
     const { vaccineName, givenDate, nextDueDate, vetName, notes } = req.body;
@@ -89,7 +81,7 @@ const addVaccination = async (req, res) => {
     await pet.save();
     res.json(pet);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

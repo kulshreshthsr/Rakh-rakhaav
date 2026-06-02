@@ -27,11 +27,8 @@ const isValidOwnerPhoto = (value = '') => {
   return sizeInBytes <= MAX_OWNER_PHOTO_SIZE;
 };
 
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const serializeAuthUser = (user) => ({
   id: user._id,
@@ -64,7 +61,7 @@ const register = async (req, res) => {
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.status(201).json({ user: serializeAuthUser(user), token });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -109,7 +106,7 @@ const login = async (req, res) => {
     const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.json({ user: serializeAuthUser(user), token });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -122,7 +119,7 @@ const updateProfile = async (req, res) => {
     if (!req.user.isSubUser) ensureTrialDates(user);
     res.json({ id: user._id, name: user.name, username: user.username, subscription: req.user.isSubUser ? null : getSubscriptionSnapshot(user) });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -140,17 +137,17 @@ const updatePassword = async (req, res) => {
     await user.save();
     res.json({ message: 'Password updated!' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const getShop = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     res.json(shop);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -172,7 +169,7 @@ const updateShop = async (req, res) => {
       return res.status(400).json({ message: 'Invalid dashboard mode.' });
     }
 
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const beforeValue = cloneForAudit(shop);
     const updatePayload = {
       name, address, city, state, pincode, gstin, phone, email,
@@ -195,7 +192,7 @@ const updateShop = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -240,7 +237,7 @@ const getSubscriptionStatus = async (req, res) => {
       razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

@@ -1,20 +1,12 @@
 const WarrantyClaim = require('../models/warrantyClaimModel');
 const Sale          = require('../models/salesModel');
-const Shop          = require('../models/shopModel');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) {
-    const created = await Shop.create([{ name: 'My Shop', owner: userId }]);
-    shop = created[0];
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 // GET /api/warranty
 const getClaims = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { status, search, from, to } = req.query;
 
     const filter = { shop: shop._id };
@@ -48,14 +40,14 @@ const getClaims = async (req, res) => {
     const readyCount = await WarrantyClaim.countDocuments({ shop: shop._id, claimStatus: 'ready' });
 
     res.json({ claims, summary, readyCount });
-  } catch (err) { console.error(err);
+  } catch (err) { logger.error(err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // POST /api/warranty
 const createClaim = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const {
       originalInvoiceNo, productName, serialNumber, imeiNumber,
       brandName, modelNumber, issueDescription, claimType,
@@ -84,28 +76,28 @@ const createClaim = async (req, res) => {
     });
 
     res.status(201).json(claim);
-  } catch (err) { console.error(err);
+  } catch (err) { logger.error(err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // GET /api/warranty/serial/:sn
 const getBySerial = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const claims = await WarrantyClaim.find({
       shop: shop._id,
       serialNumber: req.params.sn,
       claimStatus: { $nin: ['delivered', 'rejected'] },
     }).sort({ claimDate: -1 });
     res.json(claims);
-  } catch (err) { console.error(err);
+  } catch (err) { logger.error(err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 
 // PATCH /api/warranty/:id
 const updateClaim = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const claim = await WarrantyClaim.findOne({ _id: req.params.id, shop: shop._id });
     if (!claim) return res.status(404).json({ message: 'Claim not found' });
 
@@ -118,7 +110,7 @@ const updateClaim = async (req, res) => {
 
     await claim.save();
     res.json(claim);
-  } catch (err) { console.error(err);
+  } catch (err) { logger.error(err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };
 

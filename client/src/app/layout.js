@@ -3,6 +3,7 @@ import { AppLocaleProvider } from "../components/AppLocale";
 import { IndustryProvider } from "../contexts/IndustryContext";
 import AppSplash from "../components/AppSplash";
 import PWAInstall from "../components/PWAInstall";
+import ShopSetupPrompt from "../components/ShopSetupPrompt";
 
 export const metadata = {
   title: "Rakh-Rakhaav - Smart Inventory & GST Billing",
@@ -50,6 +51,7 @@ export default function RootLayout({ children }) {
             <AppSplash />
             {children}
             <PWAInstall />
+            <ShopSetupPrompt />
           </IndustryProvider>
         </AppLocaleProvider>
       </body>

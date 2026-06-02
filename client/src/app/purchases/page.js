@@ -17,6 +17,7 @@ import PurchaseFormModal from './components/PurchaseFormModal';
 import PurchaseCard from './components/PurchaseCard';
 import PurchaseSummary from './components/PurchaseSummary';
 import InlineProductForm from './components/InlineProductForm';
+import PurchaseReturnModal from './components/PurchaseReturnModal';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -203,6 +204,8 @@ export default function PurchasesPage() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [billSearch, setBillSearch] = useState('');
   const [billMonth, setBillMonth] = useState('');
+  const [returnPurchase, setReturnPurchase] = useState(null);
+  const [returnToast, setReturnToast] = useState('');
 
   /* ── Callbacks that stay in page.js ── */
   const fetchProducts = useCallback(async () => {
@@ -447,6 +450,7 @@ export default function PurchasesPage() {
                   sendPurchaseWhatsApp={sendPurchaseWhatsApp}
                   startEditPurchase={startEditPurchase}
                   handleDelete={handleDelete}
+                  onReturnClick={setReturnPurchase}
                 />
               );
             })}
@@ -464,6 +468,28 @@ export default function PurchasesPage() {
           </div>
         )}
       </div>
+
+      {/* RETURN SUCCESS TOAST */}
+      {returnToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border-2 border-green-300 shadow-xl text-[13px] font-bold text-green-800 animate-fade-in">
+          <span className="text-base">✅</span>
+          {returnToast}
+        </div>
+      )}
+
+      {/* PURCHASE RETURN MODAL */}
+      {returnPurchase && (
+        <PurchaseReturnModal
+          purchase={returnPurchase}
+          onClose={() => setReturnPurchase(null)}
+          onSuccess={(ret) => {
+            setReturnPurchase(null);
+            fetchPurchases();
+            setReturnToast(`Credit Note ${ret.credit_note_number} created — ₹${Number(ret.total_amount || 0).toFixed(2)} returned`);
+            window.setTimeout(() => setReturnToast(''), 4000);
+          }}
+        />
+      )}
 
       {/* PURCHASE MODAL */}
       <PurchaseFormModal

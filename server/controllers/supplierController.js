@@ -1,23 +1,18 @@
 const Supplier = require('../models/supplierModel');
 const SupplierUdhaar = require('../models/supplierUdhaarModel');
-const Shop = require('../models/shopModel');
 const { logAuditEvent } = require('../utils/auditTrail');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 // ── GET ALL SUPPLIERS ────────────────────────────────────────────────────────
 const getSuppliers = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const suppliers = await Supplier.find({ shop: shop._id, isActive: { $ne: false } })
       .sort({ name: 1 });
     res.json(suppliers);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -25,12 +20,12 @@ const getSuppliers = async (req, res) => {
 // ── GET SINGLE SUPPLIER ──────────────────────────────────────────────────────
 const getSupplierById = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
     if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
     res.json(supplier);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -38,7 +33,7 @@ const getSupplierById = async (req, res) => {
 // ── CREATE SUPPLIER ──────────────────────────────────────────────────────────
 const createSupplier = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { name, phone, gstin, address, state, companyName, notes, opening_balance } = req.body;
     if (!name) return res.status(400).json({ message: 'Supplier name is required' });
 
@@ -59,7 +54,7 @@ const createSupplier = async (req, res) => {
     });
     res.status(201).json(supplier);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -67,7 +62,7 @@ const createSupplier = async (req, res) => {
 // ── UPDATE SUPPLIER ──────────────────────────────────────────────────────────
 const updateSupplier = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const existingSupplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
     if (!existingSupplier) return res.status(404).json({ message: 'Supplier not found' });
     const updatePayload = { ...req.body };
@@ -94,7 +89,7 @@ const updateSupplier = async (req, res) => {
     });
     res.json(supplier);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -102,7 +97,7 @@ const updateSupplier = async (req, res) => {
 // ── DELETE SUPPLIER (soft) ───────────────────────────────────────────────────
 const deleteSupplier = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
     await Supplier.findOneAndUpdate(
       { _id: req.params.id, shop: shop._id },
@@ -120,7 +115,7 @@ const deleteSupplier = async (req, res) => {
     }
     res.json({ message: 'Supplier removed' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -128,7 +123,7 @@ const deleteSupplier = async (req, res) => {
 // ── GET SUPPLIER LEDGER (udhaar history) ─────────────────────────────────────
 const getSupplierLedger = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
     if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
 
@@ -140,7 +135,7 @@ const getSupplierLedger = async (req, res) => {
 
     res.json({ supplier, ledger });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -148,7 +143,7 @@ const getSupplierLedger = async (req, res) => {
 // ── SETTLE SUPPLIER PAYMENT ───────────────────────────────────────────────────
 const settleSupplierPayment = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { amount, note, payment_mode } = req.body;
 
     const supplier = await Supplier.findOne({ _id: req.params.id, shop: shop._id });
@@ -190,7 +185,7 @@ const settleSupplierPayment = async (req, res) => {
 
     res.json({ message: 'Payment recorded', balanceDue: supplier.totalUdhaar });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

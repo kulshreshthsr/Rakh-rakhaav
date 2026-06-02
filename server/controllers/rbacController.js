@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const logger = require('../utils/logger');
 const crypto = require('crypto');
 const User = require('../models/userModel');
 const Shop = require('../models/shopModel');
@@ -87,7 +88,7 @@ const getRoles = async (req, res) => {
 
     res.json({ roles: [...systemList, ...customList] });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -112,7 +113,7 @@ const createRole = async (req, res) => {
     res.status(201).json({ role });
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ message: 'A role with this name already exists' });
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -140,7 +141,7 @@ const updateRole = async (req, res) => {
 
     res.json({ role });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -169,7 +170,7 @@ const deleteRole = async (req, res) => {
     await role.deleteOne();
     res.json({ message: 'Role deleted' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -185,7 +186,7 @@ const getTeamMembers = async (req, res) => {
 
     res.json({ members: members.map(serializeMember) });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -233,7 +234,7 @@ const createTeamMember = async (req, res) => {
     });
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ message: 'Username already taken. Please choose another.' });
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -259,7 +260,7 @@ const updateTeamMember = async (req, res) => {
 
     res.json({ member: serializeMember(member) });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -279,7 +280,7 @@ const resetMemberPassword = async (req, res) => {
 
     res.json({ message: 'Password reset successful', tempPassword });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -295,7 +296,7 @@ const deleteTeamMember = async (req, res) => {
     await member.deleteOne();
     res.json({ message: 'Team member removed' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 const {
+  getSaleById,
   getSales,
   createSale,
   updateSale,
@@ -36,6 +37,7 @@ router.patch('/:id/mark-delivered', protect, requirePermission('CREATE_INVOICE')
 router.post('/:id/convert-to-invoice', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), convertToInvoice);
 
 router.get('/',    protect, requirePermission('VIEW_SALES'),   getSales);
+router.get('/:id', protect, requirePermission('VIEW_SALES'),   getSaleById);
 router.post('/',   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createSale);
 router.patch('/:id/workflow', protect, requirePermission('CREATE_INVOICE'), updateSaleWorkflow);
 router.put('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),  updateSale);

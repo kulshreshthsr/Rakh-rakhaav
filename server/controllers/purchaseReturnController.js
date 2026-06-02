@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
-const SaleReturn = require('../models/saleReturnModel');
-const Sale = require('../models/salesModel');
+const PurchaseReturn = require('../models/purchaseReturnModel');
+const Purchase = require('../models/purchaseModel');
 const Product = require('../models/productModel');
-const Customer = require('../models/customerModel');
-const Udhaar = require('../models/udhaarModel');
+const Supplier = require('../models/supplierModel');
+const SupplierUdhaar = require('../models/supplierUdhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
 const ProductBatch = require('../models/productBatchModel');
 const ProductVariant = require('../models/productVariantModel');
 const SerialInventory = require('../models/serialInventoryModel');
 const { logAuditEvent } = require('../utils/auditTrail');
 const { getShopOrFail } = require('../utils/shopGuard');
-const logger = require('../utils/logger');
 
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
 
@@ -21,26 +20,26 @@ const getFinancialYear = (date = new Date()) => {
   return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
 };
 
-const generateReturnNumber = async (shopId, session = null) => {
+const generateCreditNoteNumber = async (shopId, session = null) => {
   const financialYear = getFinancialYear();
   let query = DocumentSequence.findOneAndUpdate(
-    { shop: shopId, doc_type: 'sale_return', financial_year: financialYear },
+    { shop: shopId, doc_type: 'purchase_return', financial_year: financialYear },
     { $inc: { last_number: 1 } },
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );
   if (session) query = query.session(session);
   const sequence = await query;
-  return `RET/${financialYear}/${String(sequence.last_number).padStart(4, '0')}`;
+  return `CN/${financialYear}/${String(sequence.last_number).padStart(4, '0')}`;
 };
 
 // ── GET ALL RETURNS ────────────────────────────────────────────────────────────
-const getSaleReturns = async (req, res) => {
+const getPurchaseReturns = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
-    const { from, to, saleId, limit: limitParam, cursor } = req.query;
+    const { from, to, supplierId, limit: limitParam, cursor } = req.query;
 
     const filter = { shop: shop._id };
-    if (saleId) filter.original_sale = saleId;
+    if (supplierId) filter.supplier = supplierId;
     if (from || to) {
       filter.createdAt = {};
       if (from) filter.createdAt.$gte = new Date(from);
@@ -49,9 +48,9 @@ const getSaleReturns = async (req, res) => {
     if (cursor) filter._id = { $lt: cursor };
 
     const pageSize = Math.min(Number(limitParam) || 100, 500);
-    const returns = await SaleReturn.find(filter)
-      .populate('customer', 'name phone')
-      .populate('original_sale', 'invoice_number total_amount')
+    const returns = await PurchaseReturn.find(filter)
+      .populate('supplier', 'name phone')
+      .populate('original_purchase', 'invoice_number total_amount')
       .sort({ createdAt: -1 })
       .limit(pageSize + 1);
 
@@ -59,13 +58,13 @@ const getSaleReturns = async (req, res) => {
     const page = hasMore ? returns.slice(0, pageSize) : returns;
     res.json({ returns: page, hasMore, nextCursor: hasMore ? String(page[page.length - 1]._id) : null });
   } catch (err) {
-    logger.error(err);
+    if (err.code === 'SHOP_NOT_CONFIGURED') return res.status(400).json({ code: err.code, message: err.message });
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 // ── CREATE RETURN ──────────────────────────────────────────────────────────────
-const createSaleReturn = async (req, res) => {
+const createPurchaseReturn = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     let returnId;
@@ -75,29 +74,31 @@ const createSaleReturn = async (req, res) => {
       const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
 
-      const { sale_id, items, refund_mode = 'cash', reason, notes } = req.body;
+      const { purchase_id, items, refund_mode = 'adjust', reason, notes } = req.body;
 
-      if (!sale_id || !Array.isArray(items) || items.length === 0) {
-        throw new Error('sale_id and at least one item are required');
+      if (!purchase_id || !Array.isArray(items) || items.length === 0) {
+        throw new Error('purchase_id and at least one item are required');
       }
 
-      const originalSale = await Sale.findOne({ _id: sale_id, shop: shop._id }).session(session);
-      if (!originalSale) throw new Error('Original sale not found');
+      const originalPurchase = await Purchase.findOne({ _id: purchase_id, shop: shop._id }).session(session);
+      if (!originalPurchase) throw new Error('Original purchase not found');
 
-      // Validate return quantities do not exceed original sale quantities
+      // Build quantity map from original purchase
+      const allItems = originalPurchase.items?.length > 0
+        ? originalPurchase.items
+        : (originalPurchase.product
+          ? [{ product: originalPurchase.product, quantity: originalPurchase.quantity, price_per_unit: originalPurchase.price_per_unit, gst_rate: originalPurchase.gst_rate, gst_type: originalPurchase.gst_type || 'CGST_SGST', cgst_amount: originalPurchase.cgst_amount, sgst_amount: originalPurchase.sgst_amount, igst_amount: originalPurchase.igst_amount, total_gst: originalPurchase.total_gst, taxable_amount: originalPurchase.taxable_amount, total_amount: originalPurchase.total_amount, item_metadata: {} }]
+          : []);
+
       const originalQtyMap = new Map();
-      const allItems = originalSale.items?.length > 0
-        ? originalSale.items
-        : [{ product: originalSale.product, quantity: originalSale.quantity, price_per_unit: originalSale.price_per_unit, cost_price: originalSale.cost_price, gst_rate: originalSale.gst_rate, taxable_amount: originalSale.taxable_amount, cgst_amount: originalSale.cgst_amount, sgst_amount: originalSale.sgst_amount, igst_amount: originalSale.igst_amount, total_gst: originalSale.total_gst, total_amount: originalSale.total_amount, item_metadata: {} }];
-
       for (const item of allItems) {
         const pid = String(item.product);
         originalQtyMap.set(pid, (originalQtyMap.get(pid) || 0) + Number(item.quantity || 0));
       }
 
-      // Check if previous returns already consumed some quantity
-      const existingReturns = await SaleReturn.find({
-        shop: shop._id, original_sale: sale_id, status: { $ne: 'cancelled' },
+      // Check how much has already been returned
+      const existingReturns = await PurchaseReturn.find({
+        shop: shop._id, original_purchase: purchase_id, status: { $ne: 'cancelled' },
       }).session(session);
       const alreadyReturnedMap = new Map();
       for (const ret of existingReturns) {
@@ -113,9 +114,7 @@ const createSaleReturn = async (req, res) => {
 
       for (const item of items) {
         const productId = item.product_id || item.product;
-        let productQuery = Product.findById(productId);
-        if (session) productQuery = productQuery.session(session);
-        const product = await productQuery;
+        const product = await Product.findById(productId).session(session);
         if (!product) throw new Error(`Product not found: ${productId}`);
 
         const qty = Number(item.quantity);
@@ -128,9 +127,8 @@ const createSaleReturn = async (req, res) => {
           throw new Error(`${product.name}: can only return ${maxReturnable} (${alreadyReturned} already returned of ${originalQty})`);
         }
 
-        // Find matching item from original sale for price/gst data
         const originalItem = allItems.find(i => String(i.product) === String(product._id)) || {};
-        const ppu = Number(item.price_per_unit || originalItem.price_per_unit || product.price);
+        const ppu = Number(item.price_per_unit || originalItem.price_per_unit || product.cost_price || 0);
         const gst_rate = Number(item.gst_rate ?? originalItem.gst_rate ?? product.gst_rate ?? 0);
         const taxable = round2(qty * ppu);
         const gst = round2((taxable * gst_rate) / 100);
@@ -154,10 +152,10 @@ const createSaleReturn = async (req, res) => {
           $inc: { quantity: qty },
           $push: {
             stock_history: {
-              type: 'sale_return',
+              type: 'purchase_return',
               quantity_change: qty,
               quantity_after: quantityAfter,
-              reference_id: originalSale.invoice_number,
+              reference_id: originalPurchase.invoice_number,
               date: new Date(),
             },
           },
@@ -177,7 +175,7 @@ const createSaleReturn = async (req, res) => {
         if (Array.isArray(metaObj.serial_ids) && metaObj.serial_ids.length > 0) {
           await SerialInventory.updateMany(
             { _id: { $in: metaObj.serial_ids } },
-            { $set: { status: 'in_stock' }, $unset: { sale_invoice: '', sale_date: '' } },
+            { $set: { status: 'in_stock' }, $unset: { purchase_invoice: '' } },
             opts
           );
         }
@@ -187,7 +185,6 @@ const createSaleReturn = async (req, res) => {
           product_name: product.name,
           quantity: qty,
           price_per_unit: ppu,
-          cost_price: Number(originalItem.cost_price || product.cost_price || 0),
           gst_rate,
           taxable_amount: taxable,
           cgst_amount,
@@ -200,14 +197,14 @@ const createSaleReturn = async (req, res) => {
         });
       }
 
-      const returnNumber = await generateReturnNumber(shop._id, session);
+      const creditNoteNumber = await generateCreditNoteNumber(shop._id, session);
       const refundAmount = round2(grandTotal);
 
-      const [saleReturn] = await SaleReturn.create([{
+      const [purchaseReturn] = await PurchaseReturn.create([{
         shop: shop._id,
-        original_sale: originalSale._id,
-        original_invoice_number: originalSale.invoice_number,
-        return_number: returnNumber,
+        original_purchase: originalPurchase._id,
+        original_invoice_number: originalPurchase.invoice_number,
+        credit_note_number: creditNoteNumber,
         items: resolvedItems,
         taxable_amount: round2(totalTaxable),
         cgst_amount: round2(totalCGST),
@@ -217,55 +214,56 @@ const createSaleReturn = async (req, res) => {
         total_amount: round2(grandTotal),
         refund_mode,
         refund_amount: refundAmount,
-        customer: originalSale.customer,
-        buyer_name: originalSale.buyer_name,
+        supplier: originalPurchase.supplier || null,
+        supplier_name: originalPurchase.supplier_name || '',
         reason: reason || '',
         notes: notes || '',
+        return_date: new Date(),
       }], { session });
 
-      returnId = saleReturn._id;
+      returnId = purchaseReturn._id;
 
-      // Update customer udhaar if it was a credit sale
-      if (originalSale.payment_type === 'credit' && originalSale.customer) {
-        const customer = await Customer.findById(originalSale.customer).session(session);
-        if (customer) {
-          // Credit note: reduce what customer owes
-          customer.totalSales = Math.max(0, round2((customer.totalSales || 0) - refundAmount));
-          customer.totalUdhaar = Math.max(0, round2(customer.totalSales - (customer.totalPaid || 0)));
-          await customer.save({ session });
+      // Update supplier udhaar if original was a credit purchase
+      if (originalPurchase.payment_type === 'credit' && originalPurchase.supplier) {
+        const supplier = await Supplier.findById(originalPurchase.supplier).session(session);
+        if (supplier) {
+          supplier.totalPurchased = Math.max(0, round2((supplier.totalPurchased || 0) - refundAmount));
+          supplier.totalUdhaar = Math.max(0, round2(supplier.totalPurchased - (supplier.totalPaid || 0)));
+          await supplier.save({ session });
 
-          await Udhaar.create([{
+          await SupplierUdhaar.create([{
             shop: shop._id,
-            customer: originalSale.customer,
+            supplier: originalPurchase.supplier,
             type: 'credit',
             amount: refundAmount,
-            running_balance: customer.totalUdhaar,
-            payment_mode: refund_mode === 'credit_note' ? 'credit_note' : refund_mode,
-            note: `Sale Return ${returnNumber} - ${resolvedItems.map(i => i.product_name).join(', ')}`,
+            running_balance: supplier.totalUdhaar,
+            payment_mode: refund_mode === 'adjust' ? 'adjust' : refund_mode,
+            note: `Purchase Return ${creditNoteNumber} - ${resolvedItems.map(i => i.product_name).join(', ')}`,
             date: new Date(),
-            reference_id: returnNumber,
-            reference_type: 'sale_return',
+            reference_id: creditNoteNumber,
+            reference_type: 'purchase_return',
           }], { session });
         }
       }
     });
 
-    const hydrated = await SaleReturn.findById(returnId)
-      .populate('customer', 'name phone')
-      .populate('original_sale', 'invoice_number total_amount');
+    const hydrated = await PurchaseReturn.findById(returnId)
+      .populate('supplier', 'name phone')
+      .populate('original_purchase', 'invoice_number total_amount');
 
     await logAuditEvent({
       shopId: hydrated.shop,
       userId: req.user.id,
-      actionType: 'create', entity: 'sale_return',
+      actionType: 'create', entity: 'purchase_return',
       entityId: hydrated._id,
-      referenceId: hydrated.return_number,
+      referenceId: hydrated.credit_note_number,
       afterValue: hydrated,
     });
 
     res.status(201).json(hydrated);
   } catch (err) {
-    if (err.message.includes('not found') || err.message.includes('can only return')) {
+    if (err.code === 'SHOP_NOT_CONFIGURED') return res.status(400).json({ code: err.code, message: err.message });
+    if (err.message.includes('not found') || err.message.includes('can only return') || err.message.includes('required')) {
       return res.status(400).json({ message: err.message });
     }
     res.status(500).json({ message: err.message });
@@ -274,17 +272,18 @@ const createSaleReturn = async (req, res) => {
   }
 };
 
-// ── GET RETURNS FOR A SALE ─────────────────────────────────────────────────────
-const getReturnsForSale = async (req, res) => {
+// ── GET RETURNS FOR A PURCHASE ─────────────────────────────────────────────────
+const getReturnsForPurchase = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
-    const returns = await SaleReturn.find({
-      shop: shop._id, original_sale: req.params.saleId, status: { $ne: 'cancelled' },
+    const returns = await PurchaseReturn.find({
+      shop: shop._id, original_purchase: req.params.purchaseId, status: { $ne: 'cancelled' },
     }).sort({ createdAt: -1 });
     res.json(returns);
   } catch (err) {
+    if (err.code === 'SHOP_NOT_CONFIGURED') return res.status(400).json({ code: err.code, message: err.message });
     res.status(500).json({ message: err.message });
   }
 };
 
-module.exports = { getSaleReturns, createSaleReturn, getReturnsForSale };
+module.exports = { getPurchaseReturns, createPurchaseReturn, getReturnsForPurchase };

@@ -28,16 +28,8 @@ const GST_STATE_CODE_MAP = {
   '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh',
 };
 
-const getOrCreateShop = async (userId, session = null) => {
-  let query = Shop.findOne({ owner: userId });
-  if (session) query = query.session(session);
-  let shop = await query;
-  if (!shop) {
-    const created = await Shop.create([{ name: 'My Shop', owner: userId }], session ? { session } : {});
-    shop = created[0];
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getFinancialYear = (date = new Date()) => {
   const year = date.getFullYear();
@@ -496,7 +488,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
 
 const getPurchases = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { supplierId, payment_status, from, to, limit: limitParam, cursor } = req.query;
 
     const filter = { shop: shop._id };
@@ -538,7 +530,7 @@ const getPurchases = async (req, res) => {
 
     res.json({ purchases: page, summary, hasMore, nextCursor });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -555,7 +547,7 @@ const createPurchase = async (req, res) => {
     const offlineOperationId = normalizeOfflineOperationId(req.body?.offline_operation_id);
 
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       if (offlineOperationId) {
         const existingPurchase = await Purchase.findOne({
@@ -598,7 +590,7 @@ const createPurchase = async (req, res) => {
     return res.status(201).json(hydratedPurchase);
   } catch (err) {
     if (err?.code === 11000 && req.body?.offline_operation_id) {
-      const shop = await getOrCreateShop(req.user.id);
+      const shop = await getShopOrFail(req.user.id);
       const existingPurchase = await Purchase.findOne({
         shop: shop._id,
         offline_operation_id: normalizeOfflineOperationId(req.body.offline_operation_id),
@@ -623,7 +615,7 @@ const updatePurchase = async (req, res) => {
     let auditShopId = null;
 
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!purchase) throw new Error('Purchase not found');
@@ -672,7 +664,7 @@ const deletePurchase = async (req, res) => {
     let deletedPurchase = null;
     let auditShopId = null;
     await session.withTransaction(async () => {
-      const shop = await getOrCreateShop(req.user.id, session);
+      const shop = await getShopOrFail(req.user.id);
       auditShopId = shop._id;
       const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id }).session(session);
       if (!purchase) throw new Error('Purchase not found');
@@ -736,7 +728,7 @@ const deletePurchase = async (req, res) => {
 
 const getITCSummary = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { month, year } = req.query;
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59);
@@ -765,7 +757,7 @@ const getITCSummary = async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -777,7 +769,7 @@ const getITCSummary = async (req, res) => {
 
 const getPurchaseRegister = async (req, res) => {
   try {
-    const shop  = await getOrCreateShop(req.user.id);
+    const shop  = await getShopOrFail(req.user.id);
     const { from, to, page: pageParam = '1', limit: limitParam = '50', gstin, itc_only, rcm_only } = req.query;
 
     const fromDate = from ? new Date(from) : new Date(new Date().setDate(1));
@@ -824,7 +816,7 @@ const getPurchaseRegister = async (req, res) => {
 
     res.json({ purchases, totals, page, limit, total, totalPages: Math.ceil(total / limit) });
   } catch (err) {
-    console.error('getPurchaseRegister error:', err);
+    logger.error('getPurchaseRegister error:', err);
     res.status(500).json({ message: err.message || 'Something went wrong' });
   }
 };

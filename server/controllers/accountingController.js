@@ -1,15 +1,10 @@
-const Shop = require('../models/shopModel');
 const { generateAccountingSummary } = require('../services/accountingService');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getAccountingSummary = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const summary = await generateAccountingSummary({
       shopId: shop._id,
       from: req.query.from || null,
@@ -33,7 +28,8 @@ const getAccountingSummary = async (req, res) => {
 
     res.json(summary);
   } catch (error) {
-    console.error(error);
+    if (error.code === 'SHOP_NOT_CONFIGURED') return res.status(400).json({ code: error.code, message: error.message });
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

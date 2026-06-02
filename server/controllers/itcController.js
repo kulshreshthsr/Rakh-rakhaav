@@ -4,14 +4,8 @@ const Purchase = require('../models/purchaseModel');
 const Shop     = require('../models/shopModel');
 const { round2 } = require('../lib/gstUtils');
 
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) {
-    const created = await Shop.create([{ name: 'My Shop', owner: userId }]);
-    shop = created[0];
-  }
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const sumGST = (arr) => arr.reduce((acc, p) => ({
   taxable: round2(acc.taxable + (p.taxable_amount || 0)),
@@ -28,7 +22,7 @@ const sumGST = (arr) => arr.reduce((acc, p) => ({
 
 const getITCRegister = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { from, to } = req.query;
 
     const fromDate = from ? new Date(from) : new Date(new Date().setDate(1));
@@ -71,7 +65,7 @@ const getITCRegister = async (req, res) => {
       total_blocked:     round2(blockedTotals.total),
     });
   } catch (err) {
-    console.error('getITCRegister error:', err);
+    logger.error('getITCRegister error:', err);
     res.status(500).json({ message: err.message || 'Something went wrong' });
   }
 };
@@ -83,7 +77,7 @@ const getITCRegister = async (req, res) => {
 
 const getITCSummary = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { month, year } = req.query;
     if (!month || !year) return res.status(400).json({ message: 'month and year are required' });
 
@@ -149,7 +143,7 @@ const getITCSummary = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('getITCSummary error:', err);
+    logger.error('getITCSummary error:', err);
     res.status(500).json({ message: err.message || 'Something went wrong' });
   }
 };

@@ -1,16 +1,11 @@
 const Stylist = require('../models/stylistModel');
 const Sale    = require('../models/salesModel');
-const Shop    = require('../models/shopModel');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getStylists = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const stylists = await Stylist.find({ shop: shop._id, isActive: true }).sort({ name: 1 });
 
     // Compute today's appointment count per stylist
@@ -29,26 +24,26 @@ const getStylists = async (req, res) => {
     const result = stylists.map(s => ({ ...s.toJSON(), todayCount: countMap[String(s._id)] || 0 }));
     res.json(result);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const createStylist = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const { name, phone, speciality, for_gender, working_days, start_time, end_time, slot_duration, color } = req.body;
     const stylist = await Stylist.create({ name, phone, speciality, for_gender, working_days, start_time, end_time, slot_duration, color, shop: shop._id });
     res.status(201).json(stylist);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const updateStylist = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const stylist = await Stylist.findOneAndUpdate(
       { _id: req.params.id, shop: shop._id },
       req.body,
@@ -57,14 +52,14 @@ const updateStylist = async (req, res) => {
     if (!stylist) return res.status(404).json({ message: 'Stylist not found' });
     res.json(stylist);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const deactivateStylist = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const stylist = await Stylist.findOneAndUpdate(
       { _id: req.params.id, shop: shop._id },
       { isActive: false },
@@ -73,7 +68,7 @@ const deactivateStylist = async (req, res) => {
     if (!stylist) return res.status(404).json({ message: 'Stylist not found' });
     res.json({ message: 'Stylist deactivated' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

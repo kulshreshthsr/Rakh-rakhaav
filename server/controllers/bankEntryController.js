@@ -1,27 +1,22 @@
 const BankEntry = require('../models/bankEntryModel');
-const Shop = require('../models/shopModel');
 const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getBankEntries = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const entries = await BankEntry.find({ shop: shop._id }).sort({ date: -1 });
     res.json(entries);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const updateBankEntry = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const entry = await BankEntry.findOne({ _id: req.params.id, shop: shop._id });
     if (!entry) return res.status(404).json({ message: 'Bank entry not found' });
     if (!req.body.entry_type) return res.status(400).json({ message: 'Bank entry type is required' });
@@ -54,14 +49,14 @@ const updateBankEntry = async (req, res) => {
 
     res.json(updatedEntry);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const createBankEntry = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     if (!req.body.entry_type) return res.status(400).json({ message: 'Bank entry type is required' });
     if (!Number.isFinite(Number(req.body.amount)) || Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Bank entry amount must be greater than zero' });
     const entry = await BankEntry.create({
@@ -83,14 +78,14 @@ const createBankEntry = async (req, res) => {
     });
     res.status(201).json(entry);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const deleteBankEntry = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const entry = await BankEntry.findOne({ _id: req.params.id, shop: shop._id });
     if (!entry) return res.status(404).json({ message: 'Bank entry not found' });
     await BankEntry.deleteOne({ _id: req.params.id, shop: shop._id });
@@ -107,7 +102,7 @@ const deleteBankEntry = async (req, res) => {
     }
     res.json({ message: 'Bank entry deleted' });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

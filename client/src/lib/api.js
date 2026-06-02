@@ -27,3 +27,20 @@ export function apiUrl(path = '') {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${getApiBaseUrl()}${normalizedPath}`;
 }
+
+// Drop-in fetch wrapper that fires a global 'shop-not-configured' event when
+// the API signals the user hasn't completed onboarding. Use in place of
+// fetch(apiUrl(...)) for automatic global handling.
+export async function apiFetch(url, options = {}) {
+  const res = await fetch(url, options);
+  if (!res.ok && typeof window !== 'undefined') {
+    const cloned = res.clone();
+    try {
+      const data = await cloned.json();
+      if (data?.code === 'SHOP_NOT_CONFIGURED') {
+        window.dispatchEvent(new CustomEvent('shop-not-configured', { detail: data.message }));
+      }
+    } catch {}
+  }
+  return res;
+}

@@ -1,25 +1,20 @@
 const Customer = require('../models/customerModel');
 const Udhaar = require('../models/udhaarModel');
-const Shop = require('../models/shopModel');
 const { logAuditEvent } = require('../utils/auditTrail');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 // ── GET ALL CUSTOMERS ────────────────────────────────────────────────────────
 const getCustomers = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const customers = await Customer.find({
       shop: shop._id,
       isActive: { $ne: false },
     }).sort({ name: 1 });
     res.json(customers);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -29,7 +24,7 @@ const createCustomer = async (req, res) => {
   const { name, phone, email, address, gstin, notes, opening_balance } = req.body;
   try {
     if (!name) return res.status(400).json({ message: 'Customer name is required' });
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.create({
       shop: shop._id,
       name, phone, email, address, gstin, notes,
@@ -47,7 +42,7 @@ const createCustomer = async (req, res) => {
     });
     res.status(201).json(customer);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -55,7 +50,7 @@ const createCustomer = async (req, res) => {
 // ── UPDATE CUSTOMER ──────────────────────────────────────────────────────────
 const updateCustomer = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const existingCustomer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!existingCustomer) return res.status(404).json({ message: 'Customer not found' });
     const { name, phone, email, address, gstin, notes, opening_balance } = req.body;
@@ -92,7 +87,7 @@ const updateCustomer = async (req, res) => {
     });
     res.json(customer);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -100,7 +95,7 @@ const updateCustomer = async (req, res) => {
 // ── DELETE CUSTOMER (soft) ───────────────────────────────────────────────────
 const deleteCustomer = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
@@ -123,7 +118,7 @@ const deleteCustomer = async (req, res) => {
     });
     res.json({ message: 'Customer removed' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -131,7 +126,7 @@ const deleteCustomer = async (req, res) => {
 // ── GET UDHAAR LEDGER ────────────────────────────────────────────────────────
 const getUdhaar = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
@@ -141,7 +136,7 @@ const getUdhaar = async (req, res) => {
     }).sort({ date: -1 });
     res.json({ customer, entries });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -153,7 +148,7 @@ const addUdhaar = async (req, res) => {
     if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
       return res.status(400).json({ message: 'Amount must be a positive number' });
     }
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
@@ -194,7 +189,7 @@ const addUdhaar = async (req, res) => {
 
     res.status(201).json(entry);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -204,7 +199,7 @@ const addUdhaar = async (req, res) => {
 const settlePayment = async (req, res) => {
   try {
     const { amount, note, payment_mode } = req.body;
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
@@ -249,7 +244,7 @@ const settlePayment = async (req, res) => {
       customer,
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

@@ -1,20 +1,15 @@
 const Expense = require('../models/expenseModel');
-const Shop = require('../models/shopModel');
 const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getExpenses = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const expenses = await Expense.find({ shop: shop._id }).sort({ date: -1 });
     res.json(expenses);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -22,7 +17,7 @@ const getExpenses = async (req, res) => {
 const updateExpense = async (req, res) => {
   const { category, amount, note, date, payment_mode, reference_id } = req.body;
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const existingExpense = await Expense.findOne({ _id: req.params.id, shop: shop._id });
     if (!existingExpense) return res.status(404).json({ message: 'Expense not found' });
     if (!category) return res.status(400).json({ message: 'Expense category is required' });
@@ -57,7 +52,7 @@ const updateExpense = async (req, res) => {
 
     res.json(expense);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -65,7 +60,7 @@ const updateExpense = async (req, res) => {
 const createExpense = async (req, res) => {
   const { category, amount, note, date, payment_mode, reference_id } = req.body;
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     if (!category) return res.status(400).json({ message: 'Expense category is required' });
     if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return res.status(400).json({ message: 'Expense amount must be greater than zero' });
     if (!payment_mode) return res.status(400).json({ message: 'Expense payment mode is required' });
@@ -89,14 +84,14 @@ const createExpense = async (req, res) => {
     });
     res.status(201).json(expense);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const deleteExpense = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const existingExpense = await Expense.findOne({ _id: req.params.id, shop: shop._id });
     if (!existingExpense) return res.status(404).json({ message: 'Expense not found' });
     await Expense.deleteOne({ _id: req.params.id, shop: shop._id });
@@ -113,7 +108,7 @@ const deleteExpense = async (req, res) => {
     }
     res.json({ message: 'Expense deleted' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

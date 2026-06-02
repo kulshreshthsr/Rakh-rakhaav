@@ -1,27 +1,22 @@
 const Income = require('../models/incomeModel');
-const Shop = require('../models/shopModel');
 const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
-
-const getOrCreateShop = async (userId) => {
-  let shop = await Shop.findOne({ owner: userId });
-  if (!shop) shop = await Shop.create({ name: 'My Shop', owner: userId });
-  return shop;
-};
+const { getShopOrFail } = require('../utils/shopGuard');
+const logger = require('../utils/logger');
 
 const getIncome = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const income = await Income.find({ shop: shop._id }).sort({ date: -1 });
     res.json(income);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const updateIncome = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const income = await Income.findOne({ _id: req.params.id, shop: shop._id });
     if (!income) return res.status(404).json({ message: 'Income entry not found' });
     if (!req.body.source) return res.status(400).json({ message: 'Income source is required' });
@@ -57,14 +52,14 @@ const updateIncome = async (req, res) => {
 
     res.json(updatedIncome);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const createIncome = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     if (!req.body.source) return res.status(400).json({ message: 'Income source is required' });
     if (!Number.isFinite(Number(req.body.amount)) || Number(req.body.amount) <= 0) return res.status(400).json({ message: 'Income amount must be greater than zero' });
     if (!req.body.payment_mode) return res.status(400).json({ message: 'Income payment mode is required' });
@@ -89,14 +84,14 @@ const createIncome = async (req, res) => {
     });
     res.status(201).json(income);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
 const deleteIncome = async (req, res) => {
   try {
-    const shop = await getOrCreateShop(req.user.id);
+    const shop = await getShopOrFail(req.user.id);
     const income = await Income.findOne({ _id: req.params.id, shop: shop._id });
     if (!income) return res.status(404).json({ message: 'Income entry not found' });
     await Income.deleteOne({ _id: req.params.id, shop: shop._id });
@@ -113,7 +108,7 @@ const deleteIncome = async (req, res) => {
     }
     res.json({ message: 'Income deleted' });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });
   }
 };

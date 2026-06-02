@@ -28,6 +28,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const saleReturnRoutes = require('./routes/saleReturnRoutes');
+const purchaseReturnRoutes = require('./routes/purchaseReturnRoutes');
 const narcoticsRoutes  = require('./routes/narcoticsRoutes');
 const stylistRoutes    = require('./routes/stylistRoutes');
 const membershipRoutes = require('./routes/membershipRoutes');
@@ -37,6 +38,7 @@ const petRoutes        = require('./routes/petRoutes');
 const gstRoutes        = require('./routes/gstRoutes');
 const itcRoutes        = require('./routes/itcRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const logger = require('./utils/logger');
 
 const app = express();
 
@@ -112,6 +114,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/sale-returns', saleReturnRoutes);
+app.use('/api/purchase-returns', purchaseReturnRoutes);
 app.use('/api/narcotics', narcoticsRoutes);
 app.use('/api/stylists', stylistRoutes);
 app.use('/api/memberships', membershipRoutes);
@@ -125,7 +128,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
 });
 
 module.exports = app;
