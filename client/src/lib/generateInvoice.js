@@ -317,14 +317,25 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
     : '';
 
   /* ── Amount summary section ── */
+  const discAmt = Number(sale.discount_amount || 0);
+  const discLabel = sale.discount_type === 'percent'
+    ? `Discount (${sale.discount_value}%)`
+    : sale.discount_type === 'flat' ? 'Discount (Flat)' : '';
+  const discRow = discAmt > 0
+    ? `<tr style="color:#16a34a"><td>${discLabel}</td><td>- ${INR}${fmt(discAmt)}</td></tr>`
+    : '';
+
   const amountSection = useGst
-    ? `<tr><td>Taxable Amount</td><td>${INR}${fmt(sale.taxable_amount)}</td></tr>`
+    ? (discAmt > 0 ? `<tr><td>Subtotal</td><td>${INR}${fmt((sale.taxable_amount || 0) + discAmt)}</td></tr>` : '')
+      + discRow
+      + `<tr><td>Taxable Amount</td><td>${INR}${fmt(sale.taxable_amount)}</td></tr>`
       + amountSummaryRows
       + `<tr><td>Total GST</td><td>${INR}${fmt(sale.total_gst)}</td></tr>`
       + `<tr><td>Round Off</td><td>${roundedBill.roundOff >= 0 ? '+' : ''}${INR}${fmt(roundedBill.roundOff)}</td></tr>`
       + `<tr class="amount-grand"><td>Grand Total</td><td>${INR}${fmt(sale.total_amount)}</td></tr>`
       + `<tr class="amount-rounded"><td>Rounded Total</td><td>${INR}${fmt(roundedBill.roundedTotal)}</td></tr>`
-    : `<tr class="amount-grand"><td>Total</td><td>${INR}${fmt(sale.total_amount)}</td></tr>`
+    : discRow
+      + `<tr class="amount-grand"><td>Total</td><td>${INR}${fmt(sale.total_amount)}</td></tr>`
       + `<tr class="amount-rounded"><td>Rounded</td><td>${INR}${fmt(roundedBill.roundedTotal)}</td></tr>`;
 
   /* ── CSS ── */

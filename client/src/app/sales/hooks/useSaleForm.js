@@ -146,11 +146,32 @@ export default function useSaleForm({
     return { taxable, gst_rate, gst, total: taxable + gst, half_gst: gst / 2, isIGST };
   };
 
-  const billTotals = items.reduce((acc, item) => {
+  const rawTotals = items.reduce((acc, item) => {
     const g = rowGST(item);
     if (!g) return acc;
-    return { taxable: acc.taxable + g.taxable, gst: acc.gst + g.gst, total: acc.total + g.total };
-  }, { taxable: 0, gst: 0, total: 0 });
+    return { subtotal: acc.subtotal + g.taxable, gst: acc.gst + g.gst, total: acc.total + g.total };
+  }, { subtotal: 0, gst: 0, total: 0 });
+
+  // Apply bill-level discount
+  const discType  = form.discount_type || 'none';
+  const discValue = parseFloat(form.discount_value) || 0;
+  const discAmt   = discType === 'flat'
+    ? Math.min(discValue, rawTotals.subtotal)
+    : discType === 'percent'
+    ? parseFloat(((rawTotals.subtotal * discValue) / 100).toFixed(2))
+    : 0;
+  const taxableAfterDisc = Math.max(0, rawTotals.subtotal - discAmt);
+  const gstAfterDisc = rawTotals.subtotal > 0
+    ? parseFloat((rawTotals.gst * (taxableAfterDisc / rawTotals.subtotal)).toFixed(2))
+    : rawTotals.gst;
+
+  const billTotals = {
+    subtotal:       parseFloat(rawTotals.subtotal.toFixed(2)),
+    discountAmount: parseFloat(discAmt.toFixed(2)),
+    taxable:        parseFloat(taxableAfterDisc.toFixed(2)),
+    gst:            parseFloat(gstAfterDisc.toFixed(2)),
+    total:          parseFloat((taxableAfterDisc + gstAfterDisc).toFixed(2)),
+  };
 
   const amountPaidNum = parseFloat(form.amount_paid) || 0;
   const balanceDue    = Math.max(0, billTotals.total - amountPaidNum);

@@ -10,29 +10,29 @@ import WeeklyChart from '../../components/dashboard/WeeklyChart';
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
 const RETAIL_ACTIONS = [
-  { icon: '🧾', label: 'Naya Sale',    href: '/sales?open=1', tint: 'green'  },
-  { icon: '📦', label: 'Stock Daalo',  href: '/product',       tint: 'blue'   },
-  { icon: '💸', label: 'Udhaar Lo',   href: '/udhaar',         tint: 'amber'  },
-  { icon: '📊', label: 'Report Dekho',href: '/reports',         tint: 'purple' },
+  { icon: '🧾', label: 'नई Sale',      href: '/sales?open=1',  tint: 'green'  },
+  { icon: '📦', label: 'Stock डालो',   href: '/product',        tint: 'blue'   },
+  { icon: '💸', label: 'उधार लो',      href: '/udhaar',         tint: 'amber'  },
+  { icon: '📊', label: 'Report देखो',  href: '/reports',        tint: 'purple' },
 ];
 
 const B2B_ACTIONS = [
-  { icon: '📄', label: 'Bill Banao',    href: '/sales?open=1&type=invoice',   tint: 'blue'   },
-  { icon: '📋', label: 'Challan Bhejo', href: '/sales?open=1&type=challan',   tint: 'amber'  },
-  { icon: '💬', label: 'Quote Banao',   href: '/sales?open=1&type=quotation', tint: 'purple' },
-  { icon: '📊', label: 'GST / Hisaab', href: '/gst',                          tint: 'orange' },
+  { icon: '📄', label: 'Bill बनाओ',     href: '/sales?open=1&type=invoice',   tint: 'blue'   },
+  { icon: '📋', label: 'Challan भेजो',  href: '/sales?open=1&type=challan',   tint: 'amber'  },
+  { icon: '💬', label: 'Quote बनाओ',    href: '/sales?open=1&type=quotation', tint: 'purple' },
+  { icon: '📊', label: 'GST / हिसाब',  href: '/gst',                          tint: 'orange' },
 ];
 
 function buildFocusItems(intel, dashData) {
   const items = [];
   const expiryStats = dashData?.expiryStats || {};
-  if (expiryStats.expiredCount > 0) items.push({ icon: '☠️', title: `${expiryStats.expiredCount} item expire ho gaye`, color: 'red', href: '/product?filter=expiring' });
+  if (expiryStats.expiredCount > 0) items.push({ icon: '☠️', title: `${expiryStats.expiredCount} items expire हो गए`, color: 'red', href: '/product?filter=expiring' });
   if ((intel?.b2bData?.overdueReceivablesTotal || 0) > 0) {
     items.push({ icon: '💳', title: `₹${fmt(intel.b2bData.overdueReceivablesTotal)} B2B receivables overdue`, color: 'red', href: '/udhaar?filter=overdue' });
   }
-  if ((dashData?.pendingPickup || 0) > 0) items.push({ icon: '📱', title: `${dashData.pendingPickup} device ready for pickup`, color: 'blue', href: '/sales?filter=ready' });
-  if ((dashData?.stock?.lowStockCount || 0) > 0) items.push({ icon: '📦', title: `${dashData.stock.lowStockCount} item maal kam hai`, color: 'amber', href: '/product' });
-  if ((dashData?.udhaar?.pendingCount || 0) > 0) items.push({ icon: '💸', title: `₹${fmt(dashData.udhaar.totalDue)} udhaar collect karna hai`, color: 'amber', href: '/udhaar' });
+  if ((dashData?.pendingPickup || 0) > 0) items.push({ icon: '📱', title: `${dashData.pendingPickup} devices pickup के लिए ready हैं`, color: 'blue', href: '/sales?filter=ready' });
+  if ((dashData?.stock?.lowStockCount || 0) > 0) items.push({ icon: '📦', title: `${dashData.stock.lowStockCount} items का stock कम है`, color: 'amber', href: '/product' });
+  if ((dashData?.udhaar?.pendingCount || 0) > 0) items.push({ icon: '💸', title: `₹${fmt(dashData.udhaar.totalDue)} उधार collect करना है`, color: 'amber', href: '/udhaar' });
   return items;
 }
 
@@ -72,8 +72,8 @@ export default function BothDashboard({ intel, dashData, loading, firstName }) {
         <div className="grid grid-cols-2 gap-3">
           <KPICard label="Retail bills"   value={b2cCount}    money={false} tint="amber"  icon="🧾" />
           <KPICard label="Trade orders"   value={b2bCount}    money={false} tint="blue"   icon="📋" />
-          <KPICard label="Cash aaya"      value={cashInHand}  money={true}  tint="green"  icon="💵" />
-          <KPICard label="Baaki milna hai" value={outstanding} money={true}  tint="red"    icon="💸" />
+          <KPICard label="Cash आया"       value={cashInHand}  money={true}  tint="green"  icon="💵" />
+          <KPICard label="बाकी मिलना है"  value={outstanding} money={true}  tint="red"    icon="💸" />
         </div>
       </div>
 

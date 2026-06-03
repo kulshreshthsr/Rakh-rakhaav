@@ -24,12 +24,13 @@ const emptyShopForm = {
   name:'', address:'', city:'', state:'', pincode:'', gstin:'',
   phone:'', email:'', bank_name:'', bank_account:'', bank_ifsc:'', bank_branch:'',
   cash_opening_balance:'0', bank_opening_balance:'0', terms:'',
-  // GST registration
   gst_type: 'regular',
   composition_category: null,
   filing_frequency: 'monthly',
-  // Dashboard mode
   dashboardMode: 'b2c',
+  invoice_prefix: '',
+  invoice_number_digits: 4,
+  invoice_start_number: 1,
 };
 
 const normalizeGstin = (value = '') => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, GSTIN_LENGTH);
@@ -148,6 +149,9 @@ export default function ProfilePage() {
       composition_category: data?.composition_category || null,
       filing_frequency:     data?.filing_frequency     || 'monthly',
       dashboardMode: data?.dashboardMode || 'b2c',
+      invoice_prefix:        data?.invoice_prefix        || '',
+      invoice_number_digits: data?.invoice_number_digits ?? 4,
+      invoice_start_number:  data?.invoice_start_number  ?? 1,
     });
     setIsDirty(false);
   };
@@ -845,6 +849,62 @@ export default function ProfilePage() {
                     <div className="text-[16px] font-black text-green-700">₹{Number(shopForm.bank_opening_balance || 0).toFixed(2)}</div>
                   </div>
                 </div>
+              </div>
+            </Section>
+
+            {/* ══ INVOICE NUMBER FORMAT ═══════════════════════════ */}
+            <Section icon="🧾" title="Invoice Number Format" subtitle="अपनी दुकान का invoice numbering customize करें">
+              <Field label="Invoice Prefix" hint="जैसे INV, RAM/24-25, या खाली छोड़ें (max 10 chars)">
+                <input
+                  className={INPUT}
+                  placeholder="INV"
+                  maxLength={10}
+                  value={shopForm.invoice_prefix}
+                  onChange={(e) => patchShop({ invoice_prefix: e.target.value.toUpperCase().replace(/[^A-Z0-9\/\-_]/g, '') })}
+                />
+              </Field>
+
+              <Field label="Digits" hint="4 digits = 0001, 0002 | 3 digits = 001, 002">
+                <div className="flex gap-2">
+                  {[3, 4, 5, 6].map((d) => (
+                    <button key={d} type="button"
+                      onClick={() => patchShop({ invoice_number_digits: d })}
+                      className={`flex-1 py-2.5 rounded-xl border-2 text-[14px] font-black transition-all ${
+                        shopForm.invoice_number_digits === d
+                          ? 'border-green-500 bg-green-50 text-green-800'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >{d}</button>
+                  ))}
+                </div>
+              </Field>
+
+              <Field
+                label="शुरुआती Number"
+                hint="अगला invoice इस number से शुरू होगा"
+                error={shop?.invoice_last_number > 0 && Number(shopForm.invoice_start_number) <= (shop.invoice_last_number || 0)
+                  ? `⚠️ आपके पास पहले से ${shop.invoice_last_number} invoices हैं। Duplicate numbers बन सकते हैं।`
+                  : ''}
+              >
+                <input
+                  className={INPUT}
+                  type="number"
+                  min={1}
+                  value={shopForm.invoice_start_number}
+                  onChange={(e) => patchShop({ invoice_start_number: Math.max(1, Number(e.target.value) || 1) })}
+                />
+              </Field>
+
+              {/* Live preview */}
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Preview</p>
+                <p className="text-[18px] font-black text-green-800">
+                  {shopForm.invoice_prefix
+                    ? `${shopForm.invoice_prefix}-${String(shopForm.invoice_start_number || 1).padStart(shopForm.invoice_number_digits || 4, '0')}`
+                    : String(shopForm.invoice_start_number || 1).padStart(shopForm.invoice_number_digits || 4, '0')
+                  }
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">अगले invoice का number</p>
               </div>
             </Section>
 

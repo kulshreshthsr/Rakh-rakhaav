@@ -130,9 +130,11 @@ export default function UdhaarPage() {
   const [partySaving,     setPartySaving]     = useState(false);
   const [partyForm,       setPartyForm]       = useState(() => getEmptyPartyForm('customer'));
 
-  /* ── NEW: sort + filter state ── */
-  const [sortBy,     setSortBy]     = useState('due_desc'); // due_desc | due_asc | name_asc | recent
-  const [filterDue,  setFilterDue]  = useState('all');      // all | pending | settled
+  /* ── Sort + filter state ── */
+  const [sortBy,     setSortBy]     = useState('due_desc');
+  const [filterDue,  setFilterDue]  = useState('all');
+  /* ── Payment toast ── */
+  const [payToast, setPayToast] = useState('');
 
   /* ── All logic (ALL UNCHANGED) ── */
   const applyCachedSnapshot = (cached) => {
@@ -158,7 +160,7 @@ export default function UdhaarPage() {
       const data = await res.json();
       const next = Array.isArray(data) ? data : [];
       setCustomers(next); return next;
-    } catch { setError('Customers load nahi hue'); return []; }
+    } catch { setError('Customers load नहीं हुए'); return []; }
   }
 
   async function fetchSuppliers() {
@@ -218,14 +220,14 @@ export default function UdhaarPage() {
   };
 
   const sendReminder = async (customer, entries = []) => {
-    if (!isOnline) { setError('Offline mode me WhatsApp reminder open nahi hoga.'); return; }
+    if (!isOnline) { setError('Offline mode में WhatsApp reminder नहीं खुलेगा।'); return; }
     const phone = cleanPhone(customer.phone || '');
-    if (!phone) { setError('Is customer ka phone number nahi hai'); return; }
+    if (!phone) { setError('इस customer का phone number नहीं है'); return; }
     setError('');
     let ledgerEntries = entries;
     if (!ledgerEntries.length && customer?._id) {
       try { ledgerEntries = await fetchCustomerLedgerEntries(customer._id); }
-      catch { setError('Reminder ke liye ledger load nahi ho paya'); return; }
+      catch { setError('Reminder के लिए ledger load नहीं हो पाया'); return; }
     }
     const latestDebitEntry = ledgerEntries.find((e) => e.type === 'debit' || e.type === 'diya');
     const productInfo = latestDebitEntry?.note || latestDebitEntry?.reference_id || '';
@@ -233,11 +235,11 @@ export default function UdhaarPage() {
     const totalPaid  = Number(customer.totalPaid  || 0);
     const totalDue   = Number(customer.totalUdhaar || 0);
     const msg = [
-      `Namaste ${customer.name || 'Customer'} ji,`, '',
-      'Aapke udhaar account ka short summary bhej rahe hain:',
+      `नमस्ते ${customer.name || 'Customer'} जी 🙏`, '',
+      'आपके उधार account का हिसाब:',
       ...(productInfo ? [`Product / Bill: ${productInfo}`] : []),
-      `Total: ₹${fmt(totalSales)}`, `Paid: ₹${fmt(totalPaid)}`, `Baaki: ₹${fmt(totalDue)}`, '',
-      'Kripya suvidha anusar payment kar dein.', '', 'Dhanyavaad',
+      `Total: ₹${fmt(totalSales)}`, `Paid: ₹${fmt(totalPaid)}`, `बाकी: ₹${fmt(totalDue)}`, '',
+      'कृपया सुविधा अनुसार payment कर दें।', '', 'धन्यवाद 🙏',
     ].join('\n');
     window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -281,8 +283,8 @@ export default function UdhaarPage() {
 
   const handleSettle = async (e) => {
     e.preventDefault(); setError(''); setSuccess('');
-    if (!isOnline) { setError('Offline mode me payment record nahi hoga.'); return; }
-    if (!settleAmount || Number(settleAmount) <= 0) { setError('Valid amount enter karo'); return; }
+    if (!isOnline) { setError('Offline mode में payment record नहीं होगा।'); return; }
+    if (!settleAmount || Number(settleAmount) <= 0) { setError('Valid amount enter करें'); return; }
     setSettleLoading(true);
     try {
       const base = activeTab === 'customers' ? 'customers' : 'suppliers';
@@ -293,15 +295,30 @@ export default function UdhaarPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess(`₹${settleAmount} payment recorded ✓`);
+        const paid = parseFloat(settleAmount);
+        const newDue = Math.max(0, (selected.totalUdhaar || 0) - paid);
+        const customerName = selected.name || 'Customer';
+        const toastMsg = newDue <= 0
+          ? `✓ ${customerName} का पूरा हिसाब साफ! 🎉`
+          : `₹${fmt(paid)} जमा हुआ — ${customerName} का बाकी ₹${fmt(newDue)}`;
         setShowSettle(false); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash');
-        await fetchAll();
-        if (data.customer) setSelected(data.customer);
-        else if (data.balanceDue !== undefined) setSelected((prev) => ({ ...prev, totalUdhaar: data.balanceDue }));
-        const ledgerBase = activeTab === 'customers' ? 'customers' : 'suppliers';
-        const lRes = await fetch(apiUrl(`/api/${ledgerBase}/${selected._id}/udhaar`), { headers: { Authorization: `Bearer ${getToken()}` } });
-        const lData = await lRes.json();
-        setLedger(lData.entries || lData.ledger || (Array.isArray(lData) ? lData : []));
+        setPayToast(toastMsg);
+        setTimeout(() => setPayToast(''), 4000);
+        // Optimistic update
+        const updateParty = (list) => list.map((p) =>
+          p._id === selected._id ? { ...p, totalUdhaar: newDue, totalPaid: (p.totalPaid || 0) + paid } : p
+        );
+        if (activeTab === 'customers') setCustomers(updateParty);
+        else setSuppliers(updateParty);
+        if (selected) setSelected((prev) => prev ? { ...prev, totalUdhaar: newDue, totalPaid: (prev.totalPaid || 0) + paid } : prev);
+        // Background refresh + ledger update
+        fetchAll();
+        if (selected?._id) {
+          const ledgerBase = activeTab === 'customers' ? 'customers' : 'suppliers';
+          const lRes = await fetch(apiUrl(`/api/${ledgerBase}/${selected._id}/udhaar`), { headers: { Authorization: `Bearer ${getToken()}` } });
+          const lData = await lRes.json();
+          setLedger(lData.entries || lData.ledger || (Array.isArray(lData) ? lData : []));
+        }
       } else { setError(data.message || 'Payment failed'); }
     } catch { setError('Server error'); }
     setSettleLoading(false);
@@ -311,8 +328,8 @@ export default function UdhaarPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
-    if (!isOnline) { setError('Offline mode me party save nahi hogi.'); return; }
-    if (!partyForm.name.trim()) { setError(`${partyForm.kind === 'customer' ? 'Customer' : 'Supplier'} name required hai.`); return; }
+    if (!isOnline) { setError('Offline mode में party save नहीं होगी।'); return; }
+    if (!partyForm.name.trim()) { setError(`${partyForm.kind === 'customer' ? 'Customer' : 'Supplier'} का नाम ज़रूरी है।`); return; }
     setPartySaving(true);
     try {
       const isCustomerParty = partyForm.kind === 'customer';
@@ -345,7 +362,7 @@ export default function UdhaarPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.message || 'Party save nahi hui');
+        setError(data.message || 'Party save नहीं हुई');
         setPartySaving(false);
         return;
       }
@@ -639,14 +656,22 @@ export default function UdhaarPage() {
                             {item.phone && <div className="text-[11px] text-slate-400 mt-0.5">📞 {item.phone}</div>}
                             {item.gstin && <div className="text-[10px] text-slate-300 font-mono mt-0.5">{item.gstin}</div>}
                           </div>
-                          <div className="flex items-center gap-3 flex-shrink-0">
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Quick Payment button */}
+                            {isPending && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setSelected(item); setShowSettle(true); setError(''); setSuccess(''); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash'); }}
+                                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[11px] font-black shadow-sm hover:shadow-md hover:-translate-y-px transition-all"
+                              >💰 Payment</button>
+                            )}
                             {/* WhatsApp quick action */}
                             {isCustomer && item.phone && isPending && (
                               <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); sendReminder(item); }}
                                 className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-sm hover:bg-emerald-100 transition-colors"
-                                title="Send WhatsApp reminder"
+                                title="WhatsApp reminder भेजें"
                               >📲</button>
                             )}
                             <div className="text-right">
@@ -978,33 +1003,48 @@ export default function UdhaarPage() {
             <form onSubmit={handleSettle} className="space-y-4">
               {/* Amount */}
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Amount *</p>
-                <input
-                  className={`h-12 w-full px-4 rounded-xl border text-[18px] font-black text-slate-900 placeholder-slate-300 focus:outline-none focus:ring-2 transition-all ${
-                    isCustomer ? 'border-rose-200 focus:ring-rose-500/20 focus:border-rose-400' : 'border-amber-200 focus:ring-amber-500/20 focus:border-amber-400'
-                  }`}
-                  type="number" step="0.01" min="1"
-                  max={selected?.totalUdhaar}
-                  placeholder="0.00"
-                  value={settleAmount}
-                  onChange={(e) => setSettleAmount(e.target.value)}
-                  required
-                />
-                {/* Quick amount buttons */}
-                <div className="flex gap-2 mt-2">
-                  {[25, 50, 75, 100].map((pct) => {
-                    const val = parseFloat(((selected?.totalUdhaar * pct) / 100).toFixed(2));
-                    return (
-                      <button key={pct} type="button" onClick={() => setSettleAmount(String(val))}
-                        className="flex-1 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-black text-slate-600 hover:border-slate-300 hover:bg-white transition-colors"
-                      >{pct}%</button>
-                    );
-                  })}
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">कितना payment मिला? *</p>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[18px] font-black text-slate-400">₹</span>
+                  <input
+                    className={`h-16 w-full pl-10 pr-4 rounded-xl border text-[24px] font-black text-center text-slate-900 placeholder-slate-300 focus:outline-none focus:ring-2 transition-all ${
+                      isCustomer ? 'border-rose-200 focus:ring-rose-500/20 focus:border-rose-400' : 'border-amber-200 focus:ring-amber-500/20 focus:border-amber-400'
+                    }`}
+                    type="number" step="0.01" min="1"
+                    max={selected?.totalUdhaar}
+                    placeholder="0"
+                    value={settleAmount}
+                    onChange={(e) => setSettleAmount(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </div>
+                {/* Quick ₹ amount chips */}
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {(() => {
+                    const due = selected?.totalUdhaar || 0;
+                    const rounded50 = (v) => Math.round(v / 50) * 50 || 50;
+                    const chips = [
+                      { val: rounded50(due * 0.25), label: `₹${fmt(rounded50(due * 0.25))}` },
+                      { val: rounded50(due * 0.50), label: `₹${fmt(rounded50(due * 0.50))}` },
+                      { val: rounded50(due * 0.75), label: `₹${fmt(rounded50(due * 0.75))}` },
+                      { val: due, label: `₹${fmt(due)} (पूरा)` },
+                    ].filter((c, i, arr) => i === 0 || c.val !== arr[i - 1].val);
+                    return chips.map((c) => (
+                      <button key={c.val} type="button" onClick={() => setSettleAmount(String(c.val))}
+                        className={`flex-1 min-w-0 py-1.5 rounded-xl border text-[11px] font-black transition-colors ${
+                          parseFloat(settleAmount) === c.val
+                            ? (isCustomer ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-amber-400 bg-amber-50 text-amber-700')
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white'
+                        }`}
+                      >{c.label}</button>
+                    ));
+                  })()}
                 </div>
                 {settleAmount && (
                   <div className="mt-2 text-center">
                     <span className={`text-[13px] font-bold ${isCustomer ? 'text-rose-600' : 'text-amber-600'}`}>
-                      Remaining: ₹{fmt(Math.max(0, (selected?.totalUdhaar || 0) - parseFloat(settleAmount || 0)))}
+                      बाकी रहेगा: ₹{fmt(Math.max(0, (selected?.totalUdhaar || 0) - parseFloat(settleAmount || 0)))}
                     </span>
                   </div>
                 )}
@@ -1054,7 +1094,7 @@ export default function UdhaarPage() {
                       : 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/25'
                   }`}
                 >
-                  {settleLoading ? 'Processing...' : 'Confirm Payment'}
+                  {settleLoading ? 'Processing...' : settleAmount ? `₹${settleAmount} जमा करें` : 'Confirm Payment'}
                 </button>
                 <button type="button"
                   onClick={() => { setShowSettle(false); setError(''); setSettleAmount(''); setSettleNote(''); setSettlePaymentMode('cash'); }}
@@ -1087,7 +1127,7 @@ export default function UdhaarPage() {
                 <h3 className="text-[20px] font-black text-slate-900 mt-0.5">
                   {partyMode === 'edit' ? 'Edit party details' : `Add ${partyForm.kind}`}
                 </h3>
-                <p className="text-[12px] text-slate-400 mt-1">Opening balance yahin se ledger me carry forward hoga.</p>
+                <p className="text-[12px] text-slate-400 mt-1">Opening balance यहाँ से ledger में carry forward होगा।</p>
               </div>
               <button
                 type="button"
@@ -1161,6 +1201,13 @@ export default function UdhaarPage() {
           </div>
         </div>
       </div>
+      )}
+      {/* Payment toast */}
+      {payToast && (
+        <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border-2 border-green-300 shadow-xl text-[13px] font-bold text-green-800 whitespace-nowrap"
+          style={{ animation: 'toastIn 0.2s ease' }}>
+          <span>✅</span> {payToast}
+        </div>
       )}
     </Layout>
   );

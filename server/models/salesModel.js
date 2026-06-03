@@ -44,6 +44,11 @@ const saleSchema = new mongoose.Schema({
   gst_type: { type: String, enum: ['CGST_SGST', 'IGST'], default: 'CGST_SGST' },
   invoice_type: { type: String, enum: ['B2B', 'B2C'], default: 'B2C' },
 
+  // ── Bill-level discount ──────────────────────────────────────
+  discount_type:   { type: String, enum: ['flat', 'percent', 'none'], default: 'none' },
+  discount_value:  { type: Number, default: 0 },
+  discount_amount: { type: Number, default: 0 },
+
   // ── Bill totals ───────────────────────────────────────────────
   taxable_amount: { type: Number, default: 0 },
   cgst_amount: { type: Number, default: 0 },

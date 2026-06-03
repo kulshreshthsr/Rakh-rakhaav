@@ -70,7 +70,9 @@ const getFinancialYear = (date = new Date()) => {
   return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
 };
 
-const generateInvoiceNumber = async (shopId, session = null, invoiceDate = new Date()) => {
+const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new Date()) => {
+  // Accept either a shop object (with invoice format fields) or just a shopId string
+  const shopId = shopOrId?._id || shopOrId;
   const financialYear = getFinancialYear(invoiceDate);
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'sale', financial_year: financialYear },
@@ -80,6 +82,12 @@ const generateInvoiceNumber = async (shopId, session = null, invoiceDate = new D
   if (session) query = query.session(session);
   const sequence = await query;
 
+  // Apply custom format if shop object was passed
+  if (shopOrId?._id) {
+    const digits = shopOrId.invoice_number_digits || 4;
+    const prefix = shopOrId.invoice_prefix ? `${shopOrId.invoice_prefix}-` : '';
+    return `${prefix}${String(sequence.last_number).padStart(digits, '0')}`;
+  }
   return `INV/${financialYear}/${String(sequence.last_number).padStart(4, '0')}`;
 };
 
@@ -483,6 +491,8 @@ const buildSaleRecordData = async ({
     notes,
     sale_date,
     extra_fields,
+    discount_type = 'none',
+    discount_value = 0,
   } = payload;
 
   if (payment_type === 'credit' && !buyer_name) {
@@ -581,6 +591,25 @@ const buildSaleRecordData = async ({
   totalGST = round2(totalGST);
   grandTotal = round2(grandTotal);
   totalCost = round2(totalCost);
+
+  // ── Bill-level discount (applied to taxable base before GST) ────────────
+  let discount_amount = 0;
+  const discVal = Number(discount_value) || 0;
+  if (discount_type === 'flat' && discVal > 0) {
+    discount_amount = round2(Math.min(discVal, totalTaxable));
+  } else if (discount_type === 'percent' && discVal > 0) {
+    discount_amount = round2((totalTaxable * discVal) / 100);
+  }
+  if (discount_amount > 0 && totalTaxable > 0) {
+    const ratio = (totalTaxable - discount_amount) / totalTaxable;
+    totalTaxable = round2(totalTaxable - discount_amount);
+    totalGST    = round2(totalGST * ratio);
+    totalCGST   = round2(totalCGST * ratio);
+    totalSGST   = round2(totalSGST * ratio);
+    totalIGST   = round2(totalIGST * ratio);
+    grandTotal  = round2(totalTaxable + totalGST);
+  }
+
   if (requestedAmountPaid > grandTotal) {
     throw new Error('Amount paid cannot exceed invoice total');
   }
@@ -604,7 +633,10 @@ const buildSaleRecordData = async ({
       gst_rate: uniqueRates.length === 1 ? firstItem.gst_rate : 0,
       gst_type: firstItem.gst_type,
       invoice_type,
-      invoice_number: invoiceNumber || await generateInvoiceNumber(shop._id, session, saleDate),
+      invoice_number: invoiceNumber || await generateInvoiceNumber(shop, session, saleDate),
+      discount_type: discount_type || 'none',
+      discount_value: discVal,
+      discount_amount,
       taxable_amount: totalTaxable,
       cgst_amount: round2(totalCGST),
       sgst_amount: round2(totalSGST),

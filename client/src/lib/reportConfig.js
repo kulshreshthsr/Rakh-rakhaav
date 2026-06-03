@@ -14,7 +14,7 @@
 
 const DEFAULTS = {
   pageTitle:       'Reports / हिसाब',
-  pageSubtitle:    'Revenue, profit, GST aur customer trends ek clean view mein.',
+  pageSubtitle:    'Revenue, profit, GST और customer trends — एक clean view में।',
   accentColor:     '#16a34a',
   topItemsLabel:   'Top Products',
   topItemsIcon:    '📦',

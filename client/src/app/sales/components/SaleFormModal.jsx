@@ -12,6 +12,8 @@ const fmt    = (n) => parseFloat(n || 0).toFixed(2);
 const GSTIN_LENGTH = 15;
 const GSTIN_REGEX  = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
+import { getRelativeTime } from '../../../lib/heldBills';
+
 export default function SaleFormModal({
   showModal, setShowModal, resetForm,
   form, updateForm, items, setItems, extraFields, setExtraFields,
@@ -37,7 +39,10 @@ export default function SaleFormModal({
   filteredPastCustomers, selectPastCustomer,
   customerInfoVisible, customerSummary,
   buyerNameInputRef, amountPaidInputRef, customerComboRef, saleDateInputRef,
+  heldBills = [], showHeldPicker = false, setShowHeldPicker,
+  onHoldBill, onRestoreHeldBill, onRemoveHeldBill,
 }) {
+  const hasItems = items.some(i => i.product_id);
   return (
       <div className={`fixed inset-0 z-[70] transition-all duration-300 ${showModal ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <button
@@ -68,12 +73,69 @@ export default function SaleFormModal({
                   {editingSaleId ? `${term('sale', 'Sale')} Edit करें` : term('quickNewSaleHindi', 'नया Bill बनाएं')}
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => { setShowModal(false); resetForm(); }}
-                className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
-              >✕</button>
+              <div className="flex items-center gap-2">
+                {/* Held bills badge */}
+                {heldBills.length > 0 && (
+                  <button type="button" onClick={() => setShowHeldPicker(!showHeldPicker)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-700 text-[11px] font-black hover:bg-amber-100 transition-colors"
+                  >⏸ {heldBills.length} held</button>
+                )}
+                {/* Hold button — only when there are items */}
+                {!editingSaleId && hasItems && (
+                  <button type="button" onClick={onHoldBill}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-400 text-amber-700 bg-amber-50 text-[11px] font-black hover:bg-amber-100 transition-colors"
+                    title="Bill hold करें"
+                  >⏸ Hold</button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { setShowModal(false); resetForm(); }}
+                  className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+                >✕</button>
+              </div>
             </div>
+
+            {/* Held bills picker */}
+            {showHeldPicker && heldBills.length > 0 && (
+              <div className="mb-3 rounded-2xl border-2 border-amber-200 bg-amber-50/60 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-amber-200 bg-amber-50">
+                  <p className="text-[11px] font-black text-amber-800 uppercase tracking-wide">⏸ Hold में रखे Bills</p>
+                  <button type="button" onClick={() => setShowHeldPicker(false)} className="text-amber-600 text-lg leading-none">✕</button>
+                </div>
+                <div className="divide-y divide-amber-100 max-h-52 overflow-y-auto">
+                  {heldBills.map((bill) => {
+                    const itemCount = bill.items?.filter(i => i.product_id).length || 0;
+                    const approxTotal = bill.items?.reduce((s, i) => s + (Number(i.quantity || 0) * Number(i.price_per_unit || 0)), 0) || 0;
+                    const isOld = Date.now() - new Date(bill.savedAt).getTime() > 86400000;
+                    return (
+                      <div key={bill.id} className="flex items-center gap-3 px-4 py-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-black text-slate-900 truncate">{bill.label}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            {itemCount} items · {getRelativeTime(bill.savedAt)}{isOld ? ' (पुराना)' : ''} · ~₹{fmt(approxTotal)}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 flex-shrink-0">
+                          <button type="button" onClick={() => {
+                            if (hasItems) {
+                              if (window.confirm(`मौजूदा bill में ${items.filter(i => i.product_id).length} items हैं। इसे hold करके दूसरा restore करें?`)) {
+                                onHoldBill();
+                                setTimeout(() => onRestoreHeldBill(bill), 100);
+                              }
+                            } else { onRestoreHeldBill(bill); }
+                          }}
+                            className="px-2.5 py-1.5 rounded-lg bg-green-600 text-white text-[11px] font-black hover:bg-green-700 transition-colors"
+                          >↩ वापस</button>
+                          <button type="button" onClick={() => onRemoveHeldBill(bill.id)}
+                            className="px-2 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-black hover:bg-rose-100 transition-colors"
+                          >🗑</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Payment method tabs — driven by saleFormSchema.paymentMethods */}
             <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl">
@@ -782,6 +844,52 @@ export default function SaleFormModal({
               </div>
             )}
 
+            {/* ── Discount row (hidden for challan) ── */}
+            {!isChallanMode && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[13px] font-black text-slate-700">🏷️ Discount</span>
+                  <div className="flex items-center gap-2">
+                    {/* Mode toggles */}
+                    {[{ id: 'flat', label: '₹ Flat' }, { id: 'percent', label: '% Percent' }].map((opt) => (
+                      <button key={opt.id} type="button"
+                        onClick={() => updateForm({ discount_type: form.discount_type === opt.id ? 'none' : opt.id, discount_value: '' })}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black border transition-colors ${
+                          form.discount_type === opt.id
+                            ? 'bg-green-600 text-white border-green-600'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >{opt.label}</button>
+                    ))}
+                    {/* Value input */}
+                    {form.discount_type !== 'none' && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[13px] text-slate-400">{form.discount_type === 'flat' ? '₹' : ''}</span>
+                        <input
+                          type="number" min="0"
+                          max={form.discount_type === 'percent' ? 100 : undefined}
+                          value={form.discount_value}
+                          onChange={(e) => updateForm({ discount_value: e.target.value })}
+                          placeholder="0"
+                          className="w-20 h-9 px-2 text-[14px] font-black text-center rounded-xl border-2 border-green-400 bg-green-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30"
+                        />
+                        {form.discount_type === 'percent' && <span className="text-[13px] text-slate-400">%</span>}
+                      </div>
+                    )}
+                    {form.discount_type !== 'none' && (
+                      <button type="button" onClick={() => updateForm({ discount_type: 'none', discount_value: '' })}
+                        className="text-slate-400 hover:text-slate-600 text-lg leading-none transition-colors">✕</button>
+                    )}
+                  </div>
+                </div>
+                {billTotals.discountAmount > 0 && (
+                  <p className="mt-1.5 text-right text-[12px] font-bold text-green-700">
+                    - ₹{fmt(billTotals.discountAmount)} की छूट
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* ── Challan value summary + special instructions ── */}
             {isChallanMode && (
               <div className="space-y-3">
@@ -856,10 +964,12 @@ export default function SaleFormModal({
               })()}
               <div className="space-y-1.5 mb-3">
                 {[
+                  billTotals.discountAmount > 0 ? { label: 'Subtotal',       val: `₹${fmt(billTotals.subtotal)}`,    cls: 'text-slate-300' } : null,
+                  billTotals.discountAmount > 0 ? { label: `Discount${form.discount_type === 'percent' ? ` (${form.discount_value}%)` : ''}`, val: `- ₹${fmt(billTotals.discountAmount)}`, cls: 'text-green-400' } : null,
                   { label: 'Taxable Amount', val: `₹${fmt(billTotals.taxable)}`, cls: 'text-white' },
                   { label: 'Total GST',      val: `₹${fmt(billTotals.gst)}`,     cls: 'text-amber-400' },
                   { label: 'Round Off',      val: `${roundedBill.roundOff >= 0 ? '+' : ''}₹${fmt(roundedBill.roundOff)}`, cls: 'text-emerald-400' },
-                ].map((row) => (
+                ].filter(Boolean).map((row) => (
                   <div key={row.label} className="flex justify-between text-[12px]">
                     <span className="text-slate-400">{row.label}</span>
                     <span className={`font-bold ${row.cls}`}>{row.val}</span>

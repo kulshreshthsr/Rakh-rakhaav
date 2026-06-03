@@ -160,6 +160,8 @@ const updateShop = async (req, res) => {
     bank_name, bank_account, bank_ifsc, bank_branch,
     cash_opening_balance, bank_opening_balance,
     terms, businessType, dashboardMode,
+    invoice_prefix, invoice_number_digits, invoice_start_number,
+    gst_type, composition_category, filing_frequency,
   } = req.body;
   try {
     if (businessType && !BUSINESS_TYPES.includes(businessType)) {
@@ -180,6 +182,12 @@ const updateShop = async (req, res) => {
     };
     if (businessType) updatePayload.businessType = businessType;
     if (dashboardMode) updatePayload.dashboardMode = dashboardMode;
+    if (gst_type) updatePayload.gst_type = gst_type;
+    if (composition_category !== undefined) updatePayload.composition_category = composition_category;
+    if (filing_frequency) updatePayload.filing_frequency = filing_frequency;
+    if (invoice_prefix !== undefined) updatePayload.invoice_prefix = String(invoice_prefix || '').replace(/[^A-Z0-9\/\-_]/gi, '').toUpperCase().slice(0, 10);
+    if (invoice_number_digits !== undefined) updatePayload.invoice_number_digits = Math.min(8, Math.max(1, Number(invoice_number_digits) || 4));
+    if (invoice_start_number !== undefined) updatePayload.invoice_start_number = Math.max(1, Number(invoice_start_number) || 1);
     const updated = await Shop.findByIdAndUpdate(shop._id, updatePayload, { new: true });
     await logAuditEvent({
       shopId: updated._id,

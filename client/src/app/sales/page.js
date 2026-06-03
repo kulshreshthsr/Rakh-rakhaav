@@ -27,6 +27,7 @@ import ExchangeModal from './components/ExchangeModal';
 import SaleFormModal from './components/SaleFormModal';
 import SaleReturnModal from './components/SaleReturnModal';
 import EmptyState from '../../components/ui/EmptyState';
+import { getHeldBills, saveHeldBill, removeHeldBill, getRelativeTime } from '../../lib/heldBills';
 import useSalesData from './hooks/useSalesData';
 import useSaleForm from './hooks/useSaleForm';
 import useIndustrySideData from './hooks/useIndustrySideData';
@@ -68,7 +69,9 @@ const getSaleSearchText = (sale) => {
 const buildInitialForm = (overrides = {}) => ({
   payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '',
   buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '',
-  sale_date: getDefaultSaleDateValue(), ...overrides,
+  sale_date: getDefaultSaleDateValue(),
+  discount_type: 'none', discount_value: '',
+  ...overrides,
 });
 const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
   day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -191,6 +194,11 @@ export default function SalesPage() {
   /* ── Return modal state ── */
   const [returnSale, setReturnSale]     = useState(null);
   const [returnToast, setReturnToast]   = useState('');
+
+  /* ── Hold Bill state ── */
+  const [heldBills, setHeldBills]       = useState(() => typeof window !== 'undefined' ? getHeldBills() : []);
+  const [holdToast, setHoldToast]       = useState('');
+  const [showHeldPicker, setShowHeldPicker] = useState(false);
 
   /* ── Split/exchange/delivery modal state stays in page.js ── */
   const [showSplitModal, setShowSplitModal]     = useState(false);
@@ -419,6 +427,37 @@ export default function SalesPage() {
     setShowMoreCustomerDetails(Boolean(customer.gstin || customer.address || customer.state));
   };
 
+  /* ── Hold Bill handlers ── */
+  const handleHoldBill = () => {
+    if (!items.some(i => i.product_id)) return;
+    const id = `hold_${Date.now()}`;
+    const label = form.buyer_name?.trim() || `Bill #${getHeldBills().length + 1}`;
+    const bill = { id, label, items, form, extraFields, savedAt: new Date().toISOString(), customerName: form.buyer_name || '' };
+    saveHeldBill(bill);
+    setHeldBills(getHeldBills());
+    resetForm();
+    setShowModal(false);
+    setHoldToast(`"${label}" hold हो गया ⏸`);
+    setTimeout(() => setHoldToast(''), 3000);
+  };
+
+  const handleRestoreBill = (bill) => {
+    removeHeldBill(bill.id);
+    setHeldBills(getHeldBills());
+    setItems(bill.items);
+    setForm(bill.form);
+    setExtraFields(bill.extraFields || {});
+    setShowHeldPicker(false);
+    setShowModal(true);
+    setHoldToast(`"${bill.label}" वापस आ गया`);
+    setTimeout(() => setHoldToast(''), 2500);
+  };
+
+  const handleRemoveHeldBill = (id) => {
+    removeHeldBill(id);
+    setHeldBills(getHeldBills());
+  };
+
   /* ── Derived values ── */
   const pendingOfflineSales = sales.filter((sale) => sale?._isOffline);
   const offlineRevenue = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0);
@@ -476,7 +515,17 @@ export default function SalesPage() {
                 {term('invoice', 'Invoice')} और {term('customer', 'customer')} payment flow
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Held bills chip */}
+              {heldBills.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { resetForm(); setShowModal(true); setShowHeldPicker(true); }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-[12px] font-bold hover:bg-amber-100 transition-colors"
+                >
+                  ⏸ {heldBills.length} bill hold में
+                </button>
+              )}
               <Link href="/sales/customers"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-[13px] font-bold text-slate-700 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
               >
@@ -780,6 +829,12 @@ export default function SalesPage() {
         amountPaidInputRef={amountPaidInputRef}
         customerComboRef={customerComboRef}
         saleDateInputRef={saleDateInputRef}
+        heldBills={heldBills}
+        showHeldPicker={showHeldPicker}
+        setShowHeldPicker={setShowHeldPicker}
+        onHoldBill={handleHoldBill}
+        onRestoreHeldBill={handleRestoreBill}
+        onRemoveHeldBill={handleRemoveHeldBill}
       />
 
       {/* ════════════════════════════════════════════════════════════
@@ -860,15 +915,23 @@ export default function SalesPage() {
         />
       )}
 
-      {/* Barcode scanner (UNCHANGED) */}
+      {/* Barcode scanner */}
       <CameraBarcodeScanner
         open={showBarcodeScanner}
         title="Scan product barcode"
-        description="Continuous scan mode me har successful barcode bill me add hota rahega."
+        description="Continuous scan mode में हर successful barcode bill में add होता रहेगा।"
         onClose={() => setShowBarcodeScanner(false)}
         onDetected={handleBarcodeDetected}
         continuous
       />
+
+      {/* Hold bill toast */}
+      {holdToast && (
+        <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border-2 border-amber-300 shadow-xl text-[13px] font-bold text-amber-800 whitespace-nowrap"
+          style={{ animation: 'toastIn 0.2s ease' }}>
+          ⏸ {holdToast}
+        </div>
+      )}
     </Layout>
   );
 }

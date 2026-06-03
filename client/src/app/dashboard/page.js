@@ -32,7 +32,7 @@ function getTodayLabel() {
 }
 
 function buildUdhaarReminder(customer, shopName) {
-  return `Namaste ${customer.name} ji 🙏\n\nHamari dukaan *${shopName || 'Rakh-Rakhaav'}* se aapka udhaar baaki hai:\n\n*₹${fmtD(customer.due)}*\n\nKripya jald se jald payment karein.\n\nDhanyawad 🙏`;
+  return `नमस्ते ${customer.name} जी 🙏\n\nहमारी दुकान *${shopName || 'रखरखाव'}* से आपका उधार बाकी है:\n\n*₹${fmtD(customer.due)}*\n\nकृपया जल्द से जल्द payment करें।\n\nधन्यवाद 🙏`;
 }
 
 // ═══════════════════════════════════════════════════
