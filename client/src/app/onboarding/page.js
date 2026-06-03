@@ -43,26 +43,101 @@ const GSTIN_STATE_CODES = {
 
 const GST_RATES = ['0', '5', '12', '18', '28'];
 
-function getProductPlaceholder(businessType) {
+// ── Business-type step 4 mode ────────────────────────────────────────────────
+// 'service'  → salon, repair shop, service center (no stock, no cost price)
+// 'dish'     → restaurant (no stock)
+// 'product'  → everything else (full form)
+function getStep4Mode(businessType) {
+  if (['salon', 'service_center', 'repair_shop'].includes(businessType)) return 'service';
+  if (businessType === 'restaurant') return 'dish';
+  return 'product';
+}
+
+const STEP4_CONFIG = {
+  service: {
+    heading: 'अपनी एक service add करें',
+    subtext: 'सिर्फ देखने के लिए — optional है।',
+    namePlaceholder: 'जैसे — Hair Cut, AC Service, Mobile Screen Repair',
+    nameLabel: 'Service का नाम',
+    pricePlaceholder: '150',
+    priceLabel: 'Service charge (₹)',
+    btnLabel: '+ Service जोड़ें',
+    successVerb: 'service जोड़ी गई',
+    defaultUnit: 'service',
+    showStock: false,
+    showCostPrice: false,
+  },
+  dish: {
+    heading: 'अपना एक dish add करें',
+    subtext: 'Menu का पहला item — optional है।',
+    namePlaceholder: 'जैसे — Dal Makhani, Paneer Butter Masala',
+    nameLabel: 'Dish का नाम',
+    pricePlaceholder: '180',
+    priceLabel: 'Price (₹)',
+    btnLabel: '+ Dish जोड़ें',
+    successVerb: 'dish जोड़ी गई',
+    defaultUnit: 'plate',
+    showStock: false,
+    showCostPrice: false,
+  },
+  product: {
+    heading: 'एक product add करके देखें',
+    subtext: 'सिर्फ देखने के लिए — optional है।',
+    namePlaceholder: null, // set dynamically
+    nameLabel: 'Product का नाम',
+    pricePlaceholder: '0.00',
+    priceLabel: 'Selling Price (₹)',
+    btnLabel: '+ Product जोड़ें',
+    successVerb: 'product जोड़ा गया',
+    defaultUnit: 'pcs',
+    showStock: true,
+    showCostPrice: true,
+  },
+};
+
+const UNITS_BY_TYPE = {
+  pharmacy:    ['strip', 'tablet', 'bottle', 'tube', 'pcs', 'box', 'ml'],
+  kirana:      ['pcs', 'kg', 'g', 'litre', 'ml', 'packet', 'box'],
+  grocery:     ['pcs', 'kg', 'g', 'litre', 'ml', 'packet', 'box'],
+  hardware:    ['pcs', 'kg', 'metre', 'feet', 'litre', 'roll', 'bag'],
+  jewellery:   ['pcs', 'gm'],
+  sweet_shop:  ['kg', 'box', 'pcs', 'piece'],
+  bakery:      ['pcs', 'kg', 'box', 'dozen'],
+  restaurant:  ['plate', 'bowl', 'glass', 'half', 'full'],
+  salon:       ['service'],
+  service_center: ['service'],
+  repair_shop: ['service', 'job'],
+  clothing:    ['pcs'],
+  footwear:    ['pair', 'pcs'],
+  furniture:   ['pcs', 'set'],
+  electronics: ['pcs'],
+  mobile_shop: ['pcs'],
+  automobile:  ['pcs', 'set', 'litre', 'kg'],
+  pet_shop:    ['pcs', 'kg', 'packet', 'bottle'],
+};
+
+function getUnitsForType(businessType) {
+  return UNITS_BY_TYPE[businessType] || ['pcs', 'kg', 'litre', 'box', 'metre'];
+}
+
+function getProductNamePlaceholder(businessType) {
   const map = {
-    pharmacy: 'दवाई का नाम',
-    kirana: 'सामान का नाम',
-    grocery: 'सामान का नाम',
-    clothing: 'कपड़े का नाम',
-    restaurant: 'खाने का नाम',
-    salon: 'सर्विस का नाम',
-    sweet_shop: 'मिठाई का नाम',
-    bakery: 'बेकरी आइटम का नाम',
-    jewellery: 'गहने का नाम',
-    mobile_shop: 'मोबाइल का नाम',
-    footwear: 'जूते का नाम',
-    hardware: 'सामान का नाम',
-    electronics: 'सामान का नाम',
-    furniture: 'फर्नीचर का नाम',
-    pet_shop: 'सामान का नाम',
-    automobile: 'पार्ट का नाम',
+    pharmacy: 'दवाई का नाम — जैसे Crocin 500mg',
+    kirana: 'सामान का नाम — जैसे Tata Salt 1kg',
+    grocery: 'सामान का नाम — जैसे Amul Butter',
+    clothing: 'कपड़े का नाम — जैसे Cotton Kurta',
+    sweet_shop: 'मिठाई का नाम — जैसे Gulab Jamun',
+    bakery: 'आइटम का नाम — जैसे Chocolate Cake',
+    jewellery: 'गहने का नाम — जैसे Gold Ring 22K',
+    mobile_shop: 'मोबाइल का नाम — जैसे Realme C35',
+    footwear: 'जूते का नाम — जैसे Bata Sneaker',
+    hardware: 'सामान का नाम — जैसे Anchor Switch 6A',
+    electronics: 'सामान का नाम — जैसे Philips LED Bulb',
+    furniture: 'फर्नीचर का नाम — जैसे Wooden Chair',
+    pet_shop: 'सामान का नाम — जैसे Pedigree Adult 3kg',
+    automobile: 'पार्ट का नाम — जैसे Bosch Spark Plug',
   };
-  return map[businessType] || 'Product का नाम';
+  return map[businessType] || 'Product का नाम — जैसे Premium Widget';
 }
 
 // ─── Spinner ─────────────────────────────────────────────────────────────────
@@ -143,10 +218,12 @@ export default function OnboardingPage() {
   const [step3Saving, setStep3Saving] = useState(false);
   const [step3Error, setStep3Error] = useState('');
 
-  // Step 4 — Product
+  // Step 4 — Product / Service
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
+  const [productCostPrice, setProductCostPrice] = useState('');
   const [productQty, setProductQty] = useState(1);
+  const [productUnit, setProductUnit] = useState('pcs');
   const [productGst, setProductGst] = useState('0');
   const [productSaving, setProductSaving] = useState(false);
   const [productError, setProductError] = useState('');
@@ -277,34 +354,38 @@ export default function OnboardingPage() {
     }
   }
 
-  // ── Step 4 — Add product ────────────────────────────────────────────────────
+  // ── Step 4 — Add product / service ─────────────────────────────────────────
   async function handleAddProduct() {
     if (!productName.trim() || !productPrice) {
-      setProductError('Product का नाम और price ज़रूरी है।');
+      setProductError('नाम और selling price ज़रूरी है।');
       return;
     }
     setProductError('');
     setProductSaving(true);
+    const mode = getStep4Mode(selectedBusiness);
     try {
       const token = localStorage.getItem('token');
+      const body = {
+        name: productName.trim(),
+        price: parseFloat(productPrice) || 0,
+        cost_price: parseFloat(productCostPrice) || 0,
+        quantity: mode === 'product' ? productQty : 0,
+        unit: productUnit,
+        gst_rate: parseFloat(productGst) || 0,
+      };
       const res = await fetch(apiUrl('/api/products'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          name: productName.trim(),
-          sellingPrice: parseFloat(productPrice),
-          stock: productQty,
-          gstRate: parseFloat(productGst),
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setProductError(d.message || 'Product add नहीं हो पाया।');
+        setProductError(d.message || 'Add नहीं हो पाया। फिर से try करें।');
         return;
       }
       setProductAdded(productName.trim());
     } catch {
-      setProductError('Network error. फिर से try करें।');
+      setProductError('Network error. Internet connection check करें।');
     } finally {
       setProductSaving(false);
     }
@@ -407,8 +488,12 @@ export default function OnboardingPage() {
               setProductName={setProductName}
               productPrice={productPrice}
               setProductPrice={setProductPrice}
+              productCostPrice={productCostPrice}
+              setProductCostPrice={setProductCostPrice}
               productQty={productQty}
               setProductQty={setProductQty}
+              productUnit={productUnit}
+              setProductUnit={setProductUnit}
               productGst={productGst}
               setProductGst={setProductGst}
               saving={productSaving}
@@ -684,22 +769,40 @@ function Step3({ gstType, setGstType, gstin, onGstinChange, gstinError, gstinSta
   );
 }
 
-// ─── Step 4: First Product ────────────────────────────────────────────────────
+// ─── Step 4: First Product / Service / Dish ──────────────────────────────────
 function Step4({
-  businessType, productName, setProductName, productPrice, setProductPrice,
-  productQty, setProductQty, productGst, setProductGst,
+  businessType,
+  productName, setProductName,
+  productPrice, setProductPrice,
+  productCostPrice, setProductCostPrice,
+  productQty, setProductQty,
+  productUnit, setProductUnit,
+  productGst, setProductGst,
   saving, error, productAdded, onAdd, onContinue,
 }) {
-  const placeholder = getProductPlaceholder(businessType);
+  const mode = getStep4Mode(businessType);
+  const cfg = STEP4_CONFIG[mode];
+  const units = getUnitsForType(businessType);
+  const namePlaceholder = mode === 'product'
+    ? getProductNamePlaceholder(businessType)
+    : cfg.namePlaceholder;
+
+  // Sync default unit when business type changes or mode changes
+  useEffect(() => {
+    if (units.length > 0) setProductUnit(units[0]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessType]);
+
+  const successLabel = cfg.successVerb;
 
   return (
     <div className="flex flex-col gap-5">
       <div className="text-center">
         <h1 className="text-[clamp(20px,5vw,28px)] font-black tracking-tight text-slate-900 leading-tight">
-          एक product add करके देखें
+          {cfg.heading}
         </h1>
         <p className="mt-1.5 text-[13px] text-slate-500 leading-relaxed max-w-sm mx-auto">
-          सिर्फ देखने के लिए — यह optional है।{' '}
+          {cfg.subtext}{' '}
           <button
             type="button"
             onClick={onContinue}
@@ -716,65 +819,106 @@ function Step4({
           className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-green-50 border border-green-200"
           style={{ animation: 'bounce-in 0.4s ease' }}
         >
-          <span className="text-xl">✅</span>
+          <span className="text-2xl">✅</span>
           <div>
-            <div className="text-[14px] font-black text-green-800">{productAdded} जोड़ा गया!</div>
-            <div className="text-[11px] text-green-600 font-medium">Product inventory में add हो गया।</div>
+            <div className="text-[14px] font-black text-green-800">"{productAdded}" {successLabel}!</div>
+            <div className="text-[11px] text-green-600 font-medium">
+              {mode === 'service' ? 'Service list में add हो गई।' : mode === 'dish' ? 'Menu में add हो गई।' : 'Inventory में add हो गया।'}
+            </div>
           </div>
         </div>
       )}
 
       {!productAdded && (
         <div className="flex flex-col gap-3 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          {/* Product name */}
+
+          {/* Name */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Product का नाम</label>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">{cfg.nameLabel}</label>
             <input
               type="text"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder={placeholder}
+              placeholder={namePlaceholder}
               className="w-full border-2 border-slate-200 rounded-xl px-3.5 py-3 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
             />
           </div>
 
-          {/* Price */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Selling Price</label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px] font-bold text-slate-500">₹</span>
-              <input
-                type="number"
-                min="0"
-                value={productPrice}
-                onChange={(e) => setProductPrice(e.target.value)}
-                placeholder="0.00"
-                className="w-full border-2 border-slate-200 rounded-xl pl-8 pr-3.5 py-3 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
-              />
+          {/* Selling price + unit (in a row) */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">{cfg.priceLabel}</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-bold text-slate-400">₹</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={productPrice}
+                  onChange={(e) => setProductPrice(e.target.value)}
+                  placeholder={cfg.pricePlaceholder}
+                  className="w-full border-2 border-slate-200 rounded-xl pl-7 pr-3 py-3 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
+                />
+              </div>
+            </div>
+            <div className="w-28">
+              <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Unit</label>
+              <select
+                value={productUnit}
+                onChange={(e) => setProductUnit(e.target.value)}
+                className="w-full border-2 border-slate-200 rounded-xl px-3 py-3 text-[13px] font-medium text-slate-900 bg-white focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
+              >
+                {units.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* Stock stepper */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Stock</label>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setProductQty(Math.max(0, productQty - 1))}
-                className="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xl font-bold text-slate-600 hover:border-green-400 hover:text-green-700 transition-all active:scale-90"
-              >
-                −
-              </button>
-              <span className="w-12 text-center text-[18px] font-black text-slate-900">{productQty}</span>
-              <button
-                type="button"
-                onClick={() => setProductQty(productQty + 1)}
-                className="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xl font-bold text-slate-600 hover:border-green-400 hover:text-green-700 transition-all active:scale-90"
-              >
-                +
-              </button>
+          {/* Cost price — product mode only */}
+          {cfg.showCostPrice && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">
+                Cost Price (₹) <span className="font-medium text-slate-400 normal-case tracking-normal">— optional, for margin tracking</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-bold text-slate-400">₹</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={productCostPrice}
+                  onChange={(e) => setProductCostPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full border-2 border-slate-200 rounded-xl pl-7 pr-3 py-3 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
+                />
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Stock stepper — product mode only */}
+          {cfg.showStock && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase tracking-wide">Opening Stock</label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProductQty(Math.max(0, productQty - 1))}
+                  className="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xl font-bold text-slate-600 hover:border-green-400 hover:text-green-700 transition-all active:scale-90"
+                >
+                  −
+                </button>
+                <span className="w-14 text-center text-[18px] font-black text-slate-900">
+                  {productQty} <span className="text-[11px] font-medium text-slate-400">{productUnit}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setProductQty(productQty + 1)}
+                  className="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xl font-bold text-slate-600 hover:border-green-400 hover:text-green-700 transition-all active:scale-90"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* GST chips */}
           <div>
@@ -805,7 +949,7 @@ function Step4({
             disabled={saving}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 text-white text-[14px] font-black hover:-translate-y-0.5 hover:bg-slate-800 active:scale-95 disabled:opacity-60 transition-all"
           >
-            {saving ? <><Spinner /> जोड़ा जा रहा है...</> : '+ Product जोड़ें'}
+            {saving ? <><Spinner /> जोड़ा जा रहा है...</> : cfg.btnLabel}
           </button>
         </div>
       )}
