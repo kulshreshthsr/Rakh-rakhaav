@@ -791,9 +791,9 @@ function B2CDashboard() {
             </div>
             <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
               {wfWidgets.map(widget => {
-                const count = widget.stages.reduce((sum, stage) => sum + (workflowCounts[stage] || 0), 0);
+                const count = (widget.stages || []).reduce((sum, stage) => sum + (workflowCounts[stage] || 0), 0);
                 return (
-                  <Link key={widget.id} href={`/sales?wf=${widget.stages[0]}`}
+                  <Link key={widget.id} href={`/sales?wf=${(widget.stages || [])[0] || ''}`}
                     className="group flex items-center gap-3 p-4 rounded-2xl border border-slate-200 bg-white hover:border-green-300 hover:-translate-y-0.5 hover:shadow-md transition-all"
                   >
                     <span className="text-2xl group-hover:scale-110 transition-transform">{widget.icon}</span>

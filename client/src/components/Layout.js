@@ -528,7 +528,7 @@ function LayoutInner({ children }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`mobile-nav-link mobile-nav-tone-${item.key}${isActive ? ' is-active border-t-2 border-green-500' : 'border-t-2 border-transparent'} group`}
+                  className={`mobile-nav-link mobile-nav-tone-${item.key}${isActive ? ' is-active border-t-2 border-green-500' : ' border-t-2 border-transparent'} group`}
                 >
                   <span className="mobile-nav-icon-wrap">
                     <span className={`mobile-nav-glow ${isActive ? 'bg-green-500/30' : ''}`} />
