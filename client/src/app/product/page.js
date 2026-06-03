@@ -40,6 +40,16 @@ function marginColor(m) {
   return 'text-rose-600';
 }
 
+function parseProductCSV(text) {
+  const lines  = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
+  }).filter(r => r.name || r.Name);
+}
+
 /* ─── Modal backdrop ── */
 function Backdrop({ children, onClose }) {
   return (
@@ -112,6 +122,9 @@ export default function ProductsPage() {
 
   const [invPanelProduct, setInvPanelProduct] = useState(null);
   const [invTab,          setInvTab]          = useState('primary');
+
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importBusy,      setImportBusy]      = useState(false);
 
   /* ── All effects (UNCHANGED) ── */
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -186,6 +199,34 @@ export default function ProductsPage() {
       setCacheUpdatedAt(new Date().toISOString());
     } catch { setError('Products could not be loaded'); }
     finally { setLoading(false); }
+  };
+
+  const handleImport = async (file) => {
+    if (!file) return;
+    setImportBusy(true);
+    try {
+      const text = await file.text();
+      const products = parseProductCSV(text);
+      if (!products.length) { alert('CSV में कोई valid row नहीं मिला।'); return; }
+      const res = await fetch(apiUrl('/api/products/bulk-import'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ products }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.message || 'Import failed'); return; }
+      alert(`✅ Import complete: ${data.created} added, ${data.skipped} skipped${data.errors.length ? `, ${data.errors.length} errors` : ''}`);
+      setShowImportModal(false);
+      setLoading(true);
+      const refresh = await fetch(apiUrl('/api/products'), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const refreshData = await refresh.json();
+      const list = Array.isArray(refreshData) ? refreshData : (refreshData.products || []);
+      setProducts(list); setFiltered(list);
+    } catch (e) {
+      alert(`Import error: ${e.message}`);
+    } finally {
+      setImportBusy(false);
+    }
   };
 
   const openAdd = () => {
@@ -321,6 +362,11 @@ export default function ProductsPage() {
               <span className="rr-section-label">📦 {term('inventory', 'Stock')}</span>
               <PageHeader title="स्टॉक" subtitle="सामान और इन्वेंटरी" />
             </div>
+            <button
+              type="button"
+              onClick={() => setShowImportModal(true)}
+              className="action-soft flex items-center gap-1.5 px-3 py-2 text-[12px]"
+            >📥 CSV Import</button>
             <button onClick={openAdd} disabled={!isOnline}
               className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 transition-all"
             >+ {term('addProduct', 'Add Product')}</button>
@@ -1006,6 +1052,47 @@ export default function ProductsPage() {
         onClose={() => setShowBarcodeScanner(false)}
         onDetected={handleBarcodeDetected}
       />
+
+      {showImportModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-[18px] font-black text-slate-900">CSV Bulk Import</h3>
+                <p className="text-[12px] text-slate-500 mt-0.5">Products को CSV file से import करें</p>
+              </div>
+              <button type="button" onClick={() => setShowImportModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-[16px]">✕</button>
+            </div>
+
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-[12px] text-slate-600 mb-4">
+              <p className="font-bold text-slate-800 mb-2">CSV Format (required columns):</p>
+              <code className="block text-[11px] font-mono text-slate-700">name, price, cost_price, quantity, unit, gst_rate, hsn_code, barcode, low_stock_threshold</code>
+              <a
+                href={`data:text/csv;charset=utf-8,name,price,cost_price,quantity,unit,gst_rate,hsn_code,barcode,low_stock_threshold%0ASample Product,100,60,50,pcs,18,1234,BAR001,5`}
+                download="rakhaav_product_template.csv"
+                className="inline-block mt-2 text-green-600 font-bold underline"
+              >
+                📄 Template download करें
+              </a>
+            </div>
+
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              disabled={importBusy}
+              onChange={e => handleImport(e.target.files?.[0])}
+              className="w-full h-11 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 text-[13px] text-slate-600 cursor-pointer file:mr-3 file:rounded-lg file:border-0 file:bg-green-50 file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-green-700"
+            />
+
+            {importBusy && (
+              <div className="mt-3 flex items-center gap-2 text-[13px] font-bold text-green-700">
+                <div className="w-4 h-4 rounded-full border-2 border-green-600 border-t-transparent animate-spin" />
+                Importing...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

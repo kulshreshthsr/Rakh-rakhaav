@@ -111,7 +111,7 @@ const saleSchema = new mongoose.Schema({
   // ── Sale type & exchange ──────────────────────────────────────
   sale_type: {
     type: String,
-    enum: ['sale', 'exchange', 'return', 'exchange_out'],
+    enum: ['sale', 'exchange', 'return', 'exchange_out', 'payment_split'],
     default: 'sale',
   },
   exchange_reference: { type: String },   // original invoice number being exchanged
@@ -122,7 +122,13 @@ const saleSchema = new mongoose.Schema({
     enum: ['invoice', 'challan', 'quotation', 'credit_note', 'debit_note', 'revised_invoice'],
     default: 'invoice',
   },
-  converted_to_invoice:     { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
+  quotation_valid_till: { type: Date, default: null },
+  quotation_status: {
+    type: String,
+    enum: ['open', 'converted', 'expired', 'rejected'],
+    default: 'open',
+  },
+  converted_to_invoice:     { type: String, default: null },
   converted_from_challan:   { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
   challan_date:             { type: Date, default: null },
 

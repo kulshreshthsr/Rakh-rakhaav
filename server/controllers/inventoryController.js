@@ -21,6 +21,7 @@ const Shop           = require('../models/shopModel');
 
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
+const { logStockMovements } = require('../utils/stockMovementLogger');
 
 const assertProduct = async (productId, shopId) => {
   const product = await Product.findOne({ _id: productId, shop: shopId });

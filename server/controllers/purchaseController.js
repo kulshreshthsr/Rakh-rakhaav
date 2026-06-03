@@ -19,6 +19,7 @@ const { GST_STATE_CODE_MAP, GSTIN_REGEX } = require('../lib/sharedUtils');
 
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
+const { logStockMovements } = require('../utils/stockMovementLogger');
 
 const getFinancialYear = (date = new Date()) => {
   const year = date.getFullYear();
@@ -27,12 +28,16 @@ const getFinancialYear = (date = new Date()) => {
   return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
 };
 
-const generateBillNumber = async (shopId, session = null, invoiceDate = new Date()) => {
+const generateBillNumber = async (shopOrId, session = null, invoiceDate = new Date()) => {
+  const shopId = shopOrId?._id || shopOrId;
   const financialYear = getFinancialYear(invoiceDate);
+  const startNumber = (shopOrId?.purchase_start_number && shopOrId.purchase_start_number > 1)
+    ? shopOrId.purchase_start_number
+    : 1;
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'purchase', financial_year: financialYear },
-    { $inc: { last_number: 1 } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', startNumber - 1] }, 1] } } }],
+    { new: true, upsert: true }
   );
   if (session) query = query.session(session);
   const sequence = await query;
@@ -449,7 +454,7 @@ const buildPurchaseRecordData = async ({ shop, payload, existingPurchase = null,
       gst_rate: firstItem.gst_rate,
       gst_type: firstItem.gst_type,
       invoice_type: normalizedSupplierGstin ? 'B2B' : 'B2C',
-      invoice_number: invoiceNumber || existingPurchase?.invoice_number || await generateBillNumber(shop._id, session, purchaseDate),
+      invoice_number: invoiceNumber || existingPurchase?.invoice_number || await generateBillNumber(shop, session, purchaseDate),
       taxable_amount: totalTaxable,
       cgst_amount: round2(totalCGST),
       sgst_amount: round2(totalSGST),
@@ -571,7 +576,7 @@ const createPurchase = async (req, res) => {
         }
       }
       const parsedPurchaseDate = parsePurchaseDateInput(req.body?.purchase_date, new Date()) || new Date();
-      const invoiceNumber = await generateBillNumber(shop._id, session, parsedPurchaseDate);
+      const invoiceNumber = await generateBillNumber(shop, session, parsedPurchaseDate);
       const { data, itemNames } = await buildPurchaseRecordData({
         shop, payload: req.body, invoiceNumber, session,
       });
@@ -580,6 +585,15 @@ const createPurchase = async (req, res) => {
       if (receiptStatus === 'received') {
         await syncPurchaseStock(null, data.items, data.invoice_number, session);
         await syncSubInventoryOnPurchase([], data.items, data.invoice_number, shop._id, session);
+        logStockMovements(shop._id, (data.items || []).map(item => ({
+          product:        item.product,
+          type:           'purchase',
+          quantityChange: Number(item.quantity) || 0,
+          quantityAfter:  0,
+          referenceId:    data.invoice_number,
+          referenceType:  'purchase',
+          note:           `Purchase from ${data.supplier_name || 'Supplier'}`,
+        })));
       }
       data.receipt_status = receiptStatus;
       data.received_items = data.items.map(i => ({

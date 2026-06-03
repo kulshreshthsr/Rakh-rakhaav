@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const NarcoticsRegister = require('../models/narcoticsRegisterModel');
 const Shop = require('../models/shopModel');
 
 const getShop = (userId) => Shop.findOne({ owner: userId }).select('_id businessType').lean();
 
 // GET /api/narcotics — paginated list with filters
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, requirePermission('VIEW_NARCOTICS'), async (req, res) => {
   try {
     const shop = await getShop(req.user.id);
     if (!shop) return res.status(404).json({ message: 'Shop not found' });
@@ -44,7 +44,7 @@ router.get('/', protect, async (req, res) => {
 });
 
 // GET /api/narcotics/summary — monthly totals for inspector report
-router.get('/summary', protect, async (req, res) => {
+router.get('/summary', protect, requirePermission('VIEW_NARCOTICS'), async (req, res) => {
   try {
     const shop = await getShop(req.user.id);
     if (!shop) return res.status(404).json({ message: 'Shop not found' });
@@ -78,7 +78,7 @@ router.get('/summary', protect, async (req, res) => {
 });
 
 // PATCH /api/narcotics/:id/void — void an entry (never delete)
-router.patch('/:id/void', protect, async (req, res) => {
+router.patch('/:id/void', protect, requirePermission('MANAGE_NARCOTICS'), async (req, res) => {
   try {
     const shop = await getShop(req.user.id);
     if (!shop) return res.status(404).json({ message: 'Shop not found' });

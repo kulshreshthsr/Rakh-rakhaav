@@ -9,11 +9,13 @@ const {
   getStockHistory,
   toggleAvailability,
   getByBarcode,
+  bulkImportProducts,
 } = require('../controllers/productController');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 
 // Products are readable by all authenticated users (needed to create invoices)
+router.post('/bulk-import', protect, checkSubscriptionStatus, requirePermission('MANAGE_INVENTORY'), bulkImportProducts);
 router.get('/barcode/:barcode', protect, getByBarcode);
 router.get('/',    protect, getProducts);
 router.get('/:id/stock-history', protect, getStockHistory);

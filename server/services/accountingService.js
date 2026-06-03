@@ -456,7 +456,7 @@ const generatePLStatement = async ({ shopId, from = null, to = null }) => {
       .select('total_amount total_cost gross_profit total_gst taxable_amount')
       .lean(),
     SaleReturn.find({ ...withDate(), status: { $ne: 'cancelled' } })
-      .select('total_amount total_gst taxable_amount')
+      .select('total_amount total_gst taxable_amount refund_amount')
       .lean(),
     Purchase.find(withDate())
       .select('total_amount total_gst taxable_amount itc_eligible is_reverse_charge')
@@ -481,7 +481,16 @@ const generatePLStatement = async ({ shopId, from = null, to = null }) => {
   // ── Taxable revenue (net of GST and returns) ─────────────────────────────
   const taxableRevenue       = round2(netRevenue - netGstCollected);
 
-  // ── COGS ─────────────────────────────────────────────────────────────────
+  // ── COGS (accrual basis) ─────────────────────────────────────────────────
+  // total_cost on each sale = sum(cost_price × quantity) at time of sale.
+  // This is true COGS — not total purchases, which includes unsold inventory.
+  const cogsFromSales        = round2(sales.reduce((s, x) => s + (x.total_cost || 0), 0));
+  // Approximate COGS reversal for returns: use refund_amount as a proxy.
+  const cogsReturnCredit     = round2(saleReturns.reduce((s, x) => s + (x.refund_amount || 0) * 0.5, 0));
+  // Net COGS = sold cost minus the cost portion of returns
+  const netCOGS              = round2(Math.max(0, cogsFromSales - cogsReturnCredit));
+
+  // Keep purchases data for the balance sheet / cash flow view
   const grossPurchases       = round2(purchases.reduce((s, x) => s + (x.total_amount || 0), 0));
   const purchaseReturnTotal  = round2(purchaseReturns.reduce((s, x) => s + (x.total_amount || 0), 0));
   const netPurchases         = round2(grossPurchases - purchaseReturnTotal);
@@ -496,7 +505,7 @@ const generatePLStatement = async ({ shopId, from = null, to = null }) => {
   const netItcAvailable      = round2(itcAvailable - itcOnReturns);
   const netGstPayable        = round2(Math.max(0, netGstCollected - netItcAvailable));
 
-  const grossProfit          = round2(taxableRevenue - netPurchases);
+  const grossProfit          = round2(taxableRevenue - netCOGS);
 
   // ── Expenses grouped by category ─────────────────────────────────────────
   const expenseByCategory = {};
@@ -522,9 +531,12 @@ const generatePLStatement = async ({ shopId, from = null, to = null }) => {
       taxable_revenue: taxableRevenue,
     },
     cogs: {
-      gross_purchases:  grossPurchases,
-      purchase_returns: purchaseReturnTotal,
-      net_purchases:    netPurchases,
+      // Accrual COGS (used for gross profit — accurate)
+      cost_of_goods_sold: netCOGS,
+      // Cash purchases (informational — includes unsold inventory)
+      gross_purchases:    grossPurchases,
+      purchase_returns:   purchaseReturnTotal,
+      net_purchases:      netPurchases,
     },
     gross_profit: grossProfit,
     expenses: {

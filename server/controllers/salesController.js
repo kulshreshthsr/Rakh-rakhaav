@@ -24,6 +24,7 @@ const { GST_STATE_CODE_MAP, GSTIN_REGEX, getStateFromGstin: _getStateFromGstinSh
 
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
+const { logStockMovements } = require('../utils/stockMovementLogger');
 
 const getFinancialYear = (date = new Date()) => {
   const year = date.getFullYear();
@@ -60,6 +61,18 @@ const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new
     return `${prefix}${String(sequence.last_number).padStart(digits, '0')}`;
   }
   return `INV/${financialYear}/${String(sequence.last_number).padStart(4, '0')}`;
+};
+
+const generateQuotationNumber = async (shopId, session = null, date = new Date()) => {
+  const financialYear = getFinancialYear(date);
+  let q = DocumentSequence.findOneAndUpdate(
+    { shop: shopId, doc_type: 'quotation', financial_year: financialYear },
+    [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', 0] }, 1] } } }],
+    { new: true, upsert: true }
+  );
+  if (session) q = q.session(session);
+  const seq = await q;
+  return `QT/${financialYear}/${String(seq.last_number).padStart(4, '0')}`;
 };
 
 const normalizeState = (value = '') => value.trim().toLowerCase();
@@ -518,6 +531,31 @@ const buildSaleRecordData = async ({
     discount_value = 0,
   } = payload;
 
+  if (!items || items.length === 0) {
+    const _splitDate = parseSaleDateInput(payload.sale_date) || new Date();
+    return {
+      itemNames: [],
+      resolvedItems: [],
+      data: {
+        shop: shop._id,
+        items: [],
+        invoice_number: await generateInvoiceNumber(shop, session, _splitDate),
+        total_amount: round2(Number(payload.total_amount) || Number(payload.amount_paid) || 0),
+        taxable_amount: 0, total_gst: 0, cgst_amount: 0, sgst_amount: 0, igst_amount: 0,
+        total_cost: 0, gross_profit: 0,
+        payment_type: payload.payment_type || 'cash',
+        amount_paid:  round2(Number(payload.amount_paid) || 0),
+        buyer_name: payload.buyer_name || '',
+        buyer_phone: payload.buyer_phone || '',
+        notes: payload.notes || '',
+        extra_fields: payload.extra_fields || {},
+        sale_type: 'payment_split',
+        document_type: 'invoice',
+        createdAt: _splitDate,
+      },
+    };
+  }
+
   if (payment_type === 'credit' && !buyer_name) {
     throw new Error('Udhaar sale ke liye buyer ka naam zaroori hai!');
   }
@@ -804,6 +842,23 @@ const createSale = async (req, res) => {
         session,
       });
 
+      // Quotations skip stock deduction and use a separate number sequence
+      const isQuotation = req.body.document_type === 'quotation';
+      if (isQuotation) {
+        data.document_type   = 'quotation';
+        data.invoice_number  = await generateQuotationNumber(shop._id, session, data.createdAt);
+        data.taxable_amount  = data.total_amount;
+        data.cgst_amount     = 0;
+        data.sgst_amount     = 0;
+        data.igst_amount     = 0;
+        data.total_gst       = 0;
+        data.payment_type    = 'credit';
+        data.amount_paid     = 0;
+        data.quotation_valid_till = req.body.quotation_valid_till
+          ? new Date(req.body.quotation_valid_till)
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      }
+
       // ── Contractor credit check (hardware only) ──────────────────
       let hardwareContractor = null;
       if (shop.businessType === 'hardware' && data.payment_type === 'credit') {
@@ -826,8 +881,10 @@ const createSale = async (req, res) => {
         }
       }
 
-      await syncSaleStock(null, data.items, data.invoice_number, session);
-      await syncSubInventory([], data.items, data.invoice_number, session);
+      if (!isQuotation) {
+        await syncSaleStock(null, data.items, data.invoice_number, session);
+        await syncSubInventory([], data.items, data.invoice_number, session);
+      }
 
       const createdSales = await Sale.create([{
         ...data,
@@ -837,7 +894,18 @@ const createSale = async (req, res) => {
 
       const createdSale = createdSales[0];
       createdSaleId = createdSale._id;
-      await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
+      if (!isQuotation) {
+        logStockMovements(shop._id, (data.items || []).map(item => ({
+          product:        item.product,
+          type:           'sale',
+          quantityChange: -(Number(item.quantity) || 0),
+          quantityAfter:  0,
+          referenceId:    data.invoice_number,
+          referenceType:  'sale',
+          note:           `Sale to ${data.buyer_name || 'Walk-in'}`,
+        })));
+        await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
+      }
 
       // ── Narcotics register (pharmacy only) — MUST be inside transaction ──
       // If this insert fails the whole sale rolls back atomically.
@@ -1707,6 +1775,73 @@ const convertToInvoice = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CONVERT QUOTATION → INVOICE
+// POST /api/sales/:id/convert-quotation
+// ─────────────────────────────────────────────────────────────────────────────
+
+const convertQuotation = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    let invoiceId;
+    await session.withTransaction(async () => {
+      const shop      = await getShopOrFail(req.user.id);
+      const quotation = await Sale.findOne({
+        _id: req.params.id, shop: shop._id, document_type: 'quotation',
+      }).session(session);
+      if (!quotation) throw Object.assign(new Error('Quotation not found'), { statusCode: 404 });
+      if (quotation.converted_to_invoice) {
+        throw Object.assign(new Error('Quotation already converted to invoice'), { statusCode: 400 });
+      }
+
+      const payload = {
+        items: req.body.items || quotation.items.map(i => ({
+          product_id:     String(i.product),
+          product_name:   i.product_name,
+          quantity:       i.quantity,
+          price_per_unit: i.price_per_unit,
+          gst_rate:       i.gst_rate,
+          item_metadata:  i.item_metadata instanceof Map ? Object.fromEntries(i.item_metadata) : (i.item_metadata || {}),
+        })),
+        buyer_name:   req.body.buyer_name   || quotation.buyer_name,
+        buyer_phone:  req.body.buyer_phone  || quotation.buyer_phone,
+        buyer_gstin:  req.body.buyer_gstin  || quotation.buyer_gstin,
+        buyer_state:  req.body.buyer_state  || quotation.buyer_state,
+        payment_type: req.body.payment_type || 'cash',
+        amount_paid:  req.body.amount_paid  || 0,
+        notes:        req.body.notes        || quotation.notes,
+        extra_fields: {
+          ...(quotation.extra_fields instanceof Map ? Object.fromEntries(quotation.extra_fields) : quotation.extra_fields),
+          converted_from_quotation: quotation.invoice_number,
+        },
+      };
+
+      const { data, itemNames } = await buildSaleRecordData({ shop, payload, session });
+
+      await syncSaleStock(null, data.items, data.invoice_number, session);
+      await syncSubInventory([], data.items, data.invoice_number, session);
+
+      const [invoice] = await Sale.create([{ ...data, shop: shop._id }], { session });
+      invoiceId = invoice._id;
+
+      await Sale.findByIdAndUpdate(quotation._id, {
+        $set: { converted_to_invoice: invoice.invoice_number, quotation_status: 'converted' },
+      }, { session });
+
+      await syncCustomerLedgerForSale(shop._id, invoice, itemNames, session);
+    });
+
+    const invoice = await Sale.findById(invoiceId).populate('customer', 'name phone gstin');
+    res.status(201).json({ invoice, message: 'Quotation converted to invoice' });
+  } catch (err) {
+    const sc = err.statusCode || 500;
+    if (sc < 500) return res.status(sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    res.status(500).json({ message: 'कुछ गलत हुआ' });
+  } finally {
+    await session.endSession();
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CREDIT NOTE
 // POST /api/sales/credit-note
 // Issues a GST credit note against an existing invoice.
@@ -1978,6 +2113,7 @@ module.exports = {
   markChallanDispatched,
   markChallanDelivered,
   convertToInvoice,
+  convertQuotation,
   createCreditNote,
   createDebitNote,
 };

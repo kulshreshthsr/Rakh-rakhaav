@@ -19,6 +19,7 @@ const {
   markChallanDispatched,
   markChallanDelivered,
   convertToInvoice,
+  convertQuotation,
   createCreditNote,
   createDebitNote,
 } = require('../controllers/salesController');
@@ -35,6 +36,7 @@ router.post('/debit-note',    protect, checkSubscriptionStatus, requirePermissio
 router.patch('/:id/mark-dispatched', protect, requirePermission('CREATE_INVOICE'), markChallanDispatched);
 router.patch('/:id/mark-delivered', protect, requirePermission('CREATE_INVOICE'), markChallanDelivered);
 router.post('/:id/convert-to-invoice', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), convertToInvoice);
+router.post('/:id/convert-quotation',  protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), convertQuotation);
 
 router.get('/',    protect, requirePermission('VIEW_SALES'),   getSales);
 router.get('/:id', protect, requirePermission('VIEW_SALES'),   getSaleById);

@@ -14,7 +14,7 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id).select(
-      'name username role isSubUser shopId isActive passwordChangedAt'
+      'name username role isSubUser shopId isActive passwordChangedAt tokenVersion'
     );
 
     if (!user) return res.status(401).json({ message: 'User not found' });
@@ -25,6 +25,13 @@ const protect = async (req, res, next) => {
     if (user.passwordChangedAt) {
       const tokenIssuedAt = decoded.iat * 1000;
       if (user.passwordChangedAt.getTime() > tokenIssuedAt) {
+        return res.status(401).json({ message: 'Session expired. Please log in again.' });
+      }
+    }
+
+    // Token version check — incremented on logout to invalidate old tokens
+    if (typeof decoded.tv === 'number' && user.tokenVersion !== undefined) {
+      if (decoded.tv < (user.tokenVersion || 0)) {
         return res.status(401).json({ message: 'Session expired. Please log in again.' });
       }
     }

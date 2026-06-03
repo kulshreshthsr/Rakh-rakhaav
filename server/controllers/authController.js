@@ -59,7 +59,7 @@ const register = async (req, res) => {
     });
     await Shop.create({ name: 'My Shop', owner: user._id });
 
-    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
+    const token = jwt.sign({ id: user._id, username: user.username, tv: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.status(201).json({ user: serializeAuthUser(user), token });
   } catch (err) {
     logger.error('[authController]', err.message || err);
@@ -104,7 +104,7 @@ const login = async (req, res) => {
       await user.save();
     }
 
-    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
+    const token = jwt.sign({ id: user._id, username: user.username, tv: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     res.json({ user: serializeAuthUser(user), token });
   } catch (err) {
     logger.error('[authController]', err.message || err);
@@ -309,4 +309,14 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus, forgotPassword, resetPassword };
+const logout = async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user.id, { $inc: { tokenVersion: 1 } });
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    logger.error('[logout]', err.message);
+    res.status(500).json({ message: 'Logout failed' });
+  }
+};
+
+module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus, forgotPassword, resetPassword, logout };

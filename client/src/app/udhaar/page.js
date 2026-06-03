@@ -130,6 +130,10 @@ export default function UdhaarPage() {
   const [partySaving,     setPartySaving]     = useState(false);
   const [partyForm,       setPartyForm]       = useState(() => getEmptyPartyForm('customer'));
 
+  const [agingData,      setAgingData]      = useState(null);
+  const [agingLoading,   setAgingLoading]   = useState(false);
+  const [showAging,      setShowAging]      = useState(false);
+
   /* ── Sort + filter state ── */
   const [sortBy,     setSortBy]     = useState('due_desc');
   const [filterDue,  setFilterDue]  = useState('all');
@@ -144,10 +148,24 @@ export default function UdhaarPage() {
     setCacheLoaded(Boolean(cached));
   };
 
+  const fetchCreditAging = async () => {
+    setAgingLoading(true);
+    try {
+      const res = await fetch(apiUrl('/api/dashboard/credit-aging'), {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setAgingData(data);
+    } catch { /* silent */ }
+    finally { setAgingLoading(false); }
+  };
+
   async function fetchAll() {
     if (typeof navigator !== 'undefined' && !navigator.onLine) { setLoading(false); return; }
     try {
       const [nextCustomers, nextSuppliers] = await Promise.all([fetchCustomers(), fetchSuppliers()]);
+      fetchCreditAging();
       writePageCache(LEDGER_CACHE_KEY, { customers: nextCustomers, suppliers: nextSuppliers });
       setCacheUpdatedAt(new Date().toISOString()); setCacheLoaded(true);
     } finally { setLoading(false); }
@@ -541,6 +559,81 @@ export default function UdhaarPage() {
                 </div>
               </button>
             </div>
+
+            {activeTab === 'customers' && agingData && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+                  <div>
+                    <p className="text-[14px] font-black text-slate-900">Credit Ageing</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      कुल बकाया ₹{parseFloat(agingData.grandTotal || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAging(v => !v)}
+                    className="text-[11px] font-bold text-green-600 hover:text-green-800"
+                  >
+                    {showAging ? 'Hide ↑' : 'Details ↓'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-4 divide-x divide-slate-100">
+                  {['0-30 days', '31-60 days', '61-90 days', '90+ days'].map((bucket, i) => {
+                    const d = agingData.summary?.[bucket] || { count: 0, total: 0 };
+                    const colors = ['text-emerald-600', 'text-amber-500', 'text-orange-500', 'text-rose-600'];
+                    return (
+                      <div key={bucket} className="px-3 py-3 text-center">
+                        <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400 leading-tight">{bucket}</p>
+                        <p className={`text-[16px] font-black mt-0.5 leading-none ${colors[i]}`}>
+                          ₹{parseFloat(d.total || 0) >= 1000
+                            ? `${(parseFloat(d.total) / 1000).toFixed(1)}K`
+                            : parseFloat(d.total || 0).toFixed(0)}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{d.count} party</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {showAging && agingData.customers && agingData.customers.length > 0 && (
+                  <div className="border-t border-slate-100 divide-y divide-slate-50 max-h-64 overflow-y-auto">
+                    {agingData.customers.slice(0, 20).map((c, idx) => {
+                      const bucketColors = {
+                        '0-30 days':  'bg-emerald-100 text-emerald-700',
+                        '31-60 days': 'bg-amber-100 text-amber-700',
+                        '61-90 days': 'bg-orange-100 text-orange-700',
+                        '90+ days':   'bg-rose-100 text-rose-700',
+                      };
+                      const cls = bucketColors[c.agingBucket] || 'bg-slate-100 text-slate-600';
+                      return (
+                        <div key={idx} className="flex items-center justify-between px-4 py-2.5">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-bold text-slate-900 truncate">
+                              {c._id?.buyerName || 'Unknown'}
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{c.billCount} bill{c.billCount !== 1 ? 's' : ''}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${cls}`}>
+                              {c.agingBucket}
+                            </span>
+                            <span className="text-[14px] font-black text-rose-600">
+                              ₹{parseFloat(c.totalDue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {agingData.customers.length > 20 && (
+                      <p className="text-center py-2 text-[11px] text-slate-400">
+                        +{agingData.customers.length - 20} more customers
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Party list card */}
             <SCard>

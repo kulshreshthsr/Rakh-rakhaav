@@ -243,6 +243,19 @@ const adjustStock = async (req, res) => {
     });
 
     await product.save();
+
+    const { logStockMovements } = require('../utils/stockMovementLogger');
+    logStockMovements(shop._id, [{
+      product:        product._id,
+      type:           type || 'adjustment',
+      quantityChange: change,
+      quantityAfter:  newQty,
+      referenceId:    '',
+      referenceType:  'manual',
+      note:           note || (type === 'manual_add' ? 'Manual stock added' : type === 'manual_remove' ? 'Manual stock removed' : 'Stock adjustment'),
+      performedBy:    req.user?.id,
+    }]);
+
     res.json({
       message: 'Stock updated',
       quantity: product.quantity,
@@ -324,4 +337,54 @@ const getByBarcode = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory, toggleAvailability, getByBarcode };
+const bulkImportProducts = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const rows = req.body.products;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ message: 'products array is required' });
+    }
+    if (rows.length > 1000) {
+      return res.status(400).json({ message: 'Maximum 1000 products per import' });
+    }
+
+    const results = { created: 0, skipped: 0, errors: [] };
+
+    for (const row of rows) {
+      try {
+        const name = String(row.name || row.Name || '').trim();
+        if (!name) { results.skipped++; continue; }
+
+        const barcode = normalizeBarcode(row.barcode || row.Barcode || '');
+        if (barcode) {
+          const exists = await Product.findOne({ shop: shop._id, barcode, isActive: { $ne: false } });
+          if (exists) { results.skipped++; continue; }
+        }
+
+        await Product.create({
+          shop:                shop._id,
+          name,
+          description:         String(row.description || row.Description || '').trim(),
+          price:               Number(row.price || row['Selling Price'] || 0),
+          cost_price:          Number(row.cost_price || row['Cost Price'] || 0),
+          quantity:            Number(row.quantity || row.Quantity || 0),
+          unit:                String(row.unit || row.Unit || 'pcs').trim(),
+          barcode,
+          hsn_code:            String(row.hsn_code || row['HSN Code'] || '').trim(),
+          gst_rate:            Number(row.gst_rate || row['GST %'] || 0),
+          low_stock_threshold: Number(row.low_stock_threshold || row['Min Stock'] || 5),
+        });
+        results.created++;
+      } catch (rowErr) {
+        results.errors.push({ row: row.name || row.Name, error: rowErr.message });
+      }
+    }
+
+    res.status(201).json(results);
+  } catch (err) {
+    logger.error('[bulkImportProducts]', err.message || err);
+    res.status(500).json({ message: 'Import failed' });
+  }
+};
+
+module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory, toggleAvailability, getByBarcode, bulkImportProducts };

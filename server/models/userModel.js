@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: { type: String, default: null },
   passwordResetExpires: { type: Date, default: null },
   passwordChangedAt: { type: Date, default: null },
+  tokenVersion: { type: Number, default: 0 },
   // RBAC fields — safe defaults ensure backward compat for existing users
   role: { type: String, default: 'owner' },
   isSubUser: { type: Boolean, default: false },

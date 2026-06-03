@@ -20,43 +20,84 @@ export default function SplitBillModal({
 
   const handleCreateSplits = async () => {
     try {
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` };
+      const ef = splitSale.extra_fields instanceof Map
+        ? Object.fromEntries(splitSale.extra_fields)
+        : (splitSale.extra_fields || {});
+
       if (splitMode === 'equal') {
+        const perPersonAmt = parseFloat((total / splitCount).toFixed(2));
         const splitPromises = Array.from({ length: splitCount }, (_, i) => {
-          const ef = splitSale.extra_fields instanceof Map ? Object.fromEntries(splitSale.extra_fields) : (splitSale.extra_fields || {});
+          const isLast = i === splitCount - 1;
+          const amtForThis = isLast
+            ? parseFloat((total - perPersonAmt * (splitCount - 1)).toFixed(2))
+            : perPersonAmt;
           return fetch(apiUrl('/api/sales'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+            headers,
             body: JSON.stringify({
-              items: saleItems,
+              items:        [],
               payment_type: 'cash',
-              amount_paid: 0,
-              extra_fields: { ...ef, split_from: splitSale.invoice_number, split_part: `${i + 1} of ${splitCount}` },
+              amount_paid:  amtForThis,
+              total_amount: amtForThis,
+              extra_fields: {
+                ...ef,
+                split_from:      splitSale.invoice_number,
+                split_part:      `${i + 1} of ${splitCount}`,
+                is_split_record: true,
+              },
             }),
           });
         });
-        const results = await Promise.all(splitPromises);
-        const created = await Promise.all(results.map(r => r.json()));
+        const results  = await Promise.all(splitPromises);
+        const created  = await Promise.all(results.map(r => r.json()));
+        const anyError = created.find(c => c.message && !c.invoice_number);
+        if (anyError) { alert(`Split failed: ${anyError.message}`); return; }
+
+        await fetch(apiUrl(`/api/sales/${splitSale._id}`), { method: 'DELETE', headers });
         const nums = created.map(c => c.invoice_number).filter(Boolean).join(', ');
-        alert(`Created ${splitCount} split bills: ${nums}`);
+        alert(`Split complete: ${nums}`);
         onSplitComplete();
+
       } else {
-        const bills = {};
-        saleItems.forEach((item, idx) => { const b = splitAssignments[idx] || 1; bills[b] = [...(bills[b] || []), item]; });
-        const splitPromises = Object.entries(bills).map(([, billItems]) => {
-          const ef = splitSale.extra_fields instanceof Map ? Object.fromEntries(splitSale.extra_fields) : (splitSale.extra_fields || {});
-          return fetch(apiUrl('/api/sales'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-            body: JSON.stringify({ items: billItems, payment_type: 'cash', amount_paid: 0, extra_fields: { ...ef, split_from: splitSale.invoice_number } }),
-          });
+        const billTotals = {};
+        saleItems.forEach((item, idx) => {
+          const b = splitAssignments[idx] || 1;
+          const lineTotal = parseFloat(((item.price_per_unit || 0) * (item.quantity || 1)).toFixed(2));
+          billTotals[b] = parseFloat(((billTotals[b] || 0) + lineTotal).toFixed(2));
         });
-        const results = await Promise.all(splitPromises);
-        const created = await Promise.all(results.map(r => r.json()));
+
+        const splitPromises = Object.entries(billTotals).map(([billNum, amt]) =>
+          fetch(apiUrl('/api/sales'), {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              items:        [],
+              payment_type: 'cash',
+              amount_paid:  amt,
+              total_amount: amt,
+              extra_fields: {
+                ...ef,
+                split_from:      splitSale.invoice_number,
+                split_part:      `Bill ${billNum}`,
+                is_split_record: true,
+              },
+            }),
+          })
+        );
+        const results  = await Promise.all(splitPromises);
+        const created  = await Promise.all(results.map(r => r.json()));
+        const anyError = created.find(c => c.message && !c.invoice_number);
+        if (anyError) { alert(`Split failed: ${anyError.message}`); return; }
+
+        await fetch(apiUrl(`/api/sales/${splitSale._id}`), { method: 'DELETE', headers });
         const nums = created.map(c => c.invoice_number).filter(Boolean).join(', ');
-        alert(`Created ${Object.keys(bills).length} split bills: ${nums}`);
+        alert(`Split complete: ${nums}`);
         onSplitComplete();
       }
-    } catch { alert('Split bill creation failed'); }
+    } catch (e) {
+      alert(`Split bill failed: ${e.message || 'Unknown error'}`);
+    }
   };
 
   return (
