@@ -82,11 +82,11 @@ export default function StylistsPage() {
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-5">
 
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-white via-purple-50/40 to-violet-50/40 p-5 shadow-lg">
+        <div className="rr-page-hero rr-fade-in">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-300 text-[10px] font-black uppercase tracking-widest text-purple-800">✂️ Stylists</span>
-              <h1 className="mt-2 text-[22px] font-black text-slate-900">Staff Management</h1>
+              <span className="rr-section-label">✂️ Stylists</span>
+              <h1 className="mt-1 text-[22px] font-black text-slate-900">Staff Management</h1>
               <p className="text-[12px] text-slate-500 mt-0.5">{stylists.length} stylists registered</p>
             </div>
             <button onClick={openAdd} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-violet-700 text-white text-[13px] font-black shadow-lg shadow-purple-500/30 hover:-translate-y-0.5 transition-all">
@@ -107,10 +107,10 @@ export default function StylistsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {stylists.map(s => (
-              <div key={s._id} className="bg-white rounded-2xl border-2 border-slate-200 p-4 space-y-3 hover:border-purple-200 hover:shadow-md transition-all">
+              <div key={s._id} className="rr-accent-card accent-violet space-y-3 hover:shadow-md transition-all">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-[16px] shadow-md flex-shrink-0"
-                    style={{ backgroundColor: s.color || '#6366f1' }}>
+                  <div className="rr-avatar rr-avatar-lg flex-shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${s.color || '#6366f1'}, ${s.color || '#4f46e5'})` }}>
                     {getInitials(s.name)}
                   </div>
                   <div className="flex-1 min-w-0">

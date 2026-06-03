@@ -40,28 +40,25 @@ function buildUdhaarReminder(customer, shopName) {
 // ═══════════════════════════════════════════════════
 
 function DashboardHeader({ shopName, userName, greeting, today, dashboardMode }) {
-  const badgeMap = {
-    b2c:    { cls: 'bg-blue-50 text-blue-700 border border-blue-200',   text: '🛍️ Retail' },
-    b2b:    { cls: 'bg-amber-50 text-amber-700 border border-amber-200', text: '🏭 Wholesale' },
-    hybrid: { cls: 'bg-green-50 text-green-700 border border-green-200', text: '🔄 Hybrid' },
-  };
-  const badge = badgeMap[dashboardMode] || badgeMap.b2c;
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm">
+    <div className="rr-page-hero rr-fade-in">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="text-[22px] font-black text-slate-900 leading-tight">{greeting}</h1>
+          <p className="rr-section-label mb-1">रखरखाव · दुकान हिसाब</p>
+          <h1 className="text-[24px] font-black text-slate-900 leading-tight tracking-[-0.03em]">{greeting}</h1>
           {(userName || shopName) && (
-            <p className="text-[13px] font-bold text-green-700 mt-0.5 truncate">
+            <p className="text-[13px] font-bold text-green-700 mt-1 truncate flex items-center gap-1.5">
               {userName && <span>{userName}</span>}
-              {userName && shopName && <span className="text-slate-400 mx-1.5">•</span>}
+              {userName && shopName && <span className="text-slate-300">·</span>}
               {shopName && <span>{shopName}</span>}
             </p>
           )}
-          <p className="text-[11px] text-slate-400 uppercase tracking-wide mt-0.5">{today}</p>
+          <p className="text-[11px] text-slate-400 mt-0.5 uppercase tracking-wide">{today}</p>
         </div>
-        <Link href="/profile" className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors hover:opacity-80 ${badge.cls}`}>
-          {badge.text}
+        <Link href="/profile" className={`flex-shrink-0 rr-pill ${
+          dashboardMode === 'b2b' ? 'rr-pill-amber' : dashboardMode === 'hybrid' ? 'rr-pill-violet' : 'rr-pill-green'
+        } text-[11px]`}>
+          {dashboardMode === 'b2b' ? '🏭 Wholesale' : dashboardMode === 'hybrid' ? '🔄 Hybrid' : '🛍️ Retail'}
         </Link>
       </div>
     </div>
@@ -91,18 +88,14 @@ function StaffBanner({ userRole, config }) {
 
 function KPIStrip({ tiles }) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1 -mx-3 px-3">
+    <div className="rr-stat-strip">
       {tiles.filter(Boolean).map((tile, i) => (
-        <Link key={i} href={tile.href}
-          className={`flex-shrink-0 w-32 rounded-2xl p-3 shadow-sm border ${
-            tile.alert === 'red'   ? 'bg-red-50 border-red-200' :
-            tile.alert === 'amber' ? 'bg-amber-50 border-amber-200' :
-            'bg-white border-slate-200'
-          }`}
-        >
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide leading-tight">{tile.label}</p>
-          <p className="text-[18px] font-black text-slate-900 mt-1 leading-none">{tile.value}</p>
-          <p className="text-[10px] text-slate-500 mt-1 leading-tight">{tile.sublabel}</p>
+        <Link key={i} href={tile.href} className={`rr-stat-tile ${
+          tile.alert === 'red' ? 'tone-rose' : tile.alert === 'amber' ? 'tone-amber' : ''
+        }`}>
+          <p className="rr-stat-tile-label">{tile.label}</p>
+          <p className={`rr-stat-tile-value ${tile.alert === 'red' ? 'tone-rose' : tile.alert === 'amber' ? 'tone-amber' : ''}`}>{tile.value}</p>
+          <p className="rr-stat-tile-sub">{tile.sublabel}</p>
         </Link>
       ))}
     </div>
@@ -111,13 +104,11 @@ function KPIStrip({ tiles }) {
 
 function QuickActionCard({ href, emoji, label, sublabel }) {
   return (
-    <Link href={href}
-      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white border border-slate-200 text-center hover:border-green-300 hover:-translate-y-0.5 hover:shadow-md transition-all active:scale-95"
-    >
-      <span className="text-2xl">{emoji}</span>
+    <Link href={href} className="rr-quick-tile">
+      <div className="rr-quick-tile-icon bg-green-50">{emoji}</div>
       <div>
-        <span className="block text-[13px] font-black text-slate-800 leading-tight">{label}</span>
-        {sublabel && <span className="block text-[10px] text-slate-500 mt-0.5">{sublabel}</span>}
+        <span className="rr-quick-tile-label">{label}</span>
+        {sublabel && <span className="rr-quick-tile-sub block">{sublabel}</span>}
       </div>
     </Link>
   );
@@ -137,10 +128,10 @@ function UrgentTasksPanel({ data, shopName, term }) {
 
   return (
     <div>
-      <div className="page-section-row px-0.5">
-        <span className="page-section-label">⚠️ ज़रूरी काम</span>
+      <div className="rr-section-head px-0.5">
+        <span className="rr-section-label">⚠️ ज़रूरी काम</span>
         {(low_stock > 0 || out_of_stock > 0) && hasPermission('MANAGE_INVENTORY') && (
-          <Link href="/product" className="page-section-link" style={{ color: '#d97706' }}>सभी देखें →</Link>
+          <Link href="/product" className="rr-section-link">सभी देखें →</Link>
         )}
       </div>
       <div className="space-y-3">
@@ -190,15 +181,15 @@ function UrgentTasksPanel({ data, shopName, term }) {
                   const msg   = buildUdhaarReminder(c, shopName);
                   const waUrl = phone ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
                   return (
-                    <div key={c._id || i} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors">
-                      <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-black text-[13px] flex-shrink-0">
+                    <div key={c._id || i} className="rr-list-row">
+                      <div className="rr-avatar rr-avatar-sm bg-gradient-to-br from-rose-500 to-red-600">
                         {c.name?.charAt(0)?.toUpperCase() || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-bold text-slate-900 truncate">{c.name}</p>
                         {c.phone && <p className="text-[11px] text-slate-500">{c.phone}</p>}
                       </div>
-                      <p className="text-[14px] font-black text-red-600 flex-shrink-0 mr-1">₹{fmtD(c.due)}</p>
+                      <p className="text-[14px] font-black text-rose-600 flex-shrink-0 mr-1">₹{fmtD(c.due)}</p>
                       <a href={waUrl} target="_blank" rel="noreferrer"
                         className="flex-shrink-0 w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center text-white hover:bg-green-600 transition-colors"
                         title={`WhatsApp reminder to ${c.name}`}

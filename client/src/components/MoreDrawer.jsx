@@ -104,27 +104,23 @@ export default function MoreDrawer({ open, onClose, items = [], currentPath, onL
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className={`group flex items-center gap-4 px-4 py-4 rounded-2xl border-2 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
-                    isActive
-                      ? 'border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md'
-                      : 'border-slate-200 bg-white hover:border-green-200'
-                  }`}
+                  className={`rr-list-row ${isActive ? 'bg-green-50/60' : ''}`}
                 >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform ${
-                    isActive ? 'bg-gradient-to-br from-green-600 to-emerald-700 text-white shadow-green-500/30' : iconColors[item.key] || 'bg-slate-100 text-slate-600'
+                  <div className={`rr-icon-btn rr-icon-btn-md flex-shrink-0 ${
+                    isActive ? 'bg-gradient-to-br from-green-600 to-emerald-700 text-white border-green-600' : ''
                   }`}>
                     <Glyph name={item.icon} size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-[16px] font-black leading-tight ${isActive ? 'text-green-800' : 'text-slate-900'}`}>
+                    <div className={`text-[14px] font-black leading-tight ${isActive ? 'text-green-800' : 'text-slate-900'}`}>
                       {item.label}
                     </div>
-                    <div className={`text-[12px] font-medium mt-1 ${isActive ? 'text-green-600' : 'text-slate-500'}`}>
+                    <div className={`text-[11px] font-medium mt-0.5 ${isActive ? 'text-green-600' : 'text-slate-500'}`}>
                       {item.sublabel}
                     </div>
                   </div>
                   {isActive && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-600 flex-shrink-0 shadow-lg shadow-green-500/50" />
+                    <span className="status-dot is-green flex-shrink-0" />
                   )}
                 </Link>
               );

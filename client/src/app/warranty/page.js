@@ -180,10 +180,10 @@ export default function WarrantyPage() {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="rr-tab-bar">
           {CLAIM_FILTERS.map(f => (
             <button key={f} onClick={() => setStatusFilter(f)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-xl border text-[12px] font-bold transition-colors ${statusFilter === f ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+              className={`rr-tab ${statusFilter === f ? 'active' : ''}`}>
               {STATUS_CONFIG[f]?.label || 'All'}
             </button>
           ))}
@@ -214,8 +214,8 @@ export default function WarrantyPage() {
             {claims.map(c => {
               const sc = STATUS_CONFIG[c.claimStatus] || STATUS_CONFIG.received;
               return (
-                <div key={c._id} className="rounded-2xl border-2 border-slate-200 bg-white overflow-hidden shadow-sm">
-                  <div className="px-4 py-4 space-y-3">
+                <div key={c._id} className="rr-list-row flex-col items-start">
+                  <div className="w-full space-y-3">
                     {/* Header */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -223,7 +223,13 @@ export default function WarrantyPage() {
                         {c.serialNumber && <p className="text-[11px] font-mono text-slate-500 mt-0.5">S/N: {c.serialNumber}</p>}
                         {c.brandName && <p className="text-[11px] text-slate-400">{c.brandName}{c.modelNumber ? ` — ${c.modelNumber}` : ''}</p>}
                       </div>
-                      <span className={`flex-shrink-0 px-2.5 py-1 rounded-xl border text-[11px] font-black ${sc.badge}`}>{sc.label}</span>
+                      <span className={`rr-pill flex-shrink-0 ${
+                        c.claimStatus === 'received' ? 'rr-pill-amber' :
+                        c.claimStatus === 'sent_to_brand' ? 'rr-pill-blue' :
+                        c.claimStatus === 'under_repair' ? 'rr-pill-violet' :
+                        c.claimStatus === 'ready' ? 'rr-pill-green' :
+                        'rr-pill-slate'
+                      }`}>{sc.label}</span>
                     </div>
 
                     {/* Customer + issue */}

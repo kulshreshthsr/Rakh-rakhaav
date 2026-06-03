@@ -234,7 +234,7 @@ export default function RegisterPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="rajesh_store"
+                  placeholder="Sonaa_store"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"

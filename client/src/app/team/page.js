@@ -18,9 +18,9 @@ const authFetch = (url, opts = {}) =>
 
 /* ─── Small reusable atoms ─────────────────────────────────────────── */
 function RoleBadge({ role, color }) {
-  const c = getRoleColor(role, color);
+  const pillMap = { owner: 'rr-pill-green', manager: 'rr-pill-blue', accountant: 'rr-pill-violet', cashier: 'rr-pill-amber', viewer: 'rr-pill-slate' };
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${c.bg} ${c.text} ${c.border}`}>
+    <span className={`rr-pill ${pillMap[role] || 'rr-pill-slate'}`}>
       {getRoleLabel(role)}
     </span>
   );
@@ -380,8 +380,8 @@ export default function TeamPage() {
               </div>
               <div className="divide-y divide-slate-100">
                 {members.map(m => (
-                  <div key={m._id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/50 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 border border-green-200 flex items-center justify-center text-[16px] font-black text-green-700 flex-shrink-0">
+                  <div key={m._id} className="rr-list-row">
+                    <div className="rr-avatar rr-avatar-sm bg-gradient-to-br from-green-600 to-emerald-700">
                       {m.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">

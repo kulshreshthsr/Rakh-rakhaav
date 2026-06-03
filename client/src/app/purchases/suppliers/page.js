@@ -206,12 +206,17 @@ export default function SupplierDirectoryPage() {
                     type="button"
                     key={supplier.key}
                     onClick={() => setSelectedSupplierKey(supplier.key)}
-                    className={`supplier-list-item w-full cursor-pointer border-0 border-b border-green-100 px-3 py-3 text-left ${supplier.key === selectedSupplier?.key ? 'bg-green-100' : 'bg-white/80'}`}
+                    className={`rr-list-row w-full cursor-pointer text-left ${supplier.key === selectedSupplier?.key ? 'bg-green-50/80' : ''}`}
                   >
-                    <div className="text-[13px] font-bold text-slate-900">{supplier.name}</div>
-                    <div className="text-[11px] text-slate-500">
-                      {supplier.phone ? `+91 ${supplier.phone}` : 'Phone missing'} • {supplier.purchases.length} deals
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-bold text-slate-900">{supplier.name}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {supplier.phone ? `+91 ${supplier.phone}` : 'Phone missing'} · {supplier.purchases.length} deals
+                      </div>
                     </div>
+                    {supplier.outstanding > 0 && (
+                      <span className="rr-pill rr-pill-amber flex-shrink-0">₹{supplier.outstanding?.toLocaleString('en-IN', {maximumFractionDigits:0})}</span>
+                    )}
                   </button>
                 ))}
               </div>

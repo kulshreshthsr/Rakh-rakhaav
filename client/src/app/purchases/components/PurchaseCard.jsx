@@ -18,8 +18,9 @@ const PAY_BADGE = {
 };
 
 const PayBadge = ({ type }) => {
+  const pillMap = { cash: 'rr-pill-green', credit: 'rr-pill-rose', upi: 'rr-pill-violet', bank: 'rr-pill-blue' };
   const s = PAY_BADGE[type] || PAY_BADGE.cash;
-  return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border ${s.cls}`}>{s.label}</span>;
+  return <span className={`rr-pill ${pillMap[type] || 'rr-pill-slate'}`}>{s.label}</span>;
 };
 
 const getOfflineBadgeMeta = (status) => {
@@ -41,13 +42,12 @@ export default function PurchaseCard({
   const itemLabel = p.items && p.items.length > 1 ? `${p.items.length} products` : p.product_name;
   const itemNames = p.items && p.items.length > 1 ? p.items.map((item) => item.product_name).join(', ') : p.product_name;
 
+  const accentCls = p._isOffline ? 'accent-amber' : p.payment_type === 'credit' ? 'accent-amber' : 'accent-green';
   return (
     <div
       data-purchase-anchor={p._id}
-      className={`group relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 hover:-translate-y-[2px] ${p._isOffline ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.1)]' : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.1)] hover:border-slate-300/80'} ${isHighlighted ? 'ring-2 ring-green-400 ring-offset-1 shadow-[0_4px_16px_rgba(22,163,74,0.14)]' : ''}`}
+      className={`rr-accent-card ${accentCls} group transition-all duration-200 hover:-translate-y-[2px] ${isHighlighted ? 'ring-2 ring-green-400 ring-offset-1' : ''}`}
     >
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />
 
       {meta && (
         <div className={`flex items-center gap-2 px-4 py-2 border-b text-[11px] font-black ${meta.color}`}>
@@ -63,7 +63,9 @@ export default function PurchaseCard({
             <span className="font-mono text-[13px] font-black text-green-700">{p.invoice_number}</span>
             <p className="text-[15px] font-bold text-slate-700 truncate mt-0.5">{itemLabel}</p>
           </div>
-          <div className="text-[22px] font-black text-green-700 ml-3">₹{fmt(p.total_amount)}</div>
+          <span className="rr-big-num text-[20px] text-slate-900 ml-3">
+            <span className="rr-currency-sym text-slate-500">₹</span>{fmt(p.total_amount)}
+          </span>
         </div>
 
         <div className="flex gap-2 mb-4 text-[12px]">

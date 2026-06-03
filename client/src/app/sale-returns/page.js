@@ -237,14 +237,11 @@ function SaleReturnInner() {
     <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
 
       {/* Page header */}
-      <div className="relative overflow-hidden mb-5 rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-white via-amber-50/40 to-orange-50/40 p-5 shadow-lg">
-        <div className="pointer-events-none absolute -top-10 -right-8 w-36 h-36 rounded-full bg-amber-200/30 blur-3xl" />
-        <div className="relative flex items-start justify-between gap-3">
+      <div className="rr-page-hero rr-fade-in mb-5">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-[11px] font-black uppercase tracking-widest text-amber-800">
-              ↩️ Sale Return
-            </span>
-            <h1 className="mt-2 text-[22px] font-black text-slate-900">Process Return</h1>
+            <span className="rr-section-label">↩️ Sale Return</span>
+            <h1 className="mt-1 text-[22px] font-black text-slate-900">Process Return</h1>
             <p className="mt-1 text-[13px] text-slate-500">
               Invoice{' '}
               <span className="font-mono font-bold text-green-700">{sale.invoice_number}</span>
@@ -278,14 +275,23 @@ function SaleReturnInner() {
           </div>
           <div className="divide-y divide-slate-50">
             {existingReturns.map(ret => (
-              <div key={ret._id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <span className="font-mono text-[12px] font-bold text-amber-700">{ret.return_number}</span>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {ret.items?.map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
-                  </p>
+              <div key={ret._id} className="rr-accent-card accent-blue m-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-mono text-[12px] font-bold text-blue-700">{ret.return_number}</span>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {ret.items?.map(i => `${i.product_name} ×${i.quantity}`).join(', ')}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-[14px] font-black text-slate-700">₹{fmt(ret.total_amount)}</span>
+                    {ret.refund_mode && (
+                      <span className={`block mt-0.5 rr-pill ${ret.refund_mode === 'cash' ? 'rr-pill-green' : ret.refund_mode === 'credit_note' ? 'rr-pill-violet' : 'rr-pill-blue'}`}>
+                        {ret.refund_mode}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className="text-[14px] font-black text-slate-700">₹{fmt(ret.total_amount)}</span>
               </div>
             ))}
           </div>

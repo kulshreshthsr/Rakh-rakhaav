@@ -11,7 +11,8 @@ const PAY_BADGE = {
 
 const PayBadge = ({ type }) => {
   const s = PAY_BADGE[type] || PAY_BADGE.cash;
-  return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border ${s.cls}`}>{s.label}</span>;
+  const pillMap = { cash: 'rr-pill-green', credit: 'rr-pill-rose', upi: 'rr-pill-green', bank: 'rr-pill-blue' };
+  return <span className={`rr-pill ${pillMap[type] || 'rr-pill-slate'}`}>{s.label}</span>;
 };
 
 const getOfflineBadgeMeta = (status) => {
@@ -61,10 +62,9 @@ export default function SaleCard({
 }) {
   const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
 
+  const accentCls = s._isOffline ? 'accent-amber' : s.payment_type === 'credit' ? 'accent-amber' : 'accent-green';
   return (
-    <div className={`group relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 hover:-translate-y-[2px] ${s._isOffline ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.1)]' : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.1)] hover:border-slate-300/80'}`}>
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-emerald-50/0 group-hover:from-green-50/50 group-hover:to-emerald-50/30 transition-all pointer-events-none" />
+    <div className={`rr-accent-card ${accentCls} group transition-all duration-200 hover:-translate-y-[2px]`}>
 
       {/* Offline banner */}
       {s._isOffline && (
@@ -97,7 +97,9 @@ export default function SaleCard({
               {s.buyer_name || 'Walk-in Customer'}
             </p>
           </div>
-          <div className="text-[22px] font-black text-green-700">₹{fmt(s.total_amount)}</div>
+          <span className="rr-big-num text-[22px] text-slate-900">
+            <span className="rr-currency-sym text-slate-500">₹</span>{fmt(s.total_amount)}
+          </span>
         </div>
 
         {/* Items summary + payment badge */}

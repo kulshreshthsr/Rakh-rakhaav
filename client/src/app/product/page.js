@@ -315,16 +315,10 @@ export default function ProductsPage() {
         )}
 
         {/* ── HEADER ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
-          {/* Green decorative orbs */}
-          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-green-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-emerald-200/30 blur-3xl" />
-          
-          <div className="relative flex items-start justify-between gap-3">
+        <div className="rr-page-hero rr-fade-in">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
-                📦 {term('inventory', 'Stock')}
-              </span>
+              <span className="rr-section-label">📦 {term('inventory', 'Stock')}</span>
               <PageHeader title="स्टॉक" subtitle="सामान और इन्वेंटरी" />
             </div>
             <button onClick={openAdd} disabled={!isOnline}
@@ -432,42 +426,37 @@ export default function ProductsPage() {
         {/* ── EMPTY STATE ── */}
         {!loading && filtered.length === 0 && (
           search || filterStock !== 'all' ? (
-            <div className="empty-state">
-              <div className="empty-state-icon mx-auto mb-4 text-[26px]">🔍</div>
-              <p className="text-[14px] font-extrabold text-slate-700 mb-1">कोई सामान नहीं मिला</p>
-              <p className="text-[12px] text-slate-400">अलग keyword try करें</p>
+            <div className="rr-empty">
+              <div className="rr-empty-icon">🔍</div>
+              <p className="rr-empty-title">कोई सामान नहीं मिला</p>
+              <p className="rr-empty-sub">अलग keyword try करें</p>
             </div>
           ) : (
-            <EmptyState
-              emoji="🏪"
-              title="अभी stock खाली है"
-              subtitle="अपने products और सामान यहाँ add करें। Stock, price और barcode — सब एक जगह।"
-              actionLabel={`+ ${term('addProduct', 'पहला Product जोड़ें')}`}
-              onAction={openAdd}
-            />
+            <div className="rr-empty">
+              <div className="rr-empty-icon">📦</div>
+              <p className="rr-empty-title">कोई {term('product', 'product')} नहीं मिला</p>
+              <p className="rr-empty-sub">पहला product add करो और billing शुरू करो।</p>
+            </div>
           )
         )}
 
         {/* ── PRODUCT CARDS ── */}
         {!loading && filtered.length > 0 && (
           <>
+            <div className="rr-section-head">
+              <span className="rr-section-label">{term('products', 'Products')} · {filtered.length} items</span>
+              <button onClick={openAdd} disabled={!isOnline} className="rr-section-link">+ {term('addProduct', 'Add Product')}</button>
+            </div>
             <div className="flex flex-col gap-3">
               {filtered.map(p => {
                 const s = stockStatus(p);
                 return (
                   <div key={p._id}
-                    className={`bg-white rounded-2xl border overflow-hidden transition-all duration-200 hover:-translate-y-[1px] ${
-                      p.quantity === 0
-                        ? 'border-rose-200 shadow-[0_2px_8px_rgba(239,68,68,0.08),0_1px_2px_rgba(15,23,42,0.04)]'
-                        : p.is_low_stock
-                          ? 'border-amber-200 shadow-[0_2px_8px_rgba(245,158,11,0.08),0_1px_2px_rgba(15,23,42,0.04)]'
-                          : 'border-slate-200/80 shadow-[0_2px_8px_rgba(15,23,42,0.05),0_1px_2px_rgba(15,23,42,0.04)]'
-                    } hover:shadow-[0_6px_18px_rgba(15,23,42,0.09)]`}
+                    className={`rr-accent-card transition-all duration-200 hover:-translate-y-[1px] ${
+                      p.quantity === 0 ? 'accent-rose' : p.is_low_stock ? 'accent-amber' : 'accent-green'
+                    }`}
                   >
-                    {/* Top accent bar */}
-                    <div className={`h-[3px] ${p.quantity === 0 ? 'bg-rose-400' : p.is_low_stock ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-
-                    <div className="p-4">
+                    <div className="p-0">
                       {/* Top row */}
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="min-w-0">
@@ -476,7 +465,7 @@ export default function ProductsPage() {
                             {[p.barcode && `📷 ${p.barcode}`, p.hsn_code && `HSN ${p.hsn_code}`, p.unit].filter(Boolean).join(' · ')}
                           </p>
                         </div>
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black border flex-shrink-0 ${s.cls}`}>
+                        <span className={`rr-pill flex-shrink-0 ${p.quantity === 0 ? 'rr-pill-rose' : p.is_low_stock ? 'rr-pill-amber' : 'rr-pill-green'}`}>
                           {s.label}
                         </span>
                       </div>

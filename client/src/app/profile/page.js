@@ -402,10 +402,8 @@ export default function ProfilePage() {
           <div className="max-w-2xl mx-auto space-y-5">
 
             {/* Hero */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-slate-50/60 to-green-50/40 border border-slate-200 p-5 lg:p-6 shadow-sm">
-              <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-green-200/20 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/15 blur-3xl" />
-              <div className="relative flex items-center gap-4">
+            <div className="rr-page-hero rr-fade-in">
+              <div className="flex items-center gap-4">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[22px] shadow-lg flex-shrink-0`}>
                   {user?.name?.charAt(0)?.toUpperCase() || '?'}
                 </div>
@@ -438,14 +436,11 @@ export default function ProfilePage() {
   return (
     <Layout>
       <div className="desktop-expand w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28">
-        <div className="max-w-3xl mx-auto space-y-5">
+        <div className="max-w-3xl mx-auto space-y-5 rr-fade-in">
 
           {/* ══ HERO HEADER ══════════════════════════════════════════ */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-slate-50/60 to-green-50/40 border border-slate-200 p-5 lg:p-6 shadow-sm">
-            <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-green-200/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/15 blur-3xl" />
-
-            <div className="relative flex items-start gap-4">
+          <div className="rr-page-hero">
+            <div className="flex items-start gap-4">
               <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGrad} flex items-center justify-center text-white font-black text-[22px] shadow-lg flex-shrink-0`}>
                 {user?.name?.charAt(0)?.toUpperCase() || '?'}
               </div>
@@ -464,7 +459,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Profile completeness bar */}
-            <div className="relative mt-5">
+            <div className="mt-5">
               <div className="flex items-center justify-between text-[12px] mb-2">
                 <span className="font-bold text-slate-600">Profile Completeness</span>
                 <span className={`font-black ${completeness >= 80 ? 'text-emerald-600' : completeness >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
@@ -491,7 +486,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Quick info chips */}
-            <div className="relative flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
               {[
                 { label: shopForm.gstin   || 'GSTIN missing',  icon: '📋', ok: Boolean(shopForm.gstin)   },
                 { label: shopForm.phone   || 'Phone missing',  icon: '📞', ok: Boolean(shopForm.phone)   },

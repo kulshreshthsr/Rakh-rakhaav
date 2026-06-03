@@ -577,21 +577,21 @@ export default function ReportsPage() {
               ))}
             </div>
           </div>
-          <div className="reports-hero-summary">
-            <div className="reports-hero-summary-card">
-              <span className="reports-hero-summary-label">Revenue Snapshot</span>
-              <strong className="reports-hero-summary-value">₹{fmtN(summary.totalRevenue)}</strong>
-              <span className="reports-hero-summary-note">{summary.salesCount || 0} {reportCfg.invoiceUnit} tracked</span>
+          <div className="rr-stat-strip mt-4">
+            <div className="rr-stat-tile tone-green">
+              <p className="rr-stat-tile-label">Revenue Snapshot</p>
+              <p className="rr-stat-tile-value">₹{fmtN(summary.totalRevenue)}</p>
+              <p className="rr-stat-tile-sub">{summary.salesCount || 0} {reportCfg.invoiceUnit} tracked</p>
             </div>
-            <div className="reports-hero-summary-card">
-              <span className="reports-hero-summary-label">Net Profit</span>
-              <strong className="reports-hero-summary-value is-emerald">₹{fmtN(summary.grossProfit)}</strong>
-              <span className="reports-hero-summary-note">Margin {fmt(summary.margin)}%</span>
+            <div className="rr-stat-tile tone-violet">
+              <p className="rr-stat-tile-label">Net Profit</p>
+              <p className="rr-stat-tile-value">₹{fmtN(summary.grossProfit)}</p>
+              <p className="rr-stat-tile-sub">Margin {fmt(summary.margin)}%</p>
             </div>
-            <div className="reports-hero-summary-card">
-              <span className="reports-hero-summary-label">GST Position</span>
-              <strong className="reports-hero-summary-value is-amber">₹{fmtN(summary.netGST)}</strong>
-              <span className="reports-hero-summary-note">Payable after ITC</span>
+            <div className="rr-stat-tile tone-amber">
+              <p className="rr-stat-tile-label">GST Position</p>
+              <p className="rr-stat-tile-value">₹{fmtN(summary.netGST)}</p>
+              <p className="rr-stat-tile-sub">Payable after ITC</p>
             </div>
           </div>
         </div>

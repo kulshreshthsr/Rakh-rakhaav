@@ -41,19 +41,19 @@ function NotifCard({ notif, onRead, onDismiss }) {
   const pm   = PRIORITY_META[notif.priority] || PRIORITY_META.low;
   const pc   = PRIORITY_CARD[notif.priority] || PRIORITY_CARD.low;
   const icon = TYPE_ICONS[notif.type] || TYPE_ICONS.default;
+  const accentMap = { critical: 'accent-rose', high: 'accent-amber', medium: 'accent-blue', low: 'accent-green' };
   return (
     <div
       onClick={() => !notif.isRead && onRead(notif._id)}
-      className={`flex gap-3 px-4 py-4 rounded-2xl border-2 transition-all ${
-        notif.isRead
-          ? 'bg-white border-slate-200'
-          : `${pc.bg} ${pc.border} cursor-pointer hover:-translate-y-0.5 hover:shadow-md`
+      className={`rr-accent-card ${accentMap[notif.priority] || 'accent-green'} transition-all flex gap-3 ${
+        notif.isRead ? 'opacity-70' : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md'
       }`}
     >
       <span className="text-[22px] flex-shrink-0 leading-none mt-0.5">{icon}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className={`text-[14px] leading-snug ${notif.isRead ? 'font-semibold text-slate-600' : 'font-black text-slate-900'}`}>
+            {!notif.isRead && <span className="status-dot is-green mr-1.5" />}
             {notif.title}
           </p>
           <button
@@ -64,7 +64,7 @@ function NotifCard({ notif, onRead, onDismiss }) {
         </div>
         <p className="mt-1 mb-2 text-[13px] text-slate-500 leading-relaxed">{notif.message}</p>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded border ${pc.badge}`}>
+          <span className={`rr-pill ${notif.priority === 'critical' ? 'rr-pill-rose' : notif.priority === 'high' ? 'rr-pill-amber' : notif.priority === 'medium' ? 'rr-pill-blue' : 'rr-pill-green'}`}>
             {pm.label}
           </span>
           {notif.relatedEntity?.name && (
@@ -151,22 +151,18 @@ export default function NotificationsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="rr-tab-bar">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-black transition-all border ${
-                filter === tab.id
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
+              className={`rr-tab ${filter === tab.id ? 'active' : ''}`}
             >
               {tab.label}
               {tab.count > 0 && (
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                  filter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>{tab.count}</span>
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">
+                  {tab.count}
+                </span>
               )}
             </button>
           ))}

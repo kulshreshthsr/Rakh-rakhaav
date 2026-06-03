@@ -137,11 +137,11 @@ export default function AppointmentsPage() {
       <div className="desktop-expand max-w-3xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* Header */}
-        <div className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-white via-purple-50/40 to-violet-50/40 p-5 shadow-lg">
+        <div className="rr-page-hero rr-fade-in">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-300 text-[10px] font-black uppercase tracking-widest text-purple-800">📅 Calendar</span>
-              <h1 className="mt-2 text-[20px] font-black text-slate-900">{dayLabel(selectedDate)}</h1>
+              <span className="rr-section-label">📅 Calendar</span>
+              <h1 className="mt-1 text-[20px] font-black text-slate-900">{dayLabel(selectedDate)}</h1>
             </div>
             <div className="flex gap-2">
               <button onClick={() => changeDate(-1)} className="w-9 h-9 rounded-xl border-2 border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:border-purple-300 transition-all">←</button>
@@ -165,14 +165,13 @@ export default function AppointmentsPage() {
 
           {/* Stylist filter */}
           {stylists.length > 0 && (
-            <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
+            <div className="rr-tab-bar mt-3">
               <button onClick={() => setSelectedStylist('')}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold border-2 transition-all ${!selectedStylist ? 'border-purple-500 bg-purple-600 text-white' : 'border-slate-200 bg-white text-slate-600'}`}
+                className={`rr-tab ${!selectedStylist ? 'active' : ''}`}
               >All Stylists</button>
               {stylists.map(s => (
                 <button key={s._id} onClick={() => setSelectedStylist(s._id === selectedStylist ? '' : s._id)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold border-2 transition-all ${selectedStylist === s._id ? 'text-white border-transparent' : 'border-slate-200 bg-white text-slate-600'}`}
-                  style={selectedStylist === s._id ? { backgroundColor: s.color, borderColor: s.color } : {}}
+                  className={`rr-tab ${selectedStylist === s._id ? 'active' : ''}`}
                 >{s.name}</button>
               ))}
             </div>

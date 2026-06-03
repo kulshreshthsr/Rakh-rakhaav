@@ -137,24 +137,16 @@ export default function ExpensesPage() {
       <PageShell>
 
         {/* ── Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
-          {/* Green decorative orbs */}
-          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-green-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-emerald-200/30 blur-3xl" />
-
-          <div className="relative">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
-              💸 Expense Management
-            </span>
-            <PageHeader title="खर्च" subtitle="रोज़ के खर्च का हिसाब" />
-            {/* Nav links */}
-            <div className="flex flex-wrap gap-2 mt-3">
-              {[{ href: '/income', label: '📈 Income' }, { href: '/bank-entries', label: '🏦 Bank' }, { href: '/reports', label: '📊 Reports' }, { href: '/gst', label: '🧾 GST' }].map((l) => (
-                <Link key={l.href} href={l.href}
-                  className="px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
-                >{l.label}</Link>
-              ))}
-            </div>
+        <div className="rr-page-hero rr-fade-in">
+          <span className="rr-section-label">💸 Expense Management</span>
+          <PageHeader title="खर्च" subtitle="रोज़ के खर्च का हिसाब" />
+          {/* Nav links */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {[{ href: '/income', label: '📈 Income' }, { href: '/bank-entries', label: '🏦 Bank' }, { href: '/reports', label: '📊 Reports' }, { href: '/gst', label: '🧾 GST' }].map((l) => (
+              <Link key={l.href} href={l.href}
+                className="px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-[12px] font-bold text-slate-600 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
+              >{l.label}</Link>
+            ))}
           </div>
         </div>
 
@@ -325,8 +317,8 @@ export default function ExpensesPage() {
               {filteredExpenses
                 .slice().sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt))
                 .map((expense) => (
-                  <div key={expense._id} className="flex items-start gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
+                  <div key={expense._id} className="rr-list-row">
+                    <div className="rr-icon-btn rr-icon-btn-md text-lg">
                       {CAT_EMOJI[expense.category] || '📦'}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -335,7 +327,7 @@ export default function ExpensesPage() {
                         <p className="text-[15px] font-black text-rose-600 flex-shrink-0">₹{fmt(expense.amount)}</p>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${MODE_COLOR[expense.payment_mode] || 'bg-slate-100 text-slate-600'}`}>
+                        <span className={`rr-pill rr-pill-slate`}>
                           {(expense.payment_mode || '').toUpperCase()}
                         </span>
                         <span className="text-[11px] text-slate-400">

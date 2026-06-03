@@ -114,16 +114,12 @@ export default function AuditPage() {
         <PageHeader title="गतिविधि लॉग" subtitle="किसने क्या किया — पिछले 90 दिन" />
 
         {/* Entity filter tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="rr-tab-bar">
           {ENTITY_TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setEntityFilter(tab.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-[12px] font-black transition-all border ${
-                entityFilter === tab.id
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
+              className={`rr-tab ${entityFilter === tab.id ? 'active' : ''}`}
             >
               {tab.label}
             </button>
@@ -159,30 +155,29 @@ export default function AuditPage() {
             subtitle="App में कोई भी बदलाव होगा तो उसका record यहाँ रहेगा।"
           />
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-50">
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
             {logs.map(log => {
               const meta = ACTION_META[log.action] || { icon: '🔹', color: '#64748b', label: log.action };
+              const actionType = log.action?.includes('CREATED') ? 'create' : log.action?.includes('DELETED') ? 'delete' : 'update';
               return (
-                <div key={log._id} className="flex items-start gap-3 px-4 py-3">
-                  <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{meta.icon}</span>
-                  <div className="flex-1 min-w-0">
+                <div key={log._id} className="rr-tx-row">
+                  <span className="text-[18px]">{meta.icon}</span>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span style={{ fontSize: 11, fontWeight: 800, color: meta.color }}>{meta.label}</span>
+                      <span className={`rr-pill ${actionType === 'create' ? 'rr-pill-green' : actionType === 'delete' ? 'rr-pill-rose' : 'rr-pill-blue'}`}>{meta.label}</span>
                       {log.entityName && (
-                        <span className="text-[11px] text-slate-500 font-semibold">· {log.entityName}</span>
+                        <span className="text-[11px] text-slate-500 font-semibold truncate">· {log.entityName}</span>
                       )}
                     </div>
                     {log.details && Object.keys(log.details).length > 0 && (
                       <DetailChips details={log.details} />
                     )}
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[10px] font-black flex items-center justify-center flex-shrink-0">
-                        {(log.username || 'S').charAt(0).toUpperCase()}
-                      </div>
                       <span className="text-[11px] text-slate-500 font-semibold">{log.username || 'System'}</span>
                       <span className="text-[10px] text-slate-400">{fmtDate(log.createdAt)}</span>
                     </div>
                   </div>
+                  <span className="text-[10px] text-slate-400 text-right whitespace-nowrap">{fmtDate(log.createdAt).split(',')[0]}</span>
                 </div>
               );
             })}

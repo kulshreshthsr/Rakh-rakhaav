@@ -989,8 +989,7 @@ export default function SaleFormModal({
           </div>
 
           {/* Sticky footer */}
-          <div className="flex-shrink-0 border-t border-slate-100 bg-white px-5 py-4">
-            <div className="flex gap-3">
+          <div className="rr-action-bar flex-shrink-0">
               {isChallanMode ? (
                 <button type="button" onClick={handleSubmit} disabled={submitting}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
@@ -1015,7 +1014,6 @@ export default function SaleFormModal({
               <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
                 className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
               >Cancel</button>
-            </div>
           </div>
         </aside>
       </div>

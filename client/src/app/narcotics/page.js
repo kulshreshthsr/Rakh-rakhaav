@@ -131,23 +131,17 @@ export default function NarcoticsPage() {
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-900 via-red-800 to-slate-900 px-5 py-5 shadow-xl">
-          <div className="pointer-events-none absolute -top-8 -right-8 w-32 h-32 rounded-full bg-red-400/15 blur-3xl" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-1 rounded-lg bg-red-500/30 text-red-200 text-[10px] font-black uppercase tracking-widest border border-red-400/30">🔒 Immutable Record</span>
-            </div>
-            <h1 className="text-[22px] font-black text-white leading-tight">Narcotics &amp; Schedule X Register</h1>
-            <p className="text-[12px] text-red-200 mt-1 font-medium">Drugs &amp; Cosmetics Act — Mandatory Dispensing Log</p>
-          </div>
+        <div className="rr-page-hero rr-fade-in">
+          <span className="rr-section-label">🔒 Immutable Record</span>
+          <h1 className="text-[22px] font-black text-slate-900 leading-tight mt-1">Narcotics &amp; Schedule X Register</h1>
+          <p className="text-[12px] text-slate-500 mt-0.5 font-medium">Drugs &amp; Cosmetics Act — Mandatory Dispensing Log</p>
         </div>
 
         {/* Legal Notice */}
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+        <div className="rr-alert-strip warn">
           <span className="text-base flex-shrink-0">⚖️</span>
-          <p className="text-[11px] text-red-700 leading-relaxed font-medium">
-            यह रजिस्टर Drugs &amp; Cosmetics Act, 1940 के Schedule X के अंतर्गत अनिवार्य है।
-            सभी entries immutable हैं — delete नहीं हो सकती, केवल void हो सकती है।
+          <p className="text-[11px] leading-relaxed">
+            Immutable legal register — entries cannot be deleted. सभी entries void-only हैं।
             Government inspection के लिए हमेशा available रहनी चाहिए।
           </p>
         </div>
@@ -277,23 +271,23 @@ export default function NarcoticsPage() {
           <div className="space-y-3">
             {entries.map((entry) => (
               <div key={entry._id}
-                className={`bg-white rounded-2xl border overflow-hidden ${entry.isVoided ? 'border-red-200 opacity-70' : 'border-slate-200'} shadow-sm`}
+                className={`rr-list-row flex-col items-start ${entry.isVoided ? 'opacity-60' : ''}`}
               >
                 {entry.isVoided && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border-b border-red-100">
-                    <span className="text-[11px] font-black text-red-700 line-through">VOIDED</span>
-                    <span className="text-[10px] text-red-600">Reason: {entry.voidReason}</span>
-                    <span className="text-[10px] text-red-400 ml-auto">{fmtDate(entry.voidedAt)}</span>
+                  <div className="flex items-center gap-2 w-full mb-2">
+                    <span className="rr-pill rr-pill-slate line-through">VOIDED</span>
+                    <span className="text-[10px] text-rose-600">{entry.voidReason}</span>
+                    <span className="text-[10px] text-slate-400 ml-auto">{fmtDate(entry.voidedAt)}</span>
                   </div>
                 )}
-                <div className={`p-4 ${entry.isVoided ? 'line-through opacity-60' : ''}`}>
+                <div className="w-full">
                   {/* Row 1: Date + Invoice + Schedule badge */}
                   <div className="flex items-start justify-between mb-2 gap-2">
                     <div>
-                      <span className="font-mono text-[12px] font-black text-green-700">{entry.invoiceNumber}</span>
+                      <span className={`font-mono text-[12px] font-black text-green-700 ${entry.isVoided ? 'line-through' : ''}`}>{entry.invoiceNumber}</span>
                       <p className="text-[10px] text-slate-400 mt-0.5">{fmtDate(entry.dispensedAt)}</p>
                     </div>
-                    <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black border ${SCHEDULE_BADGE[entry.schedule] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    <span className={`rr-pill flex-shrink-0 ${entry.schedule === 'Schedule H1' ? 'rr-pill-amber' : 'rr-pill-rose'}`}>
                       {entry.schedule}
                     </span>
                   </div>

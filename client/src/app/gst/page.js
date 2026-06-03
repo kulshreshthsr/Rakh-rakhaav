@@ -383,16 +383,10 @@ export default function GSTPage() {
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-4">
 
         {/* ── Page header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 shadow-lg hover:shadow-xl transition-shadow">
-          {/* Green decorative orbs */}
-          <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-green-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
-          
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="rr-page-hero rr-fade-in">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
-                📊 Tax & Compliance
-              </span>
+              <span className="rr-section-label">📊 Tax & Compliance</span>
               <PageHeader title="GST" subtitle="Tax filing और ITC हिसाब" />
               {!isOnline
                 ? <p className="mt-2 text-[11px] font-semibold text-amber-700">📶 Offline — cached data{cacheLabel ? ` · ${cacheLabel}` : ''}</p>
@@ -460,10 +454,10 @@ export default function GSTPage() {
                 </div>
 
                 {/* Big net payable */}
-                <p className="text-[12px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                <p className="rr-section-label mb-1">
                   {isPayable ? 'Net GST Payable' : 'ITC Balance / No Liability'}
                 </p>
-                <p className={`text-[38px] font-black leading-none tracking-tight mb-4 ${isPayable ? 'text-rose-700' : 'text-emerald-700'}`}>
+                <p className={`rr-big-num mb-4 ${isPayable ? 'text-rose-700' : 'text-emerald-700'}`}>
                   {fmtINR(isPayable ? payableTotal : excessCreditTotal)}
                 </p>
 

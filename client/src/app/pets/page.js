@@ -173,21 +173,20 @@ export default function PetsPage() {
               const dueVacc = nextVaccDue(pet.vaccinations);
               const age = calcAge(pet.dateOfBirth);
               return (
-                <div key={pet._id} className="bg-white rounded-2xl border-2 border-slate-100 shadow-sm overflow-hidden">
-                  <div className="px-4 py-4">
+                <div key={pet._id} className="rr-accent-card accent-violet overflow-hidden">
+                  <div>
                     {/* Pet header */}
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-3xl flex-shrink-0">{SPECIES_EMOJI[pet.species] || '🐾'}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[16px] font-black text-slate-900 leading-tight">{pet.petName}
-                          {pet.breed ? <span className="text-[12px] font-semibold text-slate-500 ml-1.5">({pet.breed})</span> : null}
-                        </p>
-                        <p className="text-[12px] text-slate-500 font-medium">{pet.species} {pet.gender && pet.gender !== 'Unknown' ? `• ${pet.gender}` : ''}</p>
+                        <p className="text-[16px] font-black text-slate-900 leading-tight">{pet.petName}</p>
+                        <p className="rr-section-label mt-0.5">{pet.breed || pet.species} {pet.gender && pet.gender !== 'Unknown' ? `· ${pet.gender}` : ''}</p>
                       </div>
                     </div>
 
                     {/* Owner info */}
-                    <p className="text-[12px] text-slate-700 font-bold mb-1">Owner: {pet.ownerName} • {pet.ownerPhone}</p>
+                    <p className="text-[13px] font-black text-slate-900 mb-0.5">{pet.ownerName}</p>
+                    <p className="text-[12px] text-slate-500 mb-1">{pet.ownerPhone}</p>
                     {(age || pet.weight) && (
                       <p className="text-[12px] text-slate-500 font-medium mb-2">
                         {age && `Age: ${age}`}{age && pet.weight ? '  •  ' : ''}{pet.weight ? `Weight: ${pet.weight}kg` : ''}

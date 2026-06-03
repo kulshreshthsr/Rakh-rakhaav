@@ -266,26 +266,24 @@ export default function BankEntriesPage() {
               {filteredEntries.slice().sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)).map((entry) => {
                 const isInflow = INFLOW_TYPES.includes(entry.entry_type);
                 return (
-                  <div key={entry._id} className="flex items-start gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors">
-                    {/* Badge */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[16px] font-black flex-shrink-0 mt-0.5 ${isInflow ? 'bg-emerald-100' : 'bg-blue-100'}`}>
+                  <div key={entry._id} className="rr-tx-row">
+                    <div className={`rr-icon-btn rr-icon-btn-md text-[16px] ${isInflow ? 'bg-emerald-100 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
                       {TYPE_EMOJI[entry.entry_type] || (isInflow ? '⬇️' : '⬆️')}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-[13px] font-bold text-slate-900">{TYPE_LABEL[entry.entry_type] || entry.entry_type}</p>
-                        <p className={`text-[15px] font-black flex-shrink-0 ${isInflow ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {isInflow ? '+' : '-'}₹{fmt(entry.amount)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isInflow ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
-                          {isInflow ? 'Inflow' : 'Outflow'}
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}
-                          {entry.reference_id ? ` · ${entry.reference_id}` : ' · manual'}
-                        </span>
+                        <div>
+                          <p className="text-[13px] font-bold text-slate-900">{TYPE_LABEL[entry.entry_type] || entry.entry_type}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`rr-pill ${isInflow ? 'rr-pill-green' : 'rr-pill-blue'}`}>
+                              {isInflow ? 'Inflow' : 'Outflow'}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}
+                              {entry.reference_id ? ` · ${entry.reference_id}` : ''}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                       {entry.note && <p className="text-[11px] text-slate-400 mt-1 truncate">{entry.note}</p>}
                       <div className="flex gap-2 mt-2">
@@ -297,6 +295,9 @@ export default function BankEntriesPage() {
                         >{deletingId === entry._id ? 'Deleting...' : '🗑️ Delete'}</button>
                       </div>
                     </div>
+                    <p className={`text-[15px] font-black flex-shrink-0 text-right ${isInflow ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {isInflow ? '+' : '-'}₹{fmt(entry.amount)}
+                    </p>
                   </div>
                 );
               })}

@@ -123,14 +123,20 @@ export default function CustomersDirectoryPage() {
             onAction={() => router.push('/sales')}
           />
         ) : (
-          <div className="card customer-list-card grid gap-2.5">
+          <div className="card customer-list-card overflow-hidden p-0">
             {filteredCustomers.map((customer) => (
-              <div key={customer.key} className="customer-row-card flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                <div>
+              <div key={customer.key} className="rr-list-row">
+                <div className="rr-avatar rr-avatar-sm bg-gradient-to-br from-green-600 to-emerald-700">
+                  {customer.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
                   <div className="font-bold text-slate-900">{customer.name}</div>
                   <div className="text-[12px] text-slate-500">+91 {customer.phone}</div>
                 </div>
-                <div className="flex gap-2">
+                {customer.udhaarBalance > 0 && (
+                  <span className="rr-pill rr-pill-rose flex-shrink-0">₹{customer.udhaarBalance}</span>
+                )}
+                <div className="flex gap-2 flex-shrink-0">
                   <a href={`tel:+91${customer.phone}`} className="btn-ghost">Call Now</a>
                   <a href={`https://wa.me/91${customer.phone}`} className="btn-ghost" target="_blank" rel="noreferrer">WhatsApp</a>
                 </div>

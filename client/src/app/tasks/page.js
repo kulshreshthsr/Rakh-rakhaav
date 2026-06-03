@@ -62,24 +62,27 @@ function TaskCard({ task, onUpdate }) {
   const isCancelled = task.status === 'cancelled';
 
   return (
-    <div className={`rounded-2xl border-2 p-4 transition-all ${isDone ? 'bg-slate-50 border-slate-200' : `${pc.bg} ${pc.border}`} ${isCancelled ? 'opacity-60' : ''}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className={`text-[14px] font-black text-slate-900 leading-snug ${isDone ? 'line-through text-slate-400' : ''}`}>
-            {task.title}
-          </p>
-          {task.description && (
-            <p className="mt-1 text-[12px] text-slate-500 leading-relaxed">{task.description}</p>
-          )}
+    <div className={`rr-list-row flex-col items-start transition-all ${isCancelled ? 'opacity-60' : ''}`}>
+      <div className="flex items-start justify-between gap-3 w-full">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${isDone ? 'bg-green-500 border-green-500' : 'border-slate-300 bg-white'}`} />
+          <div className="min-w-0">
+            <p className={`text-[14px] font-black text-slate-900 leading-snug ${isDone ? 'line-through text-slate-400' : ''}`}>
+              {task.title}
+            </p>
+            {task.description && (
+              <p className="mt-1 text-[12px] text-slate-500 leading-relaxed">{task.description}</p>
+            )}
+          </div>
         </div>
-        <span className={`flex-shrink-0 text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border ${sc.badge}`}>
-          {sm.label}
+        <span className={`flex-shrink-0 rr-pill ${task.priority === 'critical' ? 'rr-pill-rose' : task.priority === 'high' ? 'rr-pill-amber' : task.priority === 'medium' ? 'rr-pill-blue' : 'rr-pill-green'}`}>
+          {PRIORITY_META[task.priority]?.label || 'Low'}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
-        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded border ${pc.badge}`}>
-          {PRIORITY_META[task.priority]?.label || 'Low'}
+      <div className="flex items-center gap-2 mt-2 flex-wrap pl-7">
+        <span className={`rr-pill ${task.status === 'completed' ? 'rr-pill-green' : task.status === 'in_progress' ? 'rr-pill-blue' : task.status === 'cancelled' ? 'rr-pill-slate' : 'rr-pill-amber'}`}>
+          {sm.label}
         </span>
         <span className="text-[11px] text-slate-400 font-semibold">
           → {ROLE_LABELS[task.assignedTo] || task.assignedTo}
@@ -247,16 +250,12 @@ export default function TasksPage() {
         )}
 
         {/* Status filter tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="rr-tab-bar">
           {STATUS_TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-[12px] font-black transition-all border ${
-                statusFilter === tab.id
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
+              className={`rr-tab ${statusFilter === tab.id ? 'active' : ''}`}
             >
               {tab.label}
             </button>

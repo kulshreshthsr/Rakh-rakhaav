@@ -201,22 +201,29 @@ export default function ContractorsPage() {
                 : 'bg-slate-100 border-slate-200 text-slate-600';
 
               return (
-                <div key={c._id} className={`rounded-2xl border-2 bg-white overflow-hidden shadow-sm ${pct > 80 ? 'border-amber-200' : 'border-slate-200'}`}>
-                  <div className="px-4 py-4 space-y-3">
-                    {/* Top row */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[16px] font-black text-slate-900 leading-tight">{c.name}</p>
-                        {c.phone && <p className="text-[12px] text-slate-500 mt-0.5">📞 {c.phone}</p>}
-                        {c.gst_no && <p className="text-[11px] text-slate-400 font-mono">GST: {c.gst_no}</p>}
-                      </div>
-                      <div className={`flex-shrink-0 px-3 py-1.5 rounded-xl border text-[12px] font-black ${creditBadge}`}>
-                        {c.contractor_discount > 0 ? `${c.contractor_discount}% off` : 'No discount'}
-                      </div>
+                <div key={c._id} className={`rr-accent-card ${pct > 80 ? 'accent-amber' : 'accent-green'} space-y-3`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[16px] font-black text-slate-900 leading-tight">{c.name}</p>
+                      {c.phone && <p className="text-[12px] text-slate-500 mt-0.5">📞 {c.phone}</p>}
+                      {c.gst_no && <p className="text-[11px] text-slate-400 font-mono">GST: {c.gst_no}</p>}
                     </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-[16px] font-black text-amber-600">₹{(c.current_outstanding || 0).toLocaleString('en-IN', {maximumFractionDigits:0})}</p>
+                      <p className="rr-section-label">outstanding</p>
+                    </div>
+                  </div>
 
-                    {/* Credit bar */}
-                    <CreditBar outstanding={c.current_outstanding} limit={c.credit_limit} />
+                    {/* Credit utilisation bar */}
+                    {c.credit_limit > 0 && (
+                      <div>
+                        <div className="mt-1.5 h-1 w-full rounded-full bg-slate-100">
+                          <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all"
+                            style={{ width: `${Math.min(100, Math.round((c.current_outstanding / c.credit_limit) * 100))}%` }} />
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">₹{(c.current_outstanding||0).toLocaleString('en-IN',{maximumFractionDigits:0})} / ₹{c.credit_limit.toLocaleString('en-IN',{maximumFractionDigits:0})} credit used</p>
+                      </div>
+                    )}
 
                     {/* Sites */}
                     {Array.isArray(c.site_names) && c.site_names.length > 0 && (
@@ -238,7 +245,6 @@ export default function ContractorsPage() {
                         className="h-9 px-3 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-600 hover:border-slate-400 transition-colors"
                       >Edit</button>
                     </div>
-                  </div>
                 </div>
               );
             })}

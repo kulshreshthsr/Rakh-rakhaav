@@ -97,11 +97,11 @@ export default function MembershipsPage() {
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-5">
 
         {/* Header */}
-        <div className="rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-white via-teal-50/40 to-cyan-50/40 p-5 shadow-lg">
+        <div className="rr-page-hero rr-fade-in">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-300 text-[10px] font-black uppercase tracking-widest text-teal-800">💳 Memberships</span>
-              <h1 className="mt-2 text-[22px] font-black text-slate-900">Packages & Memberships</h1>
+              <span className="rr-section-label">💳 Memberships</span>
+              <h1 className="mt-1 text-[22px] font-black text-slate-900">Packages & Memberships</h1>
               <p className="text-[12px] text-slate-500 mt-0.5">{filtered.length} {statusFilter} packages</p>
             </div>
             <button onClick={() => { setForm(emptyForm()); setShowSellModal(true); }}
@@ -115,10 +115,10 @@ export default function MembershipsPage() {
         <div className="flex flex-col sm:flex-row gap-3">
           <input className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-white text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-teal-500"
             placeholder="Search client name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
-          <div className="flex gap-2">
+          <div className="rr-tab-bar">
             {['active', 'all', 'completed'].map(f => (
               <button key={f} onClick={() => setStatusFilter(f)}
-                className={`px-3 py-2 rounded-xl text-[11px] font-black border-2 transition-all ${statusFilter === f ? 'border-teal-500 bg-teal-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-teal-300'}`}
+                className={`rr-tab ${statusFilter === f ? 'active' : ''}`}
               >{f.charAt(0).toUpperCase() + f.slice(1)}</button>
             ))}
           </div>
@@ -142,7 +142,7 @@ export default function MembershipsPage() {
               const pct = Math.round((m.usedSessions / m.totalSessions) * 100);
               const expired = m.validUntil && new Date() > new Date(m.validUntil);
               return (
-                <div key={m._id} className="bg-white rounded-2xl border-2 border-slate-200 p-4 space-y-3 hover:border-teal-200 hover:shadow-md transition-all">
+                <div key={m._id} className={`rr-accent-card ${m.isActive && !expired ? 'accent-violet' : 'accent-slate'} space-y-3 hover:shadow-md transition-all`}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[15px] font-black text-slate-900">{m.clientName}</p>
@@ -150,12 +150,12 @@ export default function MembershipsPage() {
                     </div>
                     {!m.isActive ? (
                       remaining <= 0
-                        ? <span className="flex-shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">✅ Complete</span>
+                        ? <span className="rr-pill rr-pill-green flex-shrink-0">✅ Complete</span>
                         : expired
-                          ? <span className="flex-shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">⏰ Expired</span>
+                          ? <span className="rr-pill rr-pill-rose flex-shrink-0">⏰ Expired</span>
                           : null
                     ) : (
-                      <span className="flex-shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full bg-teal-100 text-teal-700 border border-teal-200">Active</span>
+                      <span className="rr-pill rr-pill-violet flex-shrink-0">Active</span>
                     )}
                   </div>
 
@@ -170,8 +170,9 @@ export default function MembershipsPage() {
                       <span>{m.usedSessions}/{m.totalSessions} sessions used</span>
                       <span>{remaining} remaining</span>
                     </div>
-                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${pct}%` }} />
+                    <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
+                      <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all"
+                        style={{ width: `${pct}%` }} />
                     </div>
                   </div>
 

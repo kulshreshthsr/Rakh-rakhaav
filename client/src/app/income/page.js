@@ -21,7 +21,6 @@ const getEmptyForm = () => ({
 });
 
 const CAT_EMOJI  = { other_income: '💰', interest: '🏦', commission: '🤝', rent: '🏠', discount: '🏷️' };
-const MODE_COLOR = { cash: 'bg-amber-100 text-amber-800', upi: 'bg-green-100 text-green-800', bank: 'bg-blue-100 text-blue-800' };
 const INP = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 export default function IncomePage() {
@@ -124,20 +123,15 @@ export default function IncomePage() {
       <PageShell>
 
         {/* ── Header ── */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-emerald-50/40 to-green-50/30 border border-slate-200 p-5 shadow-sm">
-          <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-emerald-200/30 blur-3xl" />
-          <div className="relative">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold uppercase tracking-widest text-emerald-700">
-              💰 Other Income
-            </span>
-            <PageHeader title="आय" subtitle="बिक्री के अलावा अन्य आय" />
-            <div className="flex flex-wrap gap-2 mt-3">
-              {[{ href: '/expenses', label: '💸 Expenses' }, { href: '/bank-entries', label: '🏦 Bank' }, { href: '/reports', label: '📊 Reports' }].map((l) => (
-                <Link key={l.href} href={l.href}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:bg-slate-50 hover:-translate-y-px transition-all shadow-sm"
-                >{l.label}</Link>
-              ))}
-            </div>
+        <div className="rr-page-hero rr-fade-in">
+          <span className="rr-section-label">💰 Other Income</span>
+          <PageHeader title="आय" subtitle="बिक्री के अलावा अन्य आय" />
+          <div className="flex flex-wrap gap-2 mt-3">
+            {[{ href: '/expenses', label: '💸 Expenses' }, { href: '/bank-entries', label: '🏦 Bank' }, { href: '/reports', label: '📊 Reports' }].map((l) => (
+              <Link key={l.href} href={l.href}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:bg-slate-50 hover:-translate-y-px transition-all shadow-sm"
+              >{l.label}</Link>
+            ))}
           </div>
         </div>
 
@@ -279,8 +273,8 @@ export default function IncomePage() {
           ) : (
             <div className="divide-y divide-slate-50">
               {filteredEntries.slice().sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)).map((entry) => (
-                <div key={entry._id} className="flex items-start gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
+                <div key={entry._id} className="rr-list-row">
+                  <div className="rr-icon-btn rr-icon-btn-md text-lg">
                     {CAT_EMOJI[entry.category] || '💰'}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -289,8 +283,8 @@ export default function IncomePage() {
                       <p className="text-[15px] font-black text-emerald-600 flex-shrink-0">₹{fmt(entry.amount)}</p>
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-bold text-emerald-700">{entry.category}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${MODE_COLOR[entry.payment_mode] || 'bg-slate-100 text-slate-600'}`}>
+                      <span className="rr-pill rr-pill-green">{entry.category}</span>
+                      <span className="rr-pill rr-pill-slate">
                         {(entry.payment_mode || '').toUpperCase()}
                       </span>
                       <span className="text-[11px] text-slate-400">{new Date(entry.date || entry.createdAt).toLocaleDateString('en-IN')}</span>

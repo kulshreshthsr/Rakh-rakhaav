@@ -95,13 +95,11 @@ export default function TablesPage() {
       <div className="desktop-expand max-w-3xl mx-auto px-3 sm:px-4 pt-4 pb-28 space-y-5">
 
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/40 p-5 shadow-lg">
+        <div className="rr-page-hero rr-fade-in">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-300 text-[10px] font-black uppercase tracking-widest text-orange-800">
-                🗺️ Table Status
-              </span>
-              <h1 className="mt-2 text-[22px] font-black text-slate-900">Floor View</h1>
+              <span className="rr-section-label">🗺️ Table Status</span>
+              <h1 className="mt-1 text-[22px] font-black text-slate-900">Floor View</h1>
               <p className="text-[12px] text-slate-500 mt-0.5">Live — updates every 60 seconds</p>
               {asOf && <p className="text-[10px] text-slate-400 mt-0.5">Updated: {new Date(asOf).toLocaleTimeString('en-IN')}</p>}
             </div>
@@ -115,15 +113,15 @@ export default function TablesPage() {
             </div>
           </div>
 
-          {/* Summary bar */}
-          <div className="mt-4 flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-200">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-[12px] font-black text-red-800">{occupiedTables.length} Occupied</span>
+          {/* Summary strip */}
+          <div className="rr-stat-strip mt-4">
+            <div className="rr-stat-tile tone-rose">
+              <p className="rr-stat-tile-label">Occupied</p>
+              <p className="rr-stat-tile-value">{occupiedTables.length}</p>
             </div>
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-[12px] font-black text-emerald-800">{freeCount} Free</span>
+            <div className="rr-stat-tile tone-green">
+              <p className="rr-stat-tile-label">Free</p>
+              <p className="rr-stat-tile-value">{freeCount}</p>
             </div>
           </div>
         </div>
@@ -158,11 +156,11 @@ export default function TablesPage() {
                 // Free table
                 return (
                   <Link key={tableNo} href={`/sales?open=1&table_no=${encodeURIComponent(tableNo)}`}
-                    className="group flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:-translate-y-0.5 hover:shadow-md transition-all text-center"
+                    className="group rr-accent-card accent-green flex flex-col items-center justify-center gap-2 text-center hover:-translate-y-0.5 hover:shadow-md transition-all"
                   >
                     <span className="text-2xl">🪑</span>
                     <p className="text-[13px] font-black text-emerald-900">{tableNo}</p>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Free</span>
+                    <span className="rr-pill rr-pill-green">Free</span>
                     <p className="text-[9px] text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">Seat Guests →</p>
                   </Link>
                 );
@@ -170,7 +168,7 @@ export default function TablesPage() {
               // Occupied table
               const mins = minutesSince(occ.occupiedSince);
               return (
-                <div key={tableNo} className={`flex flex-col gap-1.5 p-3 rounded-2xl border-2 ${urgencyClass(mins)} transition-all`}>
+                <div key={tableNo} className={`rr-accent-card ${mins > 60 ? 'accent-rose' : 'accent-amber'} flex flex-col gap-1.5 transition-all`}>
                   <div className="flex items-center justify-between">
                     <p className="text-[13px] font-black text-slate-900">{tableNo}</p>
                     <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${urgencyBadgeClass(mins)}`}>

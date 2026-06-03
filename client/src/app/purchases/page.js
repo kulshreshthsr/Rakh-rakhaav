@@ -226,20 +226,14 @@ export default function PurchasesPage() {
   return (
     <Layout>
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
-        <div className="relative overflow-hidden mb-5 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-white via-green-50/40 to-emerald-50/40 p-6 shadow-lg hover:shadow-xl transition-shadow">
-          {/* Green decorative orbs */}
-          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-green-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
-          
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="rr-page-hero rr-fade-in mb-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
-                📦 खरीद • Purchase
-              </span>
-              <h1 className="mt-3 text-[26px] font-black text-slate-900">
+              <span className="rr-section-label">📦 खरीद • Purchase</span>
+              <h1 className="mt-1 text-[26px] font-black text-slate-900">
                 Purchases / खरीदिए
               </h1>
-              <p className="mt-2 text-[14px] text-slate-600 font-medium">
+              <p className="mt-1 text-[14px] text-slate-600 font-medium">
                 Supplier bills, ITC, and payable balance
               </p>
             </div>
@@ -275,33 +269,27 @@ export default function PurchasesPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3 mb-5">
-          {/* Spend card — net after returns */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 border-2 border-amber-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
-            <div className="absolute top-2 right-2 text-3xl opacity-10">💸</div>
-            <div className="text-[24px] font-black text-amber-800">₹{fmt(totalSpendDisplay)}</div>
-            <div className="text-[11px] font-bold text-slate-600 uppercase">Net Spend</div>
+        <div className="rr-stat-strip mb-5">
+          <div className="rr-stat-tile tone-amber">
+            <p className="rr-stat-tile-label">Net Spend</p>
+            <p className="rr-stat-tile-value">₹{fmt(totalSpendDisplay)}</p>
             {Number(summary.totalReturnedAmount || 0) > 0 && (
-              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -₹{fmt(Number(summary.totalReturnedAmount || 0))} returned</div>
+              <p className="rr-stat-tile-sub text-rose-500">↩ -₹{fmt(Number(summary.totalReturnedAmount || 0))}</p>
             )}
           </div>
-          {/* ITC card — net after returns */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-sky-100 border-2 border-blue-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
-            <div className="absolute top-2 right-2 text-3xl opacity-10">📊</div>
-            <div className="text-[24px] font-black text-blue-800">₹{fmt(totalItcDisplay)}</div>
-            <div className="text-[11px] font-bold text-slate-600 uppercase">Net ITC</div>
+          <div className="rr-stat-tile tone-blue">
+            <p className="rr-stat-tile-label">Net ITC</p>
+            <p className="rr-stat-tile-value">₹{fmt(totalItcDisplay)}</p>
             {Number(summary.totalReturnedGST || 0) > 0 && (
-              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -{fmt(Number(summary.totalReturnedGST || 0))} adj.</div>
+              <p className="rr-stat-tile-sub text-rose-500">↩ -{fmt(Number(summary.totalReturnedGST || 0))} adj.</p>
             )}
           </div>
-          {/* Due card */}
-          <div className={`relative overflow-hidden bg-gradient-to-br ${totalDueDisplay > 0 ? 'from-rose-50 to-red-100 border-rose-200' : 'from-emerald-50 to-green-100 border-emerald-200'} border-2 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all`}>
-            <div className="absolute top-2 right-2 text-3xl opacity-10">{totalDueDisplay > 0 ? '⚠️' : '✅'}</div>
-            <div className={`text-[24px] font-black ${totalDueDisplay > 0 ? 'text-rose-800' : 'text-emerald-800'}`}>₹{fmt(totalDueDisplay)}</div>
-            <div className="text-[11px] font-bold text-slate-600 uppercase">Due</div>
+          <div className={`rr-stat-tile ${totalDueDisplay > 0 ? 'tone-rose' : 'tone-green'}`}>
+            <p className="rr-stat-tile-label">Due</p>
+            <p className="rr-stat-tile-value">₹{fmt(totalDueDisplay)}</p>
             {totalDueDisplay > 0 && (
-              <button type="button" onClick={focusPendingPurchase} className="mt-2 text-[11px] font-black text-green-700 hover:text-green-800">
-                Pay Now
+              <button type="button" onClick={focusPendingPurchase} className="rr-stat-tile-sub text-green-700 font-black">
+                Pay Now →
               </button>
             )}
           </div>

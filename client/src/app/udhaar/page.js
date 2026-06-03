@@ -436,21 +436,21 @@ export default function UdhaarPage() {
       <div className="desktop-expand w-full px-4 sm:px-6 lg:px-8 pt-6 pb-28 space-y-5">
 
         {/* ══ HERO HEADER ════════════════════════════════════════════ */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-green-50/40 to-emerald-50/30 border-2 border-green-200 p-6 lg:p-7 shadow-lg hover:shadow-xl transition-shadow">
-          {/* Green decorative orbs */}
-          <div className="pointer-events-none absolute -top-12 -right-10 w-48 h-48 rounded-full bg-green-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
-          
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="rr-page-hero rr-fade-in">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
-                💸 Credit Ledger
-              </span>
+              <span className="rr-section-label">💸 Credit Ledger</span>
               <PageHeader title="उधार" subtitle="ग्राहक और supplier का हिसाब" />
+              <div className="mt-2">
+                <span className="rr-big-num text-rose-600">
+                  <span className="rr-currency-sym text-rose-400">₹</span>{(totalCustomerUdhaar + totalSupplierUdhaar).toLocaleString('en-IN', {maximumFractionDigits:0})}
+                </span>
+                <span className="ml-2 text-[12px] text-slate-500">कुल बाकी</span>
+              </div>
               {!isOnline
-                ? <p className="mt-2 text-[11px] font-semibold text-amber-700">📶 Offline snapshot{cacheLabel ? ` · ${cacheLabel}` : ''}</p>
+                ? <p className="mt-1 text-[11px] font-semibold text-amber-700">📶 Offline snapshot{cacheLabel ? ` · ${cacheLabel}` : ''}</p>
                 : cacheLoaded && cacheLabel
-                  ? <p className="mt-2 text-[11px] text-slate-400">Last synced {cacheLabel}</p>
+                  ? <p className="mt-1 text-[11px] text-slate-400">Last synced {cacheLabel}</p>
                   : null
               }
             </div>
@@ -638,19 +638,19 @@ export default function UdhaarPage() {
                         <button
                           type="button"
                           onClick={() => openLedger(item)}
-                          className={`w-full flex items-center gap-3.5 px-4 py-3.5 text-left transition-all hover:bg-slate-50 ${isSelected ? 'bg-rose-50/60' : ''}`}
+                          className={`rr-list-row w-full text-left ${isSelected ? 'bg-rose-50/60' : ''}`}
                         >
-                          <Avatar name={item.name} />
+                          <div className={`rr-avatar rr-avatar-md bg-gradient-to-br ${isCustomer ? 'from-green-600 to-emerald-700' : 'from-amber-500 to-orange-600'}`}>
+                            {initials(item.name)}
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[14px] font-black text-slate-900 truncate">{item.name}</span>
                               {isPending && (
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                  isCustomer ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
-                                }`}>बाकी</span>
+                                <span className={`rr-pill ${isCustomer ? 'rr-pill-rose' : 'rr-pill-amber'}`}>बाकी</span>
                               )}
                               {!isPending && (
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-black text-emerald-600">✓ Clear</span>
+                                <span className="rr-pill rr-pill-green">✓ Clear</span>
                               )}
                             </div>
                             {item.phone && <div className="text-[11px] text-slate-400 mt-0.5">📞 {item.phone}</div>}
@@ -674,13 +674,13 @@ export default function UdhaarPage() {
                                 title="WhatsApp reminder भेजें"
                               >📲</button>
                             )}
-                            <div className="text-right">
-                              <div className={`text-[18px] font-black leading-none ${isPending ? (isCustomer ? 'text-rose-600' : 'text-amber-600') : 'text-emerald-600'}`}>
+                            <div className="text-right flex-shrink-0">
+                              <p className={`text-[17px] font-black tracking-tight ${isPending ? (isCustomer ? 'text-rose-600' : 'text-amber-600') : 'text-emerald-600'}`}>
                                 {fmtShort(item.totalUdhaar)}
-                              </div>
-                              <div className="text-[10px] text-slate-400 mt-0.5">
-                                {isPending ? (isCustomer ? 'collect करना है' : 'देना है') : 'Settled'}
-                              </div>
+                              </p>
+                              <p className="rr-section-label mt-0.5">
+                                {isPending ? (isCustomer ? 'बाकी' : 'देना है') : 'Settled'}
+                              </p>
                             </div>
                             <span className={`text-slate-300 transition-transform duration-200 ${isSelected ? 'rotate-90' : ''}`}>›</span>
                           </div>
@@ -898,16 +898,19 @@ export default function UdhaarPage() {
                         key={c._id}
                         type="button"
                         onClick={() => { switchTab('customers'); openLedger(c); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                        className="rr-list-row w-full text-left"
                       >
-                        <Avatar name={c.name} size="sm" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-bold text-slate-900 truncate">{c.name}</div>
-                          {c.phone && <div className="text-[10px] text-slate-400">{c.phone}</div>}
+                        <div className="rr-avatar rr-avatar-sm bg-gradient-to-br from-green-600 to-emerald-700">
+                          {initials(c.name)}
                         </div>
-                        <span className="text-[13px] font-black text-rose-600 flex-shrink-0">
-                          {fmtShort(c.totalUdhaar)}
-                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-black text-slate-900 truncate">{c.name}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{c.phone || 'No phone'}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[17px] font-black text-rose-600 tracking-tight">₹{fmt(c.totalUdhaar)}</p>
+                          <p className="rr-section-label mt-0.5">बाकी</p>
+                        </div>
                       </button>
                     ))
                   }

@@ -1766,6 +1766,232 @@
   .fast-summary-value { @apply text-[22px] font-black leading-[1.1]; }
   .fast-summary-side { @apply flex flex-col items-end gap-1 text-[12px] font-bold; }
   .fast-billing-actions { @apply sticky bottom-0 flex flex-wrap gap-2.5 bg-white pt-2; }
+
+  /* ── Page section headers ── */
+  .rr-section-head {
+    @apply flex items-center justify-between gap-3 mb-3;
+  }
+  .rr-section-label {
+    @apply text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-400;
+  }
+  .rr-section-link {
+    @apply text-[11px] font-bold text-green-600 hover:text-green-800 transition-colors;
+  }
+
+  /* ── Stat strip — horizontal scrolling KPI row ── */
+  .rr-stat-strip {
+    @apply flex gap-3 overflow-x-auto pb-1 -mx-4 px-4;
+    scrollbar-width: none;
+  }
+  .rr-stat-strip::-webkit-scrollbar { display: none; }
+  .rr-stat-tile {
+    @apply flex-shrink-0 rounded-[20px] border border-slate-200/80 bg-white px-4 py-3.5 min-w-[140px] shadow-sm;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .rr-stat-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15,23,42,0.09); }
+  .rr-stat-tile-label { @apply text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400; }
+  .rr-stat-tile-value { @apply text-[24px] font-black tracking-[-0.05em] text-slate-900 mt-1 leading-none; }
+  .rr-stat-tile-sub   { @apply text-[11px] text-slate-500 mt-1 leading-tight; }
+  .rr-stat-tile.tone-green  { @apply border-emerald-200/80 bg-gradient-to-br from-white to-emerald-50/60; }
+  .rr-stat-tile.tone-amber  { @apply border-amber-200/80  bg-gradient-to-br from-white to-amber-50/60;  }
+  .rr-stat-tile.tone-rose   { @apply border-rose-200/80   bg-gradient-to-br from-white to-rose-50/60;   }
+  .rr-stat-tile.tone-blue   { @apply border-blue-200/80   bg-gradient-to-br from-white to-blue-50/60;   }
+  .rr-stat-tile.tone-violet { @apply border-violet-200/80 bg-gradient-to-br from-white to-violet-50/60; }
+  .rr-stat-tile .rr-stat-tile-value.tone-green  { @apply text-emerald-600; }
+  .rr-stat-tile .rr-stat-tile-value.tone-amber  { @apply text-amber-600;  }
+  .rr-stat-tile .rr-stat-tile-value.tone-rose   { @apply text-rose-600;   }
+  .rr-stat-tile .rr-stat-tile-value.tone-blue   { @apply text-blue-700;   }
+  .rr-stat-tile .rr-stat-tile-value.tone-violet { @apply text-violet-700; }
+
+  /* ── List rows — uniform card list item ── */
+  .rr-list-row {
+    @apply flex items-center gap-3.5 px-4 py-3.5 bg-white border-b border-slate-100 last:border-0 transition-colors duration-150;
+  }
+  .rr-list-row:hover { @apply bg-slate-50/80; }
+  .rr-list-row:active { @apply bg-green-50/60; }
+
+  /* ── Page hero — replaces plain white header cards ── */
+  .rr-page-hero {
+    @apply relative overflow-hidden rounded-[22px] border border-slate-200/70 px-5 py-5;
+    background: linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(240,253,244,0.96) 60%, rgba(236,253,245,0.94) 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 24px -6px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+  }
+  .rr-page-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg, #065f46, #15803d, #10b981, #34d399);
+    border-radius: 22px 22px 0 0;
+  }
+
+  /* ── Number spotlight — big money number ── */
+  .rr-big-num {
+    @apply text-[32px] font-black tracking-[-0.06em] leading-none;
+  }
+  .rr-big-num .rr-currency-sym {
+    @apply text-[18px] font-black align-top mt-1 inline-block;
+  }
+
+  /* ── Avatar with coloured gradient initials ── */
+  .rr-avatar {
+    @apply flex-shrink-0 flex items-center justify-center rounded-[14px] font-black text-white;
+  }
+  .rr-avatar-sm { @apply w-9  h-9  text-[12px] rounded-[10px]; }
+  .rr-avatar-md { @apply w-11 h-11 text-[14px] rounded-[14px]; }
+  .rr-avatar-lg { @apply w-14 h-14 text-[18px] rounded-[18px]; }
+
+  /* ── Filter/tab pill bar ── */
+  .rr-tab-bar {
+    @apply flex gap-1.5 overflow-x-auto pb-0.5;
+    scrollbar-width: none;
+  }
+  .rr-tab-bar::-webkit-scrollbar { display: none; }
+  .rr-tab {
+    @apply flex-shrink-0 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[12px] font-bold text-slate-600 whitespace-nowrap transition-all duration-150;
+  }
+  .rr-tab:hover { @apply border-slate-300 bg-slate-50; }
+  .rr-tab.active {
+    @apply border-green-500/30 bg-green-50 text-green-700;
+    box-shadow: 0 2px 8px rgba(21,128,61,0.12);
+  }
+
+  /* ── Summary footer bar (used inside cards) ── */
+  .rr-summary-bar {
+    @apply mt-auto flex items-center justify-between gap-3 rounded-[14px] bg-slate-50/80 px-4 py-3 border border-slate-200/60;
+  }
+
+  /* ── Inline metric pair ── */
+  .rr-metric-pair { @apply flex items-baseline gap-1.5; }
+  .rr-metric-pair-label { @apply text-[11px] font-bold text-slate-400; }
+  .rr-metric-pair-value { @apply text-[15px] font-black text-slate-900 tracking-tight; }
+
+  /* ── Status badge (pill shape) ── */
+  .rr-pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap;
+  }
+  .rr-pill-green  { @apply bg-emerald-100 text-emerald-800 border border-emerald-200; }
+  .rr-pill-amber  { @apply bg-amber-100  text-amber-800  border border-amber-200;  }
+  .rr-pill-rose   { @apply bg-rose-100   text-rose-800   border border-rose-200;   }
+  .rr-pill-blue   { @apply bg-blue-100   text-blue-800   border border-blue-200;   }
+  .rr-pill-slate  { @apply bg-slate-100  text-slate-600  border border-slate-200;  }
+  .rr-pill-violet { @apply bg-violet-100 text-violet-800 border border-violet-200; }
+
+  /* ── Ghost icon button ── */
+  .rr-icon-btn {
+    @apply inline-flex items-center justify-center rounded-[10px] border border-slate-200 bg-white text-slate-500 transition-all duration-150;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+  }
+  .rr-icon-btn:hover { @apply border-slate-300 bg-slate-50 text-slate-700 -translate-y-px; }
+  .rr-icon-btn:active { transform: scale(0.94); }
+  .rr-icon-btn-sm { @apply h-8  w-8  text-[14px]; }
+  .rr-icon-btn-md { @apply h-10 w-10 text-[16px]; }
+
+  /* ── Full-width action bar (sticky bottom in modals) ── */
+  .rr-action-bar {
+    @apply sticky bottom-0 flex gap-2.5 border-t border-slate-100 bg-white/95 px-5 py-4 backdrop-blur-md;
+  }
+
+  /* ── Divider with centred label ── */
+  .rr-divider-label {
+    @apply relative my-4 flex items-center;
+  }
+  .rr-divider-label::before,
+  .rr-divider-label::after {
+    content: '';
+    @apply flex-1 border-t border-slate-200;
+  }
+  .rr-divider-label span {
+    @apply mx-3 text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em];
+  }
+
+  /* ── Empty state — friendlier ── */
+  .rr-empty {
+    @apply flex flex-col items-center gap-3 rounded-[22px] border-2 border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center;
+  }
+  .rr-empty-icon {
+    @apply flex h-16 w-16 items-center justify-center rounded-[20px] bg-gradient-to-br from-green-100 to-emerald-50 text-[28px];
+  }
+  .rr-empty-title { @apply text-[15px] font-black text-slate-700; }
+  .rr-empty-sub   { @apply text-[12px] text-slate-500 leading-relaxed; }
+
+  /* ── Page fade-in ── */
+  .rr-fade-in { animation: rrFadeIn 260ms ease both; }
+  @keyframes rrFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Card with left accent stripe ── */
+  .rr-accent-card {
+    @apply relative overflow-hidden rounded-[18px] border border-slate-200/80 bg-white p-4 shadow-sm;
+  }
+  .rr-accent-card::before {
+    content: '';
+    @apply absolute inset-y-0 left-0 w-1 rounded-l-[18px];
+  }
+  .rr-accent-card.accent-green::before  { @apply bg-emerald-500; }
+  .rr-accent-card.accent-amber::before  { @apply bg-amber-400;   }
+  .rr-accent-card.accent-rose::before   { @apply bg-rose-500;    }
+  .rr-accent-card.accent-blue::before   { @apply bg-blue-500;    }
+  .rr-accent-card.accent-violet::before { @apply bg-violet-500;  }
+  .rr-accent-card.accent-slate::before  { @apply bg-slate-300;   }
+
+  /* ── Notification / alert strip ── */
+  .rr-alert-strip {
+    @apply flex items-start gap-3 rounded-[16px] border px-4 py-3 text-[13px] font-medium;
+  }
+  .rr-alert-strip.info    { @apply border-blue-200   bg-blue-50   text-blue-800;   }
+  .rr-alert-strip.warn    { @apply border-amber-200  bg-amber-50  text-amber-800;  }
+  .rr-alert-strip.success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+  .rr-alert-strip.danger  { @apply border-rose-200   bg-rose-50   text-rose-800;   }
+
+  /* ── Desktop sidebar nav refinements ── */
+  .rr-sidebar-item {
+    @apply flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[13px] font-semibold text-slate-600 transition-all duration-150;
+  }
+  .rr-sidebar-item:hover { @apply bg-slate-100/80 text-slate-900; }
+  .rr-sidebar-item.active {
+    @apply bg-green-50 text-green-700 font-bold;
+    box-shadow: inset 3px 0 0 #15803d;
+  }
+
+  /* ── Invoice / transaction row ── */
+  .rr-tx-row {
+    @apply grid items-center gap-3 px-4 py-3.5 border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors duration-100 cursor-pointer;
+    grid-template-columns: auto 1fr auto;
+  }
+
+  /* ── Quick-action grid ── */
+  .rr-quick-grid {
+    @apply grid gap-3;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .rr-quick-tile {
+    @apply flex flex-col items-center gap-2.5 rounded-[20px] border border-slate-200/80 bg-white p-4 text-center transition-all duration-150 active:scale-95;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.05);
+  }
+  .rr-quick-tile:hover {
+    @apply border-green-300/60 -translate-y-0.5;
+    box-shadow: 0 8px 20px rgba(15,23,42,0.08), 0 4px 12px rgba(21,128,61,0.06);
+  }
+  .rr-quick-tile-icon {
+    @apply flex h-12 w-12 items-center justify-center rounded-[16px] text-[22px];
+  }
+  .rr-quick-tile-label {
+    @apply text-[12px] font-black text-slate-800 leading-tight;
+  }
+  .rr-quick-tile-sub {
+    @apply text-[10px] text-slate-500 mt-0.5;
+  }
+
+  /* ── GRN / receipt status badge ── */
+  .rr-receipt-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide;
+  }
+  .rr-receipt-badge.received { @apply bg-emerald-100 text-emerald-700; }
+  .rr-receipt-badge.ordered  { @apply bg-amber-100  text-amber-700;  }
+  .rr-receipt-badge.partial  { @apply bg-blue-100   text-blue-700;   }
 }
 
 @layer utilities {

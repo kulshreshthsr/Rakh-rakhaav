@@ -15,7 +15,7 @@ import { apiUrl } from '../../lib/api';
 import { getInvBehavior, isBatchMode, isVariantMode, isSerialMode, isRecipeMode } from '../../lib/inventoryBehavior';
 import { generateInvoiceHTML } from '../../lib/generateInvoice';
 import { printDeliveryChallan } from '../../lib/generateChallan';
-import { getWorkflowConfig, getStages, getSaleWorkflowStatus, getStageColors } from '../../lib/workflowEngine';
+import { getWorkflowConfig, getStages, getSaleWorkflowStatus } from '../../lib/workflowEngine';
 import WorkflowStatusBadge from '../../components/WorkflowStatusBadge';
 import eventBus from '../../lib/eventBus';
 import { validateGSTIN as _validateGSTINFull, getSupplyType as _getSupplyType, summariseCartGST } from '../../lib/gstValidation';
@@ -443,12 +443,8 @@ export default function SalesPage() {
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
 
         {/* ── Page header ── */}
-        <div className="relative overflow-hidden mb-5 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-white via-green-50/40 to-emerald-50/40 p-6 shadow-lg hover:shadow-xl transition-shadow">
-          {/* Green decorative orbs */}
-          <div className="pointer-events-none absolute -top-12 -right-8 w-40 h-40 rounded-full bg-green-200/40 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-emerald-200/30 blur-3xl" />
-          
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="rr-page-hero rr-fade-in mb-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-[11px] font-black uppercase tracking-widest text-green-800 shadow-sm">
                 {config.icon || '🧾'} बिक्री • {term('sales', 'Sales')}
@@ -500,16 +496,15 @@ export default function SalesPage() {
 
         {/* ── Workflow stage filter tabs (only shown when business has a workflow) ── */}
         {wfc && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-hide">
+          <div className="rr-tab-bar mb-4">
             <button
               type="button"
               onClick={() => setWfFilter('')}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-[12px] font-black border-2 transition-all ${!wfFilter ? 'border-green-500 bg-green-50 text-green-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+              className={`rr-tab ${!wfFilter ? 'active' : ''}`}
             >
               All {wfc.saleNounPlural || 'Sales'}
             </button>
             {getStages(wfc).map(stage => {
-              const colors  = getStageColors(stage);
               const isActive = wfFilter === stage.id;
               const count   = sales.filter(s => getSaleWorkflowStatus(s, wfc) === stage.id).length;
               return (
@@ -517,11 +512,11 @@ export default function SalesPage() {
                   key={stage.id}
                   type="button"
                   onClick={() => setWfFilter(isActive ? '' : stage.id)}
-                  className={`flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-black border-2 transition-all ${isActive ? `${colors.border} ${colors.bg} ${colors.text}` : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+                  className={`rr-tab ${isActive ? 'active' : ''}`}
                 >
                   {stage.icon} {stage.label}
                   {count > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isActive ? 'bg-white/70 ' + colors.text : 'bg-slate-100 text-slate-500'}`}>
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">
                       {count}
                     </span>
                   )}
@@ -561,13 +556,13 @@ export default function SalesPage() {
 
         {/* ── Restaurant: delivery platform filter tabs ── */}
         {businessType === 'restaurant' && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-hide">
+          <div className="rr-tab-bar mb-4">
             {['', 'Dine-In', 'Takeaway', 'Delivery', 'Swiggy', 'Zomato'].map((f) => {
               const labels = { '': 'All', 'Dine-In': '🍽️ Dine-In', 'Takeaway': '📦 Takeaway', 'Delivery': '🛵 Delivery', 'Swiggy': '🟠 Swiggy', 'Zomato': '🔴 Zomato' };
               const isActive = deliveryFilter === f;
               return (
                 <button key={f} type="button" onClick={() => setDeliveryFilter(f)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black border-2 transition-all ${isActive ? 'border-orange-400 bg-orange-50 text-orange-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+                  className={`rr-tab ${isActive ? 'active' : ''}`}
                 >{labels[f]}</button>
               );
             })}
