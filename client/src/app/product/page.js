@@ -7,6 +7,7 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import DynamicFormField from '../../components/DynamicFormField';
+import EmptyState from '../../components/ui/EmptyState';
 import DynamicFormSection, { flattenSectionFields, formatMetaValue, validateSections } from '../../components/DynamicFormSection';
 import { getInvBehavior, hasInventoryPanel, isBatchMode, isVariantMode, isSerialMode, isRecipeMode, getPrimaryPanelLabel } from '../../lib/inventoryBehavior';
 import PageHeader from '../../components/ui/PageHeader';
@@ -430,22 +431,21 @@ export default function ProductsPage() {
 
         {/* ── EMPTY STATE ── */}
         {!loading && filtered.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[26px]">
-              {search || filterStock !== 'all' ? '🔍' : '📦'}
+          search || filterStock !== 'all' ? (
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[26px]">🔍</div>
+              <p className="text-[14px] font-extrabold text-slate-700 mb-1">कोई सामान नहीं मिला</p>
+              <p className="text-[12px] text-slate-400">अलग keyword try करें</p>
             </div>
-            <p className="text-[14px] font-extrabold text-slate-700 mb-1">
-              {search || filterStock !== 'all' ? 'कोई सामान नहीं मिला' : 'अभी कोई सामान नहीं'}
-            </p>
-            <p className="text-[12px] text-slate-400 leading-relaxed">
-              {search || filterStock !== 'all' ? 'अलग keyword try करें' : '+ बटन दबाकर पहला product जोड़ें'}
-            </p>
-            {!search && filterStock === 'all' && (
-              <button onClick={openAdd} className="empty-action-btn mt-4">
-                + {term('addProduct', 'Add Product')}
-              </button>
-            )}
-          </div>
+          ) : (
+            <EmptyState
+              emoji="🏪"
+              title="अभी stock खाली है"
+              subtitle="अपने products और सामान यहाँ add करें। Stock, price और barcode — सब एक जगह।"
+              actionLabel={`+ ${term('addProduct', 'पहला Product जोड़ें')}`}
+              onAction={openAdd}
+            />
+          )
         )}
 
         {/* ── PRODUCT CARDS ── */}

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import EmptyState from '../../components/ui/EmptyState';
 import { useIndustry } from '../../contexts/IndustryContext';
 
 const getToken = () => localStorage.getItem('token');
@@ -159,11 +160,13 @@ export default function PetsPage() {
         {loading ? (
           <div className="text-center py-12 text-slate-400 font-bold">Loading...</div>
         ) : pets.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
-            <p className="text-4xl mb-2">🐾</p>
-            <p className="font-bold">No pet profiles yet</p>
-            <p className="text-[13px] mt-1">Add your first pet owner profile</p>
-          </div>
+          <EmptyState
+            emoji="🐾"
+            title="कोई pet profile नहीं"
+            subtitle="Pet shop के customers के pets की जानकारी यहाँ रखें।"
+            actionLabel="Pet जोड़ें"
+            onAction={() => setShowModal(true)}
+          />
         ) : (
           <div className="space-y-3">
             {pets.map(pet => {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../../lib/pageCache';
 import { apiUrl } from '../../../lib/api';
+import EmptyState from '../../../components/ui/EmptyState';
 import { useCustomerTerms } from '../../../hooks/useEntityTerms';
 
 const SALES_CACHE_KEY = 'sales-page';
@@ -114,10 +115,13 @@ export default function CustomersDirectoryPage() {
             ))}
           </div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">CU</div>
-            <div>{emptyState}</div>
-          </div>
+          <EmptyState
+            emoji="👥"
+            title="कोई customer नहीं मिला"
+            subtitle="जब आप credit sale करेंगे या customer add करेंगे, वे यहाँ दिखेंगे।"
+            actionLabel="पहली Sale बनाएं"
+            onAction={() => router.push('/sales')}
+          />
         ) : (
           <div className="card customer-list-card grid gap-2.5">
             {filteredCustomers.map((customer) => (

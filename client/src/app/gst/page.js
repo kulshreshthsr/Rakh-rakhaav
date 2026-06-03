@@ -6,6 +6,7 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { apiUrl } from '../../lib/api';
 import { fmt, fmtINR } from '../../lib/constants';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 
 /* ─── Constants & pure helpers (ALL 100% UNCHANGED) ─────────────── */
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -432,11 +433,13 @@ export default function GSTPage() {
 
         {/* ── No data ── */}
         {!loading && !summary && (
-          <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-3 text-[20px]">📄</div>
-            <p className="text-[13px] font-bold text-slate-700">इस महीने का कोई data नहीं</p>
-            <p className="text-[12px] text-slate-400 mt-1">Period बदलकर देखें</p>
-          </div>
+          <EmptyState
+            emoji="🏛️"
+            title="GST data अभी नहीं है"
+            subtitle="GST-enabled bills बनाने के बाद यहाँ GSTR-1 और GSTR-3B ready मिलेगी।"
+            actionLabel="Sale बनाएं"
+            onAction={() => router.push('/sales')}
+          />
         )}
 
         {summary && (

@@ -26,6 +26,7 @@ import SplitBillModal from './components/SplitBillModal';
 import ExchangeModal from './components/ExchangeModal';
 import SaleFormModal from './components/SaleFormModal';
 import SaleReturnModal from './components/SaleReturnModal';
+import EmptyState from '../../components/ui/EmptyState';
 import useSalesData from './hooks/useSalesData';
 import useSaleForm from './hooks/useSaleForm';
 import useIndustrySideData from './hooks/useIndustrySideData';
@@ -609,27 +610,21 @@ export default function SalesPage() {
             ))}
           </div>
         ) : filteredSales.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[26px]">🧾</div>
-            <p className="text-[14px] font-extrabold text-slate-700 mb-1">
-              {hasBillFilters
-                ? `कोई ${term('sale', 'sale')} नहीं मिली`
-                : term('noSales', `अभी कोई ${term('sale', 'sale')} नहीं है`)}
-            </p>
-            <p className="text-[12px] text-slate-400 leading-relaxed">
-              {hasBillFilters
-                ? 'Filter बदलें या search हटाएं — bills मिलेंगे'
-                : `पहला ${term('invoice', 'bill')} बनाओ और शुरू हो जाओ`}
-            </p>
-            {!hasBillFilters && (
-              <button
-                onClick={() => { resetForm(); setShowModal(true); }}
-                className="empty-action-btn"
-              >
-                + {term('newSale', 'पहला Bill बनाएं')}
-              </button>
-            )}
-          </div>
+          hasBillFilters ? (
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[26px]">🔍</div>
+              <p className="text-[14px] font-extrabold text-slate-700 mb-1">कोई {term('sale', 'sale')} नहीं मिली</p>
+              <p className="text-[12px] text-slate-400">Filter बदलें या search हटाएं — bills मिलेंगे</p>
+            </div>
+          ) : (
+            <EmptyState
+              emoji="🧾"
+              title="अभी तक कोई बिक्री नहीं"
+              subtitle={`पहला ${term('invoice', 'bill')} बनाएं और अपनी बिक्री track करना शुरू करें।`}
+              actionLabel={`+ ${term('newSale', 'नया Bill बनाएं')}`}
+              onAction={() => { resetForm(); setShowModal(true); }}
+            />
+          )
         ) : (
           <div className="flex flex-col gap-3">
             {filteredSales.map((s) => (

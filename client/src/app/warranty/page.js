@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { useRouter } from 'next/navigation';
+import EmptyState from '../../components/ui/EmptyState';
 import Link from 'next/link';
 
 const getToken = () => localStorage.getItem('token');
@@ -203,11 +204,11 @@ export default function WarrantyPage() {
             {[...Array(3)].map((_, i) => <div key={i} className="h-36 rounded-2xl bg-slate-100 animate-pulse" />)}
           </div>
         ) : claims.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 py-14 text-center">
-            <p className="text-[30px] mb-2">🛡️</p>
-            <p className="text-[15px] font-black text-slate-700">No warranty claims</p>
-            <p className="text-[12px] text-slate-400 mt-1">{statusFilter !== 'all' ? 'Try a different filter' : 'Log a claim to get started'}</p>
-          </div>
+          <EmptyState
+            emoji="🛡️"
+            title="कोई warranty claim नहीं"
+            subtitle="Products की warranty और claims यहाँ track होती हैं।"
+          />
         ) : (
           <div className="space-y-3">
             {claims.map(c => {

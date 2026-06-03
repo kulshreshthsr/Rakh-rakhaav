@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import PageShell from '../../components/ui/PageShell';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 
 /* ── Constants & helpers (UNCHANGED) ── */
 const getToken = () => localStorage.getItem('token');
@@ -253,11 +254,13 @@ export default function BankEntriesPage() {
           {loading ? (
             <div className="p-4 space-y-2.5">{[...Array(4)].map((_, i) => <div key={i} className="skeleton-row" />)}</div>
           ) : filteredEntries.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon mx-auto mb-4 text-[24px]">🏦</div>
-              <p className="text-[14px] font-extrabold text-slate-800">कोई bank entry नहीं</p>
-              <p className="text-[12px] text-slate-400 mt-1">पहली entry ऊपर के फ़ॉर्म से जोड़ें</p>
-            </div>
+            <EmptyState
+              emoji="🏦"
+              title="कोई bank entry नहीं"
+              subtitle="Bank से payment आई या गई? यहाँ record करें।"
+              actionLabel="Entry जोड़ें"
+              onAction={() => document.getElementById('bank-form-top')?.scrollIntoView({ behavior: 'smooth' })}
+            />
           ) : (
             <div className="divide-y divide-slate-50">
               {filteredEntries.slice().sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)).map((entry) => {

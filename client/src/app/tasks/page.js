@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import PageShell from '../../components/ui/PageShell';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 
 const getToken = () => localStorage.getItem('token');
 
@@ -270,11 +271,11 @@ export default function TasksPage() {
             ))}
           </div>
         ) : filteredTasks.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[24px]">{emptyIcon}</div>
-            <p className="text-[14px] font-extrabold text-slate-800">{emptyTitle}</p>
-            <p className="text-[12px] text-slate-400 mt-1">{emptySubtitle}</p>
-          </div>
+          <EmptyState
+            emoji="✅"
+            title="कोई task नहीं है"
+            subtitle="Low stock reorder और workflow tasks यहाँ automatically दिखते हैं।"
+          />
         ) : (
           <div className="space-y-2">
             {filteredTasks.map(task => (

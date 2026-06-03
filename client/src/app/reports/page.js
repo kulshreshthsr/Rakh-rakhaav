@@ -6,6 +6,7 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getReportConfig, computeInsights } from '../../lib/reportConfig';
+import EmptyState from '../../components/ui/EmptyState';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import PageHeader from '../../components/ui/PageHeader';
 import { fmtINR } from '../../lib/constants';
@@ -642,6 +643,16 @@ export default function ReportsPage() {
               <div key={i} className="skeleton" style={{ height: 110, borderRadius: 20 }} />
             ))}
           </div>
+        )}
+
+        {!loading && !summary && (
+          <EmptyState
+            emoji="📊"
+            title="अभी report के लिए data नहीं है"
+            subtitle="जैसे-जैसे आप bills बनाएंगे, यहाँ आपकी दुकान की पूरी report दिखेगी।"
+            actionLabel="पहली Sale बनाएं"
+            onAction={() => router.push('/sales')}
+          />
         )}
 
         {!loading && (

@@ -6,6 +6,7 @@ import { apiUrl } from '../../lib/api';
 import { hasPermission } from '../../lib/permissions';
 import PageShell from '../../components/ui/PageShell';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 
 const getToken = () => localStorage.getItem('token');
 
@@ -152,11 +153,11 @@ export default function AuditPage() {
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-[13px] text-red-700 font-semibold">{error}</div>
         ) : logs.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[24px]">📋</div>
-            <p className="text-[14px] font-extrabold text-slate-800">कोई गतिविधि नहीं</p>
-            <p className="text-[12px] text-slate-400 mt-1">इस filter के लिए कोई log नहीं मिला</p>
-          </div>
+          <EmptyState
+            emoji="📋"
+            title="कोई activity नहीं"
+            subtitle="App में कोई भी बदलाव होगा तो उसका record यहाँ रहेगा।"
+          />
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-50">
             {logs.map(log => {

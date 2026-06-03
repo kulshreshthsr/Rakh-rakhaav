@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import EmptyState from '../../components/ui/EmptyState';
 import { useIndustry } from '../../contexts/IndustryContext';
 
 const getToken = () => localStorage.getItem('token');
@@ -127,11 +128,13 @@ export default function MembershipsPage() {
         {loading ? (
           <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-32 rounded-2xl bg-slate-100 animate-pulse" />)}</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-5xl mb-3">💳</p>
-            <p className="font-black text-[15px] text-slate-700">No {statusFilter} memberships</p>
-            <button onClick={() => { setForm(emptyForm()); setShowSellModal(true); }} className="mt-4 px-5 py-2.5 rounded-xl bg-teal-600 text-white text-[13px] font-black hover:bg-teal-700">Sell First Package</button>
-          </div>
+          <EmptyState
+            emoji="⭐"
+            title="कोई membership नहीं"
+            subtitle="Regular customers के लिए membership plans बनाएं।"
+            actionLabel="Plan बनाएं"
+            onAction={() => { setForm(emptyForm()); setShowSellModal(true); }}
+          />
         ) : (
           <div className="space-y-3">
             {filtered.map(m => {

@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import PageShell from '../../components/ui/PageShell';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 
 /* ── Constants & helpers (UNCHANGED) ── */
 const getToken = () => localStorage.getItem('token');
@@ -312,11 +313,13 @@ export default function ExpensesPage() {
               {[...Array(4)].map((_, i) => <div key={i} className="skeleton-row" />)}
             </div>
           ) : filteredExpenses.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon mx-auto mb-4 text-[24px]">💸</div>
-              <p className="text-[14px] font-extrabold text-slate-800">कोई खर्च नहीं</p>
-              <p className="text-[12px] text-slate-400 mt-1">ऊपर दिए फ़ॉर्म से पहला खर्च जोड़ें</p>
-            </div>
+            <EmptyState
+              emoji="💸"
+              title="कोई खर्च दर्ज नहीं"
+              subtitle="दुकान का बिजली बिल, किराया, तनख्वाह — सब यहाँ track करें।"
+              actionLabel="खर्च जोड़ें"
+              onAction={() => document.getElementById('expense-form-top')?.scrollIntoView({ behavior: 'smooth' })}
+            />
           ) : (
             <div className="divide-y divide-slate-50">
               {filteredExpenses

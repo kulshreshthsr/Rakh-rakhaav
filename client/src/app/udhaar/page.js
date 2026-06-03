@@ -5,6 +5,7 @@ import Layout from '../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 
 /* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
 const getToken  = () => localStorage.getItem('token');
@@ -601,18 +602,14 @@ export default function UdhaarPage() {
                   ))}
                 </div>
               ) : processedList.length === 0 ? (
-                <div className="empty-state rounded-none border-0 bg-transparent py-14">
-                  <div className="empty-state-icon mx-auto mb-4 text-[24px]">👥</div>
-                  <p className="text-[14px] font-extrabold text-slate-700 mb-1">कोई party नहीं</p>
-                  <p className="text-[12px] text-slate-400 leading-relaxed max-w-[240px] mx-auto">
-                    नई party जोड़ें ऊपर के फ़ॉर्म से
-                  </p>
-                  {isCustomer && (
-                    <button onClick={() => router.push('/sales?open=1&payment=credit')}
-                      className="empty-action-btn" style={{ borderColor: 'rgba(244,63,94,0.2)', color: '#e11d48', background: 'linear-gradient(135deg,rgba(244,63,94,0.08),rgba(251,113,133,0.05))' }}
-                    >+ Credit Sale Record करें</button>
-                  )}
-                </div>
+                <EmptyState
+                  emoji="🤝"
+                  title="कोई उधार बाकी नहीं"
+                  subtitle="जब कोई customer उधार लेगा, उसका पूरा हिसाब यहाँ दिखेगा।"
+                  actionLabel="नई Sale बनाएं"
+                  onAction={() => router.push('/sales')}
+                  secondaryLabel="यह अच्छी बात है! 😊"
+                />
               ) : (
                 <div className="divide-y divide-slate-50">
                   {processedList.map((item) => {

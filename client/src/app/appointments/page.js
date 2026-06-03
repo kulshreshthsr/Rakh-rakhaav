@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import EmptyState from '../../components/ui/EmptyState';
 import { useIndustry } from '../../contexts/IndustryContext';
 
 const getToken = () => localStorage.getItem('token');
@@ -181,6 +182,14 @@ export default function AppointmentsPage() {
         {/* Calendar grid */}
         {loading ? (
           <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-12 rounded-xl bg-slate-100 animate-pulse" />)}</div>
+        ) : stylists.length === 0 ? (
+          <EmptyState
+            emoji="📅"
+            title="कोई appointment नहीं"
+            subtitle="Salon, clinic या service के लिए appointments यहाँ book करें।"
+            actionLabel="Appointment लें"
+            onAction={() => setShowNewModal(true)}
+          />
         ) : (
           <div className="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-md">
             {/* Column headers */}

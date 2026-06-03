@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { useNotifications } from '../../contexts/NotificationContext';
+import EmptyState from '../../components/ui/EmptyState';
 
 const getToken = () => localStorage.getItem('token');
 
@@ -173,11 +174,11 @@ export default function NotificationsPage() {
 
         {/* List */}
         {filtered.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[24px]">✅</div>
-            <p className="text-[14px] font-extrabold text-slate-800">सब ठीक है</p>
-            <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">{emptySubtitle}</p>
-          </div>
+          <EmptyState
+            emoji="🔔"
+            title="कोई notification नहीं"
+            subtitle="Stock कम होने पर, उधार बढ़ने पर — यहाँ alert आएगा।"
+          />
         ) : (
           <div className="space-y-2">
             {filtered.map(notif => (

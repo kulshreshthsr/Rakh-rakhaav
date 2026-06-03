@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '../../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../../lib/pageCache';
 import { apiUrl } from '../../../lib/api';
+import EmptyState from '../../../components/ui/EmptyState';
 import { useSupplierTerms } from '../../../hooks/useEntityTerms';
 
 const PURCHASES_CACHE_KEY = 'purchases-page';
@@ -186,10 +187,13 @@ export default function SupplierDirectoryPage() {
             ))}
           </div>
         ) : filteredSuppliers.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">SP</div>
-            <div>{emptyState}</div>
-          </div>
+          <EmptyState
+            emoji="🏭"
+            title="कोई supplier नहीं है"
+            subtitle="जिनसे माल खरीदते हैं उनकी जानकारी यहाँ save करें।"
+            actionLabel="Supplier जोड़ें"
+            onAction={() => router.push('/purchases')}
+          />
         ) : (
           <div className="supplier-page-grid grid grid-cols-[minmax(240px,1fr)_minmax(360px,2fr)] gap-[14px]">
             <div className="supplier-list-panel overflow-hidden rounded-[18px] border border-green-100 bg-green-50/30">

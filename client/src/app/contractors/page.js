@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { useRouter } from 'next/navigation';
+import EmptyState from '../../components/ui/EmptyState';
 import Link from 'next/link';
 
 const getToken = () => localStorage.getItem('token');
@@ -174,11 +175,21 @@ export default function ContractorsPage() {
             {[...Array(3)].map((_, i) => <div key={i} className="h-28 rounded-2xl bg-slate-100 animate-pulse" />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 py-12 text-center">
-            <p className="text-[28px] mb-2">👷</p>
-            <p className="text-[15px] font-black text-slate-700">{search ? 'No contractors found' : 'No contractors yet'}</p>
-            <p className="text-[12px] text-slate-400 mt-1">{!search && 'Add your first contractor to track credit accounts'}</p>
-          </div>
+          search ? (
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[26px]">🔍</div>
+              <p className="text-[14px] font-extrabold text-slate-700">कोई contractor नहीं मिला</p>
+              <p className="text-[12px] text-slate-400 mt-1">अलग keyword try करें</p>
+            </div>
+          ) : (
+            <EmptyState
+              emoji="🔨"
+              title="कोई contractor नहीं"
+              subtitle="Repair और service के लिए contractors यहाँ track करें।"
+              actionLabel="Contractor जोड़ें"
+              onAction={openAdd}
+            />
+          )
         ) : (
           <div className="space-y-3">
             {filtered.map(c => {

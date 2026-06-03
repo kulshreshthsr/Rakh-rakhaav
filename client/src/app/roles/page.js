@@ -6,6 +6,7 @@ import PermissionGuard from '../../components/PermissionGuard';
 import { apiUrl } from '../../lib/api';
 import { getRoleColor } from '../../lib/permissions';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : '');
@@ -435,11 +436,13 @@ export default function RolesPage() {
                 })}
 
                 {roles.length === 0 && (
-                  <div className="empty-state">
-                    <div className="empty-state-icon mx-auto mb-4 text-[24px]">🔐</div>
-                    <p className="text-[14px] font-extrabold text-slate-800">कोई custom भूमिका नहीं</p>
-                    <p className="text-[12px] text-slate-400 mt-1">नीचे के फ़ॉर्म से पहली भूमिका बनाएँ</p>
-                  </div>
+                  <EmptyState
+                    emoji="🛡️"
+                    title="कोई custom role नहीं"
+                    subtitle="अपनी दुकान के लिए custom roles बनाएं — cashier, manager, staff।"
+                    actionLabel="Role बनाएं"
+                    onAction={() => document.getElementById('create-role-form')?.scrollIntoView({ behavior: 'smooth' })}
+                  />
                 )}
               </div>
 

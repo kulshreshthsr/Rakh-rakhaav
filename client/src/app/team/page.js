@@ -6,6 +6,7 @@ import PermissionGuard from '../../components/PermissionGuard';
 import { apiUrl } from '../../lib/api';
 import { SYSTEM_ROLES, getRoleColor, getRoleLabel } from '../../lib/permissions';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/ui/EmptyState';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getSuggestedRoles } from '../../lib/roleConfig';
 
@@ -361,11 +362,13 @@ export default function TeamPage() {
 
           {/* Empty state */}
           {!loading && !error && members.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-state-icon mx-auto mb-4 text-[24px]">👥</div>
-              <p className="text-[14px] font-extrabold text-slate-800">कोई team member नहीं</p>
-              <p className="text-[12px] text-slate-400 mt-1">पहला member invite करें</p>
-            </div>
+            <EmptyState
+              emoji="👨‍💼"
+              title="अकेले काम कर रहे हैं?"
+              subtitle="Staff को add करें और उनके permissions control करें।"
+              actionLabel="Staff जोड़ें"
+              onAction={() => setShowAdd(true)}
+            />
           )}
 
           {/* Member cards */}

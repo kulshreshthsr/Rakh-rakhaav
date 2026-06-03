@@ -18,6 +18,7 @@ import PurchaseCard from './components/PurchaseCard';
 import PurchaseSummary from './components/PurchaseSummary';
 import InlineProductForm from './components/InlineProductForm';
 import PurchaseReturnModal from './components/PurchaseReturnModal';
+import EmptyState from '../../components/ui/EmptyState';
 import { INDIAN_STATES as STATES, UNION_TERRITORIES as UTS, GSTIN_REGEX, normalizeGstin, normalizeState, fmt } from '../../lib/constants';
 
 const getToken = () => localStorage.getItem('token');
@@ -423,28 +424,21 @@ export default function PurchasesPage() {
             ))}
           </div>
         ) : filteredPurchases.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon mx-auto mb-4 text-[26px]">📦</div>
-            <p className="text-[14px] font-extrabold text-slate-700 mb-1">
-              {hasBillFilters
-                ? 'No purchases found for this search/filter.'
-                : term('noPurchases', 'No purchases yet.')}
-            </p>
-            <p className="text-[12px] text-slate-400 leading-relaxed">
-              {hasBillFilters
-                ? 'Try adjusting your search or filters to find purchases.'
-                : 'Record your first supplier bill to start tracking stock cost and ITC.'}
-            </p>
-            {!hasBillFilters && (
-              <button
-                type="button"
-                onClick={() => { resetModal(); setShowModal(true); }}
-                className="empty-action-btn"
-              >
-                {term('newPurchase', 'Record Purchase')}
-              </button>
-            )}
-          </div>
+          hasBillFilters ? (
+            <div className="empty-state">
+              <div className="empty-state-icon mx-auto mb-4 text-[26px]">🔍</div>
+              <p className="text-[14px] font-extrabold text-slate-700 mb-1">कोई खरीदारी नहीं मिली</p>
+              <p className="text-[12px] text-slate-400">Filter बदलें या search हटाएं</p>
+            </div>
+          ) : (
+            <EmptyState
+              emoji="📦"
+              title="कोई खरीदारी दर्ज नहीं"
+              subtitle="Supplier से माल खरीदा? यहाँ दर्ज करें और stock automatically update होगा।"
+              actionLabel={`+ ${term('newPurchase', 'खरीदारी जोड़ें')}`}
+              onAction={() => { resetModal(); setShowModal(true); }}
+            />
+          )
         ) : (
           <div className="flex flex-col gap-3">
             {filteredPurchases.map((p) => {
