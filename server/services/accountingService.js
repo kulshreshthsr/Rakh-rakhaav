@@ -8,6 +8,8 @@ const Supplier = require('../models/supplierModel');
 const Udhaar = require('../models/udhaarModel');
 const SupplierUdhaar = require('../models/supplierUdhaarModel');
 const AuditTrail = require('../models/auditTrailModel');
+const SaleReturn = require('../models/saleReturnModel');
+const PurchaseReturn = require('../models/purchaseReturnModel');
 
 const round2 = (value) => Number(Number(value || 0).toFixed(2));
 const getIsoDate = (value) => new Date(value || Date.now()).toISOString();
@@ -436,6 +438,110 @@ const generateAccountingSummary = async ({ shopId, from = null, to = null }) => 
   };
 };
 
+const generatePLStatement = async ({ shopId, from = null, to = null }) => {
+  const dateRange = normalizeDateRange(from, to);
+  const baseFilter = { shop: shopId };
+  const withDate = (field = 'createdAt') =>
+    dateRange ? { ...baseFilter, [field]: dateRange } : baseFilter;
+
+  const [
+    sales,
+    saleReturns,
+    purchases,
+    purchaseReturns,
+    expenses,
+    income,
+  ] = await Promise.all([
+    Sale.find({ ...withDate(), document_type: { $in: ['invoice', 'revised_invoice'] } })
+      .select('total_amount total_cost gross_profit total_gst taxable_amount')
+      .lean(),
+    SaleReturn.find({ ...withDate(), status: { $ne: 'cancelled' } })
+      .select('total_amount total_gst taxable_amount')
+      .lean(),
+    Purchase.find(withDate())
+      .select('total_amount total_gst taxable_amount itc_eligible is_reverse_charge')
+      .lean(),
+    PurchaseReturn.find({ ...withDate(), status: { $ne: 'cancelled' } })
+      .select('total_amount total_gst taxable_amount')
+      .lean(),
+    Expense.find(withDate('date')).select('category amount').lean(),
+    Income.find(withDate('date')).select('source category amount').lean(),
+  ]);
+
+  // ── Revenue ──────────────────────────────────────────────────────────────
+  const grossRevenue         = round2(sales.reduce((s, x) => s + (x.total_amount || 0), 0));
+  const saleReturnTotal      = round2(saleReturns.reduce((s, x) => s + (x.total_amount || 0), 0));
+  const netRevenue           = round2(grossRevenue - saleReturnTotal);
+
+  // ── GST collected (informational) ────────────────────────────────────────
+  const gstCollected         = round2(sales.reduce((s, x) => s + (x.total_gst || 0), 0));
+  const gstOnReturns         = round2(saleReturns.reduce((s, x) => s + (x.total_gst || 0), 0));
+  const netGstCollected      = round2(gstCollected - gstOnReturns);
+
+  // ── Taxable revenue (net of GST and returns) ─────────────────────────────
+  const taxableRevenue       = round2(netRevenue - netGstCollected);
+
+  // ── COGS ─────────────────────────────────────────────────────────────────
+  const grossPurchases       = round2(purchases.reduce((s, x) => s + (x.total_amount || 0), 0));
+  const purchaseReturnTotal  = round2(purchaseReturns.reduce((s, x) => s + (x.total_amount || 0), 0));
+  const netPurchases         = round2(grossPurchases - purchaseReturnTotal);
+
+  // ITC from eligible purchases (informational)
+  const itcAvailable         = round2(
+    purchases
+      .filter(p => p.itc_eligible !== false && !p.is_reverse_charge)
+      .reduce((s, x) => s + (x.total_gst || 0), 0)
+  );
+  const itcOnReturns         = round2(purchaseReturns.reduce((s, x) => s + (x.total_gst || 0), 0));
+  const netItcAvailable      = round2(itcAvailable - itcOnReturns);
+  const netGstPayable        = round2(Math.max(0, netGstCollected - netItcAvailable));
+
+  const grossProfit          = round2(taxableRevenue - netPurchases);
+
+  // ── Expenses grouped by category ─────────────────────────────────────────
+  const expenseByCategory = {};
+  for (const exp of expenses) {
+    const cat = exp.category || 'Other';
+    expenseByCategory[cat] = round2((expenseByCategory[cat] || 0) + (exp.amount || 0));
+  }
+  const totalExpenses = round2(Object.values(expenseByCategory).reduce((s, v) => s + v, 0));
+
+  // ── Other income ─────────────────────────────────────────────────────────
+  const otherIncome = round2(income.reduce((s, x) => s + (x.amount || 0), 0));
+
+  // ── Net profit ───────────────────────────────────────────────────────────
+  const netProfit = round2(grossProfit - totalExpenses + otherIncome);
+
+  return {
+    period: { from: from || null, to: to || null },
+    revenue: {
+      gross_revenue:   grossRevenue,
+      sale_returns:    saleReturnTotal,
+      net_revenue:     netRevenue,
+      gst_collected:   netGstCollected,
+      taxable_revenue: taxableRevenue,
+    },
+    cogs: {
+      gross_purchases:  grossPurchases,
+      purchase_returns: purchaseReturnTotal,
+      net_purchases:    netPurchases,
+    },
+    gross_profit: grossProfit,
+    expenses: {
+      by_category: expenseByCategory,
+      total:       totalExpenses,
+    },
+    other_income: otherIncome,
+    net_profit:   netProfit,
+    gst_summary: {
+      gst_collected: netGstCollected,
+      itc_available: netItcAvailable,
+      net_payable:   netGstPayable,
+    },
+  };
+};
+
 module.exports = {
   generateAccountingSummary,
+  generatePLStatement,
 };

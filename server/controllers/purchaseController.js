@@ -576,8 +576,17 @@ const createPurchase = async (req, res) => {
         shop, payload: req.body, invoiceNumber, session,
       });
 
-      await syncPurchaseStock(null, data.items, data.invoice_number, session);
-      await syncSubInventoryOnPurchase([], data.items, data.invoice_number, shop._id, session);
+      const receiptStatus = req.body.receipt_status === 'ordered' ? 'ordered' : 'received';
+      if (receiptStatus === 'received') {
+        await syncPurchaseStock(null, data.items, data.invoice_number, session);
+        await syncSubInventoryOnPurchase([], data.items, data.invoice_number, shop._id, session);
+      }
+      data.receipt_status = receiptStatus;
+      data.received_items = data.items.map(i => ({
+        product:           i.product,
+        quantity_ordered:  i.quantity,
+        quantity_received: receiptStatus === 'received' ? i.quantity : 0,
+      }));
 
       const createdPurchases = await Purchase.create([{
         ...data, shop: shop._id,
@@ -689,29 +698,31 @@ const deletePurchase = async (req, res) => {
         ? purchase.items
         : (purchase.product ? [{ product: purchase.product, quantity: purchase.quantity }] : []);
 
-      for (const item of itemsToReverse) {
-        let productQuery = Product.findById(item.product);
-        if (session) productQuery = productQuery.session(session);
-        const product = await productQuery;
-        if (!product) continue;
-        const quantityAfter = round2(product.quantity - Number(item.quantity || 0));
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { quantity: -item.quantity },
-          $push: {
-            stock_history: {
-              type: 'purchase_return',
-              quantity_change: -Number(item.quantity),
-              quantity_after: quantityAfter,
-              note: `Purchase deleted: ${purchase.invoice_number}`,
-              reference_id: purchase.invoice_number,
-              date: new Date(),
+      if (purchase.receipt_status !== 'ordered') {
+        for (const item of itemsToReverse) {
+          let productQuery = Product.findById(item.product);
+          if (session) productQuery = productQuery.session(session);
+          const product = await productQuery;
+          if (!product) continue;
+          const quantityAfter = round2(product.quantity - Number(item.quantity || 0));
+          await Product.findByIdAndUpdate(item.product, {
+            $inc: { quantity: -item.quantity },
+            $push: {
+              stock_history: {
+                type: 'purchase_return',
+                quantity_change: -Number(item.quantity),
+                quantity_after: quantityAfter,
+                note: `Purchase deleted: ${purchase.invoice_number}`,
+                reference_id: purchase.invoice_number,
+                date: new Date(),
+              },
             },
-          },
-        }, { session });
-      }
+          }, { session });
+        }
 
-      // Reverse sub-inventory records (batches, variants, serials)
-      await reverseSubInventoryForPurchase(purchase.items || [], shop._id, session);
+        // Reverse sub-inventory records (batches, variants, serials)
+        await reverseSubInventoryForPurchase(purchase.items || [], shop._id, session);
+      }
       await reverseSupplierLedgerForPurchase(purchase, session);
       await Purchase.findOneAndDelete({ _id: req.params.id, shop: shop._id }, { session });
     });
@@ -835,4 +846,148 @@ const getPurchaseRegister = async (req, res) => {
   }
 };
 
-module.exports = { getPurchases, createPurchase, updatePurchase, deletePurchase, getITCSummary, getPurchaseRegister };
+const receivePurchase = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    let purchaseId;
+    let auditShopId;
+
+    await session.withTransaction(async () => {
+      const shop = await getShopOrFail(req.user.id);
+      auditShopId = shop._id;
+
+      const purchase = await Purchase.findOne({ _id: req.params.id, shop: shop._id }).session(session);
+      if (!purchase) throw Object.assign(new Error('Purchase नहीं मिली'), { statusCode: 404 });
+      if (purchase.receipt_status === 'received') {
+        throw Object.assign(new Error('Yeh purchase already fully received hai'), { statusCode: 400 });
+      }
+
+      const { received_items = [] } = req.body;
+      if (!received_items.length) {
+        throw Object.assign(new Error('received_items array required'), { statusCode: 400 });
+      }
+
+      // Build maps of previously received quantities and ordered quantities
+      const prevReceivedMap = new Map();
+      for (const ri of (purchase.received_items || [])) {
+        prevReceivedMap.set(String(ri.product), Number(ri.quantity_received || 0));
+      }
+
+      const orderedMap = new Map();
+      const allItems = purchase.items && purchase.items.length > 0
+        ? purchase.items
+        : (purchase.product ? [{ product: purchase.product, quantity: purchase.quantity }] : []);
+      for (const item of allItems) {
+        orderedMap.set(String(item.product), Number(item.quantity || 0));
+      }
+
+      // Validate and compute deltas
+      const stockIncrements = [];
+      for (const ri of received_items) {
+        const productId    = String(ri.product_id || ri.product);
+        const nowReceiving = Number(ri.quantity_received || 0);
+        if (!Number.isFinite(nowReceiving) || nowReceiving <= 0) continue;
+
+        const ordered      = orderedMap.get(productId) || 0;
+        const prevReceived = prevReceivedMap.get(productId) || 0;
+        const maxMore      = ordered - prevReceived;
+
+        if (nowReceiving > maxMore) {
+          const product = await Product.findById(productId).session(session);
+          const name = product?.name || productId;
+          throw Object.assign(
+            new Error(`${name}: sirf ${maxMore} aur receive kar sakte hain (ordered: ${ordered}, already received: ${prevReceived})`),
+            { statusCode: 400 }
+          );
+        }
+
+        stockIncrements.push({ productId, delta: nowReceiving });
+        prevReceivedMap.set(productId, prevReceived + nowReceiving);
+      }
+
+      // Increment stock for each delta
+      for (const { productId, delta } of stockIncrements) {
+        const product = await Product.findById(productId).session(session);
+        if (!product) continue;
+        const qAfter = round2(product.quantity + delta);
+        await Product.findByIdAndUpdate(productId, {
+          $inc: { quantity: delta },
+          $push: {
+            stock_history: {
+              type:            'purchase',
+              quantity_change: delta,
+              quantity_after:  qAfter,
+              reference_id:    purchase.invoice_number,
+              note:            `GRN receive: ${purchase.invoice_number}`,
+              date:            new Date(),
+            },
+          },
+        }, { session });
+
+        // Handle sub-inventory (batches/variants/serials) for this item
+        const originalItem = allItems.find(i => String(i.product) === productId);
+        if (originalItem) {
+          await syncSubInventoryOnPurchase(
+            [],
+            [{ ...originalItem.toObject ? originalItem.toObject() : originalItem, quantity: delta }],
+            purchase.invoice_number,
+            shop._id,
+            session
+          );
+        }
+      }
+
+      // Determine new receipt_status
+      let allReceived = true;
+      for (const [pid, ordered] of orderedMap) {
+        if ((prevReceivedMap.get(pid) || 0) < ordered) { allReceived = false; break; }
+      }
+
+      // Generate GRN number on first receive
+      let grnNumber = purchase.grn_number;
+      if (!grnNumber) {
+        const financialYear = getFinancialYear(new Date());
+        const seq = await DocumentSequence.findOneAndUpdate(
+          { shop: shop._id, doc_type: 'purchase', financial_year: `GRN-${financialYear}` },
+          [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', 0] }, 1] } } }],
+          { new: true, upsert: true }
+        ).session(session);
+        grnNumber = `GRN/${financialYear}/${String(seq.last_number).padStart(4, '0')}`;
+      }
+
+      purchase.receipt_status = allReceived ? 'received' : 'partial';
+      purchase.grn_number     = grnNumber;
+      purchase.received_items = [...orderedMap.keys()].map(pid => ({
+        product:           pid,
+        quantity_ordered:  orderedMap.get(pid),
+        quantity_received: prevReceivedMap.get(pid) || 0,
+      }));
+
+      await purchase.save({ session });
+      purchaseId = purchase._id;
+    });
+
+    const hydrated = await Purchase.findById(purchaseId).populate('supplier', 'name phone gstin');
+
+    await logAuditEvent({
+      shopId:      auditShopId || hydrated?.shop,
+      userId:      req.user.id,
+      actionType:  'update',
+      entity:      'purchase',
+      entityId:    hydrated._id,
+      referenceId: hydrated.invoice_number,
+      afterValue:  hydrated,
+    });
+
+    res.json(hydrated);
+  } catch (err) {
+    const _sc = err.statusCode || err.status || 500;
+    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
+  } finally {
+    await session.endSession();
+  }
+};
+
+module.exports = { getPurchases, createPurchase, updatePurchase, deletePurchase, getITCSummary, getPurchaseRegister, receivePurchase };

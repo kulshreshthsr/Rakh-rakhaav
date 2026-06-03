@@ -1,4 +1,4 @@
-const { generateAccountingSummary } = require('../services/accountingService');
+const { generateAccountingSummary, generatePLStatement } = require('../services/accountingService');
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
 
@@ -34,6 +34,24 @@ const getAccountingSummary = async (req, res) => {
   }
 };
 
+const getPLStatement = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const statement = await generatePLStatement({
+      shopId: shop._id,
+      from:   req.query.from || null,
+      to:     req.query.to   || null,
+    });
+    res.json(statement);
+  } catch (error) {
+    if (error.code === 'SHOP_NOT_CONFIGURED')
+      return res.status(400).json({ code: error.code, message: error.message });
+    logger.error(error);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
 module.exports = {
   getAccountingSummary,
+  getPLStatement,
 };

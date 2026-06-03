@@ -7,6 +7,7 @@ const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Udhaar   = require('../models/udhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
+const NarcoticsRegister = require('../models/narcoticsRegisterModel');
 const { generateGSTComplianceReport } = require('../utils/gstReportGenerator');
 const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
 const ruleEngine = require('../services/ruleEngine');
@@ -35,10 +36,19 @@ const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new
   // Accept either a shop object (with invoice format fields) or just a shopId string
   const shopId = shopOrId?._id || shopOrId;
   const financialYear = getFinancialYear(invoiceDate);
+  // Read invoice_start_number from shop object if available; default to 1.
+  // On first upsert, last_number is seeded to (startNumber - 1) so that after
+  // the +1 increment the first issued number equals invoice_start_number exactly.
+  const startNumber = (shopOrId?.invoice_start_number && shopOrId.invoice_start_number > 1)
+    ? shopOrId.invoice_start_number
+    : 1;
+
+  // Aggregation pipeline update: atomic, single round-trip, MongoDB 4.2+.
+  // $ifNull handles the upsert case (field absent on new doc).
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'sale', financial_year: financialYear },
-    { $inc: { last_number: 1 } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', startNumber - 1] }, 1] } } }],
+    { new: true, upsert: true }
   );
   if (session) query = query.session(session);
   const sequence = await query;
@@ -829,6 +839,45 @@ const createSale = async (req, res) => {
       createdSaleId = createdSale._id;
       await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
 
+      // ── Narcotics register (pharmacy only) — MUST be inside transaction ──
+      // If this insert fails the whole sale rolls back atomically.
+      if (shop.businessType === 'pharmacy') {
+        const scheduleItems = (createdSale.items || []).filter(item => {
+          const meta = item.item_metadata instanceof Map
+            ? Object.fromEntries(item.item_metadata)
+            : (item.item_metadata || {});
+          return meta.schedule === 'Schedule X' || meta.schedule === 'Schedule H1';
+        });
+        if (scheduleItems.length > 0) {
+          const efObj = createdSale.extra_fields instanceof Map
+            ? Object.fromEntries(createdSale.extra_fields)
+            : (createdSale.extra_fields || {});
+          const narcoticsEntries = scheduleItems.map(item => {
+            const meta = item.item_metadata instanceof Map
+              ? Object.fromEntries(item.item_metadata)
+              : (item.item_metadata || {});
+            return {
+              shop:               shop._id,
+              saleId:             createdSale._id,
+              invoiceNumber:      createdSale.invoice_number,
+              dispensedAt:        data.createdAt || new Date(),
+              productId:          item.product,
+              drugName:           item.product_name,
+              schedule:           meta.schedule,
+              batchNumber:        meta.batch_no || meta.batch_number || '',
+              quantityDispensed:  item.quantity,
+              unit:               'units',
+              prescriptionNumber: efObj.prescription_no || '',
+              prescribingDoctor:  efObj.doctor_name || '',
+              patientName:        data.buyer_name || 'Walk-in Patient',
+              patientPhone:       data.buyer_phone || '',
+              dispensedBy:        req.user?.username || '',
+            };
+          });
+          await NarcoticsRegister.insertMany(narcoticsEntries, { session });
+        }
+      }
+
       // Update contractor outstanding after sale created
       if (hardwareContractor && data.payment_type === 'credit') {
         hardwareContractor.current_outstanding = round2(hardwareContractor.current_outstanding + data.total_amount);
@@ -837,47 +886,6 @@ const createSale = async (req, res) => {
     });
 
     const hydratedSale = await Sale.findById(createdSaleId).populate('customer', 'name phone gstin');
-
-    // Auto-log narcotics register for Schedule X / H1 items (pharmacy only)
-    if (createdShop?.businessType === 'pharmacy' && hydratedSale) {
-      const NarcoticsRegister = require('../models/narcoticsRegisterModel');
-      const scheduleXItems = (hydratedSale.items || []).filter(item => {
-        const meta = item.item_metadata instanceof Map
-          ? Object.fromEntries(item.item_metadata)
-          : (item.item_metadata || {});
-        return meta.schedule === 'Schedule X' || meta.schedule === 'Schedule H1';
-      });
-      if (scheduleXItems.length > 0) {
-        const efObj = hydratedSale.extra_fields instanceof Map
-          ? Object.fromEntries(hydratedSale.extra_fields)
-          : (hydratedSale.extra_fields || {});
-        const entries = scheduleXItems.map(item => {
-          const meta = item.item_metadata instanceof Map
-            ? Object.fromEntries(item.item_metadata)
-            : (item.item_metadata || {});
-          return {
-            shop:              hydratedSale.shop,
-            saleId:            hydratedSale._id,
-            invoiceNumber:     hydratedSale.invoice_number,
-            dispensedAt:       hydratedSale.createdAt,
-            productId:         item.product,
-            drugName:          item.product_name,
-            schedule:          meta.schedule,
-            batchNumber:       meta.batch_no || meta.batch_number || '',
-            quantityDispensed: item.quantity,
-            unit:              'units',
-            prescriptionNumber: efObj.prescription_no || '',
-            prescribingDoctor:  efObj.doctor_name || '',
-            patientName:       hydratedSale.buyer_name || 'Walk-in Patient',
-            patientPhone:      hydratedSale.buyer_phone || '',
-            dispensedBy:       req.user?.username || '',
-          };
-        });
-        await NarcoticsRegister.insertMany(entries).catch(err =>
-          logger.error('Narcotics register auto-log failed:', err.message)
-        );
-      }
-    }
 
     await logAuditEvent({
       shopId: auditShopId || hydratedSale?.shop,
@@ -1382,10 +1390,12 @@ const getClientHistory = async (req, res) => {
 const createExchange = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-    let exchangeSale;
+    let exchangeSaleId;
+    let auditShopId;
+
     await session.withTransaction(async () => {
       const shop = await getShopOrFail(req.user.id);
-      const shopId = shop._id;
+      auditShopId = shop._id;
 
       const {
         original_invoice_no,
@@ -1393,89 +1403,114 @@ const createExchange = async (req, res) => {
         exchange_items  = [],
         customer_name,
         customer_phone,
-        price_difference,
-        payment_type,
+        buyer_gstin,
+        buyer_state,
+        payment_type    = 'cash',
+        amount_paid     = 0,
+        notes,
       } = req.body;
 
-      // 1. Restore stock for returned items
+      if (!exchange_items.length && !returned_items.length) {
+        throw Object.assign(new Error('Exchange ke liye kam se kam ek item zaroori hai'), { statusCode: 400 });
+      }
+
+      // ── 1. Restore stock for returned items ─────────────────────────────
       for (const item of returned_items) {
-        const product = await Product.findOne({ _id: item.product_id, shop: shopId }).session(session);
+        const product = await Product.findOne({ _id: item.product_id, shop: shop._id }).session(session);
         if (!product) continue;
 
         if (item.variant_id) {
-          const variant = await ProductVariant.findOne({ _id: item.variant_id, shop: shopId }).session(session);
+          const variant = await ProductVariant.findOne({ _id: item.variant_id, shop: shop._id }).session(session);
           if (variant) {
             variant.quantity += Number(item.quantity) || 1;
             await variant.save({ session });
-            product.quantity += Number(item.quantity) || 1;
-            await product.save({ session });
           }
-        } else {
-          product.quantity += Number(item.quantity) || 1;
-          await product.save({ session });
         }
+        const qty = Number(item.quantity) || 1;
+        const qAfter = round2(product.quantity + qty);
+        await Product.findByIdAndUpdate(product._id, {
+          $inc: { quantity: qty },
+          $push: {
+            stock_history: {
+              type: 'sale_return',
+              quantity_change: qty,
+              quantity_after: qAfter,
+              reference_id: original_invoice_no || 'exchange',
+              date: new Date(),
+            },
+          },
+        }, { session });
       }
 
-      // 2. Deduct stock for exchange items
-      for (const item of exchange_items) {
-        const product = await Product.findOne({ _id: item.product_id, shop: shopId }).session(session);
-        if (!product) continue;
+      // ── 2. Build exchange-out sale via buildSaleRecordData ───────────────
+      // Routes exchange_items through the same helper as createSale — gives us
+      // proper GST, sequential invoice number, COGS, and customer ledger update.
+      if (exchange_items.length > 0) {
+        const salePayload = {
+          items: exchange_items.map(i => ({
+            product_id:     i.product_id,
+            product_name:   i.product_name || '',
+            quantity:       Number(i.quantity) || 1,
+            price_per_unit: Number(i.price) || 0,
+            gst_rate:       Number(i.gst_rate) || undefined,
+            item_metadata:  i.item_metadata || { size: i.size || '', color: i.color || '' },
+          })),
+          buyer_name:   customer_name || '',
+          buyer_phone:  customer_phone || '',
+          buyer_gstin:  buyer_gstin || '',
+          buyer_state:  buyer_state || '',
+          payment_type,
+          amount_paid,
+          notes: notes || `Exchange against invoice ${original_invoice_no || ''}`,
+          extra_fields: {
+            exchange_note:  `Exchange against invoice ${original_invoice_no || ''}`,
+            returned_items: JSON.stringify(returned_items),
+          },
+        };
 
-        if (item.variant_id) {
-          const variant = await ProductVariant.findOne({ _id: item.variant_id, shop: shopId }).session(session);
-          if (variant) {
-            if (variant.quantity < (Number(item.quantity) || 1)) {
-              throw Object.assign(new Error(`Insufficient stock: ${product.name} ${variant.size || ''} ${variant.color || ''}`.trim()), { status: 400 });
-            }
-            variant.quantity -= Number(item.quantity) || 1;
-            await variant.save({ session });
-            product.quantity -= Number(item.quantity) || 1;
-            await product.save({ session });
-          }
-        } else {
-          if (product.quantity < (Number(item.quantity) || 1)) {
-            throw Object.assign(new Error(`Insufficient stock: ${product.name}`), { status: 400 });
-          }
-          product.quantity -= Number(item.quantity) || 1;
-          await product.save({ session });
-        }
+        const { data, itemNames } = await buildSaleRecordData({
+          shop,
+          payload: salePayload,
+          session,
+        });
+
+        await syncSaleStock(null, data.items, data.invoice_number, session);
+        await syncSubInventory([], data.items, data.invoice_number, session);
+
+        const [createdSale] = await Sale.create([{
+          ...data,
+          shop:               shop._id,
+          sale_type:          'exchange',
+          exchange_reference: original_invoice_no || '',
+        }], { session });
+
+        exchangeSaleId = createdSale._id;
+        await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
       }
-
-      // 3. Create exchange sale record
-      const priceDiff = Number(price_difference) || 0;
-      const counter   = await Sale.countDocuments({ shop: shopId }).session(session);
-      const invoiceNo = `EXC-${Date.now()}-${counter + 1}`;
-
-      const saleItems = exchange_items.map(i => ({
-        product:        i.product_id,
-        product_name:   i.product_name || '',
-        quantity:       Number(i.quantity) || 1,
-        price_per_unit: Number(i.price) || 0,
-        total_amount:   (Number(i.quantity) || 1) * (Number(i.price) || 0),
-        item_metadata:  new Map(Object.entries({ size: i.size || '', color: i.color || '' })),
-      }));
-
-      [exchangeSale] = await Sale.create([{
-        shop:               shopId,
-        sale_type:          'exchange',
-        exchange_reference: original_invoice_no,
-        buyer_name:         customer_name,
-        buyer_phone:        customer_phone,
-        items:              saleItems,
-        total_amount:       Math.abs(priceDiff),
-        payment_type:       payment_type || 'cash',
-        amount_paid:        priceDiff > 0 ? Math.abs(priceDiff) : 0,
-        invoice_number:     invoiceNo,
-        extra_fields: new Map([
-          ['returned_items', JSON.stringify(returned_items)],
-          ['exchange_note', `Exchange against invoice ${original_invoice_no}`],
-        ]),
-      }], { session });
     });
 
-    res.status(201).json({ exchangeSale, message: 'Exchange processed successfully' });
+    const hydratedSale = exchangeSaleId
+      ? await Sale.findById(exchangeSaleId).populate('customer', 'name phone gstin')
+      : null;
+
+    if (hydratedSale) {
+      await logAuditEvent({
+        shopId:      auditShopId || hydratedSale.shop,
+        userId:      req.user.id,
+        actionType:  'create',
+        entity:      'sale',
+        entityId:    hydratedSale._id,
+        referenceId: hydratedSale.invoice_number,
+        afterValue:  hydratedSale,
+      });
+    }
+
+    res.status(201).json({
+      exchangeSale: hydratedSale,
+      message: 'Exchange processed successfully',
+    });
   } catch (err) {
-    const _sc = err.status || 500;
+    const _sc = err.statusCode || err.status || 500;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
     const isDev = process.env.NODE_ENV !== 'production';
     res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });

@@ -100,6 +100,19 @@ const purchaseSchema = new mongoose.Schema({
   // ── Credit terms ──────────────────────────────────────────────
   due_date: { type: Date, default: null },  // payment due date for credit purchases
 
+  // ── Goods Receipt ─────────────────────────────────────────────
+  receipt_status: {
+    type: String,
+    enum: ['received', 'ordered', 'partial'],
+    default: 'received',
+  },
+  grn_number:     { type: String, default: null },
+  received_items: [{
+    product:           { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    quantity_ordered:  { type: Number, default: 0 },
+    quantity_received: { type: Number, default: 0 },
+  }],
+
 }, { timestamps: true });
 
 purchaseSchema.index({ shop: 1, createdAt: -1 });
