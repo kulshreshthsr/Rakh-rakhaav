@@ -16,6 +16,8 @@ import { SYSTEM_ROLES as FRONTEND_ROLES } from '../lib/permissions';
 import { useIndustry } from '../contexts/IndustryContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import NotificationBell from './NotificationBell';
+import { setOnboardingPending, hasOnboardingPending } from '../app/onboarding/page';
+import MoreDrawer from './MoreDrawer';
 
 /* ─── Nav config ─────────────────────────────────────────────────── */
 // permission: the permission required to see this item; null = visible to all
@@ -144,154 +146,6 @@ function UserDropdown({ onProfile, onLogout, extraItems, className = '' }) {
   );
 }
 
-/* ─── More drawer (mobile) - Enhanced Green Theme ───────────────── */
-function MoreDrawer({ open, onClose, pathname, onLogout, subscription, items = MORE_DRAWER_ITEMS }) {
-  const drawerRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [open]);
-
-  const iconColors = {
-    products:      'bg-emerald-50 text-emerald-700',
-    expenses:      'bg-rose-50 text-rose-700',
-    income:        'bg-green-50 text-green-700',
-    bank:          'bg-blue-50 text-blue-700',
-    reports:       'bg-purple-50 text-purple-700',
-    gst:           'bg-amber-50 text-amber-700',
-    profile:       'bg-slate-100 text-slate-700',
-    team:          'bg-green-50 text-green-700',
-    roles:         'bg-purple-50 text-purple-700',
-    notifications: 'bg-red-50 text-red-600',
-    tasks:         'bg-indigo-50 text-indigo-700',
-    audit:         'bg-sky-50 text-sky-700',
-  };
-
-  return (
-    <>
-      {/* Backdrop — conditionally rendered so it disappears instantly on nav link click */}
-      {open && (
-        <div
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sheet — slides up from bottom */}
-      <div
-        ref={drawerRef}
-        role="dialog"
-        aria-label="More options"
-        className={`fixed bottom-0 left-0 right-0 z-50 lg:hidden transition-transform duration-300 ease-out ${
-          open ? 'translate-y-0' : 'translate-y-full'
-        }`}
-      >
-        <div className="bg-white rounded-t-3xl shadow-2xl shadow-slate-900/30 border-t-2 border-green-200 max-h-[85dvh] overflow-y-auto">
-
-          {/* Handle */}
-          <div className="flex justify-center pt-4 pb-2">
-            <div className="w-12 h-1.5 rounded-full bg-green-200" />
-          </div>
-
-          {/* Header - Enhanced */}
-          <div className="flex items-center justify-between px-5 pt-3 pb-5 border-b border-slate-100">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-green-700">Quick Access</p>
-              <h2 className="text-[20px] font-black text-slate-900 mt-1">और विकल्प</h2>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all hover:scale-105"
-            >
-              <Glyph name="close" size={18} stroke={2.5} />
-            </button>
-          </div>
-
-          {/* Nav items grid - Enhanced */}
-          <div className="px-4 pb-3 pt-3 grid grid-cols-1 gap-2.5">
-            {items.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onClose}
-                  className={`group flex items-center gap-4 px-4 py-4 rounded-2xl border-2 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
-                    isActive
-                      ? 'border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md'
-                      : 'border-slate-200 bg-white hover:border-green-200'
-                  }`}
-                >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform ${
-                    isActive ? 'bg-gradient-to-br from-green-600 to-emerald-700 text-white shadow-green-500/30' : iconColors[item.key] || 'bg-slate-100 text-slate-600'
-                  }`}>
-                    <Glyph name={item.icon} size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-[16px] font-black leading-tight ${isActive ? 'text-green-800' : 'text-slate-900'}`}>
-                      {item.label}
-                    </div>
-                    <div className={`text-[12px] font-medium mt-1 ${isActive ? 'text-green-600' : 'text-slate-500'}`}>
-                      {item.sublabel}
-                    </div>
-                  </div>
-                  {isActive && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-600 flex-shrink-0 shadow-lg shadow-green-500/50" />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Upgrade card - Green themed */}
-          <div className="px-4 pb-3 pt-2">
-            <Link href="/pricing" onClick={onClose}
-              className="relative flex items-center gap-4 overflow-hidden rounded-3xl border-2 border-green-300 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 px-5 py-4 transition-all hover:-translate-y-1 hover:border-green-400 hover:shadow-xl hover:shadow-green-500/20"
-            >
-              <div className="pointer-events-none absolute inset-y-0 -left-1 w-28 bg-gradient-to-r from-white/80 via-white/30 to-transparent skew-x-[-18deg] animate-[premiumShine_3s_ease-in-out_infinite]" />
-              <div className="relative z-10 w-12 h-12 rounded-xl bg-gradient-to-br from-green-600 to-emerald-700 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/30">
-                <Glyph name="pricing" size={20} />
-              </div>
-              <div className="relative z-10 flex-1">
-                <div className="text-[16px] font-black text-green-900">
-                  {subscription?.isPro ? 'Manage Plan' : 'Upgrade करें'}
-                </div>
-                <div className="text-[13px] text-green-700 font-semibold">
-                  {subscription?.isPro ? 'Pro plan active ✓' : 'Pro features unlock करें'}
-                </div>
-              </div>
-              <div className="relative z-10 text-green-600">
-                <Glyph name="pricing" size={18} />
-              </div>
-            </Link>
-          </div>
-
-          {/* Logout - Enhanced */}
-          <div className="px-4 pb-7 pt-2">
-            <button
-              type="button"
-              onClick={() => { onClose(); onLogout(); }}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl border-2 border-red-200 bg-red-50 text-[15px] font-black text-red-700 hover:bg-red-100 hover:border-red-300 transition-all shadow-md hover:shadow-lg"
-            >
-              <Glyph name="logout" size={18} /> Logout
-            </button>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
 /* ─── Main layout ────────────────────────────────────────────────── */
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
@@ -342,15 +196,28 @@ function LayoutInner({ children }) {
       markSubscriptionRefreshNow();
       return true;
     } catch { return false; }
-  }, [router, updateBusinessType]);
+  }, [router, updateBusinessType, updateDashboardMode]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
+
+    // Check if owner skipped onboarding mid-way
+    if (!hasOnboardingPending() && !user?.isSubUser) {
+      fetch(`${API}/api/auth/shop`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(res => res.ok ? res.json() : null).then(shop => {
+        if (shop && shop.onboarding_completed === false) {
+          setOnboardingPending();
+          router.replace('/onboarding');
+        }
+      }).catch(() => {});
+    }
+
     if (!shouldRefreshSubscriptionCache()) return;
     const id = window.setTimeout(refreshSubscription, 0);
     return () => window.clearTimeout(id);
-  }, [refreshSubscription, router]);
+  }, [refreshSubscription, router, user?.isSubUser]);
 
   useEffect(() => {
     const PING_KEY = 'rr-last-server-ping';
@@ -641,7 +508,7 @@ function LayoutInner({ children }) {
         <MoreDrawer
           open={moreOpen}
           onClose={() => setMoreOpen(false)}
-          pathname={pathname}
+          currentPath={pathname}
           onLogout={logout}
           subscription={subscription}
           items={filteredDrawerItems}

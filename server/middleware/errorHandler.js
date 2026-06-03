@@ -30,8 +30,10 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Known status codes set by controllers (4xx business errors forwarded via next(err))
-  if (err.status >= 400 && err.status < 500) {
-    return res.status(err.status).json({ message: err.message, code: err.code || 'CLIENT_ERROR', status: err.status });
+  // Controllers may set err.statusCode OR err.status — check both.
+  const httpStatus = err.statusCode || err.status;
+  if (httpStatus >= 400 && httpStatus < 500) {
+    return res.status(httpStatus).json({ message: err.message, code: err.code || 'CLIENT_ERROR', status: httpStatus });
   }
 
   logger.error('[errorHandler]', err.message || err);

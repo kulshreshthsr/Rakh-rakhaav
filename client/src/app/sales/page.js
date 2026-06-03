@@ -31,64 +31,20 @@ import { getHeldBills, saveHeldBill, removeHeldBill, getRelativeTime } from '../
 import useSalesData from './hooks/useSalesData';
 import useSaleForm from './hooks/useSaleForm';
 import useIndustrySideData from './hooks/useIndustrySideData';
-import { INDIAN_STATES as STATES, UNION_TERRITORIES as UTS, GSTIN_REGEX, normalizeGstin, normalizeState, fmt } from '../../lib/constants';
+import {
+  INDIAN_STATES as STATES, UNION_TERRITORIES as UTS, GSTIN_REGEX, GSTIN_LENGTH,
+  normalizeGstin, normalizeState, fmt, getToken, normalizeBarcode,
+  formatDateInput as formatDateInputValue, todayInputValue as getDefaultSaleDateValue,
+  getSaleRecordDateISO, getMonthFilterValue,
+  buildInitialSaleForm as buildInitialForm, formatFullDateTime, GST_STATE_CODE_MAP,
+  getRoundedBillValues, emptySaleItem as emptyItem, buildWhatsAppShareMessage,
+} from '../../lib/constants';
 
-/* ─── Constants & pure helpers (ALL UNCHANGED) ───────────────────── */
-const getToken = () => localStorage.getItem('token');
-const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {}, unit_of_measurement: 'NOS', remarks: '' });
-const GSTIN_LENGTH = 15;
+/* ─── Constants & pure helpers ───────────────────────────────────── */
 const SALES_CACHE_KEY = 'sales-page';
-const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
-const formatDateInputValue = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-const getDefaultSaleDateValue = () => formatDateInputValue(new Date());
-const getSaleRecordDateISO = (value, referenceValue = new Date()) => {
-  if (!value) return new Date().toISOString();
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return new Date().toISOString();
-  const nextDate = new Date(referenceValue);
-  if (Number.isNaN(nextDate.getTime())) return new Date().toISOString();
-  nextDate.setFullYear(year, month - 1, day);
-  return nextDate.toISOString();
-};
-const getMonthFilterValue = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-};
 const getSaleSearchText = (sale) => {
   const itemNames = Array.isArray(sale.items) ? sale.items.map((item) => item.product_name || '').join(' ') : '';
   return [sale.invoice_number, sale.product_name, sale.buyer_name, sale.buyer_phone, sale.notes, itemNames].join(' ').toLowerCase();
-};
-const buildInitialForm = (overrides = {}) => ({
-  payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '',
-  buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '',
-  sale_date: getDefaultSaleDateValue(),
-  discount_type: 'none', discount_value: '',
-  ...overrides,
-});
-const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
-  day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-});
-const GST_STATE_CODE_MAP = {
-  '01':'Jammu & Kashmir','02':'Himachal Pradesh','03':'Punjab','04':'Chandigarh','05':'Uttarakhand',
-  '06':'Haryana','07':'Delhi','08':'Rajasthan','09':'Uttar Pradesh','10':'Bihar','11':'Sikkim',
-  '12':'Arunachal Pradesh','13':'Nagaland','14':'Manipur','15':'Mizoram','16':'Tripura',
-  '17':'Meghalaya','18':'Assam','19':'West Bengal','20':'Jharkhand','21':'Odisha','22':'Chhattisgarh',
-  '23':'Madhya Pradesh','24':'Gujarat','26':'Dadra & Nagar Haveli and Daman & Diu','27':'Maharashtra',
-  '28':'Andhra Pradesh','29':'Karnataka','30':'Goa','31':'Lakshadweep','32':'Kerala','33':'Tamil Nadu',
-  '34':'Puducherry','35':'Andaman & Nicobar Islands','36':'Telangana','37':'Andhra Pradesh','38':'Ladakh',
-};
-const getRoundedBillValues = (amount) => {
-  const numericAmount = Number(amount || 0);
-  const roundedTotal = Math.round(numericAmount);
-  return { roundedTotal, roundOff: parseFloat((roundedTotal - numericAmount).toFixed(2)) };
 };
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
@@ -115,17 +71,6 @@ const buildOfflineSaleItems = (rawItems, products) => (
     };
   }).filter((item) => item.product_id && item.quantity > 0)
 );
-const buildWhatsAppShareMessage = (sale, shopName) => {
-  const saleDate = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const advancePaid = sale.payment_type === 'credit' ? parseFloat(sale.amount_paid || 0) : parseFloat(sale.total_amount || 0);
-  const dueAmount = sale.payment_type === 'credit' ? Math.max(0, parseFloat(sale.total_amount || 0) - advancePaid) : 0;
-  const payLabel = sale.payment_type === 'cash' ? 'Cash (Paid)' : sale.payment_type === 'upi' ? 'UPI (Paid)' : sale.payment_type === 'bank' ? 'Bank Transfer' : 'Udhaar (Credit)';
-  const itemLines = (sale.items && sale.items.length > 0)
-    ? sale.items.map((item, i) => `  ${i + 1}. ${item.product_name} x ${item.quantity} @ ₹${fmt(item.price_per_unit)} = ₹${fmt(item.total_amount)}`).join('\n')
-    : `  1. ${sale.product_name} x ${sale.quantity} @ ₹${fmt(sale.price_per_unit)} = ₹${fmt(sale.total_amount)}`;
-  return [sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' ? `Namaste ${sale.buyer_name} ji,` : 'Namaste,','',`Invoice / Bill Details`,`Shop: ${shopName || 'Rakh-Rakhaav'}`,`Invoice No: ${sale.invoice_number}`,`Date: ${saleDate}`,`Items:`,itemLines,`Taxable Amount: ₹${fmt(sale.taxable_amount)}`,`GST: ₹${fmt(sale.total_gst)}`,`Total Amount: ₹${fmt(sale.total_amount)}`,`Payment: ${payLabel}`,...(sale.payment_type === 'credit' ? [`Advance Payment: ₹${fmt(advancePaid)}`,`Udhaar / Due: ₹${fmt(dueAmount)}`] : []),'',`Thank you for choosing ${shopName || 'Rakh-Rakhaav'}`].join('\n');
-};
-
 /* ─── Payment badge ── */
 const PAY_BADGE = {
   cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: '💵 Cash' },
@@ -719,13 +664,13 @@ export default function SalesPage() {
             ))}
 
             {/* Load more / pagination */}
-            {hasMoreSales && !hasBillFilters && (
+            {hasMoreSales && (
               <button
                 onClick={loadMoreSales}
                 disabled={loadingMore}
-                className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-500 hover:border-slate-300 hover:text-slate-600 disabled:opacity-50 transition-all"
+                className="w-full py-3 mt-3 rounded-xl border-2 border-slate-200 text-[13px] font-bold text-slate-600 hover:border-green-300 hover:text-green-700 disabled:opacity-50 transition-all"
               >
-                {loadingMore ? 'Loading...' : '↓ Load older sales'}
+                {loadingMore ? 'Loading...' : 'और sales देखें →'}
               </button>
             )}
           </div>

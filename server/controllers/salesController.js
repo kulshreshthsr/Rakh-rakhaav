@@ -19,46 +19,7 @@ const SerialInventory = require('../models/serialInventoryModel');
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-const GST_STATE_CODE_MAP = {
-  '01': 'Jammu & Kashmir',
-  '02': 'Himachal Pradesh',
-  '03': 'Punjab',
-  '04': 'Chandigarh',
-  '05': 'Uttarakhand',
-  '06': 'Haryana',
-  '07': 'Delhi',
-  '08': 'Rajasthan',
-  '09': 'Uttar Pradesh',
-  '10': 'Bihar',
-  '11': 'Sikkim',
-  '12': 'Arunachal Pradesh',
-  '13': 'Nagaland',
-  '14': 'Manipur',
-  '15': 'Mizoram',
-  '16': 'Tripura',
-  '17': 'Meghalaya',
-  '18': 'Assam',
-  '19': 'West Bengal',
-  '20': 'Jharkhand',
-  '21': 'Odisha',
-  '22': 'Chhattisgarh',
-  '23': 'Madhya Pradesh',
-  '24': 'Gujarat',
-  '26': 'Dadra & Nagar Haveli and Daman & Diu',
-  '27': 'Maharashtra',
-  '28': 'Andhra Pradesh',
-  '29': 'Karnataka',
-  '30': 'Goa',
-  '31': 'Lakshadweep',
-  '32': 'Kerala',
-  '33': 'Tamil Nadu',
-  '34': 'Puducherry',
-  '35': 'Andaman & Nicobar Islands',
-  '36': 'Telangana',
-  '37': 'Andhra Pradesh',
-  '38': 'Ladakh',
-};
+const { GST_STATE_CODE_MAP, GSTIN_REGEX, getStateFromGstin: _getStateFromGstinShared } = require('../lib/sharedUtils');
 
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
@@ -273,53 +234,105 @@ const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', sessio
  *   deduct_recipe → true → deduct recipe ingredients for this dish
  */
 const syncSubInventory = async (previousItems = [], nextItems = [], invoiceNumber = '', session = null) => {
-  // Build maps from item._id (or product) → previous quantity for delta calc
+  // Key = "productId:batchId" | "productId:variantId" | "productId:" (no sub-key)
+  const makeKey = (item) => {
+    const meta = item.item_metadata instanceof Map
+      ? Object.fromEntries(item.item_metadata)
+      : (item.item_metadata || {});
+    const sub = meta.batch_id || meta.variant_id || '';
+    return `${String(item.product)}:${sub}`;
+  };
+
+  // Build map of previous quantities per composite key
   const prevMap = new Map();
   for (const item of previousItems) {
-    const key = String(item.product);
-    prevMap.set(key, (prevMap.get(key) || 0) + Number(item.quantity || 0));
+    const key = makeKey(item);
+    prevMap.set(key, {
+      qty: (prevMap.get(key)?.qty || 0) + Number(item.quantity || 0),
+      meta: item.item_metadata instanceof Map
+        ? Object.fromEntries(item.item_metadata)
+        : (item.item_metadata || {}),
+      product: item.product,
+    });
   }
 
+  // Build map of next quantities per composite key
+  const nextMap = new Map();
   for (const item of nextItems) {
-    const meta = item.item_metadata || {};
-    const productKey = String(item.product);
-    const prevQty = prevMap.get(productKey) || 0;
-    const soldQty = Number(item.quantity || 0);
-    const delta = soldQty - prevQty;
+    const key = makeKey(item);
+    const meta = item.item_metadata instanceof Map
+      ? Object.fromEntries(item.item_metadata)
+      : (item.item_metadata || {});
+    nextMap.set(key, {
+      qty: (nextMap.get(key)?.qty || 0) + Number(item.quantity || 0),
+      meta,
+      product: item.product,
+    });
+  }
 
-    // ── Batch deduction ────────────────────────────────────────────────────
-    if (meta.batch_id && delta !== 0) {
-      const opts = session ? { session } : {};
+  const allKeys = new Set([...prevMap.keys(), ...nextMap.keys()]);
+  const opts = session ? { session } : {};
+
+  for (const key of allKeys) {
+    const prev     = prevMap.get(key);
+    const next     = nextMap.get(key);
+    const prevQty  = prev?.qty || 0;
+    const nextQty  = next?.qty || 0;
+    const delta    = nextQty - prevQty;  // positive = more sold, negative = fewer sold
+    const meta     = next?.meta || prev?.meta || {};
+    const product  = next?.product || prev?.product;
+
+    if (delta === 0) continue;
+
+    // ── Batch ──────────────────────────────────────────────────────────────
+    if (meta.batch_id) {
       await ProductBatch.findByIdAndUpdate(meta.batch_id, { $inc: { quantity: -delta } }, opts);
-      // Mark depleted if quantity hits zero
-      await ProductBatch.updateOne({ _id: meta.batch_id, quantity: { $lte: 0 } }, { $set: { is_depleted: true, quantity: 0 } }, opts);
+      if (delta > 0) {
+        await ProductBatch.updateOne(
+          { _id: meta.batch_id, quantity: { $lte: 0 } },
+          { $set: { is_depleted: true, quantity: 0 } },
+          opts
+        );
+      } else {
+        // Restoring stock — un-deplete if now positive
+        await ProductBatch.updateOne(
+          { _id: meta.batch_id, quantity: { $gt: 0 } },
+          { $set: { is_depleted: false } },
+          opts
+        );
+      }
     }
 
-    // ── Variant deduction ──────────────────────────────────────────────────
-    if (meta.variant_id && delta !== 0) {
-      const opts = session ? { session } : {};
+    // ── Variant ────────────────────────────────────────────────────────────
+    if (meta.variant_id) {
       await ProductVariant.findByIdAndUpdate(meta.variant_id, { $inc: { quantity: -delta } }, opts);
     }
 
-    // ── Serial marking ─────────────────────────────────────────────────────
-    if (Array.isArray(meta.serial_ids) && meta.serial_ids.length > 0 && delta > 0) {
-      const opts = session ? { session } : {};
-      await SerialInventory.updateMany(
-        { _id: { $in: meta.serial_ids } },
-        { $set: { status: 'sold', sale_invoice: invoiceNumber, sale_date: new Date() } },
-        opts
-      );
+    // ── Serial — only mark/unmark when adding or removing serials ──────────
+    if (Array.isArray(meta.serial_ids) && meta.serial_ids.length > 0) {
+      if (delta > 0) {
+        await SerialInventory.updateMany(
+          { _id: { $in: meta.serial_ids } },
+          { $set: { status: 'sold', sale_invoice: invoiceNumber, sale_date: new Date() } },
+          opts
+        );
+      } else {
+        await SerialInventory.updateMany(
+          { _id: { $in: meta.serial_ids } },
+          { $set: { status: 'in_stock' }, $unset: { sale_invoice: '', sale_date: '' } },
+          opts
+        );
+      }
     }
 
-    // ── Recipe ingredient deduction ────────────────────────────────────────
-    if (meta.deduct_recipe && delta > 0) {
-      const recipe = await Recipe.findOne({ dish: item.product }).session(session || null);
+    // ── Recipe ingredients ─────────────────────────────────────────────────
+    if (meta.deduct_recipe && product) {
+      const recipe = await Recipe.findOne({ dish: product }).session(session || null);
       if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
         const servings = recipe.serving_quantity || 1;
         for (const ing of recipe.ingredients) {
           const deductQty = (ing.quantity / servings) * delta;
-          if (deductQty > 0 && ing.ingredient) {
-            const opts = session ? { session } : {};
+          if (deductQty !== 0 && ing.ingredient) {
             await Product.findByIdAndUpdate(ing.ingredient, { $inc: { quantity: -deductQty } }, opts);
           }
         }

@@ -3,49 +3,18 @@ import { useState } from 'react';
 import { apiUrl } from '../../../lib/api';
 import { queuePurchase } from '../../../lib/offlineQueue';
 import { cacheProducts } from '../../../lib/offlineDB';
+import {
+  getToken, fmt, cleanPhone, GSTIN_REGEX, GSTIN_LENGTH, normalizeGstin, normalizeState,
+  GST_STATE_CODE_MAP, getRoundedBillValues,
+  formatDateInput as formatDateInputValue, todayInputValue as getDefaultPurchaseDateValue,
+  getSaleRecordDateISO as getPurchaseRecordDateISO, emptySaleItem as emptyItem,
+} from '../../../lib/constants';
 
-const getToken = () => localStorage.getItem('token');
-const fmt = (n) => Number(n || 0).toFixed(2);
-const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
-const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-const GSTIN_LENGTH = 15;
-const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
-const normalizeState = (value = '') => value.trim().toLowerCase();
-const GST_STATE_CODE_MAP = {
-  '01':'Jammu & Kashmir','02':'Himachal Pradesh','03':'Punjab','04':'Chandigarh','05':'Uttarakhand',
-  '06':'Haryana','07':'Delhi','08':'Rajasthan','09':'Uttar Pradesh','10':'Bihar','11':'Sikkim',
-  '12':'Arunachal Pradesh','13':'Nagaland','14':'Manipur','15':'Mizoram','16':'Tripura',
-  '17':'Meghalaya','18':'Assam','19':'West Bengal','20':'Jharkhand','21':'Odisha','22':'Chhattisgarh',
-  '23':'Madhya Pradesh','24':'Gujarat','26':'Dadra & Nagar Haveli and Daman & Diu','27':'Maharashtra',
-  '28':'Andhra Pradesh','29':'Karnataka','30':'Goa','31':'Lakshadweep','32':'Kerala','33':'Tamil Nadu',
-  '34':'Puducherry','35':'Andaman & Nicobar Islands','36':'Telangana','37':'Andhra Pradesh','38':'Ladakh',
-};
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
-const getRoundedBillValues = (amount) => {
-  const numericAmount = Number(amount || 0);
-  const roundedTotal = Math.round(numericAmount);
-  return { roundedTotal, roundOff: parseFloat((roundedTotal - numericAmount).toFixed(2)) };
-};
-const formatDateInputValue = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-};
-const getDefaultPurchaseDateValue = () => formatDateInputValue(new Date());
-const getPurchaseRecordDateISO = (value, referenceValue = new Date()) => {
-  if (!value) return new Date().toISOString();
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return new Date().toISOString();
-  const nextDate = new Date(referenceValue);
-  if (Number.isNaN(nextDate.getTime())) return new Date().toISOString();
-  nextDate.setFullYear(year, month - 1, day);
-  return nextDate.toISOString();
-};
-const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
 const buildOfflinePurchaseItems = (rawItems, products) => (
   (rawItems || []).map((item) => {
     const product = products.find((prod) => prod._id === item.product_id);

@@ -3,6 +3,7 @@ import SearchableProductSelect from '../../../components/SearchableProductSelect
 import DynamicFormField from '../../../components/DynamicFormField';
 import ChallanSection from './ChallanSection';
 import { summariseCartGST } from '../../../lib/gstValidation';
+import { getRelativeTime } from '../../../lib/heldBills';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -11,8 +12,6 @@ const INPUT  = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white t
 const fmt    = (n) => parseFloat(n || 0).toFixed(2);
 const GSTIN_LENGTH = 15;
 const GSTIN_REGEX  = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-
-import { getRelativeTime } from '../../../lib/heldBills';
 
 export default function SaleFormModal({
   showModal, setShowModal, resetForm,

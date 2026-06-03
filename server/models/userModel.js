@@ -20,6 +20,16 @@ const userSchema = new mongoose.Schema({
     enum: ['trial', 'paid', 'failed', 'expired', 'pending', null],
     default: 'trial',
   },
+  email: {
+    type: String,
+    default: null,
+    lowercase: true,
+    trim: true,
+    sparse: true,
+  },
+  passwordResetToken: { type: String, default: null },
+  passwordResetExpires: { type: Date, default: null },
+  passwordChangedAt: { type: Date, default: null },
   // RBAC fields — safe defaults ensure backward compat for existing users
   role: { type: String, default: 'owner' },
   isSubUser: { type: Boolean, default: false },

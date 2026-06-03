@@ -107,6 +107,13 @@ const createSaleReturn = async (req, res) => {
         }
       }
 
+      // Compute the pre-discount taxable total of the entire original invoice.
+      // This is needed to prorate the bill-level discount across returned items.
+      const originalPreDiscountTotal = round2(
+        allItems.reduce((sum, i) => sum + round2(Number(i.quantity || 0) * Number(i.price_per_unit || 0)), 0)
+      );
+      const originalDiscountAmount = round2(Number(originalSale.discount_amount) || 0);
+
       let totalTaxable = 0, totalGST = 0, grandTotal = 0;
       let totalCGST = 0, totalSGST = 0, totalIGST = 0;
       const resolvedItems = [];
@@ -132,7 +139,13 @@ const createSaleReturn = async (req, res) => {
         const originalItem = allItems.find(i => String(i.product) === String(product._id)) || {};
         const ppu = Number(item.price_per_unit || originalItem.price_per_unit || product.price);
         const gst_rate = Number(item.gst_rate ?? originalItem.gst_rate ?? product.gst_rate ?? 0);
-        const taxable = round2(qty * ppu);
+        const linePreDiscount = round2(qty * ppu);
+        // Prorate the bill-level discount to this line proportionally by its share of the
+        // pre-discount total. Falls back to zero if originalPreDiscountTotal is 0.
+        const lineDiscountShare = originalPreDiscountTotal > 0
+          ? round2((linePreDiscount / originalPreDiscountTotal) * originalDiscountAmount)
+          : 0;
+        const taxable = round2(linePreDiscount - lineDiscountShare);
         const gst = round2((taxable * gst_rate) / 100);
         const gst_type = originalItem.gst_type || 'CGST_SGST';
         const cgst_amount = gst_type === 'IGST' ? 0 : round2(gst / 2);

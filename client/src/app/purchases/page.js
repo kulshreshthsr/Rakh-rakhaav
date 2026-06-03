@@ -19,35 +19,15 @@ import PurchaseSummary from './components/PurchaseSummary';
 import InlineProductForm from './components/InlineProductForm';
 import PurchaseReturnModal from './components/PurchaseReturnModal';
 import EmptyState from '../../components/ui/EmptyState';
-import { INDIAN_STATES as STATES, UNION_TERRITORIES as UTS, GSTIN_REGEX, normalizeGstin, normalizeState, fmt } from '../../lib/constants';
+import {
+  INDIAN_STATES as STATES, UNION_TERRITORIES as UTS, GSTIN_REGEX, GSTIN_LENGTH,
+  normalizeGstin, normalizeState, fmt, getToken, cleanPhone,
+  formatDateInput as formatDateInputValue, todayInputValue as getDefaultPurchaseDateValue,
+  getSaleRecordDateISO as getPurchaseRecordDateISO, getMonthFilterValue,
+  formatFullDateTime, GST_STATE_CODE_MAP, getRoundedBillValues, emptySaleItem as emptyItem,
+} from '../../lib/constants';
 
-const getToken = () => localStorage.getItem('token');
-const GSTIN_LENGTH = 15;
 const PURCHASES_CACHE_KEY = 'purchases-page';
-const cleanPhone = (phone = '') => phone.replace(/\D/g, '');
-const formatDateInputValue = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-const getDefaultPurchaseDateValue = () => formatDateInputValue(new Date());
-const getPurchaseRecordDateISO = (value, referenceValue = new Date()) => {
-  if (!value) return new Date().toISOString();
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return new Date().toISOString();
-  const nextDate = new Date(referenceValue);
-  if (Number.isNaN(nextDate.getTime())) return new Date().toISOString();
-  nextDate.setFullYear(year, month - 1, day);
-  return nextDate.toISOString();
-};
-const getMonthFilterValue = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-};
 const getPurchaseSearchText = (purchase) => {
   const itemNames = Array.isArray(purchase.items) ? purchase.items.map((item) => item.product_name || '').join(' ') : '';
   return [
@@ -59,63 +39,6 @@ const getPurchaseSearchText = (purchase) => {
     itemNames,
   ].join(' ').toLowerCase();
 };
-const formatFullDateTime = (value) => new Date(value).toLocaleString('en-IN', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-const GST_STATE_CODE_MAP = {
-  '01': 'Jammu & Kashmir',
-  '02': 'Himachal Pradesh',
-  '03': 'Punjab',
-  '04': 'Chandigarh',
-  '05': 'Uttarakhand',
-  '06': 'Haryana',
-  '07': 'Delhi',
-  '08': 'Rajasthan',
-  '09': 'Uttar Pradesh',
-  '10': 'Bihar',
-  '11': 'Sikkim',
-  '12': 'Arunachal Pradesh',
-  '13': 'Nagaland',
-  '14': 'Manipur',
-  '15': 'Mizoram',
-  '16': 'Tripura',
-  '17': 'Meghalaya',
-  '18': 'Assam',
-  '19': 'West Bengal',
-  '20': 'Jharkhand',
-  '21': 'Odisha',
-  '22': 'Chhattisgarh',
-  '23': 'Madhya Pradesh',
-  '24': 'Gujarat',
-  '26': 'Dadra & Nagar Haveli and Daman & Diu',
-  '27': 'Maharashtra',
-  '28': 'Andhra Pradesh',
-  '29': 'Karnataka',
-  '30': 'Goa',
-  '31': 'Lakshadweep',
-  '32': 'Kerala',
-  '33': 'Tamil Nadu',
-  '34': 'Puducherry',
-  '35': 'Andaman & Nicobar Islands',
-  '36': 'Telangana',
-  '37': 'Andhra Pradesh',
-  '38': 'Ladakh',
-};
-const getRoundedBillValues = (amount) => {
-  const numericAmount = Number(amount || 0);
-  const roundedTotal = Math.round(numericAmount);
-  return {
-    roundedTotal,
-    roundOff: parseFloat((roundedTotal - numericAmount).toFixed(2)),
-  };
-};
-
-// Empty item row
-const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {} });
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;

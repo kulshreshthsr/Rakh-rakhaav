@@ -47,7 +47,12 @@ const generateGSTR1 = async (req, res) => {
       const r = getQuarterDateRange(fiscalYear, qNum);
       fromDate  = r.fromDate;
       toDate    = r.toDate;
-      periodStr = `${year}${quarter}`;
+      // GST portal requires fp = MMYYYY of the last month of the period.
+      // Q1=Jun(06), Q2=Sep(09), Q3=Dec(12), Q4=Mar(03) of next calendar year.
+      const quarterEndMonth = { 1: '06', 2: '09', 3: '12', 4: '03' }[qNum];
+      // For Q4 the end month (March) falls in the next calendar year.
+      const quarterEndYear = qNum === 4 ? fiscalYear + 1 : fiscalYear;
+      periodStr = `${quarterEndMonth}${quarterEndYear}`;
     } else {
       const m = parseInt(month, 10);
       const y = parseInt(year, 10);

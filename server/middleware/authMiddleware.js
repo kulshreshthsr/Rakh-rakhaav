@@ -14,12 +14,19 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id).select(
-      'name username role isSubUser shopId isActive'
+      'name username role isSubUser shopId isActive passwordChangedAt'
     );
 
     if (!user) return res.status(401).json({ message: 'User not found' });
     if (!user.isActive) {
       return res.status(403).json({ message: 'Your account has been disabled. Contact the shop owner.' });
+    }
+
+    if (user.passwordChangedAt) {
+      const tokenIssuedAt = decoded.iat * 1000;
+      if (user.passwordChangedAt.getTime() > tokenIssuedAt) {
+        return res.status(401).json({ message: 'Session expired. Please log in again.' });
+      }
     }
 
     if (user.isSubUser && user.shopId) {

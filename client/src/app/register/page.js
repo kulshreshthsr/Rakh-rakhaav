@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(true);
   const [error, setError] = useState('');
@@ -70,7 +71,7 @@ export default function RegisterPage() {
       const res = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, username: normalizedUsername, password }),
+        body: JSON.stringify({ name, username: normalizedUsername, password, email: email.trim() || undefined }),
       });
 
       let data;
@@ -245,6 +246,22 @@ export default function RegisterPage() {
                     {usernameFeedback}
                   </p>
                 )}
+              </div>
+
+              {/* Email (optional) */}
+              <div>
+                <label className="block text-[12px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  Email (optional — for password recovery)
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  autoComplete="email"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-[14px] text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
+                />
+                <p className="mt-1 text-[11px] text-slate-400">Only used if you forget your password.</p>
               </div>
 
               {/* Password */}

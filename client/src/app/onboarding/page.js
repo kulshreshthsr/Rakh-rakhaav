@@ -6,6 +6,7 @@ import { apiUrl } from '../../lib/api';
 import { listIndustries } from '../../lib/industries/index.js';
 import { writeStoredBusinessType } from '../../contexts/IndustryContext';
 import { hasWelcomePending } from '../../lib/subscription';
+import { getToken, GST_STATE_CODE_MAP } from '../../lib/constants';
 
 // ─── Exports required by the rest of the app ────────────────────────────────
 const ONBOARDING_PENDING_KEY = 'rr-onboarding-pending';
@@ -28,18 +29,6 @@ export function hasOnboardingPending() {
 // ─── Constants ───────────────────────────────────────────────────────────────
 const ALL_INDUSTRIES = listIndustries();
 
-const GSTIN_STATE_CODES = {
-  '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab',
-  '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi',
-  '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim',
-  '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram',
-  '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
-  '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh',
-  '24': 'Gujarat', '26': 'Dadra & Nagar Haveli', '27': 'Maharashtra',
-  '28': 'Andhra Pradesh (old)', '29': 'Karnataka', '30': 'Goa',
-  '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry',
-  '35': 'Andaman & Nicobar', '36': 'Telangana', '37': 'Andhra Pradesh',
-};
 
 const GST_RATES = ['0', '5', '12', '18', '28'];
 
@@ -202,6 +191,7 @@ export default function OnboardingPage() {
   // Step 1 — Shop identity
   const [shopName, setShopName] = useState('');
   const [city, setCity] = useState('');
+  const [shopPhone, setShopPhone] = useState('');
   const [step1Error, setStep1Error] = useState('');
   const [step1Saving, setStep1Saving] = useState(false);
 
@@ -259,11 +249,11 @@ export default function OnboardingPage() {
     setStep1Error('');
     setStep1Saving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const res = await fetch(apiUrl('/api/auth/shop'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: shopName.trim(), city: city.trim() }),
+        body: JSON.stringify({ name: shopName.trim(), city: city.trim(), ...(shopPhone.trim() && { phone: shopPhone.trim() }) }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -283,7 +273,7 @@ export default function OnboardingPage() {
     setStep2Saving(true);
     setStep2Error('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const res = await fetch(apiUrl('/api/auth/shop'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -309,7 +299,7 @@ export default function OnboardingPage() {
     setGstin(upper);
     if (upper.length >= 2) {
       const code = upper.slice(0, 2);
-      setGstinState(GSTIN_STATE_CODES[code] || '');
+      setGstinState(GST_STATE_CODE_MAP[code] || '');
     } else {
       setGstinState('');
     }
@@ -323,6 +313,10 @@ export default function OnboardingPage() {
 
   // ── Step 3 handler ──────────────────────────────────────────────────────────
   async function handleStep3() {
+    if (gstType === 'registered' && !gstin) {
+      setGstinError('GST registered होने पर GSTIN number ज़रूरी है। (Add करें या "नहीं" choose करें)');
+      return;
+    }
     if (gstType === 'registered' && gstin.length === 15) {
       const pattern = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
       if (!pattern.test(gstin)) {
@@ -333,7 +327,7 @@ export default function OnboardingPage() {
     setStep3Saving(true);
     setStep3Error('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const body = { gst_type: gstType };
       if (gstType === 'registered' && gstin) body.gstin = gstin;
       const res = await fetch(apiUrl('/api/auth/shop'), {
@@ -364,7 +358,7 @@ export default function OnboardingPage() {
     setProductSaving(true);
     const mode = getStep4Mode(selectedBusiness);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const body = {
         name: productName.trim(),
         price: parseFloat(productPrice) || 0,
@@ -392,8 +386,15 @@ export default function OnboardingPage() {
   }
 
   // ── Step 5 — Finish ─────────────────────────────────────────────────────────
-  function handleFinish(path = '/dashboard') {
+  async function handleFinish(path = '/dashboard') {
     clearOnboardingPending();
+    try {
+      await fetch(apiUrl('/api/auth/shop'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ onboarding_completed: true }),
+      });
+    } catch { /* non-blocking */ }
     router.push(hasWelcomePending() ? '/welcome' : path);
   }
 
@@ -406,7 +407,7 @@ export default function OnboardingPage() {
       : '-translate-x-8 opacity-0'
     : 'translate-x-0 opacity-100';
 
-  const progressPct = ((step - 1) / 4) * 100;
+  const progressPct = (step / 5) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex flex-col">
@@ -454,6 +455,8 @@ export default function OnboardingPage() {
               setShopName={setShopName}
               city={city}
               setCity={setCity}
+              shopPhone={shopPhone}
+              setShopPhone={setShopPhone}
               error={step1Error}
               saving={step1Saving}
               onContinue={handleStep1}
@@ -517,7 +520,7 @@ export default function OnboardingPage() {
 }
 
 // ─── Step 1: Shop Identity ────────────────────────────────────────────────────
-function Step1({ shopName, setShopName, city, setCity, error, saving, onContinue }) {
+function Step1({ shopName, setShopName, city, setCity, shopPhone, setShopPhone, error, saving, onContinue }) {
   const inputRef = useRef(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
@@ -571,6 +574,18 @@ function Step1({ shopName, setShopName, city, setCity, error, saving, onContinue
             className="w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
           />
         </div>
+        <div>
+          <label className="block text-[12px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+            दुकान का फोन नंबर (optional)
+          </label>
+          <input
+            type="tel"
+            value={shopPhone}
+            onChange={(e) => setShopPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            placeholder="10-digit mobile number"
+            className="w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
+          />
+        </div>
       </div>
 
       <ContinueButton onClick={onContinue} loading={saving} label="आगे बढ़ें →" />
@@ -602,6 +617,7 @@ function Step2({ selected, setSelected, error, saving, onContinue }) {
       )}
 
       {/* Industry grid */}
+      <div className="relative">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[52vh] overflow-y-auto pr-1 pb-1">
         {ALL_INDUSTRIES.map((ind) => {
           const active = selected === ind.id;
@@ -633,6 +649,8 @@ function Step2({ selected, setSelected, error, saving, onContinue }) {
             </button>
           );
         })}
+      </div>
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent" />
       </div>
 
       {/* Selected preview strip */}
@@ -802,15 +820,15 @@ function Step4({
           {cfg.heading}
         </h1>
         <p className="mt-1.5 text-[13px] text-slate-500 leading-relaxed max-w-sm mx-auto">
-          {cfg.subtext}{' '}
-          <button
-            type="button"
-            onClick={onContinue}
-            className="font-bold text-green-700 underline underline-offset-2 hover:text-green-900 transition-colors"
-          >
-            बाद में करूँगा →
-          </button>
+          {cfg.subtext}
         </p>
+        <button
+          type="button"
+          onClick={onContinue}
+          className="mt-2 w-full py-2.5 rounded-xl border-2 border-slate-200 text-[13px] font-bold text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-all"
+        >
+          बाद में करूँगा — अभी Skip करें →
+        </button>
       </div>
 
       {/* Success card */}

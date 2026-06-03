@@ -12,7 +12,7 @@ const {
   syncSubscriptionState,
 } = require('../services/subscriptionService');
 
-const AUTH_TOKEN_TTL = '365d';
+const AUTH_TOKEN_TTL = '30d';
 const MAX_OWNER_PHOTO_SIZE = 5 * 1024 * 1024;
 
 const isValidOwnerPhoto = (value = '') => {
@@ -52,6 +52,7 @@ const register = async (req, res) => {
       name,
       username: username.toLowerCase(),
       password: hashedPassword,
+      email: req.body.email ? req.body.email.toLowerCase().trim() : null,
       trialStartDate: now,
       trialEndDate: new Date(now.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000)),
       paymentStatus: 'trial',
@@ -115,7 +116,13 @@ const updateProfile = async (req, res) => {
   const { name } = req.body;
   const userId = req.user.subUserId || req.user.id;
   try {
-    const user = await User.findByIdAndUpdate(userId, { name }, { new: true });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (name !== undefined) user.name = name;
+    if (req.body.email !== undefined) {
+      user.email = req.body.email ? req.body.email.toLowerCase().trim() : null;
+    }
+    await user.save();
     if (!req.user.isSubUser) ensureTrialDates(user);
     res.json({ id: user._id, name: user.name, username: user.username, subscription: req.user.isSubUser ? null : getSubscriptionSnapshot(user) });
   } catch (err) {
@@ -134,6 +141,7 @@ const updatePassword = async (req, res) => {
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
     user.password = await bcrypt.hash(newPassword, 10);
+    user.passwordChangedAt = new Date();
     await user.save();
     res.json({ message: 'Password updated!' });
   } catch (err) {
@@ -188,6 +196,7 @@ const updateShop = async (req, res) => {
     if (invoice_prefix !== undefined) updatePayload.invoice_prefix = String(invoice_prefix || '').replace(/[^A-Z0-9\/\-_]/gi, '').toUpperCase().slice(0, 10);
     if (invoice_number_digits !== undefined) updatePayload.invoice_number_digits = Math.min(8, Math.max(1, Number(invoice_number_digits) || 4));
     if (invoice_start_number !== undefined) updatePayload.invoice_start_number = Math.max(1, Number(invoice_start_number) || 1);
+    if (req.body.onboarding_completed === true) updatePayload.onboarding_completed = true;
     const updated = await Shop.findByIdAndUpdate(shop._id, updatePayload, { new: true });
     await logAuditEvent({
       shopId: updated._id,
@@ -250,4 +259,54 @@ const getSubscriptionStatus = async (req, res) => {
   }
 };
 
-module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus };
+const crypto = require('crypto');
+
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required.' });
+  try {
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) return res.json({ message: 'If this email is registered, a reset link has been sent.' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.passwordResetToken = crypto.createHash('sha256').update(token).digest('hex');
+    user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
+    await user.save();
+
+    const isDev = process.env.NODE_ENV !== 'production';
+    logger.info(`[forgotPassword] Reset token for ${email}: ${token}`);
+    return res.json({
+      message: 'If this email is registered, a reset link has been sent.',
+      ...(isDev && { dev_token: token }),
+    });
+  } catch (err) {
+    logger.error('[forgotPassword]', err.message);
+    res.status(500).json({ message: 'Something went wrong.' });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ message: 'Token and new password are required.' });
+  if (password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+  try {
+    const hashed = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      passwordResetToken: hashed,
+      passwordResetExpires: { $gt: Date.now() },
+    });
+    if (!user) return res.status(400).json({ message: 'Reset link is invalid or has expired.' });
+
+    user.password = await bcrypt.hash(password, 10);
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    user.passwordChangedAt = new Date();
+    await user.save();
+    res.json({ message: 'Password reset successfully. Please log in with your new password.' });
+  } catch (err) {
+    logger.error('[resetPassword]', err.message);
+    res.status(500).json({ message: 'Something went wrong.' });
+  }
+};
+
+module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus, forgotPassword, resetPassword };

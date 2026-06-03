@@ -72,6 +72,7 @@ const shopSchema = new mongoose.Schema({
   invoice_prefix:        { type: String, default: '', trim: true, maxlength: 10 },
   invoice_number_digits: { type: Number, default: 4, min: 1, max: 8 },
   invoice_start_number:  { type: Number, default: 1 },
+  onboarding_completed:  { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Auto-extract state code from GSTIN and set composition rate

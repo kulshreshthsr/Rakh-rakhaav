@@ -5,55 +5,19 @@ import { queueSale } from '../../../lib/offlineQueue';
 import { printDeliveryChallan } from '../../../lib/generateChallan';
 import eventBus from '../../../lib/eventBus';
 import { validateGSTIN as _validateGSTINFull, getSupplyType as _getSupplyType } from '../../../lib/gstValidation';
-
-/* ── Helpers (copied from page.js module scope) ── */
-const getToken = () => localStorage.getItem('token');
-const fmt = (n) => parseFloat(n || 0).toFixed(2);
-const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-const GSTIN_LENGTH = 15;
-const normalizeGstin = (value) => value.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
-const normalizeState = (value = '') => value.trim().toLowerCase();
-const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
-const GST_STATE_CODE_MAP = {
-  '01':'Jammu & Kashmir','02':'Himachal Pradesh','03':'Punjab','04':'Chandigarh','05':'Uttarakhand',
-  '06':'Haryana','07':'Delhi','08':'Rajasthan','09':'Uttar Pradesh','10':'Bihar','11':'Sikkim',
-  '12':'Arunachal Pradesh','13':'Nagaland','14':'Manipur','15':'Mizoram','16':'Tripura',
-  '17':'Meghalaya','18':'Assam','19':'West Bengal','20':'Jharkhand','21':'Odisha','22':'Chhattisgarh',
-  '23':'Madhya Pradesh','24':'Gujarat','26':'Dadra & Nagar Haveli and Daman & Diu','27':'Maharashtra',
-  '28':'Andhra Pradesh','29':'Karnataka','30':'Goa','31':'Lakshadweep','32':'Kerala','33':'Tamil Nadu',
-  '34':'Puducherry','35':'Andaman & Nicobar Islands','36':'Telangana','37':'Andhra Pradesh','38':'Ladakh',
-};
+import {
+  getToken, fmt, GSTIN_REGEX, GSTIN_LENGTH, normalizeGstin, normalizeState, normalizeBarcode,
+  GST_STATE_CODE_MAP, getRoundedBillValues, formatDateInput as formatDateInputValue,
+  todayInputValue as getDefaultSaleDateValue, getSaleRecordDateISO,
+  emptySaleItem as emptyItem, buildInitialSaleForm as buildInitialForm,
+  buildWhatsAppShareMessage,
+} from '../../../lib/constants';
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
-const getRoundedBillValues = (amount) => {
-  const numericAmount = Number(amount || 0);
-  const roundedTotal = Math.round(numericAmount);
-  return { roundedTotal, roundOff: parseFloat((roundedTotal - numericAmount).toFixed(2)) };
-};
-const formatDateInputValue = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-};
-const getDefaultSaleDateValue = () => formatDateInputValue(new Date());
-const getSaleRecordDateISO = (value, referenceValue = new Date()) => {
-  if (!value) return new Date().toISOString();
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return new Date().toISOString();
-  const nextDate = new Date(referenceValue);
-  if (Number.isNaN(nextDate.getTime())) return new Date().toISOString();
-  nextDate.setFullYear(year, month - 1, day);
-  return nextDate.toISOString();
-};
-const emptyItem = () => ({ _rowId: Math.random().toString(36).slice(2), product_id: '', quantity: 1, price_per_unit: '', item_metadata: {}, unit_of_measurement: 'NOS', remarks: '' });
-const buildInitialForm = (overrides = {}) => ({
-  payment_type: 'cash', amount_paid: '', buyer_name: '', buyer_phone: '',
-  buyer_gstin: '', buyer_address: '', buyer_state: '', notes: '',
-  sale_date: getDefaultSaleDateValue(), ...overrides,
-});
+
 const buildOfflineSaleItems = (rawItems, products) => (
   (rawItems || []).map((item) => {
     const product = products.find((prod) => prod._id === item.product_id);
@@ -67,16 +31,6 @@ const buildOfflineSaleItems = (rawItems, products) => (
     };
   }).filter((item) => item.product_id && item.quantity > 0)
 );
-const buildWhatsAppShareMessage = (sale, shopName) => {
-  const saleDate = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const advancePaid = sale.payment_type === 'credit' ? parseFloat(sale.amount_paid || 0) : parseFloat(sale.total_amount || 0);
-  const dueAmount = sale.payment_type === 'credit' ? Math.max(0, parseFloat(sale.total_amount || 0) - advancePaid) : 0;
-  const payLabel = sale.payment_type === 'cash' ? 'Cash (Paid)' : sale.payment_type === 'upi' ? 'UPI (Paid)' : sale.payment_type === 'bank' ? 'Bank Transfer' : 'Udhaar (Credit)';
-  const itemLines = (sale.items && sale.items.length > 0)
-    ? sale.items.map((item, i) => `  ${i + 1}. ${item.product_name} x ${item.quantity} @ ₹${fmt(item.price_per_unit)} = ₹${fmt(item.total_amount)}`).join('\n')
-    : `  1. ${sale.product_name} x ${sale.quantity} @ ₹${fmt(sale.price_per_unit)} = ₹${fmt(sale.total_amount)}`;
-  return [sale.buyer_name && sale.buyer_name !== 'Walk-in Customer' ? `Namaste ${sale.buyer_name} ji,` : 'Namaste,', '', 'Invoice / Bill Details', `Shop: ${shopName || 'Rakh-Rakhaav'}`, `Invoice No: ${sale.invoice_number}`, `Date: ${saleDate}`, 'Items:', itemLines, `Taxable Amount: ₹${fmt(sale.taxable_amount)}`, `GST: ₹${fmt(sale.total_gst)}`, `Total Amount: ₹${fmt(sale.total_amount)}`, `Payment: ${payLabel}`, ...(sale.payment_type === 'credit' ? [`Advance Payment: ₹${fmt(advancePaid)}`, `Udhaar / Due: ₹${fmt(dueAmount)}`] : []), '', `Thank you for choosing ${shopName || 'Rakh-Rakhaav'}`].join('\n');
-};
 
 export default function useSaleForm({
   defaultPayment,

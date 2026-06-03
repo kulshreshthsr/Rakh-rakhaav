@@ -6,7 +6,7 @@ const expenseSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   payment_mode: {
     type: String,
-    enum: ['cash', 'bank', 'upi'],
+    enum: ['cash', 'bank', 'upi', null],
     default: null,
   },
   reference_id: { type: String, default: '' },
