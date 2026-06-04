@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
+const { requireFeature } = require('../middleware/tierMiddleware');
 const {
   getSaleById,
   getSales,
@@ -36,7 +37,7 @@ router.post('/debit-note',    protect, checkSubscriptionStatus, requirePermissio
 router.patch('/:id/mark-dispatched', protect, requirePermission('CREATE_INVOICE'), markChallanDispatched);
 router.patch('/:id/mark-delivered', protect, requirePermission('CREATE_INVOICE'), markChallanDelivered);
 router.post('/:id/convert-to-invoice', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), convertToInvoice);
-router.post('/:id/convert-quotation',  protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), convertQuotation);
+router.post('/:id/convert-quotation',  protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), requireFeature('billing_quotation'), convertQuotation);
 
 router.get('/',    protect, requirePermission('VIEW_SALES'),   getSales);
 router.get('/:id', protect, requirePermission('VIEW_SALES'),   getSaleById);

@@ -197,6 +197,7 @@ const updateShop = async (req, res) => {
     if (invoice_number_digits !== undefined) updatePayload.invoice_number_digits = Math.min(8, Math.max(1, Number(invoice_number_digits) || 4));
     if (invoice_start_number !== undefined) updatePayload.invoice_start_number = Math.max(1, Number(invoice_start_number) || 1);
     if (req.body.onboarding_completed === true) updatePayload.onboarding_completed = true;
+    if (req.body.businessTier && ['nano', 'core', 'pro'].includes(req.body.businessTier)) updatePayload.businessTier = req.body.businessTier;
     const updated = await Shop.findByIdAndUpdate(shop._id, updatePayload, { new: true });
     await logAuditEvent({
       shopId: updated._id,
@@ -242,10 +243,11 @@ const getSubscriptionStatus = async (req, res) => {
       }
     }
 
-    // Include businessType and dashboardMode from shop so frontend context stays fresh
-    const shopForBiz = await Shop.findOne({ owner: req.user.id }).select('businessType dashboardMode');
-    responseUser.businessType = shopForBiz?.businessType || 'general';
+    // Include businessType, dashboardMode, and businessTier so frontend context stays fresh
+    const shopForBiz = await Shop.findOne({ owner: req.user.id }).select('businessType dashboardMode businessTier');
+    responseUser.businessType  = shopForBiz?.businessType  || 'general';
     responseUser.dashboardMode = shopForBiz?.dashboardMode || 'b2c';
+    responseUser.businessTier  = shopForBiz?.businessTier  || 'nano';
 
     res.json({
       user: responseUser,
@@ -319,4 +321,38 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus, forgotPassword, resetPassword, logout };
+const { inferTier } = require('../services/tierInference');
+
+const completeBusinessProfile = async (req, res) => {
+  try {
+    const { signals } = req.body;
+
+    const shop = await Shop.findOne({ owner: req.user.id });
+    if (!shop) return res.status(404).json({ message: 'Shop not found' });
+
+    const { tier, score, reasons } = inferTier(signals, shop.gst_type, shop.businessType);
+
+    const prevTier = shop.businessTier;
+    shop.profileSignals = { ...signals, filingGst: shop.gst_type === 'regular' };
+    shop.businessTier = tier;
+
+    if (prevTier !== tier) {
+      shop.tierHistory.push({
+        from: prevTier,
+        to: tier,
+        reason: 'onboarding_profile',
+      });
+    }
+
+    await shop.save();
+
+    logger.info(`[tier] Shop ${shop._id} profiled → ${tier} (score: ${score})`);
+
+    res.json({ tier, score, reasons, shop });
+  } catch (err) {
+    logger.error('[completeBusinessProfile]', err.message);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus, forgotPassword, resetPassword, logout, completeBusinessProfile };

@@ -6,6 +6,7 @@ const Customer = require('../models/customerModel');
 const Shop = require('../models/shopModel');
 const WarrantyClaim = require('../models/warrantyClaimModel');
 const ruleEngine = require('../services/ruleEngine');
+const { checkUsageUpgrade } = require('../services/tierInference');
 const { calculateGSTR3BSummary } = require('./salesController');
 
 const { getShopOrFail } = require('../utils/shopGuard');
@@ -274,7 +275,7 @@ const getDashboardSummary = async (req, res) => {
       ]);
     }
 
-    res.json({
+    const responseObj = {
       today: {
         revenue: round2(todaySalesSummary.totalRevenue),
         bills: todaySalesSummary.salesCount || 0,
@@ -342,10 +343,37 @@ const getDashboardSummary = async (req, res) => {
       warrantySummary,
       pendingPickup,
       fetchedAt: new Date().toISOString(),
-    });
+    };
+
+    res.json(responseObj);
 
     // Fire-and-forget rule scan — never blocks the response
     ruleEngine.scanShop(shop._id, shop.businessType || 'general').catch(() => {});
+
+    // Fire-and-forget tier upgrade check
+    setImmediate(async () => {
+      try {
+        const usageStats = {
+          totalSales:     responseObj.stats?.salesCount     || 0,
+          totalPurchases: responseObj.month?.purchasesCount || 0,
+          totalSuppliers: 0,
+          monthlyRevenue: responseObj.month?.revenue        || 0,
+          creditSalesPct: responseObj.paymentSplit?.creditGiven > 0
+            ? responseObj.paymentSplit.creditGiven / (responseObj.today?.revenue || 1)
+            : 0,
+          totalProducts:  (responseObj.lowStockCount || 0) + (responseObj.outOfStockCount || 0),
+          subUserCount:   0,
+        };
+
+        const upgrade = checkUsageUpgrade(shop, usageStats);
+        if (upgrade) {
+          await Shop.findByIdAndUpdate(shop._id, {
+            $set: { businessTier: upgrade.newTier },
+            $push: { tierHistory: { from: shop.businessTier, to: upgrade.newTier, reason: upgrade.reason } },
+          });
+        }
+      } catch { /* never crash the response */ }
+    });
   } catch (error) {
     logger.error(error);
     res.status(500).json({ message: 'Something went wrong' });

@@ -14,6 +14,7 @@ import {
 import { useAppLocale } from './AppLocale';
 import { SYSTEM_ROLES as FRONTEND_ROLES } from '../lib/permissions';
 import { useIndustry } from '../contexts/IndustryContext';
+import { useTier } from '../contexts/TierContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import NotificationBell from './NotificationBell';
 import { setOnboardingPending, hasOnboardingPending } from '../app/onboarding/page';
@@ -150,6 +151,7 @@ function UserDropdown({ onProfile, onLogout, extraItems, className = '' }) {
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
   const { updateBusinessType, updateDashboardMode, term, isEnabled, businessType } = useIndustry();
+  const { isNavVisible, updateTier } = useTier();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -188,6 +190,7 @@ function LayoutInner({ children }) {
         localStorage.setItem('user', JSON.stringify(data.user));
         if (data.user.businessType) updateBusinessType(data.user.businessType);
         if (data.user.dashboardMode) updateDashboardMode(data.user.dashboardMode);
+        if (data.user.businessTier) updateTier(data.user.businessTier, data.user.businessType);
       }
       setSubscription(data.subscription || null);
       writeStoredSubscription(data.subscription || null);
@@ -304,12 +307,16 @@ function LayoutInner({ children }) {
     return perms.includes(permission);
   }, [user]);
 
+  // Keys that are gated by tier (anything not in this set is always visible)
+  const TIER_NAV_GATE = useMemo(() => new Set(['purchases', 'gst', 'reports', 'bank', 'income']), []);
+
   const translatedNav = useMemo(
     () => NAV_ITEMS
       .filter(item => canAccess(item.permission))
       .filter(item => isEnabled(item.key))
+      .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key))
       .map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
-    [bilingualLabels, t, canAccess, isEnabled]
+    [bilingualLabels, t, canAccess, isEnabled, isNavVisible, TIER_NAV_GATE]
   );
 
   // Dynamic bottom nav — slot 0 is always Dashboard, slot 1 is always Sales,
@@ -346,14 +353,17 @@ function LayoutInner({ children }) {
   }, [businessType, term]);
 
   const filteredBottomNav = useMemo(
-    () => bottomNavItems.filter(item => canAccess(item.permission)),
-    [bottomNavItems, canAccess]
+    () => bottomNavItems
+      .filter(item => canAccess(item.permission))
+      .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key)),
+    [bottomNavItems, canAccess, isNavVisible, TIER_NAV_GATE]
   );
 
   const filteredDrawerItems = useMemo(() => {
     const base = MORE_DRAWER_ITEMS
       .filter(item => canAccess(item.permission))
       .filter(item => isEnabled(item.key))
+      .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key))
       .map(item => {
         if (item.key === 'products') return { ...item, label: term('inventory', 'Stock'), sublabel: `${term('products','Products')} & Inventory` };
         return item;
@@ -385,7 +395,7 @@ function LayoutInner({ children }) {
       base.push({ href: '/pets', key: 'pets', label: 'Pet Profiles', sublabel: 'Health records', icon: 'team', permission: 'VIEW_SALES' });
     }
     return base;
-  }, [canAccess, isEnabled, term, businessType]);
+  }, [canAccess, isEnabled, term, businessType, isNavVisible, TIER_NAV_GATE]);
 
   return (
     <NotificationProvider>

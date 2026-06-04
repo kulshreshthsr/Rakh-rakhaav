@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AppLocaleProvider } from "../components/AppLocale";
 import { IndustryProvider } from "../contexts/IndustryContext";
+import { TierProvider } from "../contexts/TierContext";
 import AppSplash from "../components/AppSplash";
 import PWAInstall from "../components/PWAInstall";
 import ShopSetupPrompt from "../components/ShopSetupPrompt";
@@ -47,12 +48,14 @@ export default function RootLayout({ children }) {
       </head>
       <body className="rr-enterprise-surface">
         <AppLocaleProvider>
-          <IndustryProvider>
-            <AppSplash />
-            {children}
-            <PWAInstall />
-            <ShopSetupPrompt />
-          </IndustryProvider>
+          <TierProvider>
+            <IndustryProvider>
+              <AppSplash />
+              {children}
+              <PWAInstall />
+              <ShopSetupPrompt />
+            </IndustryProvider>
+          </TierProvider>
         </AppLocaleProvider>
       </body>
     </html>

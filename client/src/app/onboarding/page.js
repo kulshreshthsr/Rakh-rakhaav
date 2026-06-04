@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { apiUrl } from '../../lib/api';
 import { listIndustries } from '../../lib/industries/index.js';
 import { writeStoredBusinessType } from '../../contexts/IndustryContext';
+import { writeStoredTier } from '../../contexts/TierContext';
 import { hasWelcomePending } from '../../lib/subscription';
 import { getToken, GST_STATE_CODE_MAP } from '../../lib/constants';
 
@@ -208,7 +209,13 @@ export default function OnboardingPage() {
   const [step3Saving, setStep3Saving] = useState(false);
   const [step3Error, setStep3Error] = useState('');
 
-  // Step 4 — Product / Service
+  // Step 4 — Business profiling
+  const [profileStep,    setProfileStep]    = useState(0);
+  const [profileAnswers, setProfileAnswers] = useState({});
+  const [profileSaving,  setProfileSaving]  = useState(false);
+  const [inferredTier,   setInferredTier]   = useState(null);
+
+  // Step 5 — Product / Service
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
   const [productCostPrice, setProductCostPrice] = useState('');
@@ -340,7 +347,7 @@ export default function OnboardingPage() {
         setStep3Error(d.message || 'Save नहीं हो पाया।');
         return;
       }
-      goTo(4);
+      goTo(4); // → profiling step
     } catch {
       setStep3Error('Network error. Internet connection check करें।');
     } finally {
@@ -348,7 +355,120 @@ export default function OnboardingPage() {
     }
   }
 
-  // ── Step 4 — Add product / service ─────────────────────────────────────────
+  // ── Step 4 — Business profiling helpers ────────────────────────────────────
+  function getProfileQuestions(businessType, gstType) {
+    const isServiceBusiness = ['salon', 'service_center', 'repair_shop', 'restaurant'].includes(businessType);
+    const canManufacture = ['hardware', 'electronics', 'clothing', 'kirana', 'grocery',
+      'furniture', 'mobile_shop', 'footwear', 'stationery', 'cosmetics'].includes(businessType);
+
+    return [
+      {
+        id: 'sellsTo',
+        text: 'आप किसे बेचते हैं ज़्यादातर? 🏪',
+        options: [
+          { label: 'Walk-in customers को', value: 'walk_in',    emoji: '🛍️' },
+          { label: 'Shops / businesses को', value: 'businesses', emoji: '🏭' },
+          { label: 'Dono ko',               value: 'both',       emoji: '🔄' },
+        ],
+      },
+      {
+        id: 'monthlyBillCount',
+        text: 'Roughly महीने में कितने bills बनाते हैं? 🧾',
+        options: [
+          { label: '100 से कम',    value: 'under_100',  emoji: '📄' },
+          { label: '100 से 500',   value: '100_to_500', emoji: '📋' },
+          { label: '500 से ज़्यादा', value: 'above_500', emoji: '📦' },
+        ],
+      },
+      {
+        id: 'staffCount',
+        text: 'Team में कितने लोग हैं? 👥',
+        show: (answers) => answers.sellsTo !== 'walk_in' || answers.monthlyBillCount !== 'under_100',
+        options: [
+          { label: 'सिर्फ मैं / 1-2 लोग', value: 'solo',   emoji: '🧑' },
+          { label: '3 से 10 लोग',          value: 'small',  emoji: '👨‍👩‍👦' },
+          { label: '10 से ज़्यादा',         value: 'medium', emoji: '🏢' },
+        ],
+      },
+      {
+        id: 'usesCredit',
+        text: 'Credit / उधार पर बेचते हैं? 💳',
+        show: () => !isServiceBusiness,
+        options: [
+          { label: 'हाँ, काफ़ी customers को', value: true,  emoji: '✅' },
+          { label: 'कभी-कभी',                 value: true,  emoji: '🤔' },
+          { label: 'नहीं',                    value: false, emoji: '❌' },
+        ],
+      },
+      {
+        id: 'hasMultipleSuppliers',
+        text: 'Suppliers / distributors कितने हैं? 🚚',
+        show: (answers) => !isServiceBusiness && answers.monthlyBillCount !== 'under_100',
+        options: [
+          { label: '1-2 ही हैं',         value: false, emoji: '1️⃣' },
+          { label: '3 से ज़्यादा हैं',  value: true,  emoji: '🔢' },
+        ],
+      },
+      {
+        id: 'needsDeliveryChallan',
+        text: 'Delivery challan / transport document बनाना पड़ता है? 📋',
+        show: (answers) => answers.sellsTo === 'businesses' || answers.sellsTo === 'both',
+        options: [
+          { label: 'हाँ, regularly', value: true,  emoji: '✅' },
+          { label: 'कभी-कभी',       value: true,  emoji: '🤔' },
+          { label: 'नहीं',          value: false, emoji: '❌' },
+        ],
+      },
+      {
+        id: 'manufactures',
+        text: 'क्या आप खुद कुछ बनाते / manufacture करते हैं? 🏭',
+        show: () => canManufacture,
+        options: [
+          { label: 'हाँ, हम बनाते हैं',       value: true,  emoji: '🏭' },
+          { label: 'नहीं, खरीद कर बेचते हैं', value: false, emoji: '🛒' },
+        ],
+      },
+    ];
+  }
+
+  async function submitProfile(finalAnswers) {
+    setProfileSaving(true);
+    try {
+      const res = await fetch(apiUrl('/api/auth/shop/profile'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ signals: finalAnswers }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Profile save failed');
+
+      setInferredTier(data.tier);
+      writeStoredTier(data.tier);
+
+      setTimeout(() => goTo(5), 1200);
+    } catch {
+      goTo(5);
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  async function handleProfileAnswer(questionId, value) {
+    const newAnswers = { ...profileAnswers, [questionId]: value };
+    setProfileAnswers(newAnswers);
+
+    const questions = getProfileQuestions(selectedBusiness, gstType);
+    const applicable = questions.filter(q => !q.show || q.show(newAnswers));
+    const nextStep = profileStep + 1;
+
+    if (nextStep >= applicable.length) {
+      await submitProfile(newAnswers);
+    } else {
+      setProfileStep(nextStep);
+    }
+  }
+
+  // ── Step 5 — Add product / service ─────────────────────────────────────────
   async function handleAddProduct() {
     if (!productName.trim() || !productPrice) {
       setProductError('नाम और selling price ज़रूरी है।');
@@ -407,7 +527,7 @@ export default function OnboardingPage() {
       : '-translate-x-8 opacity-0'
     : 'translate-x-0 opacity-100';
 
-  const progressPct = (step / 5) * 100;
+  const progressPct = (step / 6) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex flex-col">
@@ -433,7 +553,7 @@ export default function OnboardingPage() {
           <div className="text-[16px] font-black tracking-tight text-slate-900 leading-none">रखरखाव</div>
           <div className="text-[9px] font-bold uppercase tracking-widest text-green-700">Setup</div>
         </div>
-        <div className="text-[11px] font-bold text-slate-400">Step {step} of 5</div>
+        <div className="text-[11px] font-bold text-slate-400">Step {step} of 6</div>
       </div>
 
       {/* ── Progress bar ── */}
@@ -485,6 +605,18 @@ export default function OnboardingPage() {
             />
           )}
           {step === 4 && (
+            <Step4Profile
+              businessType={selectedBusiness}
+              gstType={gstType}
+              profileStep={profileStep}
+              profileAnswers={profileAnswers}
+              onAnswer={handleProfileAnswer}
+              inferredTier={inferredTier}
+              saving={profileSaving}
+              getProfileQuestions={getProfileQuestions}
+            />
+          )}
+          {step === 5 && (
             <Step4
               businessType={selectedBusiness}
               productName={productName}
@@ -503,10 +635,10 @@ export default function OnboardingPage() {
               error={productError}
               productAdded={productAdded}
               onAdd={handleAddProduct}
-              onContinue={() => goTo(5)}
+              onContinue={() => goTo(6)}
             />
           )}
-          {step === 5 && (
+          {step === 6 && (
             <Step5
               shopName={shopName}
               industry={selectedIndustry}
@@ -514,6 +646,89 @@ export default function OnboardingPage() {
             />
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 4: Business Profiling (conversational) ─────────────────────────────
+function Step4Profile({ businessType, gstType, profileStep, profileAnswers, onAnswer, inferredTier, saving, getProfileQuestions }) {
+  const questions = getProfileQuestions(businessType, gstType);
+  const applicable = questions.filter(q => !q.show || q.show(profileAnswers));
+  const currentQ = applicable[profileStep];
+
+  const tierMeta = {
+    nano: { label: 'Starter Setup',   emoji: '🌱', color: 'from-green-500 to-emerald-600',  desc: 'Clean, simple billing tailored for you.' },
+    core: { label: 'Business Setup',  emoji: '📊', color: 'from-blue-500 to-indigo-600',    desc: 'Full GST, purchases, reports — everything you need.' },
+    pro:  { label: 'Pro / ERP Setup', emoji: '🏢', color: 'from-violet-500 to-purple-600',  desc: 'Purchase orders, P&L, multi-user — built for growth.' },
+  };
+  const tm = tierMeta[inferredTier || 'nano'];
+
+  if (inferredTier && !saving) {
+    return (
+      <div className="flex flex-col items-center text-center gap-6 py-8">
+        <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${tm.color} flex items-center justify-center text-4xl shadow-xl`}>
+          {tm.emoji}
+        </div>
+        <div>
+          <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-2">आपका setup</p>
+          <h2 className="text-[26px] font-black text-slate-900 tracking-tight">{tm.label}</h2>
+          <p className="text-[14px] text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">{tm.desc}</p>
+        </div>
+        <div className="w-8 h-8 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!currentQ) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <div className="w-12 h-12 rounded-full border-2 border-green-500 border-t-transparent animate-spin" />
+        <p className="text-[14px] font-bold text-slate-600">आपका profile तैयार हो रहा है…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Conversation bubble */}
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-700 flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-md">
+          ₹
+        </div>
+        <div className="flex-1">
+          <p className="text-[11px] font-bold text-green-700 mb-1">Rakhaav</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 inline-block">
+            <p className="text-[15px] font-bold text-slate-900 leading-snug">{currentQ.text}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Answer options */}
+      <div className="space-y-2.5 pl-12">
+        {currentQ.options.map((opt) => (
+          <button
+            key={String(opt.value)}
+            type="button"
+            onClick={() => onAnswer(currentQ.id, opt.value)}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-slate-200 bg-white text-left hover:border-green-400 hover:bg-green-50 active:scale-[0.98] transition-all duration-150 group"
+          >
+            <span className="text-[22px] flex-shrink-0">{opt.emoji}</span>
+            <span className="text-[14px] font-bold text-slate-800 group-hover:text-green-800">{opt.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Progress dots */}
+      <div className="flex items-center justify-center gap-2 pt-2">
+        {applicable.map((_, i) => (
+          <div
+            key={i}
+            className={`rounded-full transition-all duration-300 ${
+              i <= profileStep ? 'w-5 h-1.5 bg-green-500' : 'w-1.5 h-1.5 bg-slate-200'
+            }`}
+          />
+        ))}
       </div>
     </div>
   );

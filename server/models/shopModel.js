@@ -73,6 +73,34 @@ const shopSchema = new mongoose.Schema({
   invoice_number_digits: { type: Number, default: 4, min: 1, max: 8 },
   invoice_start_number:  { type: Number, default: 1 },
   onboarding_completed:  { type: Boolean, default: false },
+
+  // ── Business Intelligence Profile ──────────────────────────────────
+  // Inferred tier drives which modules are unlocked. Never ask this directly.
+  businessTier: {
+    type: String,
+    enum: ['nano', 'core', 'pro'],
+    default: 'nano',
+  },
+
+  // Raw signals collected during profiling — kept for future re-scoring
+  profileSignals: {
+    sellsTo:             { type: String, enum: ['walk_in', 'businesses', 'both'], default: null },
+    monthlyBillCount:    { type: String, enum: ['under_100', '100_to_500', 'above_500'], default: null },
+    staffCount:          { type: String, enum: ['solo', 'small', 'medium'], default: null },
+    usesCredit:          { type: Boolean, default: null },
+    hasMultipleSuppliers:{ type: Boolean, default: null },
+    needsDeliveryChallan:{ type: Boolean, default: null },
+    manufactures:        { type: Boolean, default: null },
+    filingGst:           { type: Boolean, default: null },
+  },
+
+  // Tier upgrade history — for analytics
+  tierHistory: [{
+    from:      { type: String },
+    to:        { type: String },
+    reason:    { type: String },
+    upgradedAt:{ type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 
 // Auto-extract state code from GSTIN and set composition rate
