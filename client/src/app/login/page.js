@@ -49,7 +49,13 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.user));
         writeStoredSubscription(data.user?.subscription || null);
         setWelcomePending(false);
-        if (data.user?.subscription?.isPro) {
+        /* Honor ?next= redirect param */
+        const nextParam = typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('next')
+          : null;
+        if (nextParam && nextParam.startsWith('/')) {
+          router.push(nextParam);
+        } else if (data.user?.subscription?.isPro) {
           markTrialGateSeen();
           router.push('/dashboard');
         } else {

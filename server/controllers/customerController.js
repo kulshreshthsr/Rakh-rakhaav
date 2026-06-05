@@ -53,7 +53,8 @@ const updateCustomer = async (req, res) => {
     const shop = await getShopOrFail(req.user.id);
     const existingCustomer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!existingCustomer) return res.status(404).json({ message: 'Customer नहीं मिला' });
-    const { name, phone, email, address, gstin, notes, opening_balance } = req.body;
+    const { name, phone, email, address, gstin, notes, opening_balance,
+            reminder_enabled, reminder_frequency } = req.body;
     const updatePayload = {};
     if (name !== undefined) updatePayload.name = name;
     if (phone !== undefined) updatePayload.phone = phone;
@@ -61,6 +62,8 @@ const updateCustomer = async (req, res) => {
     if (address !== undefined) updatePayload.address = address;
     if (gstin !== undefined) updatePayload.gstin = gstin;
     if (notes !== undefined) updatePayload.notes = notes;
+    if (reminder_enabled !== undefined) updatePayload.reminder_enabled = Boolean(reminder_enabled);
+    if (reminder_frequency !== undefined) updatePayload.reminder_frequency = reminder_frequency || null;
     if (opening_balance !== undefined) {
       const nextOpening = Number(opening_balance || 0);
       if (!Number.isFinite(nextOpening) || nextOpening < 0) {
@@ -99,14 +102,12 @@ const deleteCustomer = async (req, res) => {
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
 
-    // Warn if balance still due
     if (customer.totalUdhaar > 0) {
       return res.status(400).json({
         message: `Customer ka ₹${customer.totalUdhaar.toFixed(2)} udhaar baaki hai. Pehle settle karo.`,
       });
     }
 
-    // Soft delete
     await Customer.findOneAndUpdate({ _id: req.params.id, shop: shop._id }, { isActive: false });
     await logAuditEvent({
       shopId: shop._id,
@@ -143,7 +144,7 @@ const getUdhaar = async (req, res) => {
 
 // ── ADD MANUAL UDHAAR ENTRY ──────────────────────────────────────────────────
 const addUdhaar = async (req, res) => {
-  const { type, amount, note, date, payment_mode, reference_id } = req.body;
+  const { type, amount, note, date, payment_mode, reference_id, due_date } = req.body;
   try {
     if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
       return res.status(400).json({ message: 'Amount must be a positive number' });
@@ -152,10 +153,8 @@ const addUdhaar = async (req, res) => {
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
 
-    // Normalise legacy 'diya'/'liya' to 'debit'/'credit'
     const normalType = type === 'diya' ? 'debit' : type === 'liya' ? 'credit' : type;
 
-    // Update customer balance
     if (normalType === 'debit') {
       customer.totalSales = parseFloat((customer.totalSales + Number(amount)).toFixed(2));
     } else {
@@ -175,6 +174,7 @@ const addUdhaar = async (req, res) => {
       date: date || new Date(),
       reference_id: reference_id || '',
       reference_type: 'manual',
+      due_date: due_date ? new Date(due_date) : null,
     });
     await logAuditEvent({
       shopId: shop._id,
@@ -195,10 +195,9 @@ const addUdhaar = async (req, res) => {
 };
 
 // ── SETTLE / PARTIAL PAYMENT ─────────────────────────────────────────────────
-// Replaces old settleUdhaar that wiped everything
 const settlePayment = async (req, res) => {
   try {
-    const { amount, note, payment_mode } = req.body;
+    const { amount, note, payment_mode, payment_date } = req.body;
     const shop = await getShopOrFail(req.user.id);
     const customer = await Customer.findOne({ _id: req.params.id, shop: shop._id });
     if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
@@ -211,12 +210,21 @@ const settlePayment = async (req, res) => {
       return res.status(400).json({ message: 'Payment exceeds balance due' });
     }
 
-    // Update customer balance
+    let entryDate = new Date();
+    if (payment_date) {
+      const parsed = new Date(payment_date);
+      if (!Number.isNaN(parsed.getTime())) {
+        if (parsed > new Date()) {
+          return res.status(400).json({ message: 'Payment date future में नहीं हो सकती।' });
+        }
+        entryDate = parsed;
+      }
+    }
+
     customer.totalPaid = parseFloat((customer.totalPaid + payAmount).toFixed(2));
     customer.totalUdhaar = parseFloat((customer.totalSales - customer.totalPaid).toFixed(2));
     await customer.save();
 
-    // Ledger entry: credit (customer paid)
     const entry = await Udhaar.create({
       shop: shop._id,
       customer: req.params.id,
@@ -225,7 +233,7 @@ const settlePayment = async (req, res) => {
       running_balance: customer.totalUdhaar,
       payment_mode: payment_mode || 'cash',
       note: note || 'Payment received',
-      date: new Date(),
+      date: entryDate,
       reference_type: 'manual',
     });
     await logAuditEvent({
@@ -249,6 +257,23 @@ const settlePayment = async (req, res) => {
   }
 };
 
+// ── UPDATE REMINDER TIMESTAMP ────────────────────────────────────────────────
+const updateReminderTimestamp = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const customer = await Customer.findOneAndUpdate(
+      { _id: req.params.id, shop: shop._id },
+      { $set: { last_reminded_at: new Date() } },
+      { new: true }
+    );
+    if (!customer) return res.status(404).json({ message: 'Customer नहीं मिला' });
+    res.json({ ok: true, last_reminded_at: customer.last_reminded_at });
+  } catch (err) {
+    logger.error('[customerController]', err.message || err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
 module.exports = {
   getCustomers,
   createCustomer,
@@ -257,4 +282,5 @@ module.exports = {
   getUdhaar,
   addUdhaar,
   settlePayment,
+  updateReminderTimestamp,
 };

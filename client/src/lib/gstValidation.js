@@ -52,6 +52,35 @@ export const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z
 export const normalizeGstin = (value = '') =>
   String(value).replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
 
+// Luhn-like GST checksum algorithm (GST Act specification)
+const GSTIN_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/**
+ * Compute the expected checksum character for the first 14 chars of a GSTIN.
+ * Returns the character from GSTIN_CHARSET, or null if an invalid character is found.
+ */
+export function computeGSTINChecksum(gstin14) {
+  let sum = 0;
+  for (let i = 0; i < 14; i++) {
+    const charVal = GSTIN_CHARSET.indexOf(gstin14[i].toUpperCase());
+    if (charVal === -1) return null;
+    const product = charVal * (i % 2 === 0 ? 1 : 2);
+    sum += product > 35 ? product - 35 : product;
+  }
+  return GSTIN_CHARSET[sum % 36];
+}
+
+/**
+ * Validate the 15th-character checksum of a GSTIN.
+ * Returns true if valid, false otherwise.
+ */
+export function validateGSTINChecksum(gstin) {
+  if (!gstin || gstin.length !== 15) return false;
+  const g = gstin.toUpperCase();
+  const expectedChecksum = computeGSTINChecksum(g.slice(0, 14));
+  return expectedChecksum !== null && expectedChecksum === g[14];
+}
+
 /**
  * Validate a GSTIN string.
  * @returns {{ valid: boolean, stateCode?: string, stateName?: string, pan?: string, error?: string }}
@@ -70,6 +99,9 @@ export const validateGSTIN = (gstin) => {
   const stateCode = g.substring(0, 2);
   if (!STATE_CODES[stateCode]) {
     return { valid: false, error: `Invalid state code: ${stateCode}` };
+  }
+  if (!validateGSTINChecksum(g)) {
+    return { valid: false, error: 'GSTIN checksum invalid — typo हो सकता है। GSTIN certificate से verify करें।' };
   }
   return {
     valid: true,

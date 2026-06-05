@@ -9,9 +9,20 @@ import {
   INDIAN_STATES, UNION_TERRITORIES, GSTIN_LENGTH, GSTIN_REGEX,
   GST_STATE_CODE_MAP, normalizeGstin,
 } from '../../lib/constants';
+import { INVOICE_TEMPLATES, getSavedTemplate, saveTemplate } from '../../lib/invoiceTemplates';
+import { getBusinessConfig } from '../../lib/business-configs';
 
 /* ─── Constants & pure helpers ───────────────────────────────────── */
 const STATES = [...INDIAN_STATES, ...UNION_TERRITORIES];
+
+const DEFAULT_EXPENSE_CATEGORIES = [
+  { id: 'rent',        labelHi: 'किराया',      labelEn: 'Rent',        emoji: '🏠' },
+  { id: 'salary',      labelHi: 'वेतन',         labelEn: 'Salary',      emoji: '👷' },
+  { id: 'transport',   labelHi: 'परिवहन',       labelEn: 'Transport',   emoji: '🚛' },
+  { id: 'utility',     labelHi: 'बिजली-पानी',   labelEn: 'Utility',     emoji: '💡' },
+  { id: 'maintenance', labelHi: 'मरम्मत',        labelEn: 'Maintenance', emoji: '🔧' },
+  { id: 'misc',        labelHi: 'अन्य',          labelEn: 'Misc',        emoji: '📦' },
+];
 
 const emptyShopForm = {
   name:'', address:'', city:'', state:'', pincode:'', gstin:'',
@@ -24,6 +35,7 @@ const emptyShopForm = {
   invoice_prefix: '',
   invoice_number_digits: 4,
   invoice_start_number: 1,
+  monthly_target: 0,
 };
 
 const getStateFromGstin = (gstin = '') => {
@@ -112,6 +124,20 @@ export default function ProfilePage() {
   const [nameSubmitAttempted, setNameSubmitAttempted] = useState(false);
   const [gstinError, setGstinError] = useState('');
 
+  /* ── Invoice template preference ── */
+  const [invoiceTemplate, setInvoiceTemplate] = useState(() => getSavedTemplate());
+
+  /* ── Expense budget state (owners only) ── */
+  const [expenseBudgets, setExpenseBudgets] = useState({});
+  const [budgetSaving,   setBudgetSaving]   = useState(false);
+  const [budgetMsg,      setBudgetMsg]      = useState('');
+  const [budgetError,    setBudgetError]    = useState('');
+
+  const handleTemplateSelect = (templateId) => {
+    setInvoiceTemplate(templateId);
+    saveTemplate(templateId);
+  };
+
   /* ── Seed personal form from user object ── */
   useEffect(() => {
     if (user?.name) setProfileForm({ name: user.name });
@@ -142,6 +168,7 @@ export default function ProfilePage() {
       invoice_prefix:        data?.invoice_prefix        || '',
       invoice_number_digits: data?.invoice_number_digits ?? 4,
       invoice_start_number:  data?.invoice_start_number  ?? 1,
+      monthly_target:        data?.monthly_target         ?? 0,
     });
     setIsDirty(false);
   };
@@ -152,8 +179,34 @@ export default function ProfilePage() {
       const data = await res.json();
       setShop(data);
       loadShopIntoForm(data);
+      // Load expense budgets into local map
+      const bm = {};
+      (data.expense_budgets || []).forEach((b) => { bm[b.category] = b.monthly_limit; });
+      setExpenseBudgets(bm);
     } catch {}
   }, []);
+
+  /* ── Save expense budgets (separate from shop form) ── */
+  const saveBudgets = async () => {
+    setBudgetSaving(true); setBudgetMsg(''); setBudgetError('');
+    const budgetArray = Object.entries(expenseBudgets)
+      .filter(([, limit]) => Number(limit) > 0)
+      .map(([category, monthly_limit]) => ({ category, monthly_limit: Number(monthly_limit) }));
+    try {
+      const res = await fetch(apiUrl('/api/auth/shop/expense-budgets'), {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body:    JSON.stringify({ expense_budgets: budgetArray }),
+      });
+      if (res.ok) {
+        setBudgetMsg('Budget limits सेव हो गए');
+      } else {
+        const d = await res.json();
+        setBudgetError(d.message || 'Budget save नहीं हुई।');
+      }
+    } catch { setBudgetError('Server error — दोबारा try करें।'); }
+    setBudgetSaving(false);
+  };
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -967,6 +1020,138 @@ export default function ProfilePage() {
                     )}
                   </button>
                 ))}
+              </div>
+            </Section>
+
+            {/* ══ DEFAULT INVOICE TEMPLATE ════════════════════════ */}
+            <Section icon="🧾" title="Default Invoice Template" subtitle="Print और share के लिए default template चुनें" badge="Billing">
+              <div className="grid grid-cols-1 gap-3">
+                {Object.values(INVOICE_TEMPLATES).map((t) => {
+                  const isSelected = invoiceTemplate === t.id;
+                  const PREVIEW_LINES = {
+                    minimal:  ['Shop Name', '─────────', 'Item      Qty  ₹Amt', 'Product A  2   60.00', '─────────', 'Total: ₹60.00'],
+                    detailed: ['SHOP NAME           TAX INVOICE', '──────────────────────────────', 'Bill To: Customer Name', 'Particulars | HSN | Qty | Rate | CGST | SGST | Amt', '═══════════════════════════', 'Grand Total: ₹1,200.00'],
+                    gst_tax:  ['GST TAX INVOICE', '──────────────────', 'IRN: (Not Generated)', 'Reverse Charge: No', 'CGST% | CGST ₹ | SGST% | SGST ₹', '══════════════════', 'Authorised Signatory'],
+                  };
+                  return (
+                    <button key={t.id} type="button" onClick={() => handleTemplateSelect(t.id)}
+                      className={`text-left rounded-2xl border-2 overflow-hidden transition-all ${
+                        isSelected ? 'border-green-500 shadow-md shadow-green-500/10' : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {/* Mini preview area */}
+                      <div className={`px-4 py-3 font-mono text-[9px] leading-relaxed ${isSelected ? 'bg-green-50' : 'bg-slate-50'}`}>
+                        {(PREVIEW_LINES[t.id] || []).map((line, i) => (
+                          <div key={i} className="text-slate-600 truncate">{line}</div>
+                        ))}
+                      </div>
+                      {/* Label row */}
+                      <div className={`flex items-center justify-between px-4 py-3 ${isSelected ? 'bg-green-50 border-t border-green-200' : 'bg-white border-t border-slate-100'}`}>
+                        <div>
+                          <p className={`text-[14px] font-black ${isSelected ? 'text-green-800' : 'text-slate-900'}`}>{t.label} <span className="text-[11px] font-semibold text-slate-400">({t.labelHi})</span></p>
+                          <p className={`text-[11px] mt-0.5 ${isSelected ? 'text-green-600' : 'text-slate-400'}`}>{t.description}</p>
+                        </div>
+                        {isSelected && <span className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-[11px] font-black ml-3">✓</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-slate-400 text-center">Bill बनाते time per-bill override भी कर सकते हो।</p>
+            </Section>
+
+            {/* ══ MONTHLY SALES TARGET ══════════════════════════════ */}
+            <Section icon="🎯" title="Monthly Sales Target" subtitle="Dashboard पर progress track करने के लिए" badge="Optional">
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-green-50 border border-green-100 -mt-1">
+                <span className="text-base flex-shrink-0">💡</span>
+                <p className="text-[12px] text-green-700 leading-relaxed">
+                  Monthly target set करने पर dashboard पर progress bar दिखेगा — ₹0 रखने पर feature बंद हो जाएगा।
+                </p>
+              </div>
+              <Field label="Monthly Revenue Target (₹)" hint="इस महीने कितना कमाना है?">
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-[15px]">₹</span>
+                  <input
+                    className={`${INPUT} pl-7`}
+                    type="number"
+                    min={0}
+                    step={1000}
+                    placeholder="0"
+                    value={shopForm.monthly_target || ''}
+                    onChange={(e) => patchShop({ monthly_target: Math.max(0, Number(e.target.value) || 0) })}
+                  />
+                </div>
+              </Field>
+              {shopForm.monthly_target > 0 && (
+                <div className="px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Target Preview</p>
+                  <p className="text-[18px] font-black text-green-800">₹{Number(shopForm.monthly_target).toLocaleString('en-IN')}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">हर महीने dashboard पर यही दिखेगा</p>
+                </div>
+              )}
+            </Section>
+
+            {/* ══ EXPENSE BUDGET LIMITS ══════════════════════════ */}
+            <Section icon="📊" title="Monthly Expense Budgets" subtitle="हर category के लिए monthly limit set करें" badge="Optional">
+              {budgetMsg && (
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[12px] font-bold text-emerald-700">
+                  ✓ {budgetMsg}
+                </div>
+              )}
+              {budgetError && (
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-bold text-rose-700">
+                  ⚠️ {budgetError}
+                </div>
+              )}
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 -mt-1">
+                <span className="text-base flex-shrink-0">💡</span>
+                <p className="text-[12px] text-blue-700 leading-relaxed">
+                  Monthly budget set करने पर expenses page पर progress bar दिखेगा। ₹0 मतलब no limit।
+                </p>
+              </div>
+              <div className="space-y-3">
+                {(() => {
+                  const bizCfg    = getBusinessConfig(shop?.businessType || '');
+                  const categories = bizCfg.expenseCategories || DEFAULT_EXPENSE_CATEGORIES;
+                  return categories.map((cat) => (
+                    <div key={cat.id} className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg flex-shrink-0">
+                        {cat.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-bold text-slate-700">
+                          {cat.labelHi}{' '}
+                          <span className="text-slate-400 font-normal">/ {cat.labelEn}</span>
+                        </p>
+                      </div>
+                      <div className="relative w-28 flex-shrink-0">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-[13px]">₹</span>
+                        <input
+                          className={`${INPUT} pl-6 text-[13px] h-10`}
+                          type="number"
+                          min={0}
+                          step={100}
+                          placeholder="0"
+                          value={expenseBudgets[cat.id] || ''}
+                          onChange={(e) => {
+                            setExpenseBudgets((prev) => ({
+                              ...prev,
+                              [cat.id]: Math.max(0, Number(e.target.value) || 0),
+                            }));
+                            setBudgetMsg('');
+                            setBudgetError('');
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+              <div className="flex justify-end">
+                <button type="button" onClick={saveBudgets} disabled={budgetSaving}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-[13px] font-black shadow-md disabled:opacity-50 transition-all hover:from-blue-700 hover:to-indigo-800">
+                  {budgetSaving ? 'Saving...' : 'Budget Save करें →'}
+                </button>
               </div>
             </Section>
 

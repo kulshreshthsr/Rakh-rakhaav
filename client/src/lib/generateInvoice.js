@@ -1,16 +1,12 @@
 /**
- * generateInvoice.js — Config-driven Dynamic Invoice Engine (Patch 4)
+ * generateInvoice.js — Config-driven Dynamic Invoice Engine (Patch 5)
  *
  * Exports:
  *   getInvoiceConfig(businessConfig)  → merged invoice config
- *   generateInvoiceHTML(sale, shop, businessConfig, autoPrint, suggestedFileName)
+ *   generateInvoiceHTML(sale, shop, businessConfig, autoPrint, suggestedFileName, templateId)
  *
- * Business configs supply an `invoiceConfig` object that drives:
- *   - Document title & accent color
- *   - Context blocks (vehicle / prescription / table / job)
- *   - Dynamic item columns (batch, variant, serial)
- *   - GST column visibility
- *   - Footer notes & signature block
+ * templateId: 'detailed' (default, existing behaviour) | 'minimal' | 'gst_tax'
+ * Defaults to 'detailed' so all existing call-sites need zero changes.
  */
 
 /* ─── Helpers ──────────────────────────────────────────────────────── */
@@ -75,31 +71,23 @@ function numberToWords(num) {
 
 /* ─── Invoice Config Defaults ─────────────────────────────────────── */
 const BASE_INVOICE_CONFIG = {
-  // Document identity
   documentTitle:    'Tax Invoice',
   documentSubtitle: 'Original For Recipient',
   accentColor:      '#111827',
-
-  // Context blocks (rendered between party grid and items table)
-  showPrescriptionBlock: false,   // Pharmacy: Rx No, Doctor
-  showTableBlock:        false,   // Restaurant: Table, Covers, Waiter
-  showVehicleBlock:      false,   // Automobile: Vehicle No, Model, KM, Mechanic
-  showJobBlock:          false,   // Repair/Salon: Job/Ref, Device, Technician, Delivery
-
-  // Item table columns
-  showBatchColumns:  false,   // Adds Batch No + Expiry Date columns
-  showVariantColumns:false,   // Adds Size + Color columns
-  showSerialColumn:  false,   // Adds Serial/IMEI column
-  showHsnColumn:     true,    // HSN/SAC column (default on)
-  showGstColumns:    true,    // GST breakdown columns (default on)
-  itemSectionTitle:  'Items', // Heading above item table
-
-  // Totals & signature
+  showPrescriptionBlock: false,
+  showTableBlock:        false,
+  showVehicleBlock:      false,
+  showJobBlock:          false,
+  showBatchColumns:  false,
+  showVariantColumns:false,
+  showSerialColumn:  false,
+  showHsnColumn:     true,
+  showGstColumns:    true,
+  itemSectionTitle:  'Items',
   showSignatureBlock: true,
-  footerNote:         '',     // Business-specific note printed at bottom
+  footerNote:         '',
 };
 
-/** Merges business config's invoiceConfig with base defaults. */
 export function getInvoiceConfig(config = {}) {
   return { ...BASE_INVOICE_CONFIG, ...(config.invoiceConfig || {}) };
 }
@@ -109,7 +97,6 @@ function cell(label, value, accent) {
   if (!value) return '';
   return `<div class="ctx-cell"><div class="ctx-label" style="color:${accent}">${label}</div><div class="ctx-value">${value}</div></div>`;
 }
-
 function contextBlock(title, cells, accent) {
   const filled = cells.filter(Boolean);
   if (!filled.length) return '';
@@ -117,43 +104,296 @@ function contextBlock(title, cells, accent) {
   return `<div class="ctx-block"><div class="ctx-title" style="color:${accent};border-color:${accent}20">${title}</div>`
     + `<div class="ctx-row" style="grid-template-columns:repeat(${cols},1fr)">${filled.join('')}</div></div>`;
 }
-
 function buildPrescriptionBlock(ef, accent) {
-  return contextBlock('Prescription Details',
-    [ cell('Rx / Prescription No.', ef.prescription_no, accent),
-      cell("Doctor's Name", ef.doctor_name, accent) ],
-    accent);
+  return contextBlock('Prescription Details', [cell('Rx / Prescription No.', ef.prescription_no, accent), cell("Doctor's Name", ef.doctor_name, accent)], accent);
 }
-
 function buildTableBlock(ef, accent) {
-  return contextBlock('Order Details',
-    [ cell('Table No.', ef.table_no, accent),
-      cell('Covers / Guests', ef.cover_count, accent),
-      cell('Waiter / Staff', ef.waiter_name, accent),
-      cell('Order Type', ef.order_type || (ef.table_no ? 'Dine-in' : 'Takeaway'), accent) ],
-    accent);
+  return contextBlock('Order Details', [cell('Table No.', ef.table_no, accent), cell('Covers / Guests', ef.cover_count, accent), cell('Waiter / Staff', ef.waiter_name, accent), cell('Order Type', ef.order_type || (ef.table_no ? 'Dine-in' : 'Takeaway'), accent)], accent);
 }
-
 function buildVehicleBlock(ef, accent) {
-  return contextBlock('Vehicle Details',
-    [ cell('Vehicle Number', ef.vehicle_no, accent),
-      cell('Vehicle Model', ef.vehicle_model, accent),
-      cell('KM Reading', ef.km_reading ? ef.km_reading + ' km' : '', accent),
-      cell('Mechanic', ef.mechanic_name, accent) ],
-    accent);
+  return contextBlock('Vehicle Details', [cell('Vehicle Number', ef.vehicle_no, accent), cell('Vehicle Model', ef.vehicle_model, accent), cell('KM Reading', ef.km_reading ? ef.km_reading + ' km' : '', accent), cell('Mechanic', ef.mechanic_name, accent)], accent);
 }
-
 function buildJobBlock(ef, accent) {
-  return contextBlock('Job / Service Details',
-    [ cell('Job / Ref No.', ef.job_no || ef.serial_no, accent),
-      cell('Device / Model', ef.device_model, accent),
-      cell('Technician', ef.technician || ef.mechanic_name, accent),
-      cell('Delivery Date', ef.delivery_date, accent) ],
-    accent);
+  return contextBlock('Job / Service Details', [cell('Job / Ref No.', ef.job_no || ef.serial_no, accent), cell('Device / Model', ef.device_model, accent), cell('Technician', ef.technician || ef.mechanic_name, accent), cell('Delivery Date', ef.delivery_date, accent)], accent);
 }
 
-/* ─── Main Invoice Generator ─────────────────────────────────────── */
-export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, suggestedFileName = '') {
+/* ─── MINIMAL Template (58mm thermal) ──────────────────────────────── */
+function buildMinimalHTML(sale, shop, autoPrint) {
+  const shopName  = shop?.name?.trim() || 'My Shop';
+  const saleItems = (sale.items && sale.items.length > 0)
+    ? sale.items
+    : [{ product_name: sale.product_name, quantity: sale.quantity, price_per_unit: sale.price_per_unit, total_amount: sale.total_amount }];
+  const saleDate  = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const payLabel  = { cash: 'Cash', upi: 'UPI', bank: 'Bank Transfer', credit: 'Credit/Udhaar' }[sale.payment_type] || 'Paid';
+  const roundedBill = getRoundedBillValues(sale.total_amount);
+  const hasGst = saleItems.some(i => Number(i.gst_rate || 0) > 0);
+
+  const rows = saleItems.map(item =>
+    `<tr>
+      <td style="padding:2px 0;font-size:11px">${item.product_name}</td>
+      <td style="padding:2px 0;text-align:center;font-size:11px">${item.quantity}</td>
+      <td style="padding:2px 0;text-align:right;font-size:11px;white-space:nowrap">&#8377;${fmt(item.price_per_unit)}</td>
+      <td style="padding:2px 0;text-align:right;font-size:11px;font-weight:bold;white-space:nowrap">&#8377;${fmt(item.total_amount)}</td>
+    </tr>`
+  ).join('');
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<title>Bill - ${sale.invoice_number}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',Courier,monospace;font-size:10px;color:#111;background:#fff;width:280px;padding:6px}
+.center{text-align:center}
+.right{text-align:right}
+.bold{font-weight:bold}
+.dashed{border-bottom:1px dashed #555;margin:5px 0}
+table{width:100%;border-collapse:collapse}
+th{font-size:9px;padding:2px 0;border-bottom:1px solid #333}
+@media print{@page{margin:0;size:80mm auto}body{width:72mm;padding:4px}}
+</style></head>
+<body>
+<div class="center bold" style="font-size:16px;margin-bottom:2px">${shopName}</div>
+${shop.address ? `<div class="center" style="font-size:9px">${shop.address}</div>` : ''}
+${shop.phone ? `<div class="center" style="font-size:9px">Ph: ${shop.phone}</div>` : ''}
+${shop.gstin ? `<div class="center" style="font-size:9px">GSTIN: ${shop.gstin}</div>` : ''}
+<div class="dashed"></div>
+<div style="font-size:10px">Invoice: <span class="bold">${sale.invoice_number}</span></div>
+<div style="font-size:10px">Date: ${saleDate}</div>
+<div style="font-size:10px">Customer: ${sale.buyer_name || 'Walk-in'}</div>
+${sale.buyer_phone ? `<div style="font-size:10px">Ph: ${sale.buyer_phone}</div>` : ''}
+<div class="dashed"></div>
+<table>
+  <thead><tr>
+    <th style="text-align:left">Item</th>
+    <th style="text-align:center">Qty</th>
+    <th style="text-align:right">Rate</th>
+    <th style="text-align:right">Amt</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="dashed"></div>
+${hasGst ? `<div class="right" style="font-size:10px">Taxable: &#8377;${fmt(sale.taxable_amount)}</div><div class="right" style="font-size:10px">GST: &#8377;${fmt(sale.total_gst)}</div>` : ''}
+<div class="right bold" style="font-size:13px;margin-top:3px">Total: &#8377;${fmt(sale.total_amount)}</div>
+<div class="right" style="font-size:10px">Rounded: &#8377;${roundedBill.roundedTotal}</div>
+<div style="font-size:10px;margin-top:3px">Payment: ${payLabel}</div>
+<div class="dashed"></div>
+<div class="center" style="font-size:9px;margin-top:4px">Thank you for your purchase!</div>
+<div class="center" style="font-size:8px;margin-top:2px;color:#555">Powered by Rakh-Rakhaav</div>
+${autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : ''}
+</body></html>`;
+}
+
+/* ─── GST TAX INVOICE Template (govt-compliant) ─────────────────────── */
+function buildGstTaxHTML(sale, shop, config, autoPrint, suggestedFileName) {
+  const inv    = getInvoiceConfig(config);
+  const ef     = (sale.extra_fields && typeof sale.extra_fields === 'object') ? sale.extra_fields : {};
+  const accent = inv.accentColor || '#111827';
+
+  const shopDisplayName = shop?.name?.trim() || 'My Shop';
+  const saleItems = (sale.items && sale.items.length > 0) ? sale.items
+    : [{ product_name: sale.product_name, hsn_code: sale.hsn_code, quantity: sale.quantity,
+         price_per_unit: sale.price_per_unit, gst_rate: sale.gst_rate,
+         taxable_amount: sale.taxable_amount, cgst_amount: sale.cgst_amount,
+         sgst_amount: sale.sgst_amount, igst_amount: sale.igst_amount,
+         gst_type: sale.gst_type, total_amount: sale.total_amount }];
+
+  const isIGST     = sale.gst_type === 'IGST' || saleItems.some(i => i.gst_type === 'IGST');
+  const saleDate   = new Date(sale.createdAt || sale.sold_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const roundedBill = getRoundedBillValues(sale.total_amount);
+  const placeOfSupplyCode  = getStateCode(sale.buyer_state, sale.buyer_gstin);
+  const sellerStateCode    = getStateCode(shop.state, shop.gstin);
+  const placeOfSupplyLabel = sale.buyer_state
+    ? `${sale.buyer_state}${placeOfSupplyCode ? ` (${placeOfSupplyCode})` : ''}` : 'Not specified';
+  const payLabel = { cash: 'CASH', upi: 'UPI', bank: 'BANK', credit: 'CREDIT' }[sale.payment_type] || 'PAID';
+  const payBg = sale.payment_type === 'cash' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.15)';
+
+  const getMeta = (item) => {
+    const m = item.item_metadata;
+    if (!m || typeof m !== 'object') return {};
+    return m;
+  };
+
+  const itemRows = saleItems.map((item, idx) => {
+    const gstCells = isIGST
+      ? `<td style="text-align:center">${item.gst_rate || 0}%</td><td>${INR}${fmt(item.igst_amount)}</td>`
+      : `<td style="text-align:center">${((item.gst_rate || 0) / 2).toFixed(1)}%</td><td>${INR}${fmt(item.cgst_amount)}</td><td style="text-align:center">${((item.gst_rate || 0) / 2).toFixed(1)}%</td><td>${INR}${fmt(item.sgst_amount)}</td>`;
+    return `<tr>
+      <td>${idx + 1}</td>
+      <td style="text-align:left"><strong>${item.product_name}</strong></td>
+      <td>${item.hsn_code || '—'}</td>
+      <td>${item.quantity}</td>
+      <td>${INR}${fmt(item.price_per_unit)}</td>
+      <td>${INR}${fmt(item.taxable_amount)}</td>
+      ${gstCells}
+      <td><strong>${INR}${fmt(item.total_amount)}</strong></td>
+    </tr>`;
+  }).join('');
+
+  const taxRows = buildTaxSummaryRows(saleItems, isIGST);
+  const discAmt  = Number(sale.discount_amount || 0);
+  const discRow  = discAmt > 0 ? `<tr style="color:#16a34a"><td>Discount</td><td>- ${INR}${fmt(discAmt)}</td></tr>` : '';
+
+  const css = `
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:"Segoe UI",Arial,sans-serif;font-size:11px;color:#111827;background:#fff}
+    .invoice{max-width:820px;margin:0 auto;padding:18px;border:2px solid #111827}
+    .header{display:grid;grid-template-columns:1.45fr .95fr;border:1.5px solid #111827}
+    .header-left,.header-right{padding:14px 16px;min-height:110px}
+    .header-left{border-right:1.5px solid #111827}
+    .header-right{background:${accent};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+    .brand-tag{display:inline-block;padding:8px 14px;border:1.5px solid #111827;font-size:20px;font-weight:900;color:#111827;background:#f8fafc;margin-bottom:10px}
+    .shop-line{font-size:11px;line-height:1.55;color:#374151;margin-top:6px}
+    .invoice-title{font-size:20px;font-weight:900;letter-spacing:.14em;color:#fff;text-transform:uppercase}
+    .invoice-copy{font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.75);text-transform:uppercase}
+    .pay-chip{display:inline-block;padding:4px 14px;border:1px solid rgba(255,255,255,.35);border-radius:999px;font-size:10px;font-weight:800;color:#fff;background:${payBg}}
+    .info-grid{display:grid;grid-template-columns:repeat(5,1fr);border:1.5px solid #111827;border-top:none}
+    .info-cell{padding:8px 10px}.info-cell + .info-cell{border-left:1.5px solid #111827}
+    .label{font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#6b7280;margin-bottom:4px}
+    .value{font-size:11px;font-weight:700;color:#111827;line-height:1.4}
+    .party-grid{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #111827;border-top:none}
+    .party-box{padding:12px 14px;min-height:100px}.party-box + .party-box{border-left:1.5px solid #111827}
+    .party-name{font-size:13px;font-weight:800;color:#111827;margin-bottom:4px}
+    .party-detail{font-size:11px;line-height:1.55;color:#374151}
+    .items-wrap{border:1.5px solid #111827;border-top:none}
+    table{width:100%;border-collapse:collapse}
+    thead th{padding:6px 5px;font-size:9px;font-weight:800;text-transform:uppercase;color:#111827;background:#f8fafc;border-bottom:1.5px solid #111827}
+    th + th,td + td{border-left:1px solid #111827}
+    tbody td,tfoot td{padding:6px 5px;font-size:10px;text-align:center;vertical-align:top}
+    td:nth-child(2),th:nth-child(2){text-align:left}
+    tfoot td{font-weight:800;background:#fafafa}
+    .summary-grid{display:grid;grid-template-columns:1.15fr .85fr;border:1.5px solid #111827;border-top:none}
+    .summary-box{padding:12px 14px;min-height:120px}.summary-box + .summary-box{border-left:1.5px solid #111827}
+    .words-copy{font-size:11px;line-height:1.7;color:#1f2937;font-weight:600;font-style:italic;margin-top:6px}
+    .amount-table{width:100%;border-collapse:collapse}
+    .amount-table td{padding:3px 0;border:none!important;font-size:11px}
+    .amount-table td:last-child{text-align:right;font-weight:700}
+    .amount-grand td{padding-top:8px;font-size:14px;font-weight:900;border-top:1.5px solid #111827!important}
+    .footer-grid{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #111827;border-top:none}
+    .footer-box{padding:12px 14px;min-height:100px}.footer-box + .footer-box{border-left:1.5px solid #111827}
+    .signature-block{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:right}
+    .signature-space{height:40px}.signature-line{font-size:11px;font-weight:800}
+    .footer-mark{margin-top:10px;text-align:center;font-size:10px;color:#6b7280}
+    @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}
+  `;
+
+  const gstTh = isIGST
+    ? '<th>IGST%</th><th>IGST ₹</th>'
+    : '<th>CGST%</th><th>CGST ₹</th><th>SGST%</th><th>SGST ₹</th>';
+
+  const gstFooter = isIGST
+    ? `<td></td><td>${INR}${fmt(sale.igst_amount)}</td>`
+    : `<td></td><td>${INR}${fmt(sale.cgst_amount)}</td><td></td><td>${INR}${fmt(sale.sgst_amount)}</td>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<title>GST Tax Invoice - ${sale.invoice_number}</title>
+<style>${css}</style></head><body>
+<div class="invoice">
+  <div class="header">
+    <div class="header-left">
+      <div class="brand-tag">${shopDisplayName}</div>
+      ${shop.address ? `<div class="shop-line">${shop.address}${shop.state ? ', ' + shop.state : ''}</div>` : ''}
+      ${shop.phone ? `<div class="shop-line">Ph: ${shop.phone}</div>` : ''}
+      ${shop.gstin ? `<div class="shop-line"><strong>GSTIN:</strong> ${shop.gstin} &nbsp; <strong>State Code:</strong> ${sellerStateCode}</div>` : ''}
+    </div>
+    <div class="header-right" style="text-align:center">
+      <div class="invoice-title">TAX INVOICE</div>
+      <div class="invoice-copy">Original for Recipient</div>
+      <span class="pay-chip">${payLabel}</span>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-cell"><div class="label">Invoice No</div><div class="value">${sale.invoice_number}</div></div>
+    <div class="info-cell"><div class="label">Invoice Date</div><div class="value">${saleDate}</div></div>
+    <div class="info-cell"><div class="label">Place Of Supply</div><div class="value">${placeOfSupplyLabel}</div></div>
+    <div class="info-cell"><div class="label">Reverse Charge</div><div class="value">No</div></div>
+    <div class="info-cell"><div class="label">IRN</div><div class="value" style="font-size:9px;font-family:monospace">${sale.irn || '(Not Generated)'}</div></div>
+  </div>
+
+  <div class="party-grid">
+    <div class="party-box">
+      <div class="label">Bill From (Supplier)</div>
+      <div class="party-name">${shopDisplayName}</div>
+      ${shop.address ? `<div class="party-detail">${shop.address}${shop.state ? ', ' + shop.state : ''}</div>` : ''}
+      ${shop.phone ? `<div class="party-detail">Ph: ${shop.phone}</div>` : ''}
+      ${shop.gstin ? `<div class="party-detail">GSTIN: ${shop.gstin}</div>` : ''}
+    </div>
+    <div class="party-box">
+      <div class="label">Bill To (Recipient)</div>
+      <div class="party-name">${sale.buyer_name || 'Walk-in Customer'}</div>
+      ${sale.buyer_address ? `<div class="party-detail">${sale.buyer_address}</div>` : ''}
+      ${sale.buyer_state   ? `<div class="party-detail">State: ${sale.buyer_state}</div>` : ''}
+      ${sale.buyer_phone   ? `<div class="party-detail">Ph: ${sale.buyer_phone}</div>` : ''}
+      ${sale.buyer_gstin   ? `<div class="party-detail">GSTIN: ${sale.buyer_gstin}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="items-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px">Sr</th>
+          <th>Description of Goods/Services</th>
+          <th style="width:72px">HSN/SAC</th>
+          <th style="width:48px">Qty</th>
+          <th style="width:80px">Rate ${INR}</th>
+          <th style="width:88px">Taxable ${INR}</th>
+          ${gstTh}
+          <th style="width:88px">Amount ${INR}</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5" style="text-align:right;padding-right:10px">Total</td>
+          <td>${INR}${fmt(sale.taxable_amount)}</td>
+          ${gstFooter}
+          <td>${INR}${fmt(sale.total_amount)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-box">
+      <div class="label">Amount in Words</div>
+      <div class="words-copy">${numberToWords(parseFloat(sale.total_amount || 0))}</div>
+      ${sale.notes ? `<div style="margin-top:8px;font-size:10px;color:#6b7280"><strong>Notes:</strong> ${sale.notes}</div>` : ''}
+    </div>
+    <div class="summary-box">
+      <div class="label">Tax Summary</div>
+      <table class="amount-table">
+        ${discRow}
+        <tr><td>Taxable Amount</td><td>${INR}${fmt(sale.taxable_amount)}</td></tr>
+        ${taxRows}
+        <tr><td>Total Tax</td><td>${INR}${fmt(sale.total_gst)}</td></tr>
+        <tr class="amount-grand"><td>Grand Total</td><td>${INR}${fmt(sale.total_amount)}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer-grid">
+    <div class="footer-box">
+      <div style="font-size:9px;font-weight:800;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Declaration</div>
+      <div style="font-size:10px;color:#374151;line-height:1.5">We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</div>
+    </div>
+    <div class="footer-box">
+      <div class="signature-block">
+        <div style="font-size:11px;font-weight:700;margin-bottom:8px">For <strong>${shopDisplayName}</strong></div>
+        <div class="signature-space"></div>
+        <div class="signature-line">Authorised Signatory</div>
+        <div style="font-size:9px;color:#6b7280;margin-top:4px">This is a computer generated invoice</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-mark">Grow your business with — रखरखाव</div>
+</div>
+${autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : ''}
+</body></html>`;
+}
+
+/* ─── DETAILED Template (existing behaviour — no regression) ───────── */
+function buildDetailedHTML(sale, shop, config, autoPrint, suggestedFileName) {
   const inv  = getInvoiceConfig(config);
   const ef   = (sale.extra_fields && typeof sale.extra_fields === 'object') ? sale.extra_fields : {};
   const accent = inv.accentColor || '#111827';
@@ -174,21 +414,17 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
   const placeOfSupplyCode  = getStateCode(sale.buyer_state, sale.buyer_gstin);
   const sellerStateCode    = getStateCode(shop.state, shop.gstin);
   const placeOfSupplyLabel = sale.buyer_state
-    ? `${sale.buyer_state}${placeOfSupplyCode ? ` (${placeOfSupplyCode})` : ''}`
-    : 'Not specified';
+    ? `${sale.buyer_state}${placeOfSupplyCode ? ` (${placeOfSupplyCode})` : ''}` : 'Not specified';
 
-  /* ── Payment chip ── */
   const payBg    = sale.payment_type === 'cash' ? 'rgba(255,255,255,0.2)' : sale.payment_type === 'upi' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
   const payLabel = { cash: 'CASH', upi: 'UPI', bank: 'BANK', credit: 'CREDIT' }[sale.payment_type] || 'PAID';
 
-  /* ── Column flags ── */
   const useBatch   = !!inv.showBatchColumns;
   const useVariant = !!inv.showVariantColumns;
   const useSerial  = !!inv.showSerialColumn;
   const useHsn     = inv.showHsnColumn !== false;
   const useGst     = inv.showGstColumns !== false;
 
-  /* ── Column headers ── */
   const thExtra = [
     useBatch   ? '<th style="width:70px">Batch</th><th style="width:72px">Expiry</th>' : '',
     useVariant ? '<th style="width:50px">Size</th><th style="width:60px">Color</th>' : '',
@@ -200,21 +436,18 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
     ? (isIGST ? '<th>IGST%</th><th>IGST ₹</th>' : '<th>CGST%</th><th>CGST ₹</th><th>SGST%</th><th>SGST ₹</th>')
     : '';
 
-  /* ── Footer colspan (columns before Taxable) ── */
-  const footerColspan = 2 // Sr + Particulars
+  const footerColspan = 2
     + (useBatch ? 2 : 0)
     + (useVariant ? 2 : 0)
     + (useSerial ? 1 : 0)
     + (useHsn ? 1 : 0)
-    + 2; // Qty + Rate
+    + 2;
 
-  /* ── Total columns ── */
   const colSpan = footerColspan
-    + (useGst ? 1 : 0) // Taxable
-    + (useGst ? (isIGST ? 2 : 4) : 0) // GST cols
-    + 1; // Amount
+    + (useGst ? 1 : 0)
+    + (useGst ? (isIGST ? 2 : 4) : 0)
+    + 1;
 
-  /* ── Item rows ── */
   const getMeta = (item) => {
     const m = item.item_metadata;
     if (!m || typeof m !== 'object') return {};
@@ -250,7 +483,6 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
           ? `<td>${item.gst_rate || 0}%</td><td>${INR}${fmt(item.igst_amount)}</td>`
           : `<td>${((item.gst_rate || 0) / 2).toFixed(1)}%</td><td>${INR}${fmt(item.cgst_amount)}</td><td>${((item.gst_rate || 0) / 2).toFixed(1)}%</td><td>${INR}${fmt(item.sgst_amount)}</td>`)
       : '';
-
     const subNote = item.item_notes ? `<br/><span style="font-size:9px;color:#6b7280;font-weight:400">${item.item_notes}</span>` : '';
 
     return `<tr>
@@ -265,10 +497,8 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
   }).join('');
 
   const emptyCell  = `<td style="height:18px"></td>`;
-  const fillerRows = Array(Math.max(0, 5 - saleItems.length))
-    .fill(`<tr>${emptyCell.repeat(colSpan)}</tr>`).join('');
+  const fillerRows = Array(Math.max(0, 5 - saleItems.length)).fill(`<tr>${emptyCell.repeat(colSpan)}</tr>`).join('');
 
-  /* ── Footer totals row ── */
   const footerTaxable = useGst ? `<td>${INR}${fmt(sale.taxable_amount)}</td>` : '';
   const footerGst     = useGst
     ? (isIGST
@@ -276,19 +506,14 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
         : `<td></td><td>${INR}${fmt(sale.cgst_amount)}</td><td></td><td>${INR}${fmt(sale.sgst_amount)}</td>`)
     : '';
 
-  /* ── Amount summary rows ── */
-  const amountSummaryRows = useGst
-    ? buildTaxSummaryRows(saleItems, isIGST)
-    : '';
+  const amountSummaryRows = useGst ? buildTaxSummaryRows(saleItems, isIGST) : '';
 
-  /* ── Context blocks ── */
   let contextHTML = '';
   if (inv.showPrescriptionBlock) contextHTML = buildPrescriptionBlock(ef, accent);
   else if (inv.showTableBlock)   contextHTML = buildTableBlock(ef, accent);
   else if (inv.showVehicleBlock) contextHTML = buildVehicleBlock(ef, accent);
   else if (inv.showJobBlock)     contextHTML = buildJobBlock(ef, accent);
 
-  /* ── Bank details ── */
   const bankHTML = shop.bank_name
     ? `<div style="font-size:10px;font-weight:700;color:${accent};text-transform:uppercase;margin-bottom:6px">Bank Details</div>`
       + `<div style="font-size:11px;margin-bottom:3px">Bank: <strong>${shop.bank_name}</strong></div>`
@@ -297,18 +522,15 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
       + (shop.bank_ifsc    ? `<div style="font-size:11px">IFSC: <strong>${shop.bank_ifsc}</strong></div>`                        : '')
     : `<div style="color:#9ca3af;font-size:11px;font-style:italic">Add bank details in Profile</div>`;
 
-  /* ── Terms ── */
   const termsHTML = shop.terms
     ? `<div class="terms-box"><div style="font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px">Terms &amp; Conditions</div>`
       + `<div style="font-size:10px;color:#374151">${shop.terms.split('\n').map((t, i) => (i + 1) + '. ' + t).join('<br/>')}</div></div>`
     : '';
 
-  /* ── Business footer note ── */
   const footerNoteHTML = inv.footerNote
     ? `<div style="border:1.5px solid #e5e7eb;border-top:none;padding:8px 14px;font-size:10px;color:#6b7280;font-style:italic;background:#fafafa">${inv.footerNote}</div>`
     : '';
 
-  /* ── PDF save banner ── */
   const pdfBanner = suggestedFileName && !autoPrint
     ? `<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px">`
       + `<span style="font-size:18px">PDF</span>`
@@ -316,14 +538,10 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
       + `<span style="font-size:11px;opacity:.8">Then attach this PDF file on WhatsApp</span></div></div>`
     : '';
 
-  /* ── Amount summary section ── */
   const discAmt = Number(sale.discount_amount || 0);
   const discLabel = sale.discount_type === 'percent'
-    ? `Discount (${sale.discount_value}%)`
-    : sale.discount_type === 'flat' ? 'Discount (Flat)' : '';
-  const discRow = discAmt > 0
-    ? `<tr style="color:#16a34a"><td>${discLabel}</td><td>- ${INR}${fmt(discAmt)}</td></tr>`
-    : '';
+    ? `Discount (${sale.discount_value}%)` : sale.discount_type === 'flat' ? 'Discount (Flat)' : '';
+  const discRow = discAmt > 0 ? `<tr style="color:#16a34a"><td>${discLabel}</td><td>- ${INR}${fmt(discAmt)}</td></tr>` : '';
 
   const amountSection = useGst
     ? (discAmt > 0 ? `<tr><td>Subtotal</td><td>${INR}${fmt((sale.taxable_amount || 0) + discAmt)}</td></tr>` : '')
@@ -338,7 +556,6 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
       + `<tr class="amount-grand"><td>Total</td><td>${INR}${fmt(sale.total_amount)}</td></tr>`
       + `<tr class="amount-rounded"><td>Rounded</td><td>${INR}${fmt(roundedBill.roundedTotal)}</td></tr>`;
 
-  /* ── CSS ── */
   const css = `
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:"Segoe UI",Arial,sans-serif;font-size:11px;color:#111827;background:#fff}
@@ -393,14 +610,11 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
     @media print{.pdf-banner{display:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.invoice{border:none;padding:0}}
   `;
 
-  /* ── Full HTML ── */
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
 <title>${inv.documentTitle} - ${sale.invoice_number}</title>
 <style>${css}</style></head><body>
 <div class="pdf-banner" style="max-width:820px;margin:0 auto 0">${pdfBanner}</div>
 <div class="invoice">
-
-  <!-- HEADER -->
   <div class="header">
     <div class="header-left">
       <div class="brand-tag">${shopDisplayName}</div>
@@ -415,16 +629,12 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
       <span class="pay-chip">${payLabel}</span>
     </div>
   </div>
-
-  <!-- INFO GRID -->
   <div class="info-grid">
     <div class="info-cell"><div class="label">Invoice No</div><div class="value">${sale.invoice_number}</div></div>
     <div class="info-cell"><div class="label">Invoice Date</div><div class="value">${saleDate}</div></div>
     <div class="info-cell"><div class="label">Invoice Type</div><div class="value">${sale.invoice_type || 'B2C'} / ${isIGST ? 'IGST' : 'CGST+SGST'}</div></div>
     <div class="info-cell"><div class="label">Place Of Supply</div><div class="value">${placeOfSupplyLabel}</div></div>
   </div>
-
-  <!-- PARTY GRID -->
   <div class="party-grid">
     <div class="party-box">
       <div class="label">Bill From</div>
@@ -442,14 +652,8 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
       ${sale.buyer_gstin   ? `<div class="party-detail">GSTIN: ${sale.buyer_gstin}</div>` : ''}
     </div>
   </div>
-
-  <!-- CONTEXT BLOCK (business-specific) -->
   ${contextHTML}
-
-  <!-- ITEMS SECTION TITLE -->
   ${inv.itemSectionTitle !== 'Items' ? `<div class="section-title">${inv.itemSectionTitle}</div>` : ''}
-
-  <!-- ITEMS TABLE -->
   <div class="items-wrap">
     <table>
       <thead>
@@ -469,15 +673,12 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
       <tfoot>
         <tr>
           <td colspan="${footerColspan}" style="text-align:right;padding-right:12px">Total</td>
-          ${footerTaxable}
-          ${footerGst}
+          ${footerTaxable}${footerGst}
           <td>${INR}${fmt(sale.total_amount)}</td>
         </tr>
       </tfoot>
     </table>
   </div>
-
-  <!-- SUMMARY -->
   <div class="summary-grid">
     <div class="summary-box">
       <div class="label">Amount In Words</div>
@@ -489,8 +690,6 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
       <table class="amount-table">${amountSection}</table>
     </div>
   </div>
-
-  <!-- FOOTER -->
   <div class="footer-grid">
     <div class="footer-box">${bankHTML}</div>
     ${inv.showSignatureBlock
@@ -502,16 +701,27 @@ export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, 
          </div></div>`
       : '<div class="footer-box"></div>'}
   </div>
-
   ${termsHTML}
   ${footerNoteHTML}
   <div class="footer-mark">Grow your business with — रखरखाव</div>
-
 </div>
 ${autoPrint ? '<script>window.onload=function(){window.print();}<\/script>' : ''}
 </body></html>`;
+}
+
+/* ─── Main Export ─────────────────────────────────────────────────── */
+export function generateInvoiceHTML(sale, shop, config = {}, autoPrint = false, suggestedFileName = '', templateId = 'detailed') {
+  let html;
+  if (templateId === 'minimal') {
+    html = buildMinimalHTML(sale, shop, autoPrint);
+  } else if (templateId === 'gst_tax') {
+    html = buildGstTaxHTML(sale, shop, config, autoPrint, suggestedFileName);
+  } else {
+    html = buildDetailedHTML(sale, shop, config, autoPrint, suggestedFileName);
+  }
 
   const win = window.open('', '_blank');
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }

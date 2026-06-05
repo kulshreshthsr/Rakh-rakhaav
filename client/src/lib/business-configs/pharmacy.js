@@ -271,4 +271,44 @@ export default {
     kpi5: { label: 'GST Payable',    sublabel: 'This month'            },
     kpi6: { label: 'Expiry Alerts',  sublabel: 'Expiring in 30 days'   },
   },
+
+  dashboardPanels: [
+    {
+      id: 'expiry_alerts',
+      dataKey: 'expiryStats',
+      condition: (val) => Boolean(val && (val.expiredCount > 0 || val.expiring7Days > 0 || val.expiring30Days > 0)),
+      href: '/product?filter=expiring',
+      icon: '⏰',
+      color: 'amber',
+      renderLabel: (val) => {
+        if (val.expiredCount > 0) return `${val.expiredCount} items expired`;
+        if (val.expiring7Days > 0) return `${val.expiring7Days} items expiring this week`;
+        return `${val.expiring30Days} items expiring in 30 days`;
+      },
+      renderSublabel: () => 'Expiry alerts →',
+    },
+    {
+      id: 'insurance_pending',
+      dataKey: 'insurancePending',
+      condition: (val) => Number(val) > 0,
+      href: '/sales?filter=insurance_pending',
+      icon: '🏥',
+      color: 'blue',
+      renderLabel: (val) => `${val} Insurance Claims Pending`,
+      renderSublabel: () => 'Awaiting reimbursement →',
+    },
+  ],
+
+  // ─── Pharmacy-specific expense categories ────────────────────────────────
+  expenseCategories: [
+    { id: 'medicine_purchase', labelHi: 'दवाई खरीद',    labelEn: 'Medicine Purchase', emoji: '💊' },
+    { id: 'cold_chain',        labelHi: 'Cold Chain',    labelEn: 'Cold Chain',        emoji: '❄️' },
+    { id: 'license_renewal',   labelHi: 'License Fee',   labelEn: 'License Renewal',   emoji: '📜' },
+    { id: 'rent',              labelHi: 'किराया',         labelEn: 'Rent',              emoji: '🏠' },
+    { id: 'salary',            labelHi: 'वेतन',           labelEn: 'Salary',            emoji: '👷' },
+    { id: 'utility',           labelHi: 'बिजली-पानी',     labelEn: 'Utility',           emoji: '💡' },
+    { id: 'maintenance',       labelHi: 'मरम्मत',          labelEn: 'Maintenance',       emoji: '🔧' },
+    { id: 'transport',         labelHi: 'परिवहन',          labelEn: 'Transport',         emoji: '🚛' },
+    { id: 'misc',              labelHi: 'अन्य',            labelEn: 'Misc',              emoji: '📦' },
+  ],
 };

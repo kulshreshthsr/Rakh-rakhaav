@@ -12,6 +12,7 @@ import {
   emptySaleItem as emptyItem, buildInitialSaleForm as buildInitialForm,
   buildWhatsAppShareMessage,
 } from '../../../lib/constants';
+
 const getStateFromGstin = (gstin) => {
   const normalized = normalizeGstin(gstin);
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
@@ -31,6 +32,9 @@ const buildOfflineSaleItems = (rawItems, products) => (
     };
   }).filter((item) => item.product_id && item.quantity > 0)
 );
+
+const DUPLICATE_WINDOW_MS = 60 * 1000;
+const LAST_SALE_KEY = 'rr-last-sale';
 
 export default function useSaleForm({
   defaultPayment,
@@ -82,6 +86,7 @@ export default function useSaleForm({
     po_number: '', po_date: '', indent_number: '',
     special_instructions: '', challan_terms: '',
   });
+  const [duplicateWarning, setDuplicateWarning] = useState(false);
 
   const amountPaidInputRef = useRef(null);
   const buyerNameInputRef  = useRef(null);
@@ -91,8 +96,8 @@ export default function useSaleForm({
   /* ── Computed values ── */
   const rowGST = (item) => {
     const prod = products.find((p) => p._id === item.product_id);
-    if (!prod || !item.quantity || !item.price_per_unit) return null;
-    const taxable = parseFloat(item.quantity) * parseFloat(item.price_per_unit);
+    if (!prod || !item.quantity || (!item.price_per_unit && !item._isFreeItem)) return null;
+    const taxable = parseFloat(item.quantity) * parseFloat(item.price_per_unit || 0);
     const gst_rate = prod.gst_rate || 0;
     const gst = (taxable * gst_rate) / 100;
     const isIGST = normalizeState(shopState) && normalizeState(form.buyer_state)
@@ -106,7 +111,6 @@ export default function useSaleForm({
     return { subtotal: acc.subtotal + g.taxable, gst: acc.gst + g.gst, total: acc.total + g.total };
   }, { subtotal: 0, gst: 0, total: 0 });
 
-  // Apply bill-level discount
   const discType  = form.discount_type || 'none';
   const discValue = parseFloat(form.discount_value) || 0;
   const discAmt   = discType === 'flat'
@@ -160,11 +164,20 @@ export default function useSaleForm({
 
   /* ── Item handlers ── */
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
+
   const updateItem = (index, field, value) => {
-    const updated = [...items]; updated[index][field] = value;
-    if (field === 'product_id' && value) { const prod = products.find((p) => p._id === value); if (prod) updated[index].price_per_unit = prod.price || ''; }
+    const updated = [...items];
+    updated[index] = { ...updated[index], [field]: value };
+    if (field === '_isFreeItem') {
+      updated[index].price_per_unit = value ? '0' : '';
+    }
+    if (field === 'product_id' && value && !updated[index]._isFreeItem) {
+      const prod = products.find((p) => p._id === value);
+      if (prod) updated[index].price_per_unit = prod.price || '';
+    }
     setItems(updated);
   };
+
   const updateItemQuantityBy = (index, delta) => setItems((current) => current.map((item, i) => i !== index ? item : { ...item, quantity: Math.max(1, Number(item.quantity || 1) + delta) }));
   const applyQuickQuantity = (index, quantity) => updateItem(index, 'quantity', quantity);
   const duplicateItem = (index) => setItems((current) => { const source = current[index]; if (!source) return current; const next = [...current]; next.splice(index + 1, 0, { ...source }); return next; });
@@ -192,7 +205,7 @@ export default function useSaleForm({
   const handleProductSelect = (index, product) => {
     updateItem(index, 'product_id', product._id);
     const initialMeta = recipeSales ? { deduct_recipe: true } : {};
-    setItems((current) => current.map((item, i) => i === index ? { ...item, quantity: item.quantity || 1, price_per_unit: product.price || item.price_per_unit, item_metadata: initialMeta } : item));
+    setItems((current) => current.map((item, i) => i === index ? { ...item, quantity: item.quantity || 1, price_per_unit: item._isFreeItem ? '0' : (product.price || item.price_per_unit), item_metadata: initialMeta } : item));
     if (batchSales) loadBatchesFor(product._id);
     if (variantSales) loadVariantsFor(product._id);
   };
@@ -230,7 +243,7 @@ export default function useSaleForm({
     setGstinTouched(false); setError(''); setExtraFields({});
     setDocumentType('invoice');
     setChallanForm({ challan_type: 'supply_of_goods', challan_date: getDefaultSaleDateValue(), consignee_name: '', consignee_address: '', consignee_gstin: '', consignee_contact: '', consignee_phone: '', dispatch_from: shopAddress || '', deliver_to: '', vehicle_number: '', transport_name: '', lr_number: '', eway_bill_number: '', po_number: '', po_date: '', indent_number: '', special_instructions: '', challan_terms: '' });
-    // Reset external state (industry data + customer UI)
+    setDuplicateWarning(false);
     if (setCustomerQuery) setCustomerQuery('');
     if (setShowCustomerInfo) setShowCustomerInfo(false);
     if (setShowCustomerSuggestions) setShowCustomerSuggestions(false);
@@ -258,27 +271,7 @@ export default function useSaleForm({
     setShowModal(true);
   };
 
-  async function handleSubmit(e) {
-    e?.preventDefault(); setError(''); setGstinTouched(true);
-    if (businessType === 'pharmacy' && scheduleWarning?.hasScheduleX && !scheduleWarning?.prescriptionFilled) {
-      setError('Schedule X दवाई के लिए Prescription No. अनिवार्य है। Bill नहीं बनेगा।');
-      const fieldEl = document.getElementById('invoice-field-prescription_no');
-      fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      fieldEl?.querySelector('input, select, textarea')?.focus();
-      return;
-    }
-    if (!isChallanMode && form.payment_type === 'credit' && !form.buyer_name) { setError('Customer name is required for credit sales.'); return; }
-    if (!gstinValid) { setError('Invalid GSTIN format'); return; }
-    const validItems = isChallanMode
-      ? items.filter((i) => i.product_id && i.quantity)
-      : items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
-    if (validItems.length === 0) { setError('Select at least one product.'); return; }
-    if (!isChallanMode) {
-      for (const item of validItems) {
-        const prod = products.find((p) => p._id === item.product_id);
-        if (prod && Number(item.quantity) > (prod.quantity || 0)) { setError(prod.name + ': only ' + prod.quantity + ' items are available in stock.'); return; }
-      }
-    }
+  async function _doSubmit(validItems) {
     setSubmitting(true);
     if (!isOnline) {
       if (editingSaleId) { setError('Editing existing sales requires internet connection.'); setSubmitting(false); return; }
@@ -313,13 +306,86 @@ export default function useSaleForm({
         if (businessType === 'salon' && redemptionMembershipId && data?._id) {
           fetch(apiUrl(`/api/memberships/${redemptionMembershipId}/redeem`), { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ saleId: data._id, notes: 'Redeemed at visit' }) }).catch(() => {});
         }
+        /* Record last sale for duplicate detection */
+        try {
+          localStorage.setItem(LAST_SALE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            totalAmount: billTotals.total,
+            buyerPhone: form.buyer_phone || '',
+            itemCount: validItems.length,
+          }));
+        } catch {}
         setShowModal(false); resetForm(); fetchAll();
       } else { setError(data.message || 'Failed'); }
     } catch { setError('Server error'); }
     setSubmitting(false);
   }
 
-  /* ── Effects that belong to form state ── */
+  async function handleSubmit(e, opts = {}) {
+    e?.preventDefault();
+    setError(''); setGstinTouched(true);
+    if (businessType === 'pharmacy' && scheduleWarning?.hasScheduleX && !scheduleWarning?.prescriptionFilled) {
+      setError('Schedule X दवाई के लिए Prescription No. अनिवार्य है। Bill नहीं बनेगा।');
+      const fieldEl = document.getElementById('invoice-field-prescription_no');
+      fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      fieldEl?.querySelector('input, select, textarea')?.focus();
+      return;
+    }
+    if (!isChallanMode && form.payment_type === 'credit' && !form.buyer_name) { setError('Customer name is required for credit sales.'); return; }
+    if (!gstinValid) { setError('Invalid GSTIN format'); return; }
+    const validItems = isChallanMode
+      ? items.filter((i) => i.product_id && i.quantity)
+      : items.filter((i) => i.product_id && i.quantity && (i._isFreeItem || i.price_per_unit));
+    if (validItems.length === 0) { setError('Select at least one product.'); return; }
+
+    /* ── Bug 2: Zero price guard ── */
+    if (!isChallanMode) {
+      const zeroItems = validItems.filter((i) => !i._isFreeItem && Number(i.price_per_unit) === 0);
+      if (zeroItems.length > 0) {
+        const prod = products.find((p) => p._id === zeroItems[0].product_id);
+        setError(`${prod?.name || 'एक item'} की price ₹0 है। Free item है तो "Free" toggle करें।`);
+        return;
+      }
+    }
+
+    if (!isChallanMode) {
+      for (const item of validItems) {
+        const prod = products.find((p) => p._id === item.product_id);
+        if (prod && Number(item.quantity) > (prod.quantity || 0)) { setError(prod.name + ': only ' + prod.quantity + ' items are available in stock.'); return; }
+      }
+    }
+
+    /* ── Feature 5: Duplicate detection ── */
+    if (!opts.skipDuplicateCheck) {
+      try {
+        const lastSale = JSON.parse(localStorage.getItem(LAST_SALE_KEY) || 'null');
+        const now = Date.now();
+        if (
+          lastSale &&
+          now - lastSale.timestamp < DUPLICATE_WINDOW_MS &&
+          lastSale.totalAmount === billTotals.total &&
+          lastSale.buyerPhone === (form.buyer_phone || '') &&
+          lastSale.itemCount === validItems.length
+        ) {
+          setDuplicateWarning(true);
+          return;
+        }
+      } catch {}
+    }
+
+    await _doSubmit(validItems);
+  }
+
+  /* Called when user confirms "yes, this is a new bill" on the duplicate warning dialog */
+  const handleConfirmDuplicate = () => {
+    setDuplicateWarning(false);
+    const validItems = isChallanMode
+      ? items.filter((i) => i.product_id && i.quantity)
+      : items.filter((i) => i.product_id && i.quantity && (i._isFreeItem || i.price_per_unit));
+    _doSubmit(validItems);
+  };
+
+  /* ── Effects ── */
   useEffect(() => {
     if (businessType !== 'salon') return;
     const advance = parseFloat(extraFields.advance_paid) || 0;
@@ -387,6 +453,7 @@ export default function useSaleForm({
     roundedBill,
     rowGST,
     scheduleWarning,
+    duplicateWarning, setDuplicateWarning, handleConfirmDuplicate,
     amountPaidInputRef, buyerNameInputRef, customerComboRef, saleDateInputRef,
     resetForm,
     updateItem, updateItemQuantityBy, applyQuickQuantity, duplicateItem, addItem, removeItem,

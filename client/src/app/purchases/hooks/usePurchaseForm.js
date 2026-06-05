@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiUrl } from '../../../lib/api';
 import { queuePurchase } from '../../../lib/offlineQueue';
 import { cacheProducts } from '../../../lib/offlineDB';
+import { useToast } from '../../../hooks/useToast';
 import {
   getToken, fmt, cleanPhone, GSTIN_REGEX, GSTIN_LENGTH, normalizeGstin, normalizeState,
   GST_STATE_CODE_MAP, getRoundedBillValues,
@@ -15,6 +16,7 @@ const getStateFromGstin = (gstin) => {
   if (normalized.length !== GSTIN_LENGTH || !GSTIN_REGEX.test(normalized)) return null;
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || null;
 };
+
 const buildOfflinePurchaseItems = (rawItems, products) => (
   (rawItems || []).map((item) => {
     const product = products.find((prod) => prod._id === item.product_id);
@@ -27,6 +29,7 @@ const buildOfflinePurchaseItems = (rawItems, products) => (
     };
   }).filter((item) => item.product_id && item.quantity > 0)
 );
+
 const buildPurchaseWhatsAppMessage = (purchase) => {
   const purchaseDate = new Date(purchase.createdAt || purchase.purchased_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const itemLines = purchase.items && purchase.items.length > 0
@@ -55,6 +58,8 @@ const EMPTY_FORM = () => ({
 });
 
 export default function usePurchaseForm({ shopState, isOnline, fetchAll, products, setProducts, setPurchases }) {
+  const { showToast } = useToast();
+
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingPurchaseId, setEditingPurchaseId] = useState('');
@@ -66,6 +71,13 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
   const [inlineProductRowIndex, setInlineProductRowIndex] = useState(0);
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [newProductForm, setNewProductForm] = useState({ name: '', price: '', gst_rate: '0', unit: 'pcs', hsn_code: '' });
+  /* Bug 3 — RCM auto-suggestion */
+  const [rcmSuggestion, setRcmSuggestion] = useState(false);
+  /* Feature 3 — PO workflow */
+  const [documentType, setDocumentType] = useState('invoice');
+  /* Feature 5 — duplicate invoice detection */
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const dupCheckTimerRef = useRef(null);
 
   const calcRowGST = (item) => {
     const prod = products.find((p) => p._id === item.product_id);
@@ -97,7 +109,7 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
 
   const updateItem = (index, field, value) => {
     const updated = [...items];
-    updated[index][field] = value;
+    updated[index] = { ...updated[index], [field]: value };
     if (field === 'product_id' && value) {
       const prod = products.find((p) => p._id === value);
       if (prod) updated[index].price_per_unit = prod.cost_price || prod.price || '';
@@ -108,11 +120,26 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
   const addItem = () => setItems([...items, emptyItem()]);
   const removeItem = (index) => { if (items.length > 1) setItems(items.filter((_, i) => i !== index)); };
 
+  /* Bug 3 — handleSupplierGstinChange with RCM suggestion */
   const handleSupplierGstinChange = (value) => {
     const normalized = normalizeGstin(value);
     const detectedState = getStateFromGstin(normalized);
     updateForm({ supplier_gstin: normalized, ...(detectedState ? { supplier_state: detectedState } : {}) });
     setGstinTouched(Boolean(normalized));
+
+    if (!normalized && form.itc_eligible && !form.is_reverse_charge) {
+      setRcmSuggestion(true);
+    }
+    if (normalized) {
+      setRcmSuggestion(false);
+    }
+  };
+
+  const dismissRcmSuggestion = () => setRcmSuggestion(false);
+
+  const applyRcmFromSuggestion = () => {
+    updateForm({ is_reverse_charge: true, rcm_category: 'unregistered_supplier', itc_eligible: false });
+    setRcmSuggestion(false);
   };
 
   const resetInlineProductForm = () => {
@@ -136,6 +163,9 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
     setItems([emptyItem()]);
     setForm(EMPTY_FORM());
     setGstinTouched(false);
+    setRcmSuggestion(false);
+    setDocumentType('invoice');
+    setDuplicateWarning(null);
     resetInlineProductForm();
   };
 
@@ -169,17 +199,16 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
     setCreatingProduct(false);
   };
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault();
-    setError('');
-    setGstinTouched(true);
-    if (form.payment_type === 'credit' && !form.supplier_name) { setError('Supplier name is required for credit purchases'); return; }
-    if (!gstinValid) { setError('Invalid GSTIN format'); return; }
-    const validItems = items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
-    if (validItems.length === 0) { setError('Select at least one product'); return; }
+  async function _doSubmit(validItems) {
     setSubmitting(true);
-
     if (!isOnline) {
+      /* Bug 2 Part A — pre-check: ensure all products still exist */
+      const missingProducts = validItems.filter((item) => !products.find((p) => p._id === item.product_id));
+      if (missingProducts.length > 0) {
+        setError('कुछ products अब available नहीं हैं। Please items हटाकर दोबारा add करें।');
+        setSubmitting(false);
+        return;
+      }
       try {
         const offlineItems = buildOfflinePurchaseItems(validItems, products);
         const payload = {
@@ -208,21 +237,23 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
     }
 
     try {
+      const isPO = documentType === 'purchase_order';
       const payload = {
-        items: validItems, payment_type: form.payment_type,
-        amount_paid: ['credit', 'upi', 'bank'].includes(form.payment_type) ? (amountPaidNum || 0) : billTotals.total,
-        amount_paid_mode: ['upi', 'bank'].includes(form.payment_type) ? form.payment_type : undefined,
+        items: validItems, payment_type: isPO ? undefined : form.payment_type,
+        amount_paid: isPO ? 0 : (['credit', 'upi', 'bank'].includes(form.payment_type) ? (amountPaidNum || 0) : billTotals.total),
+        amount_paid_mode: !isPO && ['upi', 'bank'].includes(form.payment_type) ? form.payment_type : undefined,
         supplier_name: form.supplier_name, supplier_phone: form.supplier_phone,
         supplier_gstin: gstinValue, supplier_address: form.supplier_address,
         supplier_state: form.supplier_state, purchase_date: form.purchase_date,
-        due_date: form.payment_type === 'credit' && form.due_date ? form.due_date : undefined,
+        due_date: !isPO && form.payment_type === 'credit' && form.due_date ? form.due_date : undefined,
         notes: form.notes,
         supplier_invoice_no: form.supplier_invoice_no || undefined,
         supplier_invoice_date: form.supplier_invoice_date || undefined,
-        itc_eligible: form.itc_eligible,
-        itc_blocked_reason: form.itc_eligible ? undefined : (form.itc_blocked_reason || undefined),
-        is_reverse_charge: form.is_reverse_charge,
-        rcm_category: form.is_reverse_charge ? (form.rcm_category || undefined) : undefined,
+        itc_eligible: isPO ? undefined : form.itc_eligible,
+        itc_blocked_reason: (!isPO && form.itc_eligible === false) ? (form.itc_blocked_reason || undefined) : undefined,
+        is_reverse_charge: isPO ? undefined : form.is_reverse_charge,
+        rcm_category: (!isPO && form.is_reverse_charge) ? (form.rcm_category || undefined) : undefined,
+        document_type: isPO ? 'purchase_order' : undefined,
       };
       const isEditing = Boolean(editingPurchaseId);
       const res = await fetch(
@@ -230,12 +261,57 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
         { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(payload) }
       );
       const data = await res.json();
-      if (res.ok) {
-        resetModal();
-        fetchAll();
-      } else { setError(data.message || 'Request failed'); }
+      if (res.ok) { resetModal(); fetchAll(); }
+      else { setError(data.message || 'Request failed'); }
     } catch { setError('Server error'); }
     setSubmitting(false);
+  }
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    setError('');
+    setGstinTouched(true);
+    if (form.payment_type === 'credit' && !form.supplier_name) { setError('Supplier name is required for credit purchases'); return; }
+    if (!gstinValid) { setError('Invalid GSTIN format'); return; }
+    const validItems = items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
+    if (validItems.length === 0) { setError('Select at least one product'); return; }
+
+    /* Feature 5 — Duplicate supplier invoice check (300ms debounce guard: skip if empty) */
+    if (form.supplier_invoice_no && form.supplier_name && isOnline) {
+      if (dupCheckTimerRef.current) clearTimeout(dupCheckTimerRef.current);
+      await new Promise((resolve) => {
+        dupCheckTimerRef.current = setTimeout(resolve, 300);
+      });
+      try {
+        const checkRes = await fetch(
+          apiUrl(`/api/purchases?supplier_name=${encodeURIComponent(form.supplier_name)}&supplier_invoice_no=${encodeURIComponent(form.supplier_invoice_no)}`),
+          { headers: { Authorization: `Bearer ${getToken()}` } }
+        );
+        if (checkRes.ok) {
+          const result = await checkRes.json();
+          const existing = (result.purchases || []).find(
+            (p) => p.supplier_invoice_no === form.supplier_invoice_no && p._id !== editingPurchaseId
+          );
+          if (existing) {
+            setDuplicateWarning({
+              invoiceNo: form.supplier_invoice_no,
+              supplierName: form.supplier_name,
+              date: new Date(existing.createdAt).toLocaleDateString('en-IN'),
+              amount: existing.total_amount,
+            });
+            return;
+          }
+        }
+      } catch { /* non-fatal — proceed with submit */ }
+    }
+
+    await _doSubmit(validItems);
+  };
+
+  const handleConfirmDuplicate = () => {
+    setDuplicateWarning(null);
+    const validItems = items.filter((i) => i.product_id && i.quantity && i.price_per_unit);
+    _doSubmit(validItems);
   };
 
   const startEditPurchase = (purchase) => {
@@ -268,16 +344,35 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
       is_reverse_charge: purchase.is_reverse_charge || false,
       rcm_category: purchase.rcm_category || '',
     });
+    setDocumentType(purchase.document_type === 'purchase_order' ? 'purchase_order' : 'invoice');
     setGstinTouched(false);
     setError('');
+    setRcmSuggestion(false);
+    setDuplicateWarning(null);
     setShowModal(true);
   };
 
+  /* Bug 6 — sendPurchaseWhatsApp with proper error handling */
   const sendPurchaseWhatsApp = (purchase) => {
     const phone = cleanPhone(purchase.supplier_phone || '');
-    if (!phone) { setError('Supplier phone number is missing'); return; }
-    setError('');
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(buildPurchaseWhatsAppMessage(purchase))}`, '_blank');
+    if (!phone) {
+      showToast('Supplier phone number नहीं है', 'warning');
+      return;
+    }
+    try {
+      const msg = buildPurchaseWhatsAppMessage(purchase);
+      const waUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
+      const opened = window.open(waUrl, '_blank');
+      if (!opened) {
+        navigator.clipboard.writeText(msg).then(() => {
+          showToast('WhatsApp नहीं खुला — message clipboard में copy हो गया', 'info');
+        }).catch(() => {
+          showToast('WhatsApp share failed', 'error');
+        });
+      }
+    } catch {
+      showToast('WhatsApp share failed. Please try again.', 'error');
+    }
   };
 
   return {
@@ -300,6 +395,11 @@ export default function usePurchaseForm({ shopState, isOnline, fetchAll, product
     showGstinError,
     showGstinLengthHint,
     calcRowGST,
+    rcmSuggestion,
+    dismissRcmSuggestion,
+    applyRcmFromSuggestion,
+    documentType, setDocumentType,
+    duplicateWarning, setDuplicateWarning, handleConfirmDuplicate,
     resetModal,
     updateItem, addItem, removeItem,
     handleSupplierGstinChange,

@@ -8,12 +8,10 @@ const supplierUdhaarSchema = new mongoose.Schema({
     type: String,
     enum: ['debit', 'credit'],
     required: true,
-    // debit  = humne credit pe purchase kiya (hum unhe denge)
-    // credit = humne unhe payment kar diya (balance kam hua)
   },
 
   amount: { type: Number, required: true },
-  running_balance: { type: Number, default: 0 }, // ← NEW: balance after this entry (for ledger statement)
+  running_balance: { type: Number, default: 0 },
   payment_mode: {
     type: String,
     enum: ['cash', 'bank', 'upi', ''],
@@ -21,8 +19,9 @@ const supplierUdhaarSchema = new mongoose.Schema({
   },
   note: { type: String },
   date: { type: Date, default: Date.now },
-  reference_id: { type: String },   // invoice_number
-  reference_type: { type: String }, // 'purchase' | 'manual'
+  reference_id: { type: String },
+  reference_type: { type: String },
+  due_date: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('SupplierUdhaar', supplierUdhaarSchema);

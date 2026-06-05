@@ -274,4 +274,50 @@ export default {
     kpi5: { label: 'GST Payable',      sublabel: 'This month'            },
     kpi6: { label: 'Low Ingredients',  sublabel: 'Needs restock'         },
   },
+
+  dashboardPanels: [
+    {
+      id: 'table_status',
+      dataKey: 'tableStatus',
+      condition: (val) => Boolean(val),
+      href: '/tables',
+      icon: '🪑',
+      color: 'orange',
+      renderLabel: (val) => `${val.occupiedCount || 0} table${(val.occupiedCount || 0) !== 1 ? 's' : ''} occupied`,
+      renderSublabel: () => 'View Floor →',
+      renderExtra: (val, data) => {
+        const channels = {};
+        (data.todayOrders || []).forEach((s) => {
+          const ef = (s.extra_fields instanceof Map ? Object.fromEntries(s.extra_fields) : s.extra_fields) || {};
+          const ch = ef.order_type || 'Dine-In';
+          if (!channels[ch]) channels[ch] = { count: 0, revenue: 0 };
+          channels[ch].count++;
+          channels[ch].revenue += s.total_amount || 0;
+        });
+        const CHANNEL_ICONS = { 'Dine-In': '🍽️', Takeaway: '📦', Delivery: '🛵', Swiggy: '🟠', Zomato: '🔴' };
+        return Object.entries(channels)
+          .filter(([, v]) => v.count > 0)
+          .map(([ch, v]) => ({
+            key: ch,
+            icon: CHANNEL_ICONS[ch] || '🍽️',
+            label: ch,
+            sublabel: `₹${data.fmt ? data.fmt(v.revenue) : Math.round(v.revenue)} (${v.count})`,
+          }));
+      },
+    },
+  ],
+
+  // ─── Restaurant-specific expense categories ──────────────────────────────
+  expenseCategories: [
+    { id: 'raw_materials', labelHi: 'कच्चा माल',      labelEn: 'Raw Materials',    emoji: '🥬' },
+    { id: 'kitchen_gas',   labelHi: 'रसोई गैस',        labelEn: 'Kitchen Gas',      emoji: '🔥' },
+    { id: 'packaging',     labelHi: 'पैकेजिंग',        labelEn: 'Packaging',        emoji: '📦' },
+    { id: 'zomato_comm',   labelHi: 'Online Commission',labelEn: 'Online Commission',emoji: '📲' },
+    { id: 'rent',          labelHi: 'किराया',           labelEn: 'Rent',             emoji: '🏠' },
+    { id: 'salary',        labelHi: 'वेतन',             labelEn: 'Salary',           emoji: '👷' },
+    { id: 'utility',       labelHi: 'बिजली-पानी',       labelEn: 'Utility',          emoji: '💡' },
+    { id: 'maintenance',   labelHi: 'मरम्मत',            labelEn: 'Maintenance',      emoji: '🔧' },
+    { id: 'transport',     labelHi: 'परिवहन',            labelEn: 'Transport',        emoji: '🚛' },
+    { id: 'misc',          labelHi: 'अन्य',              labelEn: 'Misc',             emoji: '🗂️' },
+  ],
 };

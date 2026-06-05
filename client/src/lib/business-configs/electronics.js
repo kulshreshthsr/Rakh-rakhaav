@@ -206,4 +206,34 @@ export default {
       { label: 'Ready to Invoice', stage: 'confirmed', href: '/sales' },
     ],
   },
+
+  dashboardPanels: [
+    {
+      id: 'warranty_summary',
+      dataKey: 'warrantySummary',
+      condition: (val) => Boolean(val && ((val.pendingCount || 0) > 0 || (val.readyCount || 0) > 0)),
+      href: '/warranty',
+      icon: '🛡️',
+      color: 'teal',
+      renderLabel: (val) => {
+        const parts = [];
+        if ((val.pendingCount || 0) > 0) parts.push(`${val.pendingCount} warranty claim${val.pendingCount !== 1 ? 's' : ''} open`);
+        if ((val.readyCount   || 0) > 0) parts.push(`${val.readyCount} ready for pickup`);
+        return parts.join('  •  ');
+      },
+      renderSublabel: () => 'View Claims →',
+    },
+  ],
+
+  // ─── Electronics-specific expense categories ─────────────────────────────
+  expenseCategories: [
+    { id: 'spare_parts', labelHi: 'Spare Parts',  labelEn: 'Spare Parts',  emoji: '⚙️' },
+    { id: 'tools',       labelHi: 'Tools',         labelEn: 'Tools',        emoji: '🔩' },
+    { id: 'rent',        labelHi: 'किराया',         labelEn: 'Rent',         emoji: '🏠' },
+    { id: 'salary',      labelHi: 'वेतन',           labelEn: 'Salary',       emoji: '👷' },
+    { id: 'utility',     labelHi: 'बिजली-पानी',     labelEn: 'Utility',      emoji: '💡' },
+    { id: 'maintenance', labelHi: 'मरम्मत',          labelEn: 'Maintenance',  emoji: '🔧' },
+    { id: 'transport',   labelHi: 'परिवहन',          labelEn: 'Transport',    emoji: '🚛' },
+    { id: 'misc',        labelHi: 'अन्य',            labelEn: 'Misc',         emoji: '📦' },
+  ],
 };

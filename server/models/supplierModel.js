@@ -6,17 +6,20 @@ const supplierSchema = new mongoose.Schema({
   phone: { type: String },
   gstin: { type: String },
   address: { type: String },
-  state: { type: String },        // ← needed for IGST logic
+  state: { type: String },
   companyName: { type: String },
 
-  // ── Ledger summary (auto-updated) ─────────────────────────────
-  totalPurchased: { type: Number, default: 0 }, // total credit purchases
-  totalPaid: { type: Number, default: 0 },      // total payments made
-  totalUdhaar: { type: Number, default: 0 },    // balance still owed = totalPurchased - totalPaid
+  totalPurchased: { type: Number, default: 0 },
+  totalPaid: { type: Number, default: 0 },
+  totalUdhaar: { type: Number, default: 0 },
   opening_balance: { type: Number, default: 0 },
 
   isActive: { type: Boolean, default: true },
   notes: { type: String },
+
+  reminder_enabled: { type: Boolean, default: false },
+  reminder_frequency: { type: String, enum: ['daily', 'weekly', 'monthly', null], default: null },
+  last_reminded_at: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Supplier', supplierSchema);

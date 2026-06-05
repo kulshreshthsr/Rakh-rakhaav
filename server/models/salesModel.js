@@ -91,6 +91,11 @@ const saleSchema = new mongoose.Schema({
   },
   is_reverse_charge: { type: Boolean, default: false },
 
+  // ── SEZ / Deemed Export supply type ──────────────────────────
+  is_sez_supply:    { type: Boolean, default: false },
+  sez_type:         { type: String, enum: ['with_payment', 'without_payment', null], default: null },
+  is_deemed_export: { type: Boolean, default: false },
+
   // ── Insurance billing (pharmacy) ──────────────────────────────
   insurance_type: {
     type: String,

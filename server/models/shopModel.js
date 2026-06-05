@@ -72,6 +72,7 @@ const shopSchema = new mongoose.Schema({
   invoice_prefix:        { type: String, default: '', trim: true, maxlength: 10 },
   invoice_number_digits: { type: Number, default: 4, min: 1, max: 8 },
   invoice_start_number:  { type: Number, default: 1 },
+  monthly_target:        { type: Number, default: 0 },
   onboarding_completed:  { type: Boolean, default: false },
 
   // ── Business Intelligence Profile ──────────────────────────────────
@@ -100,6 +101,12 @@ const shopSchema = new mongoose.Schema({
     to:        { type: String },
     reason:    { type: String },
     upgradedAt:{ type: Date, default: Date.now },
+  }],
+
+  // Per-category monthly expense budget limits
+  expense_budgets: [{
+    category:      { type: String },
+    monthly_limit: { type: Number, default: 0 },
   }],
 }, { timestamps: true });
 

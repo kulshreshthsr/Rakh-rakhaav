@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -7,7 +7,9 @@ import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import SearchableProductSelect from '../../components/SearchableProductSelect';
 import { useAppLocale } from '../../components/AppLocale';
 import { useIndustry } from '../../contexts/IndustryContext';
+import { useToast } from '../../hooks/useToast';
 import DynamicFormField from '../../components/DynamicFormField';
+import OfflineQueueDrawer, { OfflineQueueBadge } from '../../components/OfflineQueueDrawer';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { getDisplayQueue, queueSale, removeQueuedOperation } from '../../lib/offlineQueue';
 import { cacheProducts, getCachedProducts } from '../../lib/offlineDB';
@@ -71,27 +73,22 @@ const buildOfflineSaleItems = (rawItems, products) => (
     };
   }).filter((item) => item.product_id && item.quantity > 0)
 );
-/* ─── Payment badge ── */
 const PAY_BADGE = {
   cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: '💵 Cash' },
   credit: { cls: 'bg-rose-50 text-rose-700 border-rose-200',          label: '📒 उधार' },
   upi:    { cls: 'bg-green-50 text-green-700 border-green-200',        label: '📱 UPI'  },
   bank:   { cls: 'bg-blue-50 text-blue-700 border-blue-200',           label: '🏦 Bank' },
 };
-
-/* ─── All possible payment tab definitions ── */
 const PAYMENT_TAB_DEFS = {
-  cash:   { type: 'cash',   label: '💵 कैश',     active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg',     isCredit: false },
-  upi:    { type: 'upi',    label: '📱 UPI',      active: 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg',         isCredit: false },
-  bank:   { type: 'bank',   label: '🏦 Bank',     active: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg',          isCredit: false },
-  credit: { type: 'credit', label: '📒 उधार',    active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg',           isCredit: true  },
+  cash:   { type: 'cash',   label: '💵 कैश',   active: 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg',   isCredit: false },
+  upi:    { type: 'upi',    label: '📱 UPI',    active: 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg',       isCredit: false },
+  bank:   { type: 'bank',   label: '🏦 Bank',   active: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg',        isCredit: false },
+  credit: { type: 'credit', label: '📒 उधार',  active: 'bg-gradient-to-r from-rose-600 to-red-700 text-white shadow-lg',         isCredit: true  },
 };
 const PayBadge = ({ type }) => {
   const s = PAY_BADGE[type] || PAY_BADGE.cash;
   return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border ${s.cls}`}>{s.label}</span>;
 };
-
-/* ── Reusable input class ── */
 const INPUT = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 /* ══════════════════════════════════════════════════════════════════ */
@@ -99,6 +96,7 @@ export default function SalesPage() {
   const router = useRouter();
   const { locale } = useAppLocale();
   const { term, config, businessType } = useIndustry();
+  const { showToast } = useToast();
 
   /* ── Schema-derived constants ── */
   const sSchema        = config.saleFormSchema || {};
@@ -114,7 +112,7 @@ export default function SalesPage() {
   const serialSales  = isSerialMode(inv);
   const recipeSales  = isRecipeMode(inv);
 
-  /* ── State that stays in page.js ── */
+  /* ── Page state ── */
   const [products, setProducts]         = useState([]);
   const [shopName, setShopName]         = useState('');
   const [shopState, setShopState]       = useState('');
@@ -137,15 +135,13 @@ export default function SalesPage() {
   const [showMoreCustomerDetails, setShowMoreCustomerDetails] = useState(false);
 
   /* ── Return modal state ── */
-  const [returnSale, setReturnSale]     = useState(null);
-  const [returnToast, setReturnToast]   = useState('');
+  const [returnSale, setReturnSale] = useState(null);
 
   /* ── Hold Bill state ── */
   const [heldBills, setHeldBills]       = useState(() => typeof window !== 'undefined' ? getHeldBills() : []);
-  const [holdToast, setHoldToast]       = useState('');
   const [showHeldPicker, setShowHeldPicker] = useState(false);
 
-  /* ── Split/exchange/delivery modal state stays in page.js ── */
+  /* ── Split / delivery modal state ── */
   const [showSplitModal, setShowSplitModal]     = useState(false);
   const [splitSale, setSplitSale]               = useState(null);
   const [splitMode, setSplitMode]               = useState('equal');
@@ -153,14 +149,14 @@ export default function SalesPage() {
   const [splitAssignments, setSplitAssignments] = useState({});
   const [showExchangeModal, setShowExchangeModal]   = useState(false);
   const [exchangeSale, setExchangeSale]             = useState(null);
-  const [exchangeReturned, setExchangeReturned]     = useState([]);
-  const [exchangeNewItems, setExchangeNewItems]     = useState([]);
-  const [exchangeSubmitting, setExchangeSubmitting] = useState(false);
   const [showDeliveredModal, setShowDeliveredModal] = useState(false);
   const [deliveredChallan, setDeliveredChallan]     = useState(null);
   const [deliveredForm, setDeliveredForm]           = useState({ received_by: '', received_at: getDefaultSaleDateValue(), notes: '' });
 
-  /* ── Hooks (order: industry → sales data → sale form) ── */
+  /* ── Offline queue drawer ── */
+  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
+
+  /* ── Hooks ── */
   const industryData = useIndustrySideData({ businessType });
   const {
     contractors, selectedContractor, setSelectedContractor,
@@ -196,11 +192,12 @@ export default function SalesPage() {
     challanForm, setChallanForm, isChallanMode, gstinValue, gstinValid,
     showGstinError, showGstinLengthHint,
     billTotals, amountPaidNum, balanceDue, roundedBill, rowGST, scheduleWarning,
+    duplicateWarning, setDuplicateWarning, handleConfirmDuplicate,
     amountPaidInputRef, buyerNameInputRef, customerComboRef, saleDateInputRef,
     resetForm, updateItem, updateItemQuantityBy, applyQuickQuantity, duplicateItem,
     addItem, removeItem, handleProductSelect, addOrIncrementProduct,
     loadBatchesFor, loadVariantsFor, handleBuyerGstinChange,
-    handleSubmit, startEditSale, buildWhatsAppShareMessage,
+    handleSubmit, startEditSale, buildWhatsAppShareMessage: _buildWA,
   } = useSaleForm({
     defaultPayment, businessType, config,
     shopState, shopGstin, shopStateCode, shopAddress, shopName,
@@ -213,15 +210,17 @@ export default function SalesPage() {
     recipeSales, batchSales, variantSales,
   });
 
-  /* ── Effects that stay in page.js ── */
+  /* ── Online/offline listener ── */
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline  = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline); window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
   }, []);
 
+  /* ── Shop profile fetch ── */
   useEffect(() => {
     if ((!showModal && !sales.length) || (shopName && shopState) || !localStorage.getItem('token')) return;
     fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } })
@@ -233,21 +232,23 @@ export default function SalesPage() {
       }).catch(() => {});
   }, [showModal, sales.length, shopName, shopState]);
 
+  /* ── Product fetch trigger ── */
   useEffect(() => {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
     fetchProducts();
   }, [fetchProducts, products.length, showModal]);
 
+  /* ── Industry side data ── */
   useEffect(() => {
     if (!showModal || businessType !== 'hardware' || contractorsLoaded) return;
     loadContractors();
   }, [showModal, businessType, contractorsLoaded, loadContractors]);
-
   useEffect(() => {
     if (!showModal || businessType !== 'salon') return;
     fetchStylists();
   }, [showModal, businessType, fetchStylists]);
 
+  /* ── Bug 5: URL param open=1&payment=credit with auth guard ── */
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const params = new URLSearchParams(window.location.search);
@@ -255,23 +256,83 @@ export default function SalesPage() {
     if (wf) { setWfFilter(wf); router.replace('/sales'); return; }
     if (params.get('filter') === 'insurance_pending') { setInsuranceFilter(true); return; }
     if (params.get('open') !== '1' || params.get('payment') !== 'credit') return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.replace(`/login?next=${encodeURIComponent('/sales?open=1&payment=credit')}`);
+      return;
+    }
     setEditingSaleId(''); setItems([emptyItem()]); setForm(buildInitialForm({ payment_type: 'credit' }));
     setGstinTouched(false); setError(''); setShowModal(true); router.replace('/sales');
   }, [router]);
 
+  /* ── Keyboard shortcuts ── */
   useEffect(() => {
     if (!showModal) return undefined;
-    const handleShortcutSubmit = () => handleSubmit();
-    const handleShortcutAddItem = () => addItem();
     const onKeyDown = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter') { event.preventDefault(); handleShortcutSubmit(); }
-      if (event.altKey && event.key.toLowerCase() === 'a') { event.preventDefault(); handleShortcutAddItem(); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'enter') {
+        event.preventDefault(); handleSubmit();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'i') {
+        event.preventDefault(); addItem();
+      }
+      if (event.altKey && event.key.toLowerCase() === 'a') {
+        event.preventDefault(); addItem();
+      }
+      if (event.key === 'Escape') {
+        setShowModal(false); resetForm();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'h') {
+        event.preventDefault();
+        if (!editingSaleId && items.some(i => i.product_id)) handleHoldBill();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
+        event.preventDefault();
+        if (barcodeEnabled) setShowBarcodeScanner(true);
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showModal]);
+  }, [showModal, editingSaleId, items, barcodeEnabled]);
 
-  /* ── Functions that stay in page.js ── */
+  /* ── Feature 4: Recurring invoice due-date checker (runs once on mount) ── */
+  useEffect(() => {
+    if (typeof window === 'undefined' || !localStorage.getItem('token')) return;
+    try {
+      const recurringList = JSON.parse(localStorage.getItem('rr-recurring-invoices') || '[]');
+      const today = new Date().toISOString().slice(0, 10);
+      const dueItems = recurringList.filter(r => r.active && r.nextDueDate <= today);
+      dueItems.forEach((r) => {
+        const total = Number(r.totalAmount || 0).toFixed(2);
+        const name  = r.buyerName || 'Customer';
+        showToast(
+          `📅 Recurring bill due: ${name} — ₹${total}`,
+          'info',
+          [
+            {
+              label: 'Create Now',
+              onClick: () => {
+                setEditingSaleId('');
+                setItems(
+                  (r.items || [emptyItem()]).map(item => ({
+                    product_id: item.product?._id || item.product || item.product_id || '',
+                    quantity: item.quantity || 1,
+                    price_per_unit: item.price_per_unit || '',
+                    item_metadata: item.item_metadata || {},
+                  }))
+                );
+                setForm(buildInitialForm({ buyer_name: r.buyerName || '', buyer_phone: r.buyerPhone || '' }));
+                setGstinTouched(false); setError(''); setShowModal(true);
+              },
+            },
+            { label: 'Skip', onClick: () => {} },
+          ]
+        );
+      });
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Page functions ── */
   const handleBarcodeDetected = async (detectedCode) => {
     const barcode = normalizeBarcode(detectedCode);
     const localMatch = products.find((p) => normalizeBarcode(p.barcode) === barcode);
@@ -297,7 +358,7 @@ export default function SalesPage() {
 
   const printKOT = (sale) => {
     const kotWindow = window.open('', '_blank', 'width=320,height=600');
-    if (!kotWindow) { alert('Pop-up blocked. Please allow pop-ups to print KOT.'); return; }
+    if (!kotWindow) { showToast('Pop-up blocked. Please allow pop-ups to print KOT.', 'warning'); return; }
     const ef = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
     const tableNo = ef.table_no || 'Counter'; const orderType = ef.order_type || 'Dine-In';
     const specialInstr = ef.special_instructions || ''; const waiter = ef.waiter_name || '';
@@ -314,18 +375,46 @@ export default function SalesPage() {
     kotWindow.document.close();
   };
 
+  /* ── Bug 1: printInvoice — toast instead of alert() ── */
   const printInvoice = async (sale) => {
-    if (sale?._isOffline) { setError('Pending offline sale ka invoice sync ke baad print hoga'); return; }
-    try { const shopRes = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } }); const shop = await shopRes.json(); generateInvoiceHTML(sale, shop, config, true); }
-    catch { alert('Invoice could not be generated.'); }
+    if (sale?._isOffline) {
+      showToast('Pending offline sale ka invoice sync ke baad print hoga', 'warning');
+      return;
+    }
+    try {
+      const shopRes = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } });
+      const shop = await shopRes.json();
+      const nextTemplate = localStorage.getItem('rr-invoice-template-next') || localStorage.getItem('rr-invoice-template') || 'detailed';
+      try { localStorage.removeItem('rr-invoice-template-next'); } catch {}
+      generateInvoiceHTML(sale, shop, config, true, '', nextTemplate);
+    } catch {
+      showToast('Invoice could not be generated.', 'error');
+    }
   };
 
+  /* ── Bug 1: shareWhatsApp — proper error handling ── */
   const shareWhatsApp = (sale) => {
-    if (sale?._isOffline) { setError('Pending offline sale ko sync ke baad share karein'); return; }
-    const msg   = buildWhatsAppShareMessage(sale, shopName);
-    const phone = sale.buyer_phone ? sale.buyer_phone.replace(/\D/g, '') : '';
-    const waUrl = phone ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
+    if (sale?._isOffline) {
+      showToast('Pending offline sale ko sync ke baad share karein', 'warning');
+      return;
+    }
+    try {
+      const msg   = buildWhatsAppShareMessage(sale, shopName);
+      const phone = sale.buyer_phone ? sale.buyer_phone.replace(/\D/g, '') : '';
+      const waUrl = phone
+        ? `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`
+        : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      const opened = window.open(waUrl, '_blank');
+      if (!opened) {
+        navigator.clipboard.writeText(msg).then(() => {
+          showToast('WhatsApp नहीं खुला — bill message clipboard में copy हो गया', 'info');
+        }).catch(() => {
+          showToast('WhatsApp share failed. Phone number check करें।', 'error');
+        });
+      }
+    } catch {
+      showToast('WhatsApp share failed. Please try again.', 'error');
+    }
   };
 
   const sendRepairReadyWhatsApp = (sale) => {
@@ -355,15 +444,16 @@ export default function SalesPage() {
     if (sale?._isOffline) {
       if (!confirm('Is pending offline sale ko local queue se hatana hai?')) return;
       const removed = await removeQueuedOperation(sale._id);
-      if (!removed) { setError('Pending offline sale remove nahi ho paayi'); return; }
-      setSales((current) => current.filter((entry) => entry._id !== sale._id)); setError(''); return;
+      if (!removed) { showToast('Pending offline sale remove nahi ho paayi', 'error'); return; }
+      setSales((current) => current.filter((entry) => entry._id !== sale._id));
+      return;
     }
     if (!confirm('Are you sure? Stock will also adjust.')) return;
     try {
       const res = await fetch(apiUrl(`/api/sales/${sale._id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.message || 'Delete failed'); return; }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); showToast(d.message || 'Delete failed', 'error'); return; }
       fetchAll();
-    } catch { setError('Delete failed'); }
+    } catch { showToast('Delete failed', 'error'); }
   };
 
   const selectPastCustomer = (customer) => {
@@ -382,8 +472,7 @@ export default function SalesPage() {
     setHeldBills(getHeldBills());
     resetForm();
     setShowModal(false);
-    setHoldToast(`"${label}" hold हो गया ⏸`);
-    setTimeout(() => setHoldToast(''), 3000);
+    showToast(`"${label}" hold हो गया ⏸`, 'info');
   };
 
   const handleRestoreBill = (bill) => {
@@ -394,8 +483,7 @@ export default function SalesPage() {
     setExtraFields(bill.extraFields || {});
     setShowHeldPicker(false);
     setShowModal(true);
-    setHoldToast(`"${bill.label}" वापस आ गया`);
-    setTimeout(() => setHoldToast(''), 2500);
+    showToast(`"${bill.label}" वापस आ गया`, 'success');
   };
 
   const handleRemoveHeldBill = (id) => {
@@ -457,6 +545,9 @@ export default function SalesPage() {
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
+              {/* Offline queue badge */}
+              <OfflineQueueBadge onClick={() => setShowQueueDrawer(true)} isOnline={isOnline} />
+
               {/* Held bills chip */}
               {heldBills.length > 0 && (
                 <button
@@ -494,32 +585,19 @@ export default function SalesPage() {
           </div>
         )}
 
-        {/* ── Workflow stage filter tabs (only shown when business has a workflow) ── */}
+        {/* ── Workflow stage filter tabs ── */}
         {wfc && (
           <div className="rr-tab-bar mb-4">
-            <button
-              type="button"
-              onClick={() => setWfFilter('')}
-              className={`rr-tab ${!wfFilter ? 'active' : ''}`}
-            >
+            <button type="button" onClick={() => setWfFilter('')} className={`rr-tab ${!wfFilter ? 'active' : ''}`}>
               All {wfc.saleNounPlural || 'Sales'}
             </button>
             {getStages(wfc).map(stage => {
               const isActive = wfFilter === stage.id;
               const count   = sales.filter(s => getSaleWorkflowStatus(s, wfc) === stage.id).length;
               return (
-                <button
-                  key={stage.id}
-                  type="button"
-                  onClick={() => setWfFilter(isActive ? '' : stage.id)}
-                  className={`rr-tab ${isActive ? 'active' : ''}`}
-                >
+                <button key={stage.id} type="button" onClick={() => setWfFilter(isActive ? '' : stage.id)} className={`rr-tab ${isActive ? 'active' : ''}`}>
                   {stage.icon} {stage.label}
-                  {count > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">
-                      {count}
-                    </span>
-                  )}
+                  {count > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">{count}</span>}
                 </button>
               );
             })}
@@ -528,25 +606,18 @@ export default function SalesPage() {
 
         {/* ── KPI strip ── */}
         <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3 mb-5">
-          {/* Revenue card — shows net revenue with return deduction hint */}
           <div className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
             <div className="absolute top-2 right-2 text-3xl opacity-10">💰</div>
             <div className="text-[24px] font-black text-green-800">₹{fmt(revenueDisplay)}</div>
             <div className="text-[11px] font-bold text-slate-600 uppercase">Net Revenue</div>
-            {returnsDisplay > 0 && (
-              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -₹{fmt(returnsDisplay)} returned</div>
-            )}
+            {returnsDisplay > 0 && <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -₹{fmt(returnsDisplay)} returned</div>}
           </div>
-          {/* GST card */}
           <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 border-2 border-amber-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
             <div className="absolute top-2 right-2 text-3xl opacity-10">📊</div>
             <div className="text-[24px] font-black text-amber-800">₹{fmt(gstDisplay)}</div>
             <div className="text-[11px] font-bold text-slate-600 uppercase">Net GST</div>
-            {returnsDisplay > 0 && (
-              <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -{fmt(Number(summary.totalReturnedGST || 0))} adj.</div>
-            )}
+            {returnsDisplay > 0 && <div className="text-[10px] font-bold text-rose-500 mt-0.5">↩ -{fmt(Number(summary.totalReturnedGST || 0))} adj.</div>}
           </div>
-          {/* Invoices card */}
           <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-slate-200 rounded-2xl p-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
             <div className="absolute top-2 right-2 text-3xl opacity-10">🧾</div>
             <div className="text-[24px] font-black text-slate-800">{filteredSales.length}</div>
@@ -554,15 +625,14 @@ export default function SalesPage() {
           </div>
         </div>
 
-        {/* ── Restaurant: delivery platform filter tabs ── */}
+        {/* ── Restaurant delivery filter ── */}
         {businessType === 'restaurant' && (
           <div className="rr-tab-bar mb-4">
             {['', 'Dine-In', 'Takeaway', 'Delivery', 'Swiggy', 'Zomato'].map((f) => {
               const labels = { '': 'All', 'Dine-In': '🍽️ Dine-In', 'Takeaway': '📦 Takeaway', 'Delivery': '🛵 Delivery', 'Swiggy': '🟠 Swiggy', 'Zomato': '🔴 Zomato' };
-              const isActive = deliveryFilter === f;
               return (
                 <button key={f} type="button" onClick={() => setDeliveryFilter(f)}
-                  className={`rr-tab ${isActive ? 'active' : ''}`}
+                  className={`rr-tab ${deliveryFilter === f ? 'active' : ''}`}
                 >{labels[f]}</button>
               );
             })}
@@ -651,28 +721,20 @@ export default function SalesPage() {
                 setDeliveredForm={setDeliveredForm}
                 setShowDeliveredModal={setShowDeliveredModal}
                 setExchangeSale={setExchangeSale}
-                setExchangeReturned={setExchangeReturned}
-                setExchangeNewItems={setExchangeNewItems}
                 setShowExchangeModal={setShowExchangeModal}
                 onReturnClick={setReturnSale}
               />
             ))}
-
-            {/* Load more / pagination */}
             {hasMoreSales && (
-              <button
-                onClick={loadMoreSales}
-                disabled={loadingMore}
+              <button onClick={loadMoreSales} disabled={loadingMore}
                 className="w-full py-3 mt-3 rounded-xl border-2 border-slate-200 text-[13px] font-bold text-slate-600 hover:border-green-300 hover:text-green-700 disabled:opacity-50 transition-all"
-              >
-                {loadingMore ? 'Loading...' : 'और sales देखें →'}
-              </button>
+              >{loadingMore ? 'Loading...' : 'और sales देखें →'}</button>
             )}
           </div>
         )}
       </div>
 
-            {/* SALE MODAL */}
+      {/* ════ SALE FORM MODAL ════ */}
       <SaleFormModal
         showModal={showModal}
         setShowModal={setShowModal}
@@ -775,11 +837,13 @@ export default function SalesPage() {
         onHoldBill={handleHoldBill}
         onRestoreHeldBill={handleRestoreBill}
         onRemoveHeldBill={handleRemoveHeldBill}
+        addOrIncrementProduct={addOrIncrementProduct}
+        duplicateWarning={duplicateWarning}
+        setDuplicateWarning={setDuplicateWarning}
+        handleConfirmDuplicate={handleConfirmDuplicate}
       />
 
-      {/* ════════════════════════════════════════════════════════════
-          CHALLAN — MARK DELIVERED MODAL
-      ════════════════════════════════════════════════════════════ */}
+      {/* ════ MARK DELIVERED MODAL ════ */}
       {showDeliveredModal && deliveredChallan && (
         <MarkDeliveredModal
           deliveredChallan={deliveredChallan}
@@ -791,15 +855,7 @@ export default function SalesPage() {
         />
       )}
 
-      {/* RETURN SUCCESS TOAST */}
-      {returnToast && (
-        <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border-2 border-green-300 shadow-xl text-[13px] font-bold text-green-800 whitespace-nowrap">
-          <span className="text-base">✅</span>
-          {returnToast}
-        </div>
-      )}
-
-      {/* SALE RETURN MODAL */}
+      {/* ════ SALE RETURN MODAL ════ */}
       {returnSale && (
         <SaleReturnModal
           sale={returnSale}
@@ -807,15 +863,12 @@ export default function SalesPage() {
           onSuccess={(ret) => {
             setReturnSale(null);
             fetchSales();
-            setReturnToast(`Return ${ret.return_number} — ₹${Number(ret.total_amount || 0).toFixed(2)} refunded`);
-            window.setTimeout(() => setReturnToast(''), 4000);
+            showToast(`Return ${ret.return_number} — ₹${Number(ret.total_amount || 0).toFixed(2)} refunded`, 'success');
           }}
         />
       )}
 
-      {/* ════════════════════════════════════════════════════════════
-          SPLIT BILL MODAL (Restaurant only)
-      ════════════════════════════════════════════════════════════ */}
+      {/* ════ SPLIT BILL MODAL ════ */}
       {showSplitModal && splitSale && businessType === 'restaurant' && (
         <SplitBillModal
           splitSale={splitSale}
@@ -833,24 +886,15 @@ export default function SalesPage() {
         />
       )}
 
-      {/* ════════════════════════════════════════════════════════════
-          CLOTHING — EXCHANGE MODAL
-      ════════════════════════════════════════════════════════════ */}
+      {/* ════ EXCHANGE MODAL ════ */}
       {businessType === 'clothing' && showExchangeModal && exchangeSale && (
         <ExchangeModal
           exchangeSale={exchangeSale}
-          exchangeReturned={exchangeReturned}
-          setExchangeReturned={setExchangeReturned}
-          exchangeNewItems={exchangeNewItems}
-          setExchangeNewItems={setExchangeNewItems}
-          exchangeSubmitting={exchangeSubmitting}
-          setExchangeSubmitting={setExchangeSubmitting}
           products={products}
           onClose={() => setShowExchangeModal(false)}
           onExchangeComplete={fetchSales}
           apiUrl={apiUrl}
           getToken={getToken}
-          setError={setError}
           fmt={fmt}
         />
       )}
@@ -865,13 +909,12 @@ export default function SalesPage() {
         continuous
       />
 
-      {/* Hold bill toast */}
-      {holdToast && (
-        <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border-2 border-amber-300 shadow-xl text-[13px] font-bold text-amber-800 whitespace-nowrap"
-          style={{ animation: 'toastIn 0.2s ease' }}>
-          ⏸ {holdToast}
-        </div>
-      )}
+      {/* Offline queue drawer */}
+      <OfflineQueueDrawer
+        open={showQueueDrawer}
+        onClose={() => setShowQueueDrawer(false)}
+        isOnline={isOnline}
+      />
     </Layout>
   );
 }

@@ -8,6 +8,7 @@ const {
   getUdhaar,
   addUdhaar,
   settlePayment,
+  updateReminderTimestamp,
 } = require('../controllers/customerController');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
@@ -20,5 +21,6 @@ router.get('/:id/udhaar',  protect, requirePermission('VIEW_UDHAAR'),   getUdhaa
 router.post('/:id/udhaar', protect, checkSubscriptionStatus, requirePermission('MANAGE_UDHAAR'), addUdhaar);
 router.post('/:id/settle', protect, checkSubscriptionStatus, requirePermission('MANAGE_UDHAAR'), settlePayment);
 router.put('/:id/settle',  protect, checkSubscriptionStatus, requirePermission('MANAGE_UDHAAR'), settlePayment);
+router.patch('/:id/remind', protect, checkSubscriptionStatus, requirePermission('MANAGE_UDHAAR'), updateReminderTimestamp);
 
 module.exports = router;

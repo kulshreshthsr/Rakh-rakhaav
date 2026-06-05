@@ -235,4 +235,17 @@ export default {
     kpi5: { label: 'GST Payable',   sublabel: 'This month'         },
     kpi6: { label: 'Parts Alert',   sublabel: 'Low spare parts'    },
   },
+
+  dashboardPanels: [
+    {
+      id: 'pending_pickup',
+      dataKey: 'pendingPickup',
+      condition: (val) => Number(val) > 0,
+      href: '/sales?filter=ready',
+      icon: '📱',
+      color: 'amber',
+      renderLabel: (val) => `${val} device${Number(val) !== 1 ? 's' : ''} ready for pickup`,
+      renderSublabel: () => "Customer hasn't collected yet — send a reminder",
+    },
+  ],
 };

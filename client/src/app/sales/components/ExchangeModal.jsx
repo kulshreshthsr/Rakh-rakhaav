@@ -1,26 +1,47 @@
 'use client';
+import { useState } from 'react';
+import { useToast } from '../../../hooks/useToast';
 
 export default function ExchangeModal({
   exchangeSale,
-  exchangeReturned,
-  setExchangeReturned,
-  exchangeNewItems,
-  setExchangeNewItems,
-  exchangeSubmitting,
-  setExchangeSubmitting,
   products,
   onClose,
   onExchangeComplete,
   apiUrl,
   getToken,
-  setError,
   fmt,
 }) {
+  const { showToast } = useToast();
+
+  /* ── Internal state — no longer prop-drilled from page.js ── */
+  const [exchangeReturned, setExchangeReturned] = useState(() =>
+    (exchangeSale.items || []).map((item) => ({
+      product_id: item.product?._id || item.product || '',
+      product_name: item.product_name || '',
+      quantity: item.quantity || 1,
+      price: item.price_per_unit || 0,
+      size: (() => { const m = item.item_metadata || {}; return m instanceof Map ? (m.get('size') || '') : (m.size || ''); })(),
+      color: (() => { const m = item.item_metadata || {}; return m instanceof Map ? (m.get('color') || '') : (m.color || ''); })(),
+      selected: true,
+    }))
+  );
+
+  const [exchangeNewItems, setExchangeNewItems] = useState([
+    { product_id: '', product_name: '', quantity: 1, price: 0, size: '', color: '' },
+  ]);
+
+  const [exchangeSubmitting, setExchangeSubmitting] = useState(false);
+
   const returnedValue = exchangeReturned.filter(i => i.selected).reduce((s, i) => s + (Number(i.price) * Number(i.quantity || 1)), 0);
   const exchangeValue = exchangeNewItems.reduce((s, i) => s + (Number(i.price || 0) * Number(i.quantity || 1)), 0);
   const diff = exchangeValue - returnedValue;
 
   const handleSubmitExchange = async () => {
+    const selectedReturned = exchangeReturned.filter(i => i.selected);
+    if (selectedReturned.length === 0) {
+      showToast('कम से कम एक item return के लिए select करें।', 'warning');
+      return;
+    }
     setExchangeSubmitting(true);
     try {
       const res = await fetch(apiUrl('/api/sales/exchange'), {
@@ -28,22 +49,25 @@ export default function ExchangeModal({
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({
           original_invoice_no: exchangeSale.invoice_number,
-          returned_items: exchangeReturned.filter(i => i.selected).map(i => ({ product_id: i.product_id, quantity: i.quantity, reason: i.reason || 'exchange' })),
+          returned_items: selectedReturned.map(i => ({ product_id: i.product_id, quantity: i.quantity, reason: i.reason || 'exchange' })),
           exchange_items: exchangeNewItems.filter(i => i.product_id).map(i => ({ product_id: i.product_id, product_name: i.product_name, quantity: i.quantity, price: i.price, size: i.size, color: i.color })),
           customer_name: exchangeSale.buyer_name,
           customer_phone: exchangeSale.buyer_phone,
           price_difference: diff,
-          payment_type: diff > 0 ? 'cash' : 'cash',
+          payment_type: 'cash',
         }),
       });
       if (res.ok) {
+        showToast('Exchange successfully processed!', 'success');
         onClose();
         onExchangeComplete();
       } else {
         const d = await res.json();
-        setError(d.message || 'Exchange failed');
+        showToast(d.message || 'Exchange failed. Please try again.', 'error');
       }
-    } catch { setError('Server error during exchange'); }
+    } catch {
+      showToast('Server error during exchange. Please try again.', 'error');
+    }
     setExchangeSubmitting(false);
   };
 
@@ -131,7 +155,7 @@ export default function ExchangeModal({
               <span>Exchange value</span><span>₹{exchangeValue.toFixed(2)}</span>
             </div>
             <div className={`flex justify-between text-[14px] font-black ${diff > 0 ? 'text-amber-800' : diff < 0 ? 'text-blue-800' : 'text-emerald-800'}`}>
-              <span>{diff > 0 ? `Customer pays` : diff < 0 ? `Refund to customer` : `Even exchange`}</span>
+              <span>{diff > 0 ? 'Customer pays' : diff < 0 ? 'Refund to customer' : 'Even exchange'}</span>
               <span>{diff !== 0 ? `₹${Math.abs(diff).toFixed(2)}` : '✓ No payment'}</span>
             </div>
           </div>

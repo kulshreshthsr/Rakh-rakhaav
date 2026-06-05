@@ -6,13 +6,13 @@ const udhaarSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ['debit', 'credit'],  // debit = customer ne udhaar liya, credit = customer ne payment di
+    enum: ['debit', 'credit'],
     required: true,
-    // Legacy values 'diya'/'liya' auto-mapped in controller
+    // Legacy values 'diya'/'liya' are mapped in controller before create
   },
 
   amount: { type: Number, required: true },
-  running_balance: { type: Number, default: 0 }, // ← balance after this entry (for ledger statement)
+  running_balance: { type: Number, default: 0 },
   payment_mode: {
     type: String,
     enum: ['cash', 'bank', 'upi', ''],
@@ -20,8 +20,9 @@ const udhaarSchema = new mongoose.Schema({
   },
   note: { type: String },
   date: { type: Date, default: Date.now },
-  reference_id: { type: String },   // invoice number
-  reference_type: { type: String }, // 'sale' | 'manual'
+  reference_id: { type: String },
+  reference_type: { type: String },
+  due_date: { type: Date, default: null },
 }, { timestamps: true });
 
 udhaarSchema.index({ shop: 1, customer: 1, date: -1 });

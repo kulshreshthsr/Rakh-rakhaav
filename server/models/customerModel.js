@@ -6,16 +6,19 @@ const customerSchema = new mongoose.Schema({
   phone: { type: String },
   email: { type: String },
   address: { type: String },
-  gstin: { type: String },                       // for B2B customers
+  gstin: { type: String },
 
-  // ── Ledger summary (auto-updated) ─────────────────────────────
-  totalSales: { type: Number, default: 0 },      // lifetime credit sales to this customer
-  totalPaid: { type: Number, default: 0 },       // total payments received
-  totalUdhaar: { type: Number, default: 0 },     // balance still owed = totalSales - totalPaid
+  totalSales: { type: Number, default: 0 },
+  totalPaid: { type: Number, default: 0 },
+  totalUdhaar: { type: Number, default: 0 },
   opening_balance: { type: Number, default: 0 },
 
   isActive: { type: Boolean, default: true },
   notes: { type: String },
+
+  reminder_enabled: { type: Boolean, default: false },
+  reminder_frequency: { type: String, enum: ['daily', 'weekly', 'monthly', null], default: null },
+  last_reminded_at: { type: Date, default: null },
 }, { timestamps: true });
 
 customerSchema.index({ shop: 1, isActive: 1 });

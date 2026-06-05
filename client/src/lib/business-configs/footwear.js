@@ -189,4 +189,34 @@ export default {
     kpi5: { label: 'GST Payable',  sublabel: 'This month'         },
     kpi6: { label: 'Size Alerts',  sublabel: 'Sizes out of stock' },
   },
+
+  dashboardPanels: [
+    {
+      id: 'variant_low_stock',
+      dataKey: 'variantLowStock',
+      condition: (val) => Array.isArray(val) && val.length > 0,
+      href: '/product?filter=low_stock',
+      icon: '👟',
+      color: 'amber',
+      renderMode: 'chips',
+      sectionLabel: 'Size Stock Alerts',
+      getChips: (val) => val.map((v) => ({
+        key: String(v._id || 'unknown'),
+        href: `/product?size=${encodeURIComponent(v._id || '')}&filter=low_stock`,
+        label: `Size ${v._id || '?'} — ${v.productCount} pair${v.productCount !== 1 ? 's' : ''}`,
+      })),
+    },
+  ],
+
+  // ─── Footwear-specific expense categories ────────────────────────────────
+  expenseCategories: [
+    { id: 'stock_purchase', labelHi: 'Stock खरीद',   labelEn: 'Stock Purchase', emoji: '👟' },
+    { id: 'display',        labelHi: 'Display Setup', labelEn: 'Display Setup',  emoji: '🪟' },
+    { id: 'rent',           labelHi: 'किराया',         labelEn: 'Rent',           emoji: '🏠' },
+    { id: 'salary',         labelHi: 'वेतन',           labelEn: 'Salary',         emoji: '👷' },
+    { id: 'utility',        labelHi: 'बिजली-पानी',     labelEn: 'Utility',        emoji: '💡' },
+    { id: 'maintenance',    labelHi: 'मरम्मत',          labelEn: 'Maintenance',    emoji: '🔧' },
+    { id: 'transport',      labelHi: 'परिवहन',          labelEn: 'Transport',      emoji: '🚛' },
+    { id: 'misc',           labelHi: 'अन्य',            labelEn: 'Misc',           emoji: '📦' },
+  ],
 };

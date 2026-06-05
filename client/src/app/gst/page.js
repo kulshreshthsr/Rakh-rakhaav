@@ -1,14 +1,19 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 import { fmt, fmtINR } from '../../lib/constants';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
+import { useToast } from '../../hooks/useToast';
+import { validateGSTINChecksum } from '../../lib/gstValidation';
+import Gstr1PreflightModal from './components/Gstr1PreflightModal';
+import Gstr2bReconciliation from './components/Gstr2bReconciliation';
 
-/* ─── Constants & pure helpers (ALL 100% UNCHANGED) ─────────────── */
+/* ─── Constants & pure helpers ───────────────────────────────────── */
 const MONTHS    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_HI = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -17,7 +22,7 @@ const GST_CACHE_PREFIX = 'gst-page-v1';
 const round2    = (value) => parseFloat(Number(value || 0).toFixed(2));
 const getGSTCacheKey = (month, year) => `${GST_CACHE_PREFIX}:${year}:${month}`;
 const safeText  = (value = '') => String(value || '')
-  .replace(/â€"|â€"/g, '-').replace(/â€™/g, "'").replace(/â€œ|â€\u009d/g, '"').replace(/â€¦/g, '...');
+  .replace(/â€"|â€"/g, '-').replace(/â€™/g, "'").replace(/â€œ|â€/g, '"').replace(/â€¦/g, '...');
 
 const getRecordGstRate = (record = {}) => {
   if (record?.items?.length) {
@@ -36,17 +41,24 @@ const getRecordInvoiceType = (record = {}, kind = 'sale') => {
   const gstin = kind === 'sale' ? record?.buyer_gstin : record?.supplier_gstin;
   return gstin ? 'B2B' : 'B2C';
 };
+
+// Bug 1 fix: floor/ceil split avoids floating-point asymmetry for odd paise values
 const getRecordTaxHeads = (record = {}) => {
   const directCgst = Number(record?.cgst_amount || 0);
   const directSgst = Number(record?.sgst_amount || 0);
   const directIgst = Number(record?.igst_amount || 0);
-  if (directCgst || directSgst || directIgst) return { cgst: round2(directCgst), sgst: round2(directSgst), igst: round2(directIgst) };
+  if (directCgst || directSgst || directIgst) {
+    return { cgst: round2(directCgst), sgst: round2(directSgst), igst: round2(directIgst) };
+  }
   const totalGst = Number(record?.total_gst || 0);
   if (!totalGst) return { cgst: 0, sgst: 0, igst: 0 };
   if (getRecordGstType(record) === 'IGST') return { cgst: 0, sgst: 0, igst: round2(totalGst) };
-  const half = round2(totalGst / 2);
-  return { cgst: half, sgst: round2(totalGst - half), igst: 0 };
+  const halfPaise = Math.round(totalGst * 100) / 2;
+  const cgst = Math.floor(halfPaise) / 100;
+  const sgst = round2(totalGst - cgst);
+  return { cgst: round2(cgst), sgst, igst: 0 };
 };
+
 const sumTaxHeads = (records = []) => records.reduce((acc, record) => {
   const heads = getRecordTaxHeads(record);
   acc.cgst = round2(acc.cgst + heads.cgst);
@@ -109,6 +121,19 @@ const buildLocalGSTSummary = (sales = [], purchases = [], month, year) => {
   };
 };
 
+/* ─── ITC blocked reason labels ─────────────────────────────────── */
+const ITC_BLOCKED_LABELS = {
+  personal_use:          'Personal use',
+  motor_vehicle:         'Motor vehicle (non-commercial)',
+  food_beverages:        'Food & beverages',
+  club_membership:       'Club membership',
+  travel_benefits:       'Travel benefits to employees',
+  construction:          'Construction of immovable property',
+  composition_purchase:  'Composition scheme purchase',
+  unregistered_supplier: 'Unregistered supplier',
+  other:                 'Other',
+};
+
 /* ─── Small reusable UI pieces ───────────────────────────────────── */
 const INPUT_CLS = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[13px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
@@ -159,9 +184,61 @@ function ExportBtn({ onClick, disabled, children, variant = 'default' }) {
   );
 }
 
+// Feature 4 — GST deadline card (non-dismissible, shows for selected period)
+function GstDeadlineCard({ month, year }) {
+  const today = new Date();
+  // month is 1-indexed. new Date(year, month, 11) = 11th of the next calendar month.
+  const gstr1Due  = new Date(year, month, 11);
+  const gstr3bDue = new Date(year, month, 20);
+  const daysToGstr1  = Math.ceil((gstr1Due  - today) / 86400000);
+  const daysToGstr3b = Math.ceil((gstr3bDue - today) / 86400000);
+  const monthName = MONTHS[month - 1];
+
+  const statusColor = (days) => {
+    if (days < 0)  return 'text-red-700 bg-red-50 border-red-200';
+    if (days <= 3) return 'text-red-700 bg-red-50 border-red-200';
+    if (days <= 7) return 'text-amber-700 bg-amber-50 border-amber-200';
+    return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+  };
+  const daysLabel = (days) => {
+    if (days < 0)  return `${Math.abs(days)}d overdue`;
+    if (days === 0) return 'Due today!';
+    if (days === 1) return '1 day left';
+    return `${days} days left`;
+  };
+  const formatDate = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Filing Deadlines</p>
+          <p className="text-[14px] font-black text-slate-900">{monthName} {year}</p>
+        </div>
+        <span className="text-2xl">📅</span>
+      </div>
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-2">
+        {[
+          { label: 'GSTR-1', due: gstr1Due, days: daysToGstr1 },
+          { label: 'GSTR-3B', due: gstr3bDue, days: daysToGstr3b },
+        ].map(({ label, due, days }) => (
+          <div key={label} className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${statusColor(days)}`}>
+            <div>
+              <p className="text-[12px] font-black">{label}</p>
+              <p className="text-[10px] font-semibold opacity-70">{formatDate(due)}</p>
+            </div>
+            <span className="text-[11px] font-black">{daysLabel(days)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════════════════════════ */
 export default function GSTPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year,  setYear]  = useState(now.getFullYear());
@@ -175,16 +252,19 @@ export default function GSTPage() {
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [cacheLoaded, setCacheLoaded]       = useState(false);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
+  const [shopGstin, setShopGstin] = useState('');
   // GSTR-1 portal JSON export
   const [gstr1Loading, setGstr1Loading] = useState(false);
   const [gstr1Error,   setGstr1Error]   = useState('');
+  const [showPreflight, setShowPreflight] = useState(false);
   // GSTR-3B detailed worksheet
   const [gstr3bWs,        setGstr3bWs]        = useState(null);
   const [gstr3bWsLoading, setGstr3bWsLoading] = useState(false);
   const [gstr3bWsError,   setGstr3bWsError]   = useState('');
   const [showGstr3bWs,    setShowGstr3bWs]    = useState(false);
+  const [showBlockedDetail, setShowBlockedDetail] = useState(false);
 
-  /* ── All logic (100% UNCHANGED) ── */
+  /* ── Logic ── */
   const applyCachedSnapshot = (cached) => {
     setSummary(cached?.summary || null);
     setRecordsCache({ sales: cached?.sales || [], purchases: cached?.purchases || [] });
@@ -220,6 +300,10 @@ export default function GSTPage() {
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      setShopGstin(user.gstin || user.shopGstin || '');
+    } catch {}
     const cached = readPageCache(getGSTCacheKey(month, year));
     if (cached) { applyCachedSnapshot(cached); setLoading(false); }
     else { setCacheLoaded(false); setLoading(true); }
@@ -271,7 +355,8 @@ export default function GSTPage() {
     const blob = new Blob([JSON.stringify(summary,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `GST_${year}_${String(month).padStart(2,'0')}.json`; a.click(); URL.revokeObjectURL(url);
   };
-  // ── GSTR-1 Portal JSON — downloads server-generated GSTN portal JSON ──────
+
+  // GSTR-1 Portal JSON — downloads server-generated GSTN portal JSON
   const downloadGSTR1JSON = async () => {
     setGstr1Loading(true); setGstr1Error('');
     try {
@@ -288,12 +373,19 @@ export default function GSTPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setGstr1Error('Server error — check if GSTIN is configured in profile');
+      const msg = err?.message || '';
+      if (msg.includes('GSTIN not configured') || msg.includes('GSTIN')) {
+        setGstr1Error('GSTIN profile में configure नहीं है। Profile → Shop Settings में GSTIN add करें।');
+      } else if (msg.includes('NetworkError') || msg.includes('Failed to fetch')) {
+        setGstr1Error('Internet connection check करें और दोबारा try करें।');
+      } else {
+        setGstr1Error(`GSTR-1 generate नहीं हुआ: ${msg || 'Unknown error'}। Support को report करें।`);
+      }
     }
     setGstr1Loading(false);
   };
 
-  // ── GSTR-3B Detailed Worksheet ────────────────────────────────────────────
+  // GSTR-3B Detailed Worksheet
   const fetchGSTR3BWorksheet = async () => {
     if (gstr3bWs && !showGstr3bWs) { setShowGstr3bWs(true); return; }
     if (showGstr3bWs) { setShowGstr3bWs(false); return; }
@@ -306,15 +398,25 @@ export default function GSTPage() {
       if (!res.ok) { setGstr3bWsError(data.message || 'GSTR-3B generation failed'); setGstr3bWsLoading(false); return; }
       setGstr3bWs(data);
       setShowGstr3bWs(true);
-    } catch {
-      setGstr3bWsError('Server error — check if GSTIN is configured in profile');
+    } catch (err) {
+      const msg = err?.message || '';
+      if (msg.includes('GSTIN not configured') || msg.includes('GSTIN')) {
+        setGstr3bWsError('GSTIN profile में configure नहीं है। Profile → Shop Settings में GSTIN add करें।');
+      } else if (msg.includes('NetworkError') || msg.includes('Failed to fetch')) {
+        setGstr3bWsError('Internet connection check करें और दोबारा try करें।');
+      } else {
+        setGstr3bWsError(`GSTR-3B generate नहीं हुआ: ${msg || 'Unknown error'}। Support को report करें।`);
+      }
     }
     setGstr3bWsLoading(false);
   };
 
   const exportZIP = async () => {
     if (!summary) return;
-    if (!isOnline && !window.JSZip) { alert('Offline mode me ZIP export abhi available nahi hai.'); return; }
+    if (!isOnline && !window.JSZip) {
+      showToast('Offline mode में ZIP export available नहीं है। Online होने पर try करें।', 'warning');
+      return;
+    }
     setZipping(true);
     try {
       if (!window.JSZip) {
@@ -326,7 +428,10 @@ export default function GSTPage() {
       g3.file('gstr3b.csv', buildGSTR3BCSV()); g3.file('gstr3b.json', JSON.stringify({ period:{ month:MONTHS[month-1], year }, gstr3b:summary.gstr3b, purchases:summary.purchases }, null, 2));
       const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE' }); const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `GST_Export_${periodTag}.zip`; a.click(); URL.revokeObjectURL(url);
-    } catch (err) { console.error(err); alert('ZIP export failed. Please try individual CSV/JSON exports.'); }
+    } catch (err) {
+      console.error(err);
+      showToast('ZIP export fail हुआ — individual CSV/JSON exports try करें।', 'error');
+    }
     setZipping(false);
   };
 
@@ -343,6 +448,16 @@ export default function GSTPage() {
   const cacheLabel = cacheUpdatedAt
     ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
     : null;
+
+  // Bug 1: fallback detection — records without per-head amounts but with total_gst
+  const fallbackCount = recordsCache.sales.filter(s =>
+    !s.cgst_amount && !s.sgst_amount && !s.igst_amount && (s.total_gst || 0) > 0
+  ).length;
+
+  // Blocked ITC from purchases cache (for KPI card)
+  const blockedITC = recordsCache.purchases
+    .filter(p => p.itc_eligible === false && !p.is_reverse_charge)
+    .reduce((acc, p) => acc + (Number(p.igst_amount||0) + Number(p.cgst_amount||0) + Number(p.sgst_amount||0)), 0);
 
   /* ── Drill table renderer ── */
   const renderDrill = (type) => {
@@ -394,8 +509,6 @@ export default function GSTPage() {
                   ? <p className="mt-2 text-[11px] text-slate-400">Last synced {cacheLabel}</p>
                   : null}
             </div>
-
-            {/* Month / Year selectors */}
             <div className="flex gap-2 flex-shrink-0">
               <select className={INPUT_CLS} style={{ width: 130 }} disabled={loading} value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))}>
                 {MONTHS.map((m, i) => <option key={m} value={i+1}>{MONTHS_HI[i]} / {m}</option>)}
@@ -407,14 +520,27 @@ export default function GSTPage() {
           </div>
         </div>
 
+        {/* Feature 4 — GST Deadline Card */}
+        <GstDeadlineCard month={month} year={year} />
+
         {/* ── Offline warning ── */}
         {!isOnline && (
           <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl bg-amber-50 border border-amber-200">
             <span className="text-xl mt-0.5">📶</span>
             <div>
               <p className="text-[13px] font-black text-amber-900">Offline GST view</p>
-              <p className="text-[11px] text-amber-700 mt-0.5">GST page cached data dikha rahi hai. ZIP export aur fresh figures internet ke saath best kaam karenge.</p>
+              <p className="text-[11px] text-amber-700 mt-0.5">GST page cached data दिखा रही है। ZIP export और fresh figures internet के साथ best काम करेंगे।</p>
             </div>
+          </div>
+        )}
+
+        {/* Bug 1 — fallback count warning */}
+        {summary && fallbackCount > 0 && (
+          <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <span className="text-xl mt-0.5">⚠️</span>
+            <p className="text-[12px] font-semibold text-amber-800">
+              {fallbackCount} invoices में per-head GST amounts नहीं हैं — estimated split use हो रहा है। Accuracy के लिए invoices re-generate करें।
+            </p>
           </div>
         )}
 
@@ -445,23 +571,18 @@ export default function GSTPage() {
               <div className="pointer-events-none absolute -top-8 -right-8 w-32 h-32 rounded-full blur-2xl opacity-50"
                 style={{ background: isPayable ? '#fca5a5' : '#6ee7b7' }} />
               <div className="relative">
-                {/* Status pill */}
                 <div className="flex items-center justify-between mb-3">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black border ${isPayable ? 'bg-rose-100 border-rose-300 text-rose-800' : 'bg-emerald-100 border-emerald-300 text-emerald-800'}`}>
                     {isPayable ? '⚠️ GST देना बाकी है' : '✅ Return ready to file'}
                   </span>
                   <span className="text-[11px] font-semibold text-slate-400">{monthEn} {year}</span>
                 </div>
-
-                {/* Big net payable */}
                 <p className="rr-section-label mb-1">
                   {isPayable ? 'Net GST Payable' : 'ITC Balance / No Liability'}
                 </p>
                 <p className={`rr-big-num mb-4 ${isPayable ? 'text-rose-700' : 'text-emerald-700'}`}>
                   {fmtINR(isPayable ? payableTotal : excessCreditTotal)}
                 </p>
-
-                {/* 3-column breakdown */}
                 <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-3">
                   {[
                     { label: 'Output GST', sublabel: 'Sales से collect हुआ', value: fmtINR(gstCollected), color: 'text-slate-800' },
@@ -475,6 +596,18 @@ export default function GSTPage() {
                     </div>
                   ))}
                 </div>
+                {/* Bug 5 KPI — Blocked ITC */}
+                {blockedITC > 0 && (
+                  <div className="mt-3 flex items-center gap-3 px-3 py-2.5 rounded-xl bg-red-100/60 border border-red-200">
+                    <div className="flex-1">
+                      <p className="text-[17px] font-black text-red-700 leading-none">{fmtINR(blockedITC)}</p>
+                      <p className="text-[11px] font-bold text-red-600 mt-0.5">Blocked ITC (Section 17(5))</p>
+                    </div>
+                    <p className="text-[10px] text-red-400 text-right leading-tight max-w-[120px]">
+                      Personal use, motor vehicle, etc. — claim नहीं होगा।
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -483,8 +616,6 @@ export default function GSTPage() {
             ══════════════════════════════════════ */}
             <SectionCard>
               <SectionHead title="GST Calculation" subtitle="Output tax और ITC का पूरा हिसाब" />
-
-              {/* Output GST */}
               <NumberRow
                 label="GST Collected (Output)"
                 note={`Sales से। CGST ${fmtINR(summary.sales.cgst)} + SGST ${fmtINR(summary.sales.sgst)} + IGST ${fmtINR(summary.sales.igst)}`}
@@ -501,10 +632,7 @@ export default function GSTPage() {
               {drillType === 'sales' && (
                 <div className="border-t border-slate-100">{renderDrill('sales')}</div>
               )}
-
               <div className="mx-5 border-t border-slate-100" />
-
-              {/* ITC */}
               <NumberRow
                 label="GST Input Credit (ITC)"
                 note={`Purchases से। CGST ${fmtINR(summary.purchases.cgst)} + SGST ${fmtINR(summary.purchases.sgst)} + IGST ${fmtINR(summary.purchases.igst)}`}
@@ -529,10 +657,7 @@ export default function GSTPage() {
               {drillType === 'purchases' && (
                 <div className="border-t border-slate-100">{renderDrill('purchases')}</div>
               )}
-
               <div className="mx-5 border-t border-slate-100" />
-
-              {/* Net payable */}
               <div className={`flex items-center justify-between gap-3 px-5 py-4 ${isPayable ? 'bg-rose-50' : 'bg-emerald-50'}`}>
                 <div>
                   <p className="text-[13px] font-black text-slate-900">{isPayable ? 'Net GST Payable' : 'Excess ITC / Nil Liability'}</p>
@@ -635,7 +760,15 @@ export default function GSTPage() {
                         <tr key={i} className="hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-2.5 font-mono text-[11px] text-green-700">{safeText(inv.invoice_number)}</td>
                           <td className="px-4 py-2.5 font-semibold text-slate-800">{safeText(inv.buyer_name||'-')}</td>
-                          <td className="px-4 py-2.5 font-mono text-[10px] text-slate-500">{safeText(inv.buyer_gstin)}</td>
+                          <td className="px-4 py-2.5">
+                            <span className="font-mono text-[10px] text-slate-500">{safeText(inv.buyer_gstin)}</span>
+                            {/* Bug 2 — checksum warning badge */}
+                            {inv.buyer_gstin && !validateGSTINChecksum(inv.buyer_gstin) && (
+                              <span className="ml-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full align-middle">
+                                ⚠️ Checksum
+                              </span>
+                            )}
+                          </td>
                           <td className="px-4 py-2.5 text-slate-700">₹{fmt(inv.taxable_amount)}</td>
                           <td className="px-4 py-2.5 text-slate-600">{inv.gst_rate}%</td>
                           <td className="px-4 py-2.5 font-black text-emerald-600">₹{fmt(inv.total)}</td>
@@ -654,7 +787,12 @@ export default function GSTPage() {
                         <span className="font-black text-emerald-600">₹{fmt(inv.total)}</span>
                       </div>
                       <p className="text-[13px] font-bold text-slate-900">{safeText(inv.buyer_name)}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">GSTIN: {safeText(inv.buyer_gstin)} · GST {inv.gst_rate}%</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-[10px] text-slate-400">GSTIN: {safeText(inv.buyer_gstin)} · GST {inv.gst_rate}%</p>
+                        {inv.buyer_gstin && !validateGSTINChecksum(inv.buyer_gstin) && (
+                          <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">⚠️ Checksum</span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -687,7 +825,7 @@ export default function GSTPage() {
             <SectionCard>
               <SectionHead
                 title="GSTR-1 Portal Upload"
-                subtitle="GSTN portal par directly upload karne ke liye JSON"
+                subtitle="GSTN portal पर directly upload करने के लिए JSON"
                 right={<Pill color="bg-green-50 text-green-700">Portal Format</Pill>}
               />
               <div className="p-5 space-y-3">
@@ -699,13 +837,20 @@ export default function GSTPage() {
                     GSTIN profile में configure होना चाहिए।
                   </p>
                 </div>
+                {/* Bug 4 — improved error display with Profile link */}
                 {gstr1Error && (
-                  <div className="px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-semibold text-rose-700">
-                    ⚠️ {gstr1Error}
+                  <div className="px-5 py-3 rounded-xl bg-red-50 border border-red-200">
+                    <p className="text-[12px] font-semibold text-red-700">⚠️ {gstr1Error}</p>
+                    {gstr1Error.includes('GSTIN') && (
+                      <Link href="/profile" className="mt-1 text-[11px] font-bold text-red-600 underline block">
+                        Profile में जाएं →
+                      </Link>
+                    )}
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  <ExportBtn onClick={downloadGSTR1JSON} disabled={gstr1Loading} variant="zip">
+                  {/* Feature 1 — trigger preflight modal instead of direct download */}
+                  <ExportBtn onClick={() => setShowPreflight(true)} disabled={gstr1Loading} variant="zip">
                     {gstr1Loading ? '⏳ Generating...' : '⬇️ Download GSTR-1 JSON (Portal)'}
                   </ExportBtn>
                   <ExportBtn onClick={() => exportCSV('gstr1')} variant="primary">📄 GSTR-1 CSV</ExportBtn>
@@ -719,7 +864,7 @@ export default function GSTPage() {
             <SectionCard>
               <SectionHead
                 title="GSTR-3B Working Sheet"
-                subtitle="Table 3.1, 4 और 6.1 — CA ko dene ke liye"
+                subtitle="Table 3.1, 4 और 6.1 — CA को देने के लिए"
                 right={
                   <ExportBtn onClick={fetchGSTR3BWorksheet} disabled={gstr3bWsLoading} variant="blue">
                     {gstr3bWsLoading ? '⏳' : showGstr3bWs ? '▴ Hide' : '▾ View Worksheet'}
@@ -791,10 +936,79 @@ export default function GSTPage() {
                             <td className="px-3 py-2 text-green-800">₹{fmt(gstr3bWs.table4?.C?.samt)}</td>
                             <td className="px-3 py-2 text-green-800">₹{fmt((gstr3bWs.table4?.C?.iamt||0)+(gstr3bWs.table4?.C?.camt||0)+(gstr3bWs.table4?.C?.samt||0))}</td>
                           </tr>
+                          {/* Bug 5 — Table 4D: Ineligible ITC */}
+                          {((gstr3bWs.table4?.D?.a?.iamt||0) + (gstr3bWs.table4?.D?.a?.camt||0) + (gstr3bWs.table4?.D?.a?.samt||0)) > 0 && (
+                            <>
+                              <tr className="bg-red-50/50">
+                                <td className="px-3 py-2 font-semibold text-red-700">
+                                  4D(a) — Ineligible ITC
+                                  <span className="ml-1 text-[10px] font-normal text-red-500">(Section 17(5))</span>
+                                </td>
+                                <td className="px-3 py-2 text-red-600">₹{fmt(gstr3bWs.table4?.D?.a?.iamt)}</td>
+                                <td className="px-3 py-2 text-red-600">₹{fmt(gstr3bWs.table4?.D?.a?.camt)}</td>
+                                <td className="px-3 py-2 text-red-600">₹{fmt(gstr3bWs.table4?.D?.a?.samt)}</td>
+                                <td className="px-3 py-2 font-bold text-red-600">
+                                  ₹{fmt((gstr3bWs.table4?.D?.a?.iamt||0)+(gstr3bWs.table4?.D?.a?.camt||0)+(gstr3bWs.table4?.D?.a?.samt||0))}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td colSpan={5} className="px-3 py-1.5 bg-red-50/30">
+                                  <p className="text-[10px] text-red-600">
+                                    ⚠️ यह ITC claim नहीं होगा — Section 17(5) के तहत blocked। इन purchases को GSTR-3B Table 4D में declare करें।
+                                  </p>
+                                </td>
+                              </tr>
+                            </>
+                          )}
                         </tbody>
                       </table>
                     </div>
                   </div>
+
+                  {/* Feature 3 — Section 17(5) blocked ITC breakdown */}
+                  {gstr3bWs.blocked_by_reason && Object.keys(gstr3bWs.blocked_by_reason).length > 0 && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowBlockedDetail(v => !v)}
+                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-[12px] font-black text-red-700 hover:bg-red-100 transition-colors mb-2"
+                      >
+                        <span>⛔ Blocked ITC — Section 17(5) Breakdown</span>
+                        <span>{showBlockedDetail ? '▴ Hide' : '▾ Show'}</span>
+                      </button>
+                      {showBlockedDetail && (
+                        <div className="rounded-xl border border-red-200 overflow-hidden">
+                          <table className="w-full text-[12px]">
+                            <thead><tr className="bg-red-50 border-b border-red-100">
+                              {['Category','IGST','CGST','SGST','Total',''].map((h, i) => (
+                                <th key={i} className="px-3 py-2 text-left text-[10px] font-bold text-red-500 uppercase tracking-wider">{h}</th>
+                              ))}
+                            </tr></thead>
+                            <tbody className="divide-y divide-red-50">
+                              {Object.entries(gstr3bWs.blocked_by_reason).map(([reason, vals]) => {
+                                const label = ITC_BLOCKED_LABELS[reason] || reason;
+                                const total = (vals.iamt||0) + (vals.camt||0) + (vals.samt||0);
+                                return (
+                                  <tr key={reason} className="hover:bg-red-50">
+                                    <td className="px-3 py-2 text-slate-700">{label}</td>
+                                    <td className="px-3 py-2 text-red-600">₹{fmt(vals.iamt)}</td>
+                                    <td className="px-3 py-2 text-red-600">₹{fmt(vals.camt)}</td>
+                                    <td className="px-3 py-2 text-red-600">₹{fmt(vals.samt)}</td>
+                                    <td className="px-3 py-2 font-bold text-red-600">₹{fmt(total)}</td>
+                                    <td className="px-3 py-2">
+                                      <Link href={`/purchases?filter=itc_blocked&reason=${reason}`}
+                                        className="text-[10px] text-blue-600 hover:underline font-bold whitespace-nowrap"
+                                      >View →</Link>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Table 6.1 — Tax Payable */}
                   <div>
@@ -862,7 +1076,26 @@ export default function GSTPage() {
                 </div>
               </div>
             </SectionCard>
+
+            {/* ══════════════════════════════════════
+                BLOCK 10 — GSTR-2B RECONCILIATION (Feature 2)
+            ══════════════════════════════════════ */}
+            <Gstr2bReconciliation
+              month={month}
+              year={year}
+              systemPurchases={recordsCache.purchases}
+            />
           </>
+        )}
+
+        {/* Feature 1 — GSTR-1 pre-flight modal */}
+        {showPreflight && (
+          <Gstr1PreflightModal
+            sales={recordsCache.sales}
+            shopGstin={shopGstin}
+            onClose={() => setShowPreflight(false)}
+            onProceed={() => { setShowPreflight(false); downloadGSTR1JSON(); }}
+          />
         )}
       </div>
     </Layout>

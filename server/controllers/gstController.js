@@ -4,13 +4,9 @@ const Sale     = require('../models/salesModel');
 const Purchase = require('../models/purchaseModel');
 const Shop     = require('../models/shopModel');
 const {
-  validateGSTIN, round2, formatGSTNDate, classifyForGSTR1,
+  validateGSTIN, round2, formatGSTNDate, classifyForGSTR1, getInvTyp,
   getQuarterDateRange, getFiscalQuarter,
 } = require('../lib/gstUtils');
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
@@ -19,7 +15,6 @@ const sumField = (arr, field) => arr.reduce((s, i) => s + (Number(i[field]) || 0
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GSTR-1 JSON EXPORT
-// Generates portal-uploadable GSTR-1 JSON for a given month or quarter.
 // GET /api/gst/gstr1?month=MM&year=YYYY   (monthly filers)
 // GET /api/gst/gstr1?quarter=Q1&year=YYYY (QRMP filers — Q1..Q4)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,7 +25,7 @@ const generateGSTR1 = async (req, res) => {
 
     if (!shop.gstin) {
       return res.status(400).json({
-        message: 'Shop GSTIN not configured. Please update your profile first.',
+        message: 'GSTIN not configured. Please update your profile first.',
       });
     }
 
@@ -38,7 +33,6 @@ const generateGSTR1 = async (req, res) => {
     if (!year) return res.status(400).json({ message: 'year is required' });
     if (!month && !quarter) return res.status(400).json({ message: 'month or quarter is required' });
 
-    // Build date range
     let fromDate, toDate, periodStr;
     if (quarter) {
       const qNum = parseInt(quarter.replace('Q', ''), 10);
@@ -47,10 +41,7 @@ const generateGSTR1 = async (req, res) => {
       const r = getQuarterDateRange(fiscalYear, qNum);
       fromDate  = r.fromDate;
       toDate    = r.toDate;
-      // GST portal requires fp = MMYYYY of the last month of the period.
-      // Q1=Jun(06), Q2=Sep(09), Q3=Dec(12), Q4=Mar(03) of next calendar year.
       const quarterEndMonth = { 1: '06', 2: '09', 3: '12', 4: '03' }[qNum];
-      // For Q4 the end month (March) falls in the next calendar year.
       const quarterEndYear = qNum === 4 ? fiscalYear + 1 : fiscalYear;
       periodStr = `${quarterEndMonth}${quarterEndYear}`;
     } else {
@@ -61,7 +52,6 @@ const generateGSTR1 = async (req, res) => {
       periodStr = `${String(m).padStart(2, '0')}${y}`;
     }
 
-    // Fetch all sales documents for the period
     const allDocs = await Sale.find({
       shop: shop._id,
       createdAt: { $gte: fromDate, $lte: toDate },
@@ -72,8 +62,10 @@ const generateGSTR1 = async (req, res) => {
     const creditNotes = allDocs.filter(d => d.document_type === 'credit_note');
     const debitNotes  = allDocs.filter(d => d.document_type === 'debit_note');
 
-    // ── TABLE 4: B2B Invoices — grouped by buyer GSTIN ──────────────────────
-    const b2bInvoices = invoices.filter(s => s.is_b2b || s.buyer_gstin || s.invoice_type === 'B2B');
+    // ── TABLE 4: B2B Invoices (includes SEZ and DE supplies) ────────────────
+    const b2bInvoices = invoices.filter(s =>
+      s.is_b2b || s.buyer_gstin || s.invoice_type === 'B2B' || s.is_sez_supply || s.is_deemed_export
+    );
     const b2bGrouped  = {};
     for (const sale of b2bInvoices) {
       const gstin = sale.buyer_gstin;
@@ -85,7 +77,7 @@ const generateGSTR1 = async (req, res) => {
         val:     round2(sale.total_amount),
         pos:     sale.place_of_supply || sale.buyer_state_code || shop.gst_state_code || '00',
         rchrg:   sale.is_reverse_charge ? 'Y' : 'N',
-        inv_typ: 'R',
+        inv_typ: getInvTyp(sale),
         itms:    (sale.items || []).map((item, idx) => ({
           num: idx + 1,
           itm_det: {
@@ -101,9 +93,10 @@ const generateGSTR1 = async (req, res) => {
     }
     const b2b = Object.values(b2bGrouped);
 
-    // ── TABLE 5: B2CL — inter-state, unregistered, invoice > ₹2,50,000 ─────
+    // ── TABLE 5: B2CL ────────────────────────────────────────────────────────
     const b2clInvoices = invoices.filter(s =>
       !s.is_b2b && !s.buyer_gstin && s.invoice_type !== 'B2B' &&
+      !s.is_sez_supply && !s.is_deemed_export &&
       s.supply_type === 'inter_state' &&
       (s.total_amount || 0) > 250000
     );
@@ -128,9 +121,10 @@ const generateGSTR1 = async (req, res) => {
     }
     const b2cl = Object.values(b2clGrouped);
 
-    // ── TABLE 7: B2CS — intra-state OR inter-state ≤ ₹2,50,000, unregistered ─
+    // ── TABLE 7: B2CS ────────────────────────────────────────────────────────
     const b2csInvoices = invoices.filter(s =>
       !s.is_b2b && !s.buyer_gstin && s.invoice_type !== 'B2B' &&
+      !s.is_sez_supply && !s.is_deemed_export &&
       !(s.supply_type === 'inter_state' && (s.total_amount || 0) > 250000)
     );
     const b2csGrouped = {};
@@ -154,7 +148,7 @@ const generateGSTR1 = async (req, res) => {
       camt:  round2(r.camt),  samt: round2(r.samt),
     }));
 
-    // ── TABLE 9: CDNR — Credit/Debit notes to registered buyers ────────────
+    // ── TABLE 9: CDNR ────────────────────────────────────────────────────────
     const cdnrNotes = [...creditNotes, ...debitNotes].filter(n => n.is_b2b || n.buyer_gstin);
     const cdnrGrouped = {};
     for (const note of cdnrNotes) {
@@ -183,7 +177,7 @@ const generateGSTR1 = async (req, res) => {
     }
     const cdnr = Object.values(cdnrGrouped);
 
-    // ── TABLE 10: CDNUR — Credit/Debit notes to unregistered buyers ─────────
+    // ── TABLE 10: CDNUR ──────────────────────────────────────────────────────
     const cdnurNotes = [...creditNotes, ...debitNotes].filter(n => !n.is_b2b && !n.buyer_gstin);
     const cdnur = cdnurNotes.map(note => ({
       typ: note.supply_type === 'inter_state' && Math.abs(note.total_amount || 0) > 250000 ? 'B2CL' : 'B2CS',
@@ -205,7 +199,7 @@ const generateGSTR1 = async (req, res) => {
       })),
     }));
 
-    // ── TABLE 12: HSN Summary — mandatory for all supplies ───────────────────
+    // ── TABLE 12: HSN Summary ────────────────────────────────────────────────
     const hsnMap = {};
     for (const sale of invoices) {
       for (const item of (sale.items || [])) {
@@ -240,18 +234,16 @@ const generateGSTR1 = async (req, res) => {
       })),
     };
 
-    // ── Final GSTR-1 JSON (exact GSTN portal format) ─────────────────────────
     const grossTurnover = round2(sumField(invoices, 'total_amount'));
 
     const gstr1JSON = {
       gstin:  shop.gstin,
-      fp:     periodStr,   // filing period: 'MMYYYY' for monthly, 'YYYYQN' for quarterly
+      fp:     periodStr,
       gt:     grossTurnover,
       cur_gt: grossTurnover,
       b2b, b2cl, b2cs,
       cdnr, cdnur,
       hsn,
-      // Required-but-empty tables (portal rejects if omitted)
       b2ba: [], b2cla: [], b2csa: [], cdnra: [], cdnura: [],
       exp:  [], expa:   [],
       at:   [], atadj:  [],
@@ -259,7 +251,6 @@ const generateGSTR1 = async (req, res) => {
       nil:  { inv: [] },
     };
 
-    // Summary for display
     const summary = {
       period: periodStr,
       gstin:  shop.gstin,
@@ -290,12 +281,24 @@ const generateGSTR1 = async (req, res) => {
 // GET /api/gst/gstr3b?month=MM&year=YYYY
 // ─────────────────────────────────────────────────────────────────────────────
 
+const ITC_BLOCKED_LABELS = {
+  personal_use:          'Personal use',
+  motor_vehicle:         'Motor vehicle (non-commercial)',
+  food_beverages:        'Food & beverages',
+  club_membership:       'Club membership',
+  travel_benefits:       'Travel benefits to employees',
+  construction:          'Construction of immovable property',
+  composition_purchase:  'Composition scheme purchase',
+  unregistered_supplier: 'Unregistered supplier',
+  other:                 'Other',
+};
+
 const generateGSTR3B = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
 
     if (!shop.gstin) {
-      return res.status(400).json({ message: 'Shop GSTIN not configured. Please update your profile first.' });
+      return res.status(400).json({ message: 'GSTIN not configured. Please update your profile first.' });
     }
 
     const { month, year } = req.query;
@@ -349,12 +352,12 @@ const generateGSTR3B = async (req, res) => {
           csamt: 0,
         },
       },
-      b: { txval: 0, iamt: 0, camt: 0, samt: 0, csamt: 0 }, // Zero-rated
-      c: { txval: 0, iamt: 0, camt: 0, samt: 0, csamt: 0 }, // Nil-rated/exempt
-      d: { iamt: 0, camt: 0, samt: 0, csamt: 0 },            // Non-GST
+      b: { txval: 0, iamt: 0, camt: 0, samt: 0, csamt: 0 },
+      c: { txval: 0, iamt: 0, camt: 0, samt: 0, csamt: 0 },
+      d: { iamt: 0, camt: 0, samt: 0, csamt: 0 },
     };
 
-    // ── Table 3.2: Inter-state to unregistered (from GSTR-1 B2CL data) ──────
+    // ── Table 3.2: Inter-state to unregistered ───────────────────────────────
     const b2clSales = sales.filter(s => !s.is_b2b && !s.buyer_gstin && s.supply_type === 'inter_state' && s.total_amount > 250000);
     const posGroups = {};
     for (const s of b2clSales) {
@@ -379,15 +382,15 @@ const generateGSTR3B = async (req, res) => {
 
     const table4 = {
       A: {
-        a: { iamt: 0, camt: 0, samt: 0, csamt: 0 },   // Import of goods
-        b: { iamt: 0, camt: 0, samt: 0, csamt: 0 },   // Import of services
-        c: { iamt: itcRcmIGST, camt: itcRcmCGST, samt: itcRcmSGST, csamt: 0 }, // Inward supplies on RCM
-        d: { iamt: 0, camt: 0, samt: 0, csamt: 0 },   // ISD credits
-        e: { iamt: itcEligIGST, camt: itcEligCGST, samt: itcEligSGST, csamt: 0 }, // All other ITC
+        a: { iamt: 0, camt: 0, samt: 0, csamt: 0 },
+        b: { iamt: 0, camt: 0, samt: 0, csamt: 0 },
+        c: { iamt: itcRcmIGST, camt: itcRcmCGST, samt: itcRcmSGST, csamt: 0 },
+        d: { iamt: 0, camt: 0, samt: 0, csamt: 0 },
+        e: { iamt: itcEligIGST, camt: itcEligCGST, samt: itcEligSGST, csamt: 0 },
       },
       B: {
-        a: { iamt: 0, camt: 0, samt: 0, csamt: 0 },   // Rule 42 & 43 reversal
-        b: { iamt: 0, camt: 0, samt: 0, csamt: 0 },   // Other reversals
+        a: { iamt: 0, camt: 0, samt: 0, csamt: 0 },
+        b: { iamt: 0, camt: 0, samt: 0, csamt: 0 },
       },
       C: {
         iamt:  R(itcEligIGST + itcRcmIGST),
@@ -401,11 +404,31 @@ const generateGSTR3B = async (req, res) => {
       },
     };
 
+    // ── Section 17(5) — blocked ITC breakdown by reason ─────────────────────
+    const blockedByReason = {};
+    for (const p of blockedPurchases) {
+      const reason = p.itc_blocked_reason || 'other';
+      if (!blockedByReason[reason]) {
+        blockedByReason[reason] = {
+          label: ITC_BLOCKED_LABELS[reason] || reason,
+          iamt: 0, camt: 0, samt: 0,
+        };
+      }
+      blockedByReason[reason].iamt += Number(p.igst_amount || 0);
+      blockedByReason[reason].camt += Number(p.cgst_amount || 0);
+      blockedByReason[reason].samt += Number(p.sgst_amount || 0);
+    }
+    Object.keys(blockedByReason).forEach(k => {
+      blockedByReason[k].iamt = R(blockedByReason[k].iamt);
+      blockedByReason[k].camt = R(blockedByReason[k].camt);
+      blockedByReason[k].samt = R(blockedByReason[k].samt);
+    });
+
     // ── Table 5: Exempt, Nil, Non-GST outward supplies ──────────────────────
     const table5 = {
-      a: { inter: 0, intra: 0 }, // Nil rated
-      b: { inter: 0, intra: 0 }, // Exempt
-      c: { inter: 0, intra: 0 }, // Non-GST
+      a: { inter: 0, intra: 0 },
+      b: { inter: 0, intra: 0 },
+      c: { inter: 0, intra: 0 },
     };
 
     // ── Table 6.1: Tax Payable and Paid ─────────────────────────────────────
@@ -416,23 +439,17 @@ const generateGSTR3B = async (req, res) => {
     const itcCGST = table4.C.camt;
     const itcSGST = table4.C.samt;
 
-    // GST utilization order: IGST credit first (cross-utilizable), then CGST and SGST separately
     let remIGST = itcIGST, remCGST = itcCGST, remSGST = itcSGST;
     let payIGST = outIGST, payCGST = outCGST, paySGST = outSGST;
 
-    // Step 1: Use IGST credit against IGST liability
     const useIGSTforIGST = Math.min(remIGST, payIGST);
     payIGST -= useIGSTforIGST; remIGST -= useIGSTforIGST;
-    // Step 2: Use remaining IGST credit against CGST
     const useIGSTforCGST = Math.min(remIGST, payCGST);
     payCGST -= useIGSTforCGST; remIGST -= useIGSTforCGST;
-    // Step 3: Use remaining IGST credit against SGST
     const useIGSTforSGST = Math.min(remIGST, paySGST);
     paySGST -= useIGSTforSGST;
-    // Step 4: Use CGST against CGST
     const useCGSTforCGST = Math.min(remCGST, payCGST);
     payCGST -= useCGSTforCGST;
-    // Step 5: Use SGST against SGST
     const useSGSTforSGST = Math.min(remSGST, paySGST);
     paySGST -= useSGSTforSGST;
 
@@ -449,6 +466,7 @@ const generateGSTR3B = async (req, res) => {
       gstin:  shop.gstin,
       period: `${String(m).padStart(2, '0')}-${y}`,
       table31, table32, table4, table5, table61,
+      blocked_by_reason: blockedByReason,
       summary: {
         gross_turnover:    R(sumField(sales, 'total_amount')),
         total_taxable:     R(sumField(sales, 'taxable_amount')),
@@ -480,7 +498,7 @@ const generateGSTR3B = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VALIDATE GSTIN ENDPOINT (used by frontend for live validation)
+// VALIDATE GSTIN ENDPOINT
 // POST /api/gst/validate-gstin  { gstin: "..." }
 // ─────────────────────────────────────────────────────────────────────────────
 

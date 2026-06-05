@@ -4,6 +4,7 @@ const { register, login, updateProfile, updatePassword, getShop, updateShop, get
 const { protect } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 const { authLimiter, registrationLimiter, forgotPasswordLimiter } = require('../middleware/securityMiddleware');
+const { updateExpenseBudgets } = require('../controllers/shopController');
 
 router.post('/register', registrationLimiter, register);
 router.post('/login', authLimiter, login);
@@ -15,6 +16,7 @@ router.put('/password', protect, checkSubscriptionStatus, updatePassword);
 router.get('/shop', protect, getShop);
 router.put('/shop', protect, checkSubscriptionStatus, updateShop);
 router.post('/shop/profile', protect, completeBusinessProfile);
+router.patch('/shop/expense-budgets', protect, checkSubscriptionStatus, updateExpenseBudgets);
 router.post('/logout', protect, logout);
 
 module.exports = router;

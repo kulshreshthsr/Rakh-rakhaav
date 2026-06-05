@@ -2,6 +2,8 @@ import "./globals.css";
 import { AppLocaleProvider } from "../components/AppLocale";
 import { IndustryProvider } from "../contexts/IndustryContext";
 import { TierProvider } from "../contexts/TierContext";
+import { ToastProvider } from "../hooks/useToast";
+import ToastContainer from "../components/ToastContainer";
 import AppSplash from "../components/AppSplash";
 import PWAInstall from "../components/PWAInstall";
 import ShopSetupPrompt from "../components/ShopSetupPrompt";
@@ -50,10 +52,13 @@ export default function RootLayout({ children }) {
         <AppLocaleProvider>
           <TierProvider>
             <IndustryProvider>
-              <AppSplash />
-              {children}
-              <PWAInstall />
-              <ShopSetupPrompt />
+              <ToastProvider>
+                <AppSplash />
+                {children}
+                <ToastContainer />
+                <PWAInstall />
+                <ShopSetupPrompt />
+              </ToastProvider>
             </IndustryProvider>
           </TierProvider>
         </AppLocaleProvider>

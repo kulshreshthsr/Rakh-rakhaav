@@ -1,9 +1,12 @@
 'use client';
+import { useState } from 'react';
 import SearchableProductSelect from '../../../components/SearchableProductSelect';
 import DynamicFormField from '../../../components/DynamicFormField';
+import KeyboardShortcutsTooltip from '../../../components/KeyboardShortcutsTooltip';
 import ChallanSection from './ChallanSection';
 import { summariseCartGST } from '../../../lib/gstValidation';
 import { getRelativeTime } from '../../../lib/heldBills';
+import { INVOICE_TEMPLATES } from '../../../lib/invoiceTemplates';
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal'];
 const UTS    = ['Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -11,7 +14,14 @@ const QUICK_QUANTITY_OPTIONS = [1, 2, 5, 10];
 const INPUT  = 'h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 const fmt    = (n) => parseFloat(n || 0).toFixed(2);
 const GSTIN_LENGTH = 15;
-const GSTIN_REGEX  = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+const SALE_SHORTCUTS = [
+  { key: 'Ctrl + Enter', action: 'Submit bill' },
+  { key: 'Ctrl + I',     action: 'Add item row' },
+  { key: 'Esc',          action: 'Close modal' },
+  { key: 'Ctrl + H',     action: 'Hold current bill' },
+  { key: 'Ctrl + B',     action: 'Open barcode scanner' },
+];
 
 export default function SaleFormModal({
   showModal, setShowModal, resetForm,
@@ -40,8 +50,22 @@ export default function SaleFormModal({
   buyerNameInputRef, amountPaidInputRef, customerComboRef, saleDateInputRef,
   heldBills = [], showHeldPicker = false, setShowHeldPicker,
   onHoldBill, onRestoreHeldBill, onRemoveHeldBill,
+  addOrIncrementProduct,
+  /* Feature 5 — duplicate detection */
+  duplicateWarning, setDuplicateWarning, handleConfirmDuplicate,
 }) {
   const hasItems = items.some(i => i.product_id);
+
+  /* ── Per-bill template override ── */
+  const [billTemplate, setBillTemplate] = useState('');
+
+  const handleSubmitWithTemplate = () => {
+    if (billTemplate) {
+      try { localStorage.setItem('rr-invoice-template-next', billTemplate); } catch {}
+    }
+    handleSubmit();
+  };
+
   return (
       <div className={`fixed inset-0 z-[70] transition-all duration-300 ${showModal ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         <button
@@ -73,13 +97,11 @@ export default function SaleFormModal({
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                {/* Held bills badge */}
                 {heldBills.length > 0 && (
                   <button type="button" onClick={() => setShowHeldPicker(!showHeldPicker)}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-700 text-[11px] font-black hover:bg-amber-100 transition-colors"
                   >⏸ {heldBills.length} held</button>
                 )}
-                {/* Hold button — only when there are items */}
                 {!editingSaleId && hasItems && (
                   <button type="button" onClick={onHoldBill}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-400 text-amber-700 bg-amber-50 text-[11px] font-black hover:bg-amber-100 transition-colors"
@@ -136,7 +158,7 @@ export default function SaleFormModal({
               </div>
             )}
 
-            {/* Payment method tabs — driven by saleFormSchema.paymentMethods */}
+            {/* Payment tabs */}
             <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl">
               {activeTabs.map((opt) => (
                 <button key={opt.type} type="button"
@@ -149,7 +171,7 @@ export default function SaleFormModal({
               ))}
             </div>
 
-            {/* Document type toggle — hardware only, not when editing */}
+            {/* Document type toggle — hardware only */}
             {businessType === 'hardware' && !editingSaleId && (
               <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mt-2">
                 {[{id:'invoice',label:'Invoice'},{id:'challan',label:'Delivery Challan'}].map(d => (
@@ -164,7 +186,6 @@ export default function SaleFormModal({
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
-            {/* Shop state warning — IGST will be wrong without it */}
             {!shopState && !editingSaleId && (
               <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-[12px] font-semibold text-amber-800">
                 <span className="text-base leading-none flex-shrink-0">⚠️</span>
@@ -172,7 +193,6 @@ export default function SaleFormModal({
               </div>
             )}
 
-            {/* Error */}
             {error && (
               <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">
                 ⚠️ {error}
@@ -197,7 +217,7 @@ export default function SaleFormModal({
               </div>
             </div>
 
-            {/* ── Contractor selector (hardware only) ── */}
+            {/* Contractor selector */}
             {businessType === 'hardware' && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 space-y-2">
                 <p className="text-[12px] font-black text-amber-900 uppercase tracking-wider">Contractor / Walk-in</p>
@@ -253,7 +273,7 @@ export default function SaleFormModal({
               </div>
             )}
 
-            {/* ── Customer section ── */}
+            {/* Customer section */}
             <div className={`rounded-2xl border p-4 ${form.payment_type === 'credit' ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -270,7 +290,6 @@ export default function SaleFormModal({
 
               {customerInfoVisible && (
                 <div className="space-y-3">
-                  {/* Customer name with autocomplete */}
                   <div ref={customerComboRef} className="relative">
                     <input
                       ref={buyerNameInputRef}
@@ -321,7 +340,6 @@ export default function SaleFormModal({
                     className="text-[12px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
                   >{showMoreCustomerDetails ? '▴ Less Details' : '▾ More Details (GSTIN, Address)'}</button>
 
-                  {/* Pet shop: Pet profile card */}
                   {businessType === 'pet_shop' && petProfiles.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {petProfiles.map(pet => {
@@ -343,7 +361,6 @@ export default function SaleFormModal({
                     </div>
                   )}
 
-                  {/* Salon: Client history card */}
                   {businessType === 'salon' && clientHistory && (
                     <div className="mt-2 rounded-xl border border-purple-200 bg-purple-50/60 p-3 space-y-1.5">
                       <p className="text-[12px] font-black text-purple-800">👤 Returning Client — {form.buyer_name || 'Known Client'}</p>
@@ -353,10 +370,9 @@ export default function SaleFormModal({
                         <p className="text-[11px] text-purple-700">💆 Favourite: {clientHistory.topServices.map(s => `${s.name} (${s.count}x)`).join(', ')}</p>
                       )}
                       {clientHistory.lastNotes && (
-                        <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 rounded-lg px-2 py-1">📝 Last visit notes: "{clientHistory.lastNotes}"</p>
+                        <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 rounded-lg px-2 py-1">📝 Last visit notes: &quot;{clientHistory.lastNotes}&quot;</p>
                       )}
-                      {/* Quick-add top services */}
-                      {clientHistory.topServices?.length > 0 && (
+                      {clientHistory.topServices?.length > 0 && addOrIncrementProduct && (
                         <div className="flex flex-wrap gap-1.5 mt-1.5">
                           {clientHistory.topServices.slice(0, 3).map(s => {
                             const prod = products.find(p => p.name === s.name);
@@ -372,7 +388,6 @@ export default function SaleFormModal({
                     </div>
                   )}
 
-                  {/* Salon: Active memberships */}
                   {businessType === 'salon' && clientMemberships.length > 0 && (
                     <div className="mt-2 rounded-xl border border-teal-200 bg-teal-50/60 p-3 space-y-2">
                       <p className="text-[11px] font-black text-teal-800">💳 Active Packages</p>
@@ -415,18 +430,15 @@ export default function SaleFormModal({
                           placeholder="Buyer GSTIN (15 digits) — B2B invoice ke liye"
                           value={form.buyer_gstin} maxLength={GSTIN_LENGTH}
                           onChange={(e) => handleBuyerGstinChange(e.target.value)}
-                          onBlur={() => setGstinTouched(true)}
+                          onBlur={() => {}}
                         />
-                        {/* Live GSTIN feedback */}
                         {gstinValidation?.valid && (
                           <div className="mt-1.5 flex items-center gap-2">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700">
                               ✓ {gstinValidation.stateName} ({gstinValidation.stateCode})
                             </span>
                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-bold ${
-                              supplyType === 'inter_state'
-                                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                : 'bg-green-50 border-green-200 text-green-700'
+                              supplyType === 'inter_state' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-green-50 border-green-200 text-green-700'
                             }`}>
                               {supplyType === 'inter_state' ? '🔵 Inter-State — IGST only' : '🟢 Intra-State — CGST+SGST'}
                             </span>
@@ -437,6 +449,49 @@ export default function SaleFormModal({
                           <p className="mt-1 text-[11px] text-slate-400">{GSTIN_LENGTH - gstinValue.length} more character{GSTIN_LENGTH - gstinValue.length === 1 ? '' : 's'} needed</p>
                         )}
                       </div>
+                      {/* SEZ / Deemed Export — only shown when a valid B2B GSTIN is entered */}
+                      {gstinValidation?.valid && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Supply Type</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              { id: 'normal',      label: 'Normal',             active: !form.is_sez_supply && !form.is_deemed_export },
+                              { id: 'sez_with',    label: 'SEZ with Tax',       active: form.is_sez_supply && form.sez_type === 'with_payment' },
+                              { id: 'sez_without', label: 'SEZ without Tax',    active: form.is_sez_supply && form.sez_type === 'without_payment' },
+                              { id: 'deemed',      label: 'Deemed Export',      active: !!form.is_deemed_export },
+                            ].map(opt => (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  if (opt.id === 'normal')      updateForm({ is_sez_supply: false, sez_type: null,              is_deemed_export: false });
+                                  else if (opt.id === 'sez_with')    updateForm({ is_sez_supply: true,  sez_type: 'with_payment',    is_deemed_export: false });
+                                  else if (opt.id === 'sez_without') updateForm({ is_sez_supply: true,  sez_type: 'without_payment', is_deemed_export: false });
+                                  else                               updateForm({ is_sez_supply: false, sez_type: null,              is_deemed_export: true  });
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-black border transition-all ${
+                                  opt.active
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
+                                }`}
+                              >{opt.label}</button>
+                            ))}
+                          </div>
+                          {(form.is_sez_supply || form.is_deemed_export) && (
+                            <div className="px-3 py-2.5 rounded-xl bg-blue-50 border border-blue-200">
+                              <p className="text-[11px] font-semibold text-blue-800 leading-relaxed">
+                                {form.is_sez_supply && form.sez_type === 'with_payment' &&
+                                  '🔵 SEWP — SEZ supply with payment of IGST। Full tax charged, ITC available to buyer।'}
+                                {form.is_sez_supply && form.sez_type === 'without_payment' &&
+                                  '🔵 SEWOP — SEZ supply without tax। Bond/LUT required। Reported in GSTR-1 Table 6B।'}
+                                {form.is_deemed_export &&
+                                  '🔵 DE — Deemed Export। Goods don\'t leave India। Buyer can claim refund of GST paid।'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <select className={INPUT} value={form.buyer_state} onChange={(e) => updateForm({ buyer_state: e.target.value })}>
                         <option value="">State / UT चुनें</option>
                         <optgroup label="States">{STATES.map(s => <option key={s} value={s}>{s}</option>)}</optgroup>
@@ -449,12 +504,11 @@ export default function SaleFormModal({
               )}
             </div>
 
-            {/* ── Industry-specific invoice-level fields ── */}
+            {/* Industry-specific invoice-level fields */}
             {config.invoiceExtraFields && config.invoiceExtraFields.length > 0 && (
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-700">{term('invoice', 'Invoice')} Details</p>
                 {config.invoiceExtraFields.map((field) => {
-                  // Evaluate showWhen
                   if (field.showWhen) {
                     const sw = field.showWhen;
                     const watchVal = extraFields[sw.field];
@@ -462,7 +516,6 @@ export default function SaleFormModal({
                     if (Array.isArray(sw.values) && !sw.values.includes(watchVal)) return null;
                     if (sw.notEmpty && (!watchVal || String(watchVal).trim() === '')) return null;
                   }
-                  // stylist_id: also store stylist name in extra_fields
                   const handleChange = (v) => {
                     if (field.key === 'stylist_id') {
                       const stylist = stylists.find(s => s._id === v);
@@ -474,17 +527,10 @@ export default function SaleFormModal({
                   return (
                     <div key={field.key} id={`invoice-field-${field.key}`}>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{field.label}{field.required && <span className="text-rose-500 ml-0.5">*</span>}</p>
-                      <DynamicFormField
-                        field={field}
-                        value={extraFields[field.key] || ''}
-                        onChange={handleChange}
-                        allValues={extraFields}
-                        availableStylists={stylists}
-                      />
+                      <DynamicFormField field={field} value={extraFields[field.key] || ''} onChange={handleChange} allValues={extraFields} availableStylists={stylists} />
                     </div>
                   );
                 })}
-                {/* Prescription confirmed badge */}
                 {businessType === 'pharmacy' && scheduleWarning?.hasControlled && scheduleWarning.prescriptionFilled && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-200 text-[11px] font-semibold text-green-700">
                     ✓ Prescription on file — Schedule H dispensing authorised
@@ -493,23 +539,17 @@ export default function SaleFormModal({
               </div>
             )}
 
-            {/* ══ CHALLAN SECTIONS (hardware delivery challan) ══ */}
+            {/* Challan sections */}
             {isChallanMode && (
-              <ChallanSection
-                challanForm={challanForm}
-                setChallanForm={setChallanForm}
-                form={form}
-                INPUT={INPUT}
-                billTotals={billTotals}
-              />
+              <ChallanSection challanForm={challanForm} setChallanForm={setChallanForm} form={form} INPUT={INPUT} billTotals={billTotals} />
             )}
 
-            {/* ── Items section ── */}
+            {/* Items section */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[13px] font-black text-slate-900">{term('items', 'Items')}</p>
                 {barcodeEnabled && (
-                  <button type="button" onClick={() => setShowBarcodeScanner(true)}
+                  <button type="button" onClick={onOpenBarcodeScanner}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-colors"
                   >📷 Scan Barcode</button>
                 )}
@@ -521,7 +561,6 @@ export default function SaleFormModal({
                   const prod = products.find((p) => p._id === item.product_id);
                   return (
                     <div key={item._rowId || index} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50 space-y-3">
-                      {/* Controls row */}
                       <div className="flex justify-end gap-1.5">
                         <button type="button" onClick={() => duplicateItem(index)}
                           className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-[10px] text-slate-500 hover:bg-slate-100 transition-colors"
@@ -574,43 +613,61 @@ export default function SaleFormModal({
                           </div>
                         </div>
 
-                        {/* Price — hidden for challan (not a tax document) */}
+                        {/* Price with FREE toggle */}
                         {!isChallanMode && (
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                            Price (₹)
-                            {businessType === 'pharmacy' && prod?.metadata?.mrp && (
-                              <span className="text-slate-400 font-normal ml-1">MRP: ₹{prod.metadata.mrp}</span>
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Price (₹)
+                                {businessType === 'pharmacy' && prod?.metadata?.mrp && (
+                                  <span className="text-slate-400 font-normal ml-1">MRP: ₹{prod.metadata.mrp}</span>
+                                )}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => updateItem(index, '_isFreeItem', !item._isFreeItem)}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border transition-all ${
+                                  item._isFreeItem
+                                    ? 'bg-green-100 border-green-400 text-green-700'
+                                    : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                                }`}
+                              >
+                                {item._isFreeItem ? '🎁 FREE' : 'Free?'}
+                              </button>
+                            </div>
+                            {item._isFreeItem ? (
+                              <div className="h-10 w-full px-3 rounded-xl border border-green-300 bg-green-50 flex items-center justify-center">
+                                <span className="text-[13px] font-black text-green-700">FREE — ₹0</span>
+                              </div>
+                            ) : (
+                              <input
+                                className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
+                                type="number" step="0.01" placeholder="0.00"
+                                value={item.price_per_unit}
+                                onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)}
+                                max={businessType === 'pharmacy' && prod?.metadata?.mrp ? prod.metadata.mrp : undefined}
+                              />
                             )}
-                          </p>
-                          <input
-                            className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[14px] font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-600/25 focus:border-green-600 transition-all"
-                            type="number" step="0.01" placeholder="0.00"
-                            value={item.price_per_unit}
-                            onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)}
-                            max={businessType === 'pharmacy' && prod?.metadata?.mrp ? prod.metadata.mrp : undefined}
-                          />
-                        </div>
+                          </div>
                         )}
 
                         {/* UOM — challan only */}
                         {isChallanMode && (
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Unit</p>
-                          <select
-                            className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-700 focus:outline-none focus:border-blue-500 transition-all"
-                            value={item.unit_of_measurement || 'NOS'}
-                            onChange={e => updateItem(index, 'unit_of_measurement', e.target.value)}
-                          >
-                            {['NOS','KGS','MTR','LTR','PCS','BOX','BAG','BUNDLE','SET','PAIR','SQM','CFT','RMT'].map(u => (
-                              <option key={u} value={u}>{u}</option>
-                            ))}
-                          </select>
-                        </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Unit</p>
+                            <select
+                              className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-white text-[13px] text-slate-700 focus:outline-none focus:border-blue-500 transition-all"
+                              value={item.unit_of_measurement || 'NOS'}
+                              onChange={e => updateItem(index, 'unit_of_measurement', e.target.value)}
+                            >
+                              {['NOS','KGS','MTR','LTR','PCS','BOX','BAG','BUNDLE','SET','PAIR','SQM','CFT','RMT'].map(u => (
+                                <option key={u} value={u}>{u}</option>
+                              ))}
+                            </select>
+                          </div>
                         )}
                       </div>
 
-                      {/* GST breakdown — hidden for challan */}
                       {g && !isChallanMode && (
                         <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-100 text-[11px]">
                           <span className="text-slate-400">₹{fmt(g.taxable)} + <span className="text-amber-600">₹{fmt(g.gst)} GST</span></span>
@@ -618,7 +675,6 @@ export default function SaleFormModal({
                         </div>
                       )}
 
-                      {/* Remarks — challan only */}
                       {isChallanMode && (
                         <input
                           className="h-9 w-full px-3 rounded-xl border border-slate-200 bg-white text-[12px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-all"
@@ -628,7 +684,6 @@ export default function SaleFormModal({
                         />
                       )}
 
-                      {/* ── Batch selector (pharmacy, bakery, grocery) ── */}
                       {batchSales && prod && (
                         <div className="pt-2 border-t border-slate-200 space-y-1.5">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{inv.batchLabel || 'Batch'}</p>
@@ -656,7 +711,6 @@ export default function SaleFormModal({
                         </div>
                       )}
 
-                      {/* ── Variant selector (clothing, footwear, sports) ── */}
                       {variantSales && prod && (
                         <div className="pt-2 border-t border-slate-200 space-y-2">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{inv.variantLabel || 'Variant'}</p>
@@ -668,7 +722,7 @@ export default function SaleFormModal({
                                   className="h-9 w-full rounded-xl border-2 border-slate-200 px-2 text-[12px] text-slate-700 bg-white focus:outline-none focus:border-green-600"
                                   value={(item.item_metadata || {}).size || ''}
                                   onChange={e => {
-                                    const sz  = e.target.value;
+                                    const sz = e.target.value;
                                     const col = (item.item_metadata || {}).color || '';
                                     const variant = (productVariants[prod._id] || []).find(v => v.size === sz && (!col || v.color === col) && v.quantity > 0);
                                     const updated = [...items];
@@ -690,7 +744,7 @@ export default function SaleFormModal({
                                   value={(item.item_metadata || {}).color || ''}
                                   onChange={e => {
                                     const col = e.target.value;
-                                    const sz  = (item.item_metadata || {}).size || '';
+                                    const sz = (item.item_metadata || {}).size || '';
                                     const variant = (productVariants[prod._id] || []).find(v => v.color === col && (!sz || v.size === sz) && v.quantity > 0);
                                     const updated = [...items];
                                     updated[index] = { ...updated[index], item_metadata: { ...(updated[index].item_metadata || {}), color: col, variant_id: variant?._id || '' } };
@@ -711,7 +765,6 @@ export default function SaleFormModal({
                         </div>
                       )}
 
-                      {/* ── Serial selector (electronics, mobile_shop) ── */}
                       {serialSales && prod && (
                         <div className="pt-2 border-t border-slate-200 space-y-1.5">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{inv.serialLabel || 'Serial No.'}</p>
@@ -729,7 +782,6 @@ export default function SaleFormModal({
                         </div>
                       )}
 
-                      {/* Industry-specific line fields (batch/expiry, size/color, item notes, etc.) */}
                       {config.invoiceLineFields && config.invoiceLineFields.length > 0 && (
                         <div className="pt-1 space-y-2.5 border-t border-slate-200">
                           {config.invoiceLineFields.map((field) => (
@@ -750,85 +802,60 @@ export default function SaleFormModal({
 
                 <button type="button" onClick={addItem}
                   className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 text-[13px] font-bold text-slate-400 hover:border-cyan-300 hover:text-green-700 hover:bg-green-50/40 transition-all"
-                >+ Item जोड़ें <span className="text-[10px] opacity-60">(Alt+A)</span></button>
+                >+ Item जोड़ें <span className="text-[10px] opacity-60">(Ctrl+I)</span></button>
               </div>
             </div>
 
-            {/* ── Schedule H/X Warning Banner (pharmacy) ── */}
+            {/* Schedule H/X Warning */}
             {scheduleWarning && !scheduleWarning.prescriptionFilled && (
               <div className={`flex items-start gap-3 p-3 rounded-xl border-2 ${scheduleWarning.hasScheduleX ? 'bg-red-50 border-red-400' : 'bg-amber-50 border-amber-400'}`}>
                 <span className="text-2xl flex-shrink-0">{scheduleWarning.hasScheduleX ? '🚫' : '⚠️'}</span>
                 <div className="flex-1">
                   <p className={`font-black text-sm ${scheduleWarning.hasScheduleX ? 'text-red-800' : 'text-amber-800'}`}>
-                    {scheduleWarning.hasScheduleX
-                      ? 'Schedule X दवाई — Prescription अनिवार्य है'
-                      : 'Schedule H दवाई — Prescription नंबर डालें'}
+                    {scheduleWarning.hasScheduleX ? 'Schedule X दवाई — Prescription अनिवार्य है' : 'Schedule H दवाई — Prescription नंबर डालें'}
                   </p>
                   <p className={`text-xs mt-0.5 ${scheduleWarning.hasScheduleX ? 'text-red-700' : 'text-amber-700'}`}>
                     {scheduleWarning.scheduleItems.map(i => `${i.name} (${i.schedule})`).join(', ')}
                   </p>
                   {scheduleWarning.hasScheduleX && (
-                    <p className="text-xs font-semibold text-red-700 mt-1">
-                      Drugs &amp; Cosmetics Act — Schedule X बिना valid prescription के नहीं बेच सकते।
-                    </p>
+                    <p className="text-xs font-semibold text-red-700 mt-1">Drugs &amp; Cosmetics Act — Schedule X बिना valid prescription के नहीं बेच सकते।</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fieldEl = document.getElementById('invoice-field-prescription_no');
-                    fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    fieldEl?.querySelector('input, select, textarea')?.focus();
-                  }}
+                <button type="button" onClick={() => { const el = document.getElementById('invoice-field-prescription_no'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); el?.querySelector('input, select, textarea')?.focus(); }}
                   className={`text-xs font-black px-3 py-1.5 rounded-lg flex-shrink-0 ${scheduleWarning.hasScheduleX ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
-                >
-                  Prescription भरें ↑
-                </button>
+                >Prescription भरें ↑</button>
               </div>
             )}
 
-            {/* ── Insurance Payment Breakdown (pharmacy) ── */}
+            {/* Insurance breakdown */}
             {businessType === 'pharmacy' && extraFields.insurance_type && extraFields.insurance_type !== 'None' && extraFields.insurance_type !== '' && (
               <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
                 <p className="text-[13px] font-black text-slate-900">Insurance Payment Breakdown</p>
                 <div>
                   <p className="text-[10px] font-bold uppercase text-slate-400 mb-1.5">Insurance Coverage (₹)</p>
-                  <input
-                    className={INPUT}
-                    type="number" step="0.01" min="0"
-                    placeholder="Amount covered by insurance"
+                  <input className={INPUT} type="number" step="0.01" min="0" placeholder="Amount covered by insurance"
                     value={extraFields.insurance_amount || ''}
-                    onChange={e => setExtraFields(prev => ({ ...prev, insurance_amount: e.target.value }))}
-                    max={billTotals.total}
-                  />
+                    onChange={e => setExtraFields(prev => ({ ...prev, insurance_amount: e.target.value }))} max={billTotals.total} />
                 </div>
                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white border border-blue-200">
                   <span className="text-[12px] font-bold text-blue-700">Patient Copay</span>
-                  <span className="text-[15px] font-black text-blue-700">
-                    ₹{Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}
-                  </span>
+                  <span className="text-[15px] font-black text-blue-700">₹{Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}</span>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  {extraFields.insurance_type} — {Number(extraFields.insurance_amount || 0) >= billTotals.total
-                    ? 'Fully covered by insurance'
-                    : `Patient pays ₹${Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}`}
+                  {extraFields.insurance_type} — {Number(extraFields.insurance_amount || 0) >= billTotals.total ? 'Fully covered by insurance' : `Patient pays ₹${Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}`}
                 </p>
               </div>
             )}
 
-            {/* ── Advance payment (credit only) ── */}
+            {/* Advance payment */}
             {form.payment_type === 'credit' && (
               <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4">
                 <p className="text-[13px] font-black text-slate-900 mb-0.5">Advance Payment</p>
                 <p className="text-[11px] text-slate-400 mb-3">अभी कितना payment मिला?</p>
-                <input
-                  ref={amountPaidInputRef}
+                <input ref={amountPaidInputRef}
                   className="h-11 w-full px-4 rounded-xl border border-rose-200 bg-white text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all"
-                  type="number" step="0.01" min="0"
-                  placeholder={`Max ₹${fmt(billTotals.total)}`}
-                  value={form.amount_paid}
-                  onChange={(e) => updateForm({ amount_paid: e.target.value })}
-                />
+                  type="number" step="0.01" min="0" placeholder={`Max ₹${fmt(billTotals.total)}`}
+                  value={form.amount_paid} onChange={(e) => updateForm({ amount_paid: e.target.value })} />
                 <div className="flex gap-2 mt-2">
                   {[['₹0', '0'], ['50%', String((billTotals.total / 2).toFixed(2))], ['Full', String(billTotals.total.toFixed(2))]].map(([label, val]) => (
                     <button key={label} type="button" onClick={() => updateForm({ amount_paid: val })}
@@ -843,35 +870,24 @@ export default function SaleFormModal({
               </div>
             )}
 
-            {/* ── Discount row (hidden for challan) ── */}
+            {/* Discount row */}
             {!isChallanMode && (
               <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[13px] font-black text-slate-700">🏷️ Discount</span>
                   <div className="flex items-center gap-2">
-                    {/* Mode toggles */}
                     {[{ id: 'flat', label: '₹ Flat' }, { id: 'percent', label: '% Percent' }].map((opt) => (
                       <button key={opt.id} type="button"
                         onClick={() => updateForm({ discount_type: form.discount_type === opt.id ? 'none' : opt.id, discount_value: '' })}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black border transition-colors ${
-                          form.discount_type === opt.id
-                            ? 'bg-green-600 text-white border-green-600'
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black border transition-colors ${form.discount_type === opt.id ? 'bg-green-600 text-white border-green-600' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
                       >{opt.label}</button>
                     ))}
-                    {/* Value input */}
                     {form.discount_type !== 'none' && (
                       <div className="flex items-center gap-1">
                         <span className="text-[13px] text-slate-400">{form.discount_type === 'flat' ? '₹' : ''}</span>
-                        <input
-                          type="number" min="0"
-                          max={form.discount_type === 'percent' ? 100 : undefined}
-                          value={form.discount_value}
-                          onChange={(e) => updateForm({ discount_value: e.target.value })}
-                          placeholder="0"
-                          className="w-20 h-9 px-2 text-[14px] font-black text-center rounded-xl border-2 border-green-400 bg-green-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30"
-                        />
+                        <input type="number" min="0" max={form.discount_type === 'percent' ? 100 : undefined}
+                          value={form.discount_value} onChange={(e) => updateForm({ discount_value: e.target.value })} placeholder="0"
+                          className="w-20 h-9 px-2 text-[14px] font-black text-center rounded-xl border-2 border-green-400 bg-green-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-green-500/30" />
                         {form.discount_type === 'percent' && <span className="text-[13px] text-slate-400">%</span>}
                       </div>
                     )}
@@ -882,140 +898,165 @@ export default function SaleFormModal({
                   </div>
                 </div>
                 {billTotals.discountAmount > 0 && (
-                  <p className="mt-1.5 text-right text-[12px] font-bold text-green-700">
-                    - ₹{fmt(billTotals.discountAmount)} की छूट
-                  </p>
+                  <p className="mt-1.5 text-right text-[12px] font-bold text-green-700">- ₹{fmt(billTotals.discountAmount)} की छूट</p>
                 )}
               </div>
             )}
 
-            {/* ── Challan value summary + special instructions ── */}
+            {/* Challan value summary */}
             {isChallanMode && (
               <div className="space-y-3">
                 <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4">
                   <p className="text-[11px] font-black text-blue-800 mb-2">Value Summary (For Reference Only)</p>
-                  <div className="flex justify-between text-[12px] mb-1">
-                    <span className="text-slate-600">Taxable Value</span>
-                    <span className="font-bold text-slate-900">₹{fmt(billTotals.taxable)}</span>
-                  </div>
-                  <div className="flex justify-between text-[12px] mb-2">
-                    <span className="text-slate-600">Applicable GST Rate</span>
-                    <span className="font-bold text-slate-900">{items[0]?.gst_rate || 0}% (not charged on this document)</span>
-                  </div>
-                  <div className="px-3 py-2 rounded-xl bg-slate-900 text-white text-center text-[10px] font-black tracking-wider">
-                    TAX WILL BE CHARGED ON INVOICE — THIS CHALLAN IS FOR GOODS MOVEMENT ONLY
-                  </div>
+                  <div className="flex justify-between text-[12px] mb-1"><span className="text-slate-600">Taxable Value</span><span className="font-bold text-slate-900">₹{fmt(billTotals.taxable)}</span></div>
+                  <div className="flex justify-between text-[12px] mb-2"><span className="text-slate-600">Applicable GST Rate</span><span className="font-bold text-slate-900">{items[0]?.gst_rate || 0}% (not charged on this document)</span></div>
+                  <div className="px-3 py-2 rounded-xl bg-slate-900 text-white text-center text-[10px] font-black tracking-wider">TAX WILL BE CHARGED ON INVOICE — THIS CHALLAN IS FOR GOODS MOVEMENT ONLY</div>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
                   <p className="text-[12px] font-black text-slate-900">Special Instructions</p>
                   <textarea className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-[12px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all resize-none"
                     rows={2} placeholder="Handle with care / Temperature sensitive / Fragile goods"
-                    value={challanForm.special_instructions}
-                    onChange={e => setChallanForm(p => ({ ...p, special_instructions: e.target.value }))} />
+                    value={challanForm.special_instructions} onChange={e => setChallanForm(p => ({ ...p, special_instructions: e.target.value }))} />
                   <textarea className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-[12px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all resize-none"
                     rows={2} placeholder="Terms (leave blank for default)"
-                    value={challanForm.challan_terms}
-                    onChange={e => setChallanForm(p => ({ ...p, challan_terms: e.target.value }))} />
+                    value={challanForm.challan_terms} onChange={e => setChallanForm(p => ({ ...p, challan_terms: e.target.value }))} />
                 </div>
               </div>
             )}
 
-            {/* ── Bill summary — hidden for challan ── */}
-            {!isChallanMode && <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
-              {/* GST breakdown — CGST+SGST for intra-state, IGST for inter-state */}
-              {billTotals.gst > 0 && (() => {
-                const gstBreakdown = summariseCartGST(
-                  items.filter(i => i.product_id && i.quantity && i.price_per_unit).map(item => {
-                    const prod = products.find(p => p._id === item.product_id);
-                    return { price_per_unit: Number(item.price_per_unit || 0), quantity: Number(item.quantity || 0), gst_rate: prod?.gst_rate || 0 };
-                  }),
-                  supplyType
-                );
-                return (
-                  <div className="mb-3 pb-3 border-b border-slate-700 space-y-1.5">
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-slate-400">Taxable Amount</span>
-                      <span className="text-white font-bold">₹{fmt(gstBreakdown.taxableAmount)}</span>
+            {/* Bill summary */}
+            {!isChallanMode && (
+              <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
+                {billTotals.gst > 0 && (() => {
+                  const gstBreakdown = summariseCartGST(
+                    items.filter(i => i.product_id && i.quantity && i.price_per_unit).map(item => {
+                      const prod = products.find(p => p._id === item.product_id);
+                      return { price_per_unit: Number(item.price_per_unit || 0), quantity: Number(item.quantity || 0), gst_rate: prod?.gst_rate || 0 };
+                    }),
+                    supplyType
+                  );
+                  return (
+                    <div className="mb-3 pb-3 border-b border-slate-700 space-y-1.5">
+                      <div className="flex justify-between text-[11px]"><span className="text-slate-400">Taxable Amount</span><span className="text-white font-bold">₹{fmt(gstBreakdown.taxableAmount)}</span></div>
+                      {supplyType === 'inter_state' ? (
+                        <div className="flex justify-between text-[11px]"><span className="text-slate-400">IGST</span><span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.igstAmount)}</span></div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between text-[11px]"><span className="text-slate-400">CGST</span><span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.cgstAmount)}</span></div>
+                          <div className="flex justify-between text-[11px]"><span className="text-slate-400">SGST</span><span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.sgstAmount)}</span></div>
+                        </>
+                      )}
+                      <div className="flex justify-between text-[11px]"><span className="text-slate-400">Total Tax</span><span className="text-amber-300 font-black">₹{fmt(gstBreakdown.totalTax)}</span></div>
                     </div>
-                    {supplyType === 'inter_state' ? (
-                      <div className="flex justify-between text-[11px]">
-                        <span className="text-slate-400">IGST</span>
-                        <span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.igstAmount)}</span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">CGST</span>
-                          <span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.cgstAmount)}</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">SGST</span>
-                          <span className="text-amber-400 font-bold">₹{fmt(gstBreakdown.sgstAmount)}</span>
-                        </div>
-                      </>
-                    )}
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-slate-400">Total Tax</span>
-                      <span className="text-amber-300 font-black">₹{fmt(gstBreakdown.totalTax)}</span>
+                  );
+                })()}
+                <div className="space-y-1.5 mb-3">
+                  {[
+                    billTotals.discountAmount > 0 ? { label: 'Subtotal', val: `₹${fmt(billTotals.subtotal)}`, cls: 'text-slate-300' } : null,
+                    billTotals.discountAmount > 0 ? { label: `Discount${form.discount_type === 'percent' ? ` (${form.discount_value}%)` : ''}`, val: `- ₹${fmt(billTotals.discountAmount)}`, cls: 'text-green-400' } : null,
+                    { label: 'Taxable Amount', val: `₹${fmt(billTotals.taxable)}`, cls: 'text-white' },
+                    { label: 'Total GST', val: `₹${fmt(billTotals.gst)}`, cls: 'text-amber-400' },
+                    { label: 'Round Off', val: `${roundedBill.roundOff >= 0 ? '+' : ''}₹${fmt(roundedBill.roundOff)}`, cls: 'text-emerald-400' },
+                  ].filter(Boolean).map((row) => (
+                    <div key={row.label} className="flex justify-between text-[12px]">
+                      <span className="text-slate-400">{row.label}</span>
+                      <span className={`font-bold ${row.cls}`}>{row.val}</span>
                     </div>
-                  </div>
-                );
-              })()}
-              <div className="space-y-1.5 mb-3">
-                {[
-                  billTotals.discountAmount > 0 ? { label: 'Subtotal',       val: `₹${fmt(billTotals.subtotal)}`,    cls: 'text-slate-300' } : null,
-                  billTotals.discountAmount > 0 ? { label: `Discount${form.discount_type === 'percent' ? ` (${form.discount_value}%)` : ''}`, val: `- ₹${fmt(billTotals.discountAmount)}`, cls: 'text-green-400' } : null,
-                  { label: 'Taxable Amount', val: `₹${fmt(billTotals.taxable)}`, cls: 'text-white' },
-                  { label: 'Total GST',      val: `₹${fmt(billTotals.gst)}`,     cls: 'text-amber-400' },
-                  { label: 'Round Off',      val: `${roundedBill.roundOff >= 0 ? '+' : ''}₹${fmt(roundedBill.roundOff)}`, cls: 'text-emerald-400' },
-                ].filter(Boolean).map((row) => (
-                  <div key={row.label} className="flex justify-between text-[12px]">
-                    <span className="text-slate-400">{row.label}</span>
-                    <span className={`font-bold ${row.cls}`}>{row.val}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
-                <span className="text-[14px] font-black">Grand Total</span>
-                <span className="text-[24px] font-black text-green-600">₹{fmt(billTotals.total)}</span>
-              </div>
-              {form.payment_type === 'credit' && (
-                <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
-                  <span className="text-[12px] text-rose-300">Balance Due</span>
-                  <span className="text-[14px] font-black text-rose-400">₹{fmt(balanceDue)}</span>
+                  ))}
                 </div>
-              )}
-            </div>}
+                <div className="flex justify-between items-baseline border-t border-slate-700 pt-3">
+                  <span className="text-[14px] font-black">Grand Total</span>
+                  <span className="text-[24px] font-black text-green-400">₹{fmt(billTotals.total)}</span>
+                </div>
+                {form.payment_type === 'credit' && (
+                  <div className="flex justify-between mt-2 pt-2 border-t border-slate-700">
+                    <span className="text-[12px] text-rose-300">Balance Due</span>
+                    <span className="text-[14px] font-black text-rose-400">₹{fmt(balanceDue)}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sticky footer */}
           <div className="rr-action-bar flex-shrink-0">
+            {/* Per-bill template override — compact pill group */}
+            {!isChallanMode && !editingSaleId && (
+              <div className="flex gap-1.5 mb-3 items-center">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">Template:</span>
+                <div className="flex gap-1 flex-wrap">
+                  {Object.values(INVOICE_TEMPLATES).map((t) => (
+                    <button key={t.id} type="button"
+                      onClick={() => setBillTemplate(billTemplate === t.id ? '' : t.id)}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition-all ${
+                        billTemplate === t.id
+                          ? 'bg-green-600 border-green-600 text-white'
+                          : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                      }`}
+                    >{t.label}</button>
+                  ))}
+                  {billTemplate && (
+                    <button type="button" onClick={() => setBillTemplate('')}
+                      className="px-2 py-1 rounded-full border border-slate-200 text-[10px] text-slate-400 hover:text-slate-600">✕</button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 items-center">
               {isChallanMode ? (
-                <button type="button" onClick={handleSubmit} disabled={submitting}
+                <button type="button" onClick={handleSubmitWithTemplate} disabled={submitting}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
                 >
-                  {submitting ? (
-                    <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Creating Challan...</>
-                  ) : '🚚 Dispatch — Print 3 Copies'}
+                  {submitting ? (<><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Creating Challan...</>) : '🚚 Dispatch — Print 3 Copies'}
                 </button>
               ) : (
-              <button type="button" onClick={handleSubmit} disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
-              >
-                {submitting ? (
-                  <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
-                ) : !isOnline ? '📥 Offline Save'
-                  : form.payment_type === 'credit' ? `📒 Credit ${term('sale','Sale')} Save करें`
-                  : form.payment_type === 'upi'    ? `📱 UPI ${term('sale','Sale')} Save करें`
-                  : form.payment_type === 'bank'   ? `🏦 Bank ${term('sale','Sale')} Save करें`
-                  : `💵 ${term('sale','Sale')} Save करें`}
-              </button>
+                <button type="button" onClick={handleSubmitWithTemplate} disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+                >
+                  {submitting ? (
+                    <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
+                  ) : !isOnline ? '📥 Offline Save'
+                    : form.payment_type === 'credit' ? `📒 Credit ${term('sale','Sale')} Save करें`
+                    : form.payment_type === 'upi'    ? `📱 UPI ${term('sale','Sale')} Save करें`
+                    : form.payment_type === 'bank'   ? `🏦 Bank ${term('sale','Sale')} Save करें`
+                    : `💵 ${term('sale','Sale')} Save करें`}
+                </button>
               )}
               <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
-                className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                className="px-4 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
               >Cancel</button>
+              {/* Keyboard shortcuts help */}
+              <KeyboardShortcutsTooltip shortcuts={SALE_SHORTCUTS} />
+            </div>
           </div>
         </aside>
+
+        {/* ── Feature 5: Duplicate sale confirmation dialog ── */}
+        {duplicateWarning && (
+          <div className="absolute inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 space-y-4">
+              <div className="text-center">
+                <div className="text-4xl mb-3">🤔</div>
+                <h3 className="text-[17px] font-black text-slate-900">Duplicate bill लग रहा है</h3>
+                <p className="text-[13px] text-slate-500 mt-2">
+                  इसी customer का ₹{fmt(billTotals.total)} का bill अभी कुछ seconds पहले बना था।
+                  क्या यह नया bill है?
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button type="button" onClick={handleConfirmDuplicate}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-green-600 to-emerald-700 text-white font-black text-[14px] shadow-lg hover:-translate-y-0.5 transition-all">
+                  हाँ, नया bill बनाओ
+                </button>
+                <button type="button" onClick={() => setDuplicateWarning(false)}
+                  className="w-full py-3 rounded-2xl border-2 border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                  Cancel — वापस जाओ
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
   );
 }

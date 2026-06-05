@@ -34,6 +34,24 @@ const getCurrentMonthRange = () => {
   return { $gte: start, $lte: end };
 };
 
+const getPrimaryRange = (rangeStr) => {
+  const now = new Date();
+  if (rangeStr === 'week') {
+    const start = new Date(now);
+    start.setDate(now.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+    return { $gte: start, $lte: now };
+  }
+  if (rangeStr === 'month') return getCurrentMonthRange();
+  if (rangeStr === 'last_month') {
+    return {
+      $gte: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+      $lte: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59),
+    };
+  }
+  return getTodayRange();
+};
+
 const round2 = (value) => Number(Number(value || 0).toFixed(2));
 
 const aggregateSalesSummary = async (match) => {
@@ -78,25 +96,151 @@ const aggregatePurchaseSummary = async (match) => {
   return result[0] || { totalSpent: 0, totalITC: 0, purchasesCount: 0 };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// INDUSTRY_EXTRA_DATA — O(1) dispatch replacing if-chains
+// Each function returns an object with the extra fields for that business type.
+// ─────────────────────────────────────────────────────────────────────────────
+const INDUSTRY_EXTRA_DATA = {
+  pharmacy: async (shopId) => {
+    const now = new Date();
+    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const in7Days  = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
+
+    const expiryPipeline = [
+      {
+        $match: {
+          shop: shopId,
+          isActive: { $ne: false },
+          'metadata.expiry_date': { $exists: true, $nin: [null, ''] },
+        },
+      },
+      {
+        $addFields: {
+          expiryDateParsed: {
+            $cond: {
+              if:   { $eq: [{ $type: '$metadata.expiry_date' }, 'string'] },
+              then: { $dateFromString: { dateString: '$metadata.expiry_date', onError: null } },
+              else: '$metadata.expiry_date',
+            },
+          },
+        },
+      },
+      { $match: { expiryDateParsed: { $ne: null, $lte: in30Days } } },
+      {
+        $group: {
+          _id: null,
+          expiredCount:   { $sum: { $cond: [{ $lt: ['$expiryDateParsed', now] },     1, 0] } },
+          expiring7Days:  { $sum: { $cond: [{ $lte: ['$expiryDateParsed', in7Days] }, 1, 0] } },
+          expiring30Days: { $sum: 1 },
+        },
+      },
+    ];
+
+    const [expiryResult, insCount] = await Promise.all([
+      Product.aggregate(expiryPipeline),
+      Sale.countDocuments({
+        shop: shopId,
+        insurance_status: 'pending_claim',
+        insurance_type: { $exists: true, $nin: [null, '', 'none'] },
+      }),
+    ]);
+
+    const e = expiryResult[0] || {};
+    return {
+      expiryStats: {
+        expiredCount:   e.expiredCount   || 0,
+        expiring7Days:  e.expiring7Days  || 0,
+        expiring30Days: e.expiring30Days || 0,
+      },
+      insurancePending: insCount || 0,
+    };
+  },
+
+  repair_shop: async (shopId) => ({
+    pendingPickup: await Sale.countDocuments({
+      shop: shopId,
+      'extra_fields.workflow_status': 'ready',
+      payment_status: { $in: ['unpaid', 'partial'] },
+    }),
+  }),
+
+  electronics: async (shopId) => {
+    const [pendingCount, readyCount] = await Promise.all([
+      WarrantyClaim.countDocuments({ shop: shopId, claimStatus: { $in: ['received', 'sent_to_brand', 'under_repair'] } }),
+      WarrantyClaim.countDocuments({ shop: shopId, claimStatus: 'ready' }),
+    ]);
+    return { warrantySummary: { pendingCount, readyCount } };
+  },
+
+  mobile_shop: async (shopId) => {
+    const [pendingCount, readyCount] = await Promise.all([
+      WarrantyClaim.countDocuments({ shop: shopId, claimStatus: { $in: ['received', 'sent_to_brand', 'under_repair'] } }),
+      WarrantyClaim.countDocuments({ shop: shopId, claimStatus: 'ready' }),
+    ]);
+    return { warrantySummary: { pendingCount, readyCount } };
+  },
+
+  clothing: async (shopId) => ({
+    variantLowStock: await ProductVariant.aggregate([
+      { $match: { shop: shopId, isActive: true } },
+      { $lookup: { from: 'products', localField: 'product', foreignField: '_id', as: 'productDoc' } },
+      { $unwind: '$productDoc' },
+      { $match: { 'productDoc.isActive': { $ne: false }, $expr: { $lte: ['$quantity', '$productDoc.low_stock_threshold'] } } },
+      { $group: { _id: '$size', productCount: { $sum: 1 }, products: { $push: '$productDoc.name' }, totalQty: { $sum: '$quantity' } } },
+      { $sort: { productCount: -1 } },
+      { $limit: 5 },
+    ]),
+  }),
+
+  footwear: async (shopId) => ({
+    variantLowStock: await ProductVariant.aggregate([
+      { $match: { shop: shopId, isActive: true } },
+      { $lookup: { from: 'products', localField: 'product', foreignField: '_id', as: 'productDoc' } },
+      { $unwind: '$productDoc' },
+      { $match: { 'productDoc.isActive': { $ne: false }, $expr: { $lte: ['$quantity', '$productDoc.low_stock_threshold'] } } },
+      { $group: { _id: '$size', productCount: { $sum: 1 }, products: { $push: '$productDoc.name' }, totalQty: { $sum: '$quantity' } } },
+      { $sort: { productCount: -1 } },
+      { $limit: 5 },
+    ]),
+  }),
+};
+
+const EXTRA_DEFAULTS = {
+  expiryStats:      { expiredCount: 0, expiring7Days: 0, expiring30Days: 0 },
+  insurancePending: 0,
+  pendingPickup:    0,
+  warrantySummary:  null,
+  variantLowStock:  [],
+};
+
 const getDashboardSummary = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
-    const { month, year } = req.query;
+    const { month, year, range } = req.query;
     const requestedRange = getDateRange(month, year);
-    const monthRange = requestedRange || getCurrentMonthRange();
-    const todayRange = getTodayRange();
-    const shopId = shop._id;
+    const monthRange    = requestedRange || getCurrentMonthRange();
+    const primaryRange  = getPrimaryRange(range);
+    const shopId        = shop._id;
+
+    const now = new Date();
+    const yesterdayRange = {
+      $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0),
+      $lte: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59),
+    };
 
     const [
-      todaySalesSummary,
+      primarySalesSummary,
+      yesterdaySalesSummary,
       monthSalesSummary,
       monthPurchaseSummary,
       topProductsAgg,
       stockAlertItems,
       udhaarSummary,
       topCustomers,
+      creditPurchasesDueAgg,
     ] = await Promise.all([
-      aggregateSalesSummary({ shop: shopId, createdAt: todayRange }),
+      aggregateSalesSummary({ shop: shopId, createdAt: primaryRange }),
+      aggregateSalesSummary({ shop: shopId, createdAt: yesterdayRange }),
       aggregateSalesSummary({ shop: shopId, createdAt: monthRange }),
       aggregatePurchaseSummary({ shop: shopId, createdAt: monthRange }),
       Sale.aggregate([
@@ -144,11 +288,32 @@ const getDashboardSummary = async (req, res) => {
         .sort({ totalUdhaar: -1 })
         .limit(5)
         .lean(),
+      Purchase.aggregate([
+        { $match: { shop: shopId } },
+        {
+          $group: {
+            _id: null,
+            totalDue: {
+              $sum: {
+                $max: [{ $subtract: ['$total_amount', { $ifNull: ['$amount_paid', 0] }] }, 0],
+              },
+            },
+            creditCount: {
+              $sum: {
+                $cond: [
+                  { $gt: [{ $subtract: ['$total_amount', { $ifNull: ['$amount_paid', 0] }] }, 0] },
+                  1, 0,
+                ],
+              },
+            },
+          },
+        },
+      ]),
     ]);
 
-    // Payment method split for today's bills
+    // Payment method split for primary range
     const paymentSplitAgg = await Sale.aggregate([
-      { $match: { shop: shopId, createdAt: todayRange } },
+      { $match: { shop: shopId, createdAt: primaryRange } },
       {
         $group: {
           _id: null,
@@ -172,7 +337,7 @@ const getDashboardSummary = async (req, res) => {
     const totalCustomerUdhaar = udhaarSummary[0]?.total || 0;
     const pendingCount = udhaarSummary[0]?.pendingCount || 0;
 
-    // Proper head-wise ITC set-off via GSTR-3B calculation
+    // Head-wise ITC set-off via GSTR-3B calculation (always calendar month)
     const [monthSalesRaw, monthPurchasesRaw] = await Promise.all([
       Sale.find({ shop: shopId, createdAt: monthRange }).select('taxable_amount cgst_amount sgst_amount igst_amount').lean(),
       Purchase.find({ shop: shopId, createdAt: monthRange }).select('taxable_amount cgst_amount sgst_amount igst_amount').lean(),
@@ -181,126 +346,51 @@ const getDashboardSummary = async (req, res) => {
     const netGSTPayable = gstr3b.net_payable;
 
     const outOfStockCount = stockAlertItems.filter((p) => (p.quantity ?? 0) <= 0).length;
-    const lowStockCount = stockAlertItems.filter((p) => (p.quantity ?? 0) > 0).length;
+    const lowStockCount   = stockAlertItems.filter((p) => (p.quantity ?? 0) > 0).length;
 
     const shopStateWarning = !shop.state;
 
-    // Pharmacy-specific: near-expiry product counts
-    let expiryStats = { expiredCount: 0, expiring7Days: 0, expiring30Days: 0 };
-    let insurancePending = 0;
-    if (shop.businessType === 'pharmacy') {
-      const now = new Date();
-      const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      const in7Days  = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
+    // Industry-specific extra data via O(1) map lookup
+    const extraDataFn = INDUSTRY_EXTRA_DATA[shop.businessType];
+    const rawExtra    = extraDataFn ? await extraDataFn(shopId, shop) : {};
+    const extra       = { ...EXTRA_DEFAULTS, ...rawExtra };
 
-      const expiryPipeline = [
-        {
-          $match: {
-            shop: shopId,
-            isActive: { $ne: false },
-            'metadata.expiry_date': { $exists: true, $nin: [null, ''] },
-          },
-        },
-        {
-          $addFields: {
-            expiryDateParsed: {
-              $cond: {
-                if:   { $eq: [{ $type: '$metadata.expiry_date' }, 'string'] },
-                then: { $dateFromString: { dateString: '$metadata.expiry_date', onError: null } },
-                else: '$metadata.expiry_date',
-              },
-            },
-          },
-        },
-        { $match: { expiryDateParsed: { $ne: null, $lte: in30Days } } },
-        {
-          $group: {
-            _id: null,
-            expiredCount:   { $sum: { $cond: [{ $lt: ['$expiryDateParsed', now] },     1, 0] } },
-            expiring7Days:  { $sum: { $cond: [{ $lte: ['$expiryDateParsed', in7Days] }, 1, 0] } },
-            expiring30Days: { $sum: 1 },
-          },
-        },
-      ];
-
-      const [expiryResult, insCount] = await Promise.all([
-        Product.aggregate(expiryPipeline),
-        Sale.countDocuments({
-          shop: shopId,
-          insurance_status: 'pending_claim',
-          insurance_type: { $exists: true, $nin: [null, '', 'none'] },
-        }),
-      ]);
-
-      const e = expiryResult[0] || {};
-      expiryStats = {
-        expiredCount:   e.expiredCount   || 0,
-        expiring7Days:  e.expiring7Days  || 0,
-        expiring30Days: e.expiring30Days || 0,
-      };
-      insurancePending = insCount || 0;
-    }
-
-    // Repair shop: devices ready for pickup (job status=ready, payment still pending)
-    let pendingPickup = 0;
-    if (shop.businessType === 'repair_shop') {
-      pendingPickup = await Sale.countDocuments({
-        shop: shopId,
-        'extra_fields.workflow_status': 'ready',
-        payment_status: { $in: ['unpaid', 'partial'] },
-      });
-    }
-
-    // Electronics/mobile: warranty claims summary
-    let warrantySummary = null;
-    if (shop.businessType === 'electronics' || shop.businessType === 'mobile_shop') {
-      const [pendingDocs, readyCount] = await Promise.all([
-        WarrantyClaim.countDocuments({ shop: shopId, claimStatus: { $in: ['received', 'sent_to_brand', 'under_repair'] } }),
-        WarrantyClaim.countDocuments({ shop: shopId, claimStatus: 'ready' }),
-      ]);
-      warrantySummary = { pendingCount: pendingDocs, readyCount };
-    }
-
-    // Clothing/footwear: size-wise low-stock aggregation from ProductVariant collection
-    let variantLowStock = [];
-    if (shop.businessType === 'clothing' || shop.businessType === 'footwear') {
-      variantLowStock = await ProductVariant.aggregate([
-        { $match: { shop: shopId, isActive: true } },
-        { $lookup: { from: 'products', localField: 'product', foreignField: '_id', as: 'productDoc' } },
-        { $unwind: '$productDoc' },
-        { $match: { 'productDoc.isActive': { $ne: false }, $expr: { $lte: ['$quantity', '$productDoc.low_stock_threshold'] } } },
-        { $group: { _id: '$size', productCount: { $sum: 1 }, products: { $push: '$productDoc.name' }, totalQty: { $sum: '$quantity' } } },
-        { $sort: { productCount: -1 } },
-        { $limit: 5 },
-      ]);
-    }
+    const creditPurchasesDue   = creditPurchasesDueAgg[0]?.totalDue   || 0;
+    const creditPurchasesCount = creditPurchasesDueAgg[0]?.creditCount || 0;
 
     const responseObj = {
       today: {
-        revenue: round2(todaySalesSummary.totalRevenue),
-        bills: todaySalesSummary.salesCount || 0,
-        profit: round2(todaySalesSummary.totalGrossProfit),
+        revenue: round2(primarySalesSummary.totalRevenue),
+        bills:   primarySalesSummary.salesCount || 0,
+        profit:  round2(primarySalesSummary.totalGrossProfit),
+        range:   range || 'today',
+      },
+      yesterday: {
+        revenue: round2(yesterdaySalesSummary.totalRevenue),
+        profit:  round2(yesterdaySalesSummary.totalGrossProfit),
+        bills:   yesterdaySalesSummary.salesCount || 0,
       },
       month: {
-        revenue: round2(monthSalesSummary.totalRevenue),
-        profit: round2(monthSalesSummary.totalGrossProfit),
-        purchases: round2(monthPurchaseSummary.totalSpent),
+        revenue:        round2(monthSalesSummary.totalRevenue),
+        profit:         round2(monthSalesSummary.totalGrossProfit),
+        purchases:      round2(monthPurchaseSummary.totalSpent),
         purchasesCount: monthPurchaseSummary.purchasesCount || 0,
       },
       udhaar: {
-        totalDue: round2(totalCustomerUdhaar),
+        totalDue:     round2(totalCustomerUdhaar),
         pendingCount,
         topCustomers: topCustomers.map((c) => ({
-          _id: c._id,
-          name: c.name,
+          _id:   c._id,
+          name:  c.name,
           phone: c.phone,
-          due: round2(c.totalUdhaar),
+          due:   round2(c.totalUdhaar),
         })),
       },
       gst: {
-        collected: round2(monthSalesSummary.totalGSTCollected),
-        itc: round2(monthPurchaseSummary.totalITC),
-        netPayable: netGSTPayable,
+        collected:     round2(monthSalesSummary.totalGSTCollected),
+        itcAvailable:  round2(monthPurchaseSummary.totalITC),
+        itc:           round2(monthPurchaseSummary.totalITC),
+        netPayable:    netGSTPayable,
         payableByHead: gstr3b.payable_by_head,
         shopStateWarning,
       },
@@ -309,22 +399,26 @@ const getDashboardSummary = async (req, res) => {
         outOfStockCount,
         lowStockItems: stockAlertItems,
       },
+      purchases: {
+        totalDue:    round2(creditPurchasesDue),
+        creditCount: creditPurchasesCount,
+      },
       stats: {
         totalRevenue: round2(monthSalesSummary.totalRevenue),
         totalTaxable: round2(monthSalesSummary.totalTaxable),
-        salesCount: monthSalesSummary.salesCount || 0,
-        totalCOGS: round2(monthSalesSummary.totalCOGS),
-        grossProfit: round2(monthSalesSummary.totalGrossProfit),
-        netProfit: round2(monthSalesSummary.totalGrossProfit),
+        salesCount:   monthSalesSummary.salesCount || 0,
+        totalCOGS:    round2(monthSalesSummary.totalCOGS),
+        grossProfit:  round2(monthSalesSummary.totalGrossProfit),
+        netProfit:    round2(monthSalesSummary.totalGrossProfit),
         gstCollected: round2(monthSalesSummary.totalGSTCollected),
-        gstITC: round2(monthPurchaseSummary.totalITC),
+        gstITC:       round2(monthPurchaseSummary.totalITC),
         netGSTPayable,
         gstPayableByHead: gstr3b.payable_by_head,
-        totalSpent: round2(monthPurchaseSummary.totalSpent),
-        purchasesCount: monthPurchaseSummary.purchasesCount || 0,
+        totalSpent:      round2(monthPurchaseSummary.totalSpent),
+        purchasesCount:  monthPurchaseSummary.purchasesCount || 0,
       },
       shopStateWarning,
-      topProducts: topProductsAgg,
+      topProducts:     topProductsAgg,
       lowStockProducts: stockAlertItems,
       lowStockCount,
       outOfStockCount,
@@ -337,11 +431,11 @@ const getDashboardSummary = async (req, res) => {
         upiAmount:   round2(split.upiReceived),
         cashAmount:  round2(split.cashReceived),
       },
-      expiryStats,
-      insurancePending,
-      variantLowStock,
-      warrantySummary,
-      pendingPickup,
+      expiryStats:      extra.expiryStats,
+      insurancePending: extra.insurancePending,
+      variantLowStock:  extra.variantLowStock,
+      warrantySummary:  extra.warrantySummary,
+      pendingPickup:    extra.pendingPickup,
       fetchedAt: new Date().toISOString(),
     };
 
@@ -364,11 +458,10 @@ const getDashboardSummary = async (req, res) => {
           totalProducts:  (responseObj.lowStockCount || 0) + (responseObj.outOfStockCount || 0),
           subUserCount:   0,
         };
-
         const upgrade = checkUsageUpgrade(shop, usageStats);
         if (upgrade) {
           await Shop.findByIdAndUpdate(shop._id, {
-            $set: { businessTier: upgrade.newTier },
+            $set:  { businessTier: upgrade.newTier },
             $push: { tierHistory: { from: shop.businessTier, to: upgrade.newTier, reason: upgrade.reason } },
           });
         }
@@ -386,10 +479,8 @@ const workflowCounts = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999);
 
     const results = await Sale.aggregate([
       {
@@ -399,12 +490,7 @@ const workflowCounts = async (req, res) => {
           'extra_fields.workflow_status': { $exists: true, $ne: null },
         },
       },
-      {
-        $group: {
-          _id: '$extra_fields.workflow_status',
-          count: { $sum: 1 },
-        },
-      },
+      { $group: { _id: '$extra_fields.workflow_status', count: { $sum: 1 } } },
     ]);
 
     const counts = {};
@@ -441,21 +527,14 @@ const creditAging = async (req, res) => {
         $addFields: {
           ageDays: {
             $floor: {
-              $divide: [
-                { $subtract: [now, '$createdAt'] },
-                1000 * 60 * 60 * 24,
-              ],
+              $divide: [{ $subtract: [now, '$createdAt'] }, 1000 * 60 * 60 * 24],
             },
           },
         },
       },
       {
         $group: {
-          _id: {
-            customerId: '$customer',
-            buyerName:  '$buyer_name',
-            buyerPhone: '$buyer_phone',
-          },
+          _id:           { customerId: '$customer', buyerName: '$buyer_name', buyerPhone: '$buyer_phone' },
           totalDue:      { $sum: '$balance_due' },
           billCount:     { $sum: 1 },
           oldestBillAge: { $max: '$ageDays' },
@@ -503,12 +582,7 @@ const creditAging = async (req, res) => {
       grandTotal += c.totalDue;
     });
 
-    res.json({
-      customers: agedCredits,
-      summary,
-      grandTotal: round2(grandTotal),
-      asOf: now.toISOString(),
-    });
+    res.json({ customers: agedCredits, summary, grandTotal: round2(grandTotal), asOf: now.toISOString() });
   } catch (err) {
     logger.error('creditAging error:', err);
     res.status(500).json({ message: 'Something went wrong' });
@@ -516,7 +590,7 @@ const creditAging = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TABLE STATUS (Restaurant only)
+// TABLE STATUS (Restaurant only) — Bug 4: added .lean(), removed instanceof Map
 // ─────────────────────────────────────────────────────────────────────────────
 const tableStatus = async (req, res) => {
   try {
@@ -528,7 +602,6 @@ const tableStatus = async (req, res) => {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
 
     // Daily reset: mark products available if availability_set_at < today
-    const Product = require('../models/productModel');
     await Product.updateMany(
       {
         shop: shop._id,
@@ -538,21 +611,30 @@ const tableStatus = async (req, res) => {
       { $set: { 'metadata.is_available_today': 'true', 'metadata.unavailable_reason': '' } }
     );
 
+    // Bug 4: .lean() so extra_fields is always a plain object
     const activeTables = await Sale.find({
       shop: shop._id,
       createdAt: { $gte: todayStart },
       payment_status: { $in: ['unpaid', 'partial'] },
-    }).select('extra_fields invoice_number total_amount createdAt buyer_name items');
+    })
+      .select('extra_fields invoice_number total_amount createdAt buyer_name items')
+      .lean();
 
     const tableMap = {};
     activeTables.forEach(sale => {
-      const ef = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
+      const ef = sale.extra_fields || {};
       const tableNo = ef.table_no;
       if (!tableNo) return;
       if (!tableMap[tableNo]) {
         tableMap[tableNo] = { tableNo, status: 'occupied', orders: [], totalAmount: 0, occupiedSince: sale.createdAt };
       }
-      tableMap[tableNo].orders.push({ invoiceNo: sale.invoice_number, amount: sale.total_amount, guestName: sale.buyer_name, itemCount: sale.items?.length || 0, time: sale.createdAt });
+      tableMap[tableNo].orders.push({
+        invoiceNo: sale.invoice_number,
+        amount:    sale.total_amount,
+        guestName: sale.buyer_name,
+        itemCount: sale.items?.length || 0,
+        time:      sale.createdAt,
+      });
       tableMap[tableNo].totalAmount += sale.total_amount;
       if (sale.createdAt < tableMap[tableNo].occupiedSince) tableMap[tableNo].occupiedSince = sale.createdAt;
     });

@@ -149,4 +149,14 @@ export const BASE_TERMINOLOGY = {
   kpiTotalProducts:   'Total Products',
   kpiTotalCustomers:  'Total Customers',
   kpiRecentSales:     'Recent Sales',
+
+  // ─── Default expense categories (all 26 business types get these) ──────────
+  expenseCategories: [
+    { id: 'rent',        labelHi: 'किराया',       labelEn: 'Rent',        emoji: '🏠' },
+    { id: 'salary',      labelHi: 'वेतन',          labelEn: 'Salary',      emoji: '👷' },
+    { id: 'transport',   labelHi: 'परिवहन',        labelEn: 'Transport',   emoji: '🚛' },
+    { id: 'utility',     labelHi: 'बिजली-पानी',    labelEn: 'Utility',     emoji: '💡' },
+    { id: 'maintenance', labelHi: 'मरम्मत',         labelEn: 'Maintenance', emoji: '🔧' },
+    { id: 'misc',        labelHi: 'अन्य',           labelEn: 'Misc',        emoji: '📦' },
+  ],
 };

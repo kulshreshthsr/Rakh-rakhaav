@@ -8,6 +8,16 @@ import { cacheProducts, getCachedProducts } from '../../../lib/offlineDB';
 const getToken = () => localStorage.getItem('token');
 const PURCHASES_CACHE_KEY = 'purchases-page';
 
+/* Bug 2 Part B — detect "Product not found" error in failed queue items */
+const enrichQueueItemError = (op) => {
+  const rawError = op.error || '';
+  if (rawError.toLowerCase().includes('product not found')) {
+    const match = rawError.match(/Product not found:?\s*([a-f0-9]{24})?/i);
+    return `Product not found: ${match?.[1] ? `ID ${match[1]}` : 'deleted item'} अब available नहीं — please edit करें`;
+  }
+  return rawError;
+};
+
 export default function usePurchasesData({ router, isOnline, products, setProducts, fetchProducts }) {
   const [purchases, setPurchases] = useState([]);
   const [summary, setSummary] = useState({});
@@ -36,11 +46,15 @@ export default function usePurchasesData({ router, isOnline, products, setProduc
           }, 0);
           const amountPaid = Number(op?.payload?.amount_paid || 0);
           const totalAmount = taxableAmount + totalGst;
+
+          /* Bug 2 Part B — surface product-deleted errors with specific message */
+          const enrichedError = enrichQueueItemError(op);
+
           return {
             _id: op.id,
             invoice_number: op.tempId,
             _queueStatus: op.status || 'pending',
-            _queueError: op.error || '',
+            _queueError: enrichedError,
             items: queuedItems.map((item) => {
               const product = products.find((prod) => prod._id === item.product_id);
               return {

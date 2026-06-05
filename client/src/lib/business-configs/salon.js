@@ -253,4 +253,37 @@ export default {
     kpi5: { label: 'GST Payable',  sublabel: 'This month'           },
     kpi6: { label: 'Low Products', sublabel: 'Salon products'       },
   },
+
+  dashboardPanels: [
+    {
+      id: 'appointments_today',
+      dataKey: 'appointmentData',
+      condition: (val) => Boolean(val && Array.isArray(val.appointments) && val.appointments.length > 0),
+      href: '/appointments',
+      icon: '📅',
+      color: 'purple',
+      renderLabel: (val) => {
+        const appts = val.appointments || [];
+        const doneCount = appts.filter((a) => {
+          const ef = (a.extra_fields instanceof Map ? Object.fromEntries(a.extra_fields) : a.extra_fields) || {};
+          return ef.workflow_status === 'paid' || ef.workflow_status === 'completed';
+        }).length;
+        const remaining = appts.length - doneCount;
+        return `${appts.length} appointments today — ${doneCount} done, ${remaining} remaining`;
+      },
+      renderSublabel: () => 'View Calendar →',
+    },
+  ],
+
+  // ─── Salon-specific expense categories ───────────────────────────────────
+  expenseCategories: [
+    { id: 'products',    labelHi: 'Beauty Products', labelEn: 'Beauty Products', emoji: '🧴' },
+    { id: 'equipment',   labelHi: 'Equipment',       labelEn: 'Equipment',       emoji: '✂️' },
+    { id: 'rent',        labelHi: 'किराया',           labelEn: 'Rent',            emoji: '🏠' },
+    { id: 'salary',      labelHi: 'वेतन',             labelEn: 'Salary',          emoji: '👷' },
+    { id: 'utility',     labelHi: 'बिजली-पानी',       labelEn: 'Utility',         emoji: '💡' },
+    { id: 'maintenance', labelHi: 'मरम्मत',            labelEn: 'Maintenance',     emoji: '🔧' },
+    { id: 'transport',   labelHi: 'परिवहन',            labelEn: 'Transport',       emoji: '🚛' },
+    { id: 'misc',        labelHi: 'अन्य',              labelEn: 'Misc',            emoji: '📦' },
+  ],
 };
