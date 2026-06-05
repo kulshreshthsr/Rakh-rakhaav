@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiUrl } from '../../lib/api';
 import { listIndustries } from '../../lib/industries/index.js';
-import { writeStoredBusinessType } from '../../contexts/IndustryContext';
+import { writeStoredBusinessType, writeStoredDashboardMode } from '../../contexts/IndustryContext';
 import { writeStoredTier } from '../../contexts/TierContext';
 import { hasWelcomePending } from '../../lib/subscription';
 import { getToken, GST_STATE_CODE_MAP } from '../../lib/constants';
@@ -364,11 +364,11 @@ export default function OnboardingPage() {
     return [
       {
         id: 'sellsTo',
-        text: 'आप किसे बेचते हैं ज़्यादातर? 🏪',
+        text: 'आपका business किस type का है? (यह dashboard set करेगा)',
         options: [
-          { label: 'Walk-in customers को', value: 'walk_in',    emoji: '🛍️' },
-          { label: 'Shops / businesses को', value: 'businesses', emoji: '🏭' },
-          { label: 'Dono ko',               value: 'both',       emoji: '🔄' },
+          { label: 'Direct customers / retail (B2C)', value: 'walk_in',    emoji: '🛍️' },
+          { label: 'Shops / companies को wholesale (B2B)', value: 'businesses', emoji: '🏭' },
+          { label: 'दोनों — retail + wholesale (B2B+B2C)', value: 'both',  emoji: '🔄' },
         ],
       },
       {
@@ -444,6 +444,13 @@ export default function OnboardingPage() {
 
       setInferredTier(data.tier);
       writeStoredTier(data.tier);
+
+      // Persist dashboardMode so dashboard routing picks it up immediately
+      if (data.dashboardMode) {
+        writeStoredDashboardMode(data.dashboardMode);
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...stored, dashboardMode: data.dashboardMode }));
+      }
 
       setTimeout(() => goTo(5), 1200);
     } catch {

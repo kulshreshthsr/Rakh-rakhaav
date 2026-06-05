@@ -491,6 +491,30 @@ export default function SalesPage() {
     setHeldBills(getHeldBills());
   };
 
+  /* ── Mark challan delivered ── */
+  const handleMarkDelivered = async () => {
+    if (!deliveredChallan?._id) return;
+    if (!deliveredForm.received_by?.trim()) {
+      showToast('Received by का नाम ज़रूरी है', 'error');
+      return;
+    }
+    try {
+      const res = await fetch(apiUrl(`/api/sales/${deliveredChallan._id}/mark-delivered`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ received_by: deliveredForm.received_by.trim(), received_at: deliveredForm.received_at, notes: deliveredForm.notes }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.message || 'Mark delivered failed', 'error'); return; }
+      setShowDeliveredModal(false);
+      setDeliveredChallan(null);
+      fetchAll();
+      showToast(`Challan ${deliveredChallan.challan_number || deliveredChallan.invoice_number} delivered ✓`, 'success');
+    } catch {
+      showToast('Server error — दोबारा try करें', 'error');
+    }
+  };
+
   /* ── Derived values ── */
   const pendingOfflineSales = sales.filter((sale) => sale?._isOffline);
   const offlineRevenue = pendingOfflineSales.reduce((sum, sale) => sum + Number(sale?.total_amount || 0), 0);

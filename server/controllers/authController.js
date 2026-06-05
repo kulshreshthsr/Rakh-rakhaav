@@ -170,6 +170,7 @@ const updateShop = async (req, res) => {
     terms, businessType, dashboardMode,
     invoice_prefix, invoice_number_digits, invoice_start_number,
     gst_type, composition_category, filing_frequency,
+    monthly_target,
   } = req.body;
   try {
     if (businessType && !BUSINESS_TYPES.includes(businessType)) {
@@ -198,16 +199,21 @@ const updateShop = async (req, res) => {
     if (invoice_start_number !== undefined) updatePayload.invoice_start_number = Math.max(1, Number(invoice_start_number) || 1);
     if (req.body.onboarding_completed === true) updatePayload.onboarding_completed = true;
     if (req.body.businessTier && ['nano', 'core', 'pro'].includes(req.body.businessTier)) updatePayload.businessTier = req.body.businessTier;
+    if (monthly_target !== undefined) updatePayload.monthly_target = Math.max(0, Number(monthly_target) || 0);
     const updated = await Shop.findByIdAndUpdate(shop._id, updatePayload, { new: true });
-    await logAuditEvent({
-      shopId: updated._id,
-      userId: req.user.id,
-      actionType: 'update',
-      entity: 'shop',
-      entityId: updated._id,
-      beforeValue,
-      afterValue: updated,
-    });
+    try {
+      await logAuditEvent({
+        shopId: updated._id,
+        userId: req.user.id,
+        actionType: 'update',
+        entity: 'shop',
+        entityId: updated._id,
+        beforeValue,
+        afterValue: updated,
+      });
+    } catch (auditErr) {
+      logger.warn('[updateShop] audit log failed (non-fatal):', auditErr.message);
+    }
     res.json(updated);
   } catch (err) {
     logger.error('[authController]', err.message || err);
@@ -336,6 +342,12 @@ const completeBusinessProfile = async (req, res) => {
     shop.profileSignals = { ...signals, filingGst: shop.gst_type === 'regular' };
     shop.businessTier = tier;
 
+    // Derive dashboardMode from sellsTo signal
+    const sellsTo = signals?.sellsTo;
+    const dashboardMode = sellsTo === 'businesses' ? 'b2b'
+      : sellsTo === 'both' ? 'hybrid' : 'b2c';
+    shop.dashboardMode = dashboardMode;
+
     if (prevTier !== tier) {
       shop.tierHistory.push({
         from: prevTier,
@@ -346,9 +358,9 @@ const completeBusinessProfile = async (req, res) => {
 
     await shop.save();
 
-    logger.info(`[tier] Shop ${shop._id} profiled → ${tier} (score: ${score})`);
+    logger.info(`[tier] Shop ${shop._id} profiled → ${tier} (score: ${score}), mode: ${dashboardMode}`);
 
-    res.json({ tier, score, reasons, shop });
+    res.json({ tier, score, reasons, dashboardMode, shop });
   } catch (err) {
     logger.error('[completeBusinessProfile]', err.message);
     res.status(500).json({ message: 'Something went wrong' });
