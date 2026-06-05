@@ -7,7 +7,7 @@ import { validateGSTIN, STATE_CODES } from '../../lib/gstValidation';
 import { useIndustry } from '../../contexts/IndustryContext';
 import {
   INDIAN_STATES, UNION_TERRITORIES, GSTIN_LENGTH, GSTIN_REGEX,
-  GST_STATE_CODE_MAP, normalizeGstin,
+  GST_STATE_CODE_MAP, normalizeGstin, getToken,
 } from '../../lib/constants';
 import { INVOICE_TEMPLATES, getSavedTemplate, saveTemplate } from '../../lib/invoiceTemplates';
 import { getBusinessConfig } from '../../lib/business-configs';
@@ -176,6 +176,7 @@ export default function ProfilePage() {
   const fetchShop = useCallback(async () => {
     try {
       const res  = await fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!res.ok) return;
       const data = await res.json();
       setShop(data);
       loadShopIntoForm(data);
@@ -716,8 +717,9 @@ export default function ProfilePage() {
                   label="GSTIN"
                   hint="15-digit GST Identification Number"
                   success={(() => {
+                    if (shopForm.gstin.length !== 15) return '';
                     const r = validateGSTIN(shopForm.gstin);
-                    return (r.valid && shopForm.gstin.length === 15) ? `✓ ${r.stateName} (${r.stateCode})` : '';
+                    return r.valid ? `✓ ${r.stateName} (${r.stateCode})` : '';
                   })()}
                   error={(() => {
                     if (!shopForm.gstin || shopForm.gstin.length < 15) return '';
@@ -725,6 +727,15 @@ export default function ProfilePage() {
                     return r.valid ? '' : r.error;
                   })()}
                 >
+                  {(() => {
+                    if (shopForm.gstin.length === 15) {
+                      const r = validateGSTIN(shopForm.gstin);
+                      if (r.valid && r.checksumWarning) {
+                        return <p className="text-[11px] text-amber-600 mb-1">⚠️ {r.checksumWarning}</p>;
+                      }
+                    }
+                    return null;
+                  })()}
                   <input
                     id="gstin"
                     className={(() => {

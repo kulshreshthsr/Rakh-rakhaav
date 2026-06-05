@@ -300,10 +300,11 @@ export default function GSTPage() {
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      setShopGstin(user.gstin || user.shopGstin || '');
-    } catch {}
+    // Fetch shop data to get the actual GSTIN (not from localStorage which lacks shop fields)
+    fetch(apiUrl('/api/auth/shop'), { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(shop => { if (shop?.gstin) setShopGstin(shop.gstin); })
+      .catch(() => {});
     const cached = readPageCache(getGSTCacheKey(month, year));
     if (cached) { applyCachedSnapshot(cached); setLoading(false); }
     else { setCacheLoaded(false); setLoading(true); }

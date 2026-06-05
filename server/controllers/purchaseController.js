@@ -331,9 +331,12 @@ const syncSupplierLedgerForPurchase = async (shopId, purchase, itemNames = [], s
     { shop: shopId, reference_id: invoiceNumber, reference_type: 'purchase' },
     session ? { session } : {}
   );
+  const supplierBalanceAfterDebit  = round2(supplier.totalUdhaar + paid);
+  const supplierBalanceAfterCredit = supplier.totalUdhaar;
+
   await SupplierUdhaar.create([{
     shop: shopId, supplier: supplier._id, type: 'debit',
-    amount: grandTotal, running_balance: supplier.totalUdhaar,
+    amount: grandTotal, running_balance: supplierBalanceAfterDebit,
     note: `Credit Purchase - ${itemNames.join(', ')} (${invoiceNumber})`,
     date: new Date(), reference_id: invoiceNumber, reference_type: 'purchase',
   }], session ? { session } : {});
@@ -341,7 +344,7 @@ const syncSupplierLedgerForPurchase = async (shopId, purchase, itemNames = [], s
   if (paid > 0) {
     await SupplierUdhaar.create([{
       shop: shopId, supplier: supplier._id, type: 'credit',
-      amount: paid, running_balance: supplier.totalUdhaar,
+      amount: paid, running_balance: supplierBalanceAfterCredit,
       payment_mode: purchase.amount_paid_mode || '',
       note: `Advance payment at time of purchase (${invoiceNumber})`,
       date: new Date(), reference_id: invoiceNumber, reference_type: 'purchase',

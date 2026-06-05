@@ -202,14 +202,21 @@ export default function SaleReturnModal({ sale, onClose, onSuccess }) {
 
           {/* Footer — always visible */}
           <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 flex-shrink-0">
-            <button type="button" onClick={onClose} disabled={submitting}
-              className="flex-1 h-11 rounded-xl border-2 border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white disabled:opacity-50 transition-all">
-              Cancel
-            </button>
-            <button type="submit" disabled={submitting || loadingMax || selectedItems.length === 0}
-              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[13px] font-black shadow-md shadow-amber-500/20 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:translate-y-0 transition-all">
-              {submitting ? 'Processing...' : 'Confirm Return'}
-            </button>
+            {error && (
+              <div className="w-full mb-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-semibold text-rose-700">
+                <span className="flex-shrink-0">⚠️</span><span>{error}</span>
+              </div>
+            )}
+            <div className="flex gap-3 w-full">
+              <button type="button" onClick={onClose} disabled={submitting}
+                className="flex-1 h-11 rounded-xl border-2 border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-white disabled:opacity-50 transition-all">
+                Cancel
+              </button>
+              <button type="submit" disabled={submitting || loadingMax || selectedItems.length === 0}
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[13px] font-black shadow-md shadow-amber-500/20 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:translate-y-0 transition-all">
+                {submitting ? 'Processing...' : 'Confirm Return'}
+              </button>
+            </div>
           </div>
         </form>
 

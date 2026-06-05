@@ -499,6 +499,12 @@ export default function PurchaseFormModal({
 
         {/* Footer action bar */}
         <div className="rr-action-bar flex-shrink-0">
+          {error && (
+            <div className="flex items-start gap-2 px-3 py-2 mb-2 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-semibold text-rose-700">
+              <span className="flex-shrink-0">⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
           <button type="button" onClick={handleSubmit} disabled={submitting}
             className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white shadow-lg hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all ${
               isPO ? 'bg-gradient-to-r from-blue-600 to-blue-700 shadow-blue-600/20' : 'bg-gradient-to-r from-green-600 to-emerald-700 shadow-green-600/20'

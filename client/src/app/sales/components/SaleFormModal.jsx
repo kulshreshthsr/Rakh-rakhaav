@@ -980,6 +980,14 @@ export default function SaleFormModal({
 
           {/* Sticky footer */}
           <div className="rr-action-bar flex-shrink-0">
+            {/* Error banner — always visible near submit button */}
+            {error && (
+              <div className="flex items-start gap-2 px-3 py-2 mb-2 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-semibold text-rose-700">
+                <span className="flex-shrink-0">⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
             {/* Per-bill template override — compact pill group */}
             {!isChallanMode && !editingSaleId && (
               <div className="flex gap-1.5 mb-3 items-center">

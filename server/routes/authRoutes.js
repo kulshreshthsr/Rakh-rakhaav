@@ -12,7 +12,7 @@ router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/subscription-status', protect, getSubscriptionStatus);
 router.put('/profile', protect, checkSubscriptionStatus, updateProfile);
-router.put('/password', protect, checkSubscriptionStatus, updatePassword);
+router.put('/password', protect, updatePassword);
 router.get('/shop', protect, getShop);
 router.put('/shop', protect, checkSubscriptionStatus, updateShop);
 router.post('/shop/profile', protect, completeBusinessProfile);

@@ -414,12 +414,16 @@ const syncCustomerLedgerForSale = async (shopId, saleDoc, itemNames = [], sessio
   await saleDoc.save(session ? { session, validateBeforeSave: false } : { validateBeforeSave: false });
   await Udhaar.deleteMany({ shop: shopId, reference_id: saleDoc.invoice_number, reference_type: 'sale' }, session ? { session } : {});
 
+  // running_balance after debit = final balance + any advance not yet applied
+  const balanceAfterDebit  = round2(customer.totalUdhaar + (saleDoc.amount_paid || 0));
+  const balanceAfterCredit = customer.totalUdhaar;
+
   await Udhaar.create([{
     shop: shopId,
     customer: customer._id,
     type: 'debit',
     amount: saleDoc.total_amount,
-    running_balance: customer.totalUdhaar,
+    running_balance: balanceAfterDebit,
     note: `Credit Sale - ${itemNames.join(', ')} (${saleDoc.invoice_number})`,
     date: saleDoc.createdAt || new Date(),
     reference_id: saleDoc.invoice_number,
@@ -432,7 +436,7 @@ const syncCustomerLedgerForSale = async (shopId, saleDoc, itemNames = [], sessio
       customer: customer._id,
       type: 'credit',
       amount: saleDoc.amount_paid,
-      running_balance: customer.totalUdhaar,
+      running_balance: balanceAfterCredit,
       payment_mode: saleDoc.amount_paid_mode || '',
       note: `Advance payment at time of sale (${saleDoc.invoice_number})`,
       date: saleDoc.createdAt || new Date(),

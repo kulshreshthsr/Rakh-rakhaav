@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const Shop = require('../models/shopModel');
 const { BUSINESS_TYPES } = Shop;
+const { STATE_CODES } = require('../lib/gstUtils');
 const { logAuditEvent, cloneForAudit } = require('../utils/auditTrail');
 const {
   TRIAL_DAYS,
@@ -200,6 +201,15 @@ const updateShop = async (req, res) => {
     if (req.body.onboarding_completed === true) updatePayload.onboarding_completed = true;
     if (req.body.businessTier && ['nano', 'core', 'pro'].includes(req.body.businessTier)) updatePayload.businessTier = req.body.businessTier;
     if (monthly_target !== undefined) updatePayload.monthly_target = Math.max(0, Number(monthly_target) || 0);
+    // findByIdAndUpdate bypasses pre-save hooks, so derive gst_state fields here
+    if (gstin && String(gstin).length === 15) {
+      const stateCode = String(gstin).substring(0, 2).toUpperCase();
+      updatePayload.gst_state_code = stateCode;
+      updatePayload.gst_state_name = STATE_CODES[stateCode] || 'Unknown';
+    } else if (gstin === '' || gstin === null) {
+      updatePayload.gst_state_code = '';
+      updatePayload.gst_state_name = '';
+    }
     const updated = await Shop.findByIdAndUpdate(shop._id, updatePayload, { new: true });
     try {
       await logAuditEvent({

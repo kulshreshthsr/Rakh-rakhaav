@@ -100,14 +100,13 @@ export const validateGSTIN = (gstin) => {
   if (!STATE_CODES[stateCode]) {
     return { valid: false, error: `Invalid state code: ${stateCode}` };
   }
-  if (!validateGSTINChecksum(g)) {
-    return { valid: false, error: 'GSTIN checksum invalid — typo हो सकता है। GSTIN certificate से verify करें।' };
-  }
+  const checksumOk = validateGSTINChecksum(g);
   return {
     valid: true,
     stateCode,
     stateName: STATE_CODES[stateCode],
     pan: g.substring(2, 12),
+    checksumWarning: checksumOk ? null : 'GSTIN checksum mismatch — please verify against your GSTIN certificate',
   };
 };
 

@@ -283,6 +283,7 @@ export default function UdhaarPage() {
       const res = await fetch(apiUrl('/api/suppliers'), {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
+      if (res.status === 401) { router.push('/login'); return []; }
       const data = await res.json();
       const next = Array.isArray(data) ? data : null;
       if (next !== null) setSuppliers(next);
@@ -1051,7 +1052,7 @@ export default function UdhaarPage() {
                                   >{isCustomer ? '💰 Receive Payment' : '💸 Make Payment'}</button>
                                 )}
                                 {isCustomer && item.phone && item.totalUdhaar > 0 && (
-                                  <button type="button" onClick={() => sendReminder(item, ledger)}
+                                  <button type="button" onClick={() => sendReminder(item)}
                                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-black text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-all"
                                   >📲 WhatsApp Reminder</button>
                                 )}
