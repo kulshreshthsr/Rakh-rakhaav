@@ -37,7 +37,7 @@ const generateBillNumber = async (shopOrId, session = null, invoiceDate = new Da
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'purchase', financial_year: financialYear },
     [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', startNumber - 1] }, 1] } } }],
-    { new: true, upsert: true }
+    { new: true, upsert: true, updatePipeline: true }
   );
   if (session) query = query.session(session);
   const sequence = await query;
@@ -967,7 +967,7 @@ const receivePurchase = async (req, res) => {
         const seq = await DocumentSequence.findOneAndUpdate(
           { shop: shop._id, doc_type: 'purchase', financial_year: `GRN-${financialYear}` },
           [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', 0] }, 1] } } }],
-          { new: true, upsert: true }
+          { new: true, upsert: true, updatePipeline: true }
         ).session(session);
         grnNumber = `GRN/${financialYear}/${String(seq.last_number).padStart(4, '0')}`;
       }

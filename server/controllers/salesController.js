@@ -49,7 +49,7 @@ const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'sale', financial_year: financialYear },
     [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', startNumber - 1] }, 1] } } }],
-    { new: true, upsert: true }
+    { new: true, upsert: true, updatePipeline: true }
   );
   if (session) query = query.session(session);
   const sequence = await query;
@@ -68,7 +68,7 @@ const generateQuotationNumber = async (shopId, session = null, date = new Date()
   let q = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'quotation', financial_year: financialYear },
     [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', 0] }, 1] } } }],
-    { new: true, upsert: true }
+    { new: true, upsert: true, updatePipeline: true }
   );
   if (session) q = q.session(session);
   const seq = await q;
@@ -991,8 +991,8 @@ const createSale = async (req, res) => {
     }
     const _sc = err.statusCode || err.status || 500;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    // TEMP DEBUG: expose error to diagnose production 500 — remove after fix confirmed
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', debug: err.message, debugStack: err.stack?.split('\n').slice(0, 5) });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
   } finally {
     await session.endSession();
   }
