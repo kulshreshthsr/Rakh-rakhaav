@@ -991,8 +991,8 @@ const createSale = async (req, res) => {
     }
     const _sc = err.statusCode || err.status || 500;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
+    // TEMP DEBUG: expose error to diagnose production 500 — remove after fix confirmed
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', debug: err.message, debugStack: err.stack?.split('\n').slice(0, 5) });
   } finally {
     await session.endSession();
   }
