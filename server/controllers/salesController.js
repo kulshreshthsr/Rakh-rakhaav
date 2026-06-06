@@ -560,8 +560,10 @@ const buildSaleRecordData = async ({
     };
   }
 
+  const _bizErr = (msg) => Object.assign(new Error(msg), { statusCode: 400 });
+
   if (payment_type === 'credit' && !buyer_name) {
-    throw new Error('Udhaar sale ke liye buyer ka naam zaroori hai!');
+    throw _bizErr('Udhaar sale ke liye buyer ka naam zaroori hai!');
   }
 
   const rawItems = items && items.length > 0
@@ -569,22 +571,22 @@ const buildSaleRecordData = async ({
     : [{ product_id, quantity, price_per_unit }];
 
   if (!rawItems?.length) {
-    throw new Error('Kam se kam ek item zaroori hai');
+    throw _bizErr('Kam se kam ek item zaroori hai');
   }
 
   const normalizedBuyerGstin = normalizeGstin(buyer_gstin);
   if (normalizedBuyerGstin && !GSTIN_REGEX.test(normalizedBuyerGstin)) {
-    throw new Error('Invalid GSTIN format');
+    throw _bizErr('Invalid GSTIN format');
   }
   const parsedSaleDate = parseSaleDateInput(sale_date, existingSale?.createdAt || new Date());
   if (sale_date && !parsedSaleDate) {
-    throw new Error('Invalid sale date');
+    throw _bizErr('Invalid sale date');
   }
   const saleDate = parsedSaleDate || existingSale?.createdAt || new Date();
   const resolvedBuyerState = getStateFromGstin(normalizedBuyerGstin) || buyer_state || '';
   const requestedAmountPaid = Number(amount_paid || 0);
   if (!Number.isFinite(requestedAmountPaid) || requestedAmountPaid < 0) {
-    throw new Error('Invalid amount paid');
+    throw _bizErr('Invalid amount paid');
   }
 
   let totalTaxable = 0, totalCGST = 0, totalSGST = 0;
@@ -598,19 +600,19 @@ const buildSaleRecordData = async ({
     let productQuery = Product.findById(item.product_id || item.product);
     if (session) productQuery = productQuery.session(session);
     const product = await productQuery;
-    if (!product) throw new Error(`Product not found: ${item.product_id}`);
+    if (!product) throw _bizErr(`Product not found: ${item.product_id}`);
 
     const qty = Number(item.quantity);
     const ppu = Number(item.price_per_unit);
     if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(ppu) || ppu < 0) {
-      throw new Error(`Invalid quantity or price for ${product.name}`);
+      throw _bizErr(`Invalid quantity or price for ${product.name}`);
     }
 
     // MRP enforcement for pharmacy — DPCO hard block
     if (shop.businessType === 'pharmacy') {
       const mrp = product.metadata?.get('mrp');
       if (mrp !== undefined && mrp !== null && mrp !== '' && ppu > Number(mrp)) {
-        throw new Error(
+        throw _bizErr(
           `${product.name}: Selling price ₹${ppu} exceeds MRP ₹${mrp}. Cannot create bill. (DPCO violation)`
         );
       }
@@ -619,7 +621,7 @@ const buildSaleRecordData = async ({
     const previousQty = previousQuantities.get(String(product._id)) || 0;
     const extraNeeded = Math.max(0, qty - previousQty);
     if (!skipStockCheck && product.quantity < extraNeeded) {
-      throw new Error(`${product.name}: sirf ${product.quantity} stock available hai`);
+      throw _bizErr(`${product.name}: sirf ${product.quantity} stock available hai`);
     }
 
     const cost = Number.isFinite(Number(item.cost_price)) ? Number(item.cost_price) : (product.cost_price || 0);
@@ -676,7 +678,7 @@ const buildSaleRecordData = async ({
   }
 
   if (requestedAmountPaid > grandTotal) {
-    throw new Error('Amount paid cannot exceed invoice total');
+    throw _bizErr('Amount paid cannot exceed invoice total');
   }
   const paid = round2(payment_type === 'credit' ? requestedAmountPaid : grandTotal);
   const grossProfit = round2(totalTaxable - totalCost);
@@ -958,18 +960,25 @@ const createSale = async (req, res) => {
     });
 
     const hydratedSale = await Sale.findById(createdSaleId).populate('customer', 'name phone gstin');
+    if (!hydratedSale) {
+      logger.error('[createSale] hydratedSale is null after transaction, createdSaleId:', createdSaleId);
+      return res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR' });
+    }
 
-    await logAuditEvent({
-      shopId: auditShopId || hydratedSale?.shop,
+    // Fire-and-forget — audit failure must never block the sale response
+    logAuditEvent({
+      shopId: auditShopId || hydratedSale.shop,
       userId: req.user.id,
       actionType: 'create',
       entity: 'sale',
       entityId: hydratedSale._id,
       referenceId: hydratedSale.invoice_number,
       afterValue: hydratedSale,
-    });
+    }).catch((auditErr) => logger.error('[createSale] logAuditEvent failed:', auditErr.message));
+
     return res.status(201).json(hydratedSale);
   } catch (err) {
+    logger.error('[createSale]', err.message || err, err.stack);
     if (err?.code === 11000 && req.body?.offline_operation_id) {
       const shop = await getShopOrFail(req.user.id);
       const existingSale = await Sale.findOne({
