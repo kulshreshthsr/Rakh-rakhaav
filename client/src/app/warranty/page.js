@@ -68,13 +68,13 @@ export default function WarrantyPage() {
 
   useEffect(() => { fetchClaims(); }, [fetchClaims]);
 
-  if (businessType && businessType !== 'electronics' && businessType !== 'mobile_shop') {
+  if (businessType && businessType !== 'electronics') {
     return (
       <Layout>
         <div className="max-w-lg mx-auto px-4 pt-10">
           <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center">
             <p className="text-[16px] font-black text-slate-800">Warranty Claims</p>
-            <p className="text-[13px] text-slate-500 mt-2">Available for Electronics & Mobile shops only.</p>
+            <p className="text-[13px] text-slate-500 mt-2">Available for Electronics shops only.</p>
             <Link href="/dashboard" className="mt-4 inline-block px-5 py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-bold">Back</Link>
           </div>
         </div>

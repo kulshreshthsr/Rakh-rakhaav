@@ -80,14 +80,8 @@ function inferTier(signals = {}, gstType = 'unregistered', businessType = 'gener
   }
 
   // ── Business type overrides ───────────────────────────────────────────────
-  const proBusinessTypes  = ['hardware', 'electronics', 'furniture', 'mobile_shop'];
-  const nanoBusinessTypes = ['salon', 'sweet_shop', 'bakery', 'restaurant', 'repair_shop', 'service_center', 'gift_shop', 'toy_store', 'pet_shop', 'bookstall'];
-
-  if (proBusinessTypes.includes(businessType) && score >= 2) {
+  if (['hardware', 'electronics'].includes(businessType) && score >= 2) {
     score += 1;
-  }
-  if (nanoBusinessTypes.includes(businessType) && score < 3) {
-    score = Math.max(0, score - 1);
   }
 
   // ── Derive tier ───────────────────────────────────────────────────────────

@@ -1,6 +1,5 @@
 const Sale = require('../models/salesModel');
 const Product = require('../models/productModel');
-const ProductVariant = require('../models/productVariantModel');
 const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Shop = require('../models/shopModel');
@@ -101,69 +100,6 @@ const aggregatePurchaseSummary = async (match) => {
 // Each function returns an object with the extra fields for that business type.
 // ─────────────────────────────────────────────────────────────────────────────
 const INDUSTRY_EXTRA_DATA = {
-  pharmacy: async (shopId) => {
-    const now = new Date();
-    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    const in7Days  = new Date(now.getTime() +  7 * 24 * 60 * 60 * 1000);
-
-    const expiryPipeline = [
-      {
-        $match: {
-          shop: shopId,
-          isActive: { $ne: false },
-          'metadata.expiry_date': { $exists: true, $nin: [null, ''] },
-        },
-      },
-      {
-        $addFields: {
-          expiryDateParsed: {
-            $cond: {
-              if:   { $eq: [{ $type: '$metadata.expiry_date' }, 'string'] },
-              then: { $dateFromString: { dateString: '$metadata.expiry_date', onError: null } },
-              else: '$metadata.expiry_date',
-            },
-          },
-        },
-      },
-      { $match: { expiryDateParsed: { $ne: null, $lte: in30Days } } },
-      {
-        $group: {
-          _id: null,
-          expiredCount:   { $sum: { $cond: [{ $lt: ['$expiryDateParsed', now] },     1, 0] } },
-          expiring7Days:  { $sum: { $cond: [{ $lte: ['$expiryDateParsed', in7Days] }, 1, 0] } },
-          expiring30Days: { $sum: 1 },
-        },
-      },
-    ];
-
-    const [expiryResult, insCount] = await Promise.all([
-      Product.aggregate(expiryPipeline),
-      Sale.countDocuments({
-        shop: shopId,
-        insurance_status: 'pending_claim',
-        insurance_type: { $exists: true, $nin: [null, '', 'none'] },
-      }),
-    ]);
-
-    const e = expiryResult[0] || {};
-    return {
-      expiryStats: {
-        expiredCount:   e.expiredCount   || 0,
-        expiring7Days:  e.expiring7Days  || 0,
-        expiring30Days: e.expiring30Days || 0,
-      },
-      insurancePending: insCount || 0,
-    };
-  },
-
-  repair_shop: async (shopId) => ({
-    pendingPickup: await Sale.countDocuments({
-      shop: shopId,
-      'extra_fields.workflow_status': 'ready',
-      payment_status: { $in: ['unpaid', 'partial'] },
-    }),
-  }),
-
   electronics: async (shopId) => {
     const [pendingCount, readyCount] = await Promise.all([
       WarrantyClaim.countDocuments({ shop: shopId, claimStatus: { $in: ['received', 'sent_to_brand', 'under_repair'] } }),
@@ -171,46 +107,10 @@ const INDUSTRY_EXTRA_DATA = {
     ]);
     return { warrantySummary: { pendingCount, readyCount } };
   },
-
-  mobile_shop: async (shopId) => {
-    const [pendingCount, readyCount] = await Promise.all([
-      WarrantyClaim.countDocuments({ shop: shopId, claimStatus: { $in: ['received', 'sent_to_brand', 'under_repair'] } }),
-      WarrantyClaim.countDocuments({ shop: shopId, claimStatus: 'ready' }),
-    ]);
-    return { warrantySummary: { pendingCount, readyCount } };
-  },
-
-  clothing: async (shopId) => ({
-    variantLowStock: await ProductVariant.aggregate([
-      { $match: { shop: shopId, isActive: true } },
-      { $lookup: { from: 'products', localField: 'product', foreignField: '_id', as: 'productDoc' } },
-      { $unwind: '$productDoc' },
-      { $match: { 'productDoc.isActive': { $ne: false }, $expr: { $lte: ['$quantity', '$productDoc.low_stock_threshold'] } } },
-      { $group: { _id: '$size', productCount: { $sum: 1 }, products: { $push: '$productDoc.name' }, totalQty: { $sum: '$quantity' } } },
-      { $sort: { productCount: -1 } },
-      { $limit: 5 },
-    ]),
-  }),
-
-  footwear: async (shopId) => ({
-    variantLowStock: await ProductVariant.aggregate([
-      { $match: { shop: shopId, isActive: true } },
-      { $lookup: { from: 'products', localField: 'product', foreignField: '_id', as: 'productDoc' } },
-      { $unwind: '$productDoc' },
-      { $match: { 'productDoc.isActive': { $ne: false }, $expr: { $lte: ['$quantity', '$productDoc.low_stock_threshold'] } } },
-      { $group: { _id: '$size', productCount: { $sum: 1 }, products: { $push: '$productDoc.name' }, totalQty: { $sum: '$quantity' } } },
-      { $sort: { productCount: -1 } },
-      { $limit: 5 },
-    ]),
-  }),
 };
 
 const EXTRA_DEFAULTS = {
-  expiryStats:      { expiredCount: 0, expiring7Days: 0, expiring30Days: 0 },
-  insurancePending: 0,
-  pendingPickup:    0,
-  warrantySummary:  null,
-  variantLowStock:  [],
+  warrantySummary: null,
 };
 
 const getDashboardSummary = async (req, res) => {
@@ -589,66 +489,8 @@ const creditAging = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TABLE STATUS (Restaurant only) — Bug 4: added .lean(), removed instanceof Map
-// ─────────────────────────────────────────────────────────────────────────────
-const tableStatus = async (req, res) => {
-  try {
-    const shop = await getShopOrFail(req.user.id);
-    if (shop.businessType !== 'restaurant') {
-      return res.status(400).json({ message: 'Not applicable' });
-    }
-
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-
-    // Daily reset: mark products available if availability_set_at < today
-    await Product.updateMany(
-      {
-        shop: shop._id,
-        'metadata.availability_set_at': { $lt: todayStart.toISOString() },
-        'metadata.is_available_today': 'false',
-      },
-      { $set: { 'metadata.is_available_today': 'true', 'metadata.unavailable_reason': '' } }
-    );
-
-    // Bug 4: .lean() so extra_fields is always a plain object
-    const activeTables = await Sale.find({
-      shop: shop._id,
-      createdAt: { $gte: todayStart },
-      payment_status: { $in: ['unpaid', 'partial'] },
-    })
-      .select('extra_fields invoice_number total_amount createdAt buyer_name items')
-      .lean();
-
-    const tableMap = {};
-    activeTables.forEach(sale => {
-      const ef = sale.extra_fields || {};
-      const tableNo = ef.table_no;
-      if (!tableNo) return;
-      if (!tableMap[tableNo]) {
-        tableMap[tableNo] = { tableNo, status: 'occupied', orders: [], totalAmount: 0, occupiedSince: sale.createdAt };
-      }
-      tableMap[tableNo].orders.push({
-        invoiceNo: sale.invoice_number,
-        amount:    sale.total_amount,
-        guestName: sale.buyer_name,
-        itemCount: sale.items?.length || 0,
-        time:      sale.createdAt,
-      });
-      tableMap[tableNo].totalAmount += sale.total_amount;
-      if (sale.createdAt < tableMap[tableNo].occupiedSince) tableMap[tableNo].occupiedSince = sale.createdAt;
-    });
-
-    res.json({ occupiedTables: Object.values(tableMap), occupiedCount: Object.keys(tableMap).length, asOf: new Date().toISOString() });
-  } catch (err) {
-    logger.error('[dashboardController]', err.message || err);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
-
 module.exports = {
   getDashboardSummary,
   workflowCounts,
   creditAging,
-  tableStatus,
 };

@@ -84,26 +84,38 @@ export default {
     {
       title: 'Product Details',
       fields: [
-        { key: 'brand',    label: 'Brand',    type: 'text',   placeholder: 'e.g. Samsung, LG, Sony' },
-        { key: 'model_no', label: 'Model No.',type: 'text',   placeholder: 'Model number' },
-        { key: 'category', label: 'Category', type: 'select', options: ['TV', 'AC', 'Refrigerator', 'Washing Machine', 'Microwave', 'Fan', 'Mixer/Grinder', 'Iron', 'Water Purifier', 'Laptop', 'Printer', 'Camera', 'Speaker', 'Accessories', 'Other'] },
-        { key: 'color',    label: 'Color / Finish', type: 'text', placeholder: 'e.g. Black, Silver, White' },
+        { key: 'category', label: 'Category',      type: 'select', options: ['Home Appliances', 'Mobiles & Gadgets', 'Computing', 'Audio / Visual', 'Accessories & Spares', 'Other'] },
+        { key: 'brand',    label: 'Brand',          type: 'text',   placeholder: 'e.g. Samsung, LG, Apple, Sony' },
+        { key: 'model_no', label: 'Model No.',      type: 'text',   placeholder: 'Model number' },
+        { key: 'color',    label: 'Color / Finish', type: 'text',   placeholder: 'e.g. Black, Silver, White' },
+      ],
+    },
+    {
+      title: 'Mobiles & Gadgets Details',
+      visibleWhenCategory: 'Mobiles & Gadgets',
+      fields: [
+        { key: 'storage',    label: 'Storage',     type: 'select', options: ['16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB', 'N/A'] },
+        { key: 'ram',        label: 'RAM',         type: 'select', options: ['2GB', '4GB', '6GB', '8GB', '12GB', '16GB', 'N/A'] },
+        { key: 'os',         label: 'OS',          type: 'select', options: ['Android', 'iOS', 'Windows', 'Other', 'N/A'] },
+        { key: 'imei_no',    label: 'IMEI Number', type: 'text',   placeholder: '15-digit IMEI', hint: 'Also captured per line-item in invoice' },
       ],
     },
     {
       title: 'Warranty & Compliance',
       fields: [
-        { key: 'warranty',    label: 'Warranty Period',  type: 'select', options: ['No Warranty', '6 Months', '1 Year', '2 Years', '3 Years', '5 Years'] },
-        { key: 'warranty_by', label: 'Warranty By',      type: 'select', options: ['Manufacturer', 'Brand Service Centre', 'Our Shop'] },
-        { key: 'serial_no',   label: 'Serial Number',    type: 'text',   placeholder: 'Serial number', hint: 'Also captured per line-item in invoice' },
-        { key: 'bis_cert',    label: 'BIS / ISI Certified', type: 'checkbox', defaultValue: false },
-        { key: 'energy_star', label: 'Energy Star Rating',  type: 'select', options: ['Not Rated', '1 Star', '2 Star', '3 Star', '4 Star', '5 Star'] },
+        { key: 'warranty',       label: 'Warranty Period',  type: 'select', options: ['No Warranty', '3 Months', '6 Months', '1 Year', '2 Years', '3 Years', '5 Years'] },
+        { key: 'warranty_by',    label: 'Warranty By',      type: 'select', options: ['Manufacturer', 'Brand Service Centre', 'Our Shop'] },
+        { key: 'serial_no',      label: 'Serial Number',    type: 'text',   placeholder: 'Serial number', hint: 'Also captured per line-item in invoice' },
+        { key: 'is_refurbished', label: 'Refurbished',      type: 'checkbox', defaultValue: false },
+        { key: 'refurb_grade',   label: 'Refurb Grade',     type: 'select', options: ['Grade A', 'Grade B', 'Grade C'], visibleWhen: { key: 'is_refurbished', value: true }, hint: 'A=Like New, B=Good, C=Fair' },
+        { key: 'bis_cert',       label: 'BIS / ISI Certified', type: 'checkbox', defaultValue: false },
+        { key: 'energy_star',    label: 'Energy Star Rating',  type: 'select', options: ['Not Rated', '1 Star', '2 Star', '3 Star', '4 Star', '5 Star'] },
       ],
     },
     {
       title: 'Technical Specifications',
       fields: [
-        { key: 'specs', label: 'Key Specifications', type: 'textarea', placeholder: 'e.g. 43 inch, 4K UHD, 120Hz, Smart TV, WiFi...' },
+        { key: 'specs', label: 'Key Specifications', type: 'textarea', placeholder: 'e.g. 43 inch, 4K UHD, 120Hz — or Snapdragon 8 Gen 3, 5000mAh...' },
       ],
     },
   ],
@@ -224,6 +236,15 @@ export default {
       renderSublabel: () => 'View Claims →',
     },
   ],
+
+  kpiConfig: {
+    kpi1: { label: 'आज की कमाई',  sublabel: "Today's Revenue"    },
+    kpi2: { label: 'Devices Sold', sublabel: 'Units today'        },
+    kpi3: { label: 'मुनाफा',      sublabel: 'Gross profit'       },
+    kpi4: { label: 'Udhaar',       sublabel: 'Customer credit'   },
+    kpi5: { label: 'GST Payable',  sublabel: 'This month'        },
+    kpi6: { label: 'Stock Alerts', sublabel: 'Low / Out of stock'},
+  },
 
   // ─── Electronics-specific expense categories ─────────────────────────────
   expenseCategories: [

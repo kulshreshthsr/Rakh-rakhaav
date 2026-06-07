@@ -1,14 +1,10 @@
 /**
  * inventoryController.js
  *
- * Handles CRUD for all sub-inventory records:
- *   - ProductBatch   (pharmacy, bakery, grocery, cosmetics, sweet_shop)
- *   - ProductVariant (clothing, footwear, sports)
- *   - Recipe         (restaurant, bakery, sweet_shop)
- *   - SerialInventory(electronics, mobile_shop)
- *
- * These records are additive to the core product.quantity field.
- * The core sale/purchase flow (and invoice totals) are untouched.
+ * Handles CRUD for sub-inventory records:
+ *   - SerialInventory (electronics — serial / IMEI tracking)
+ *   - Recipe          (dormant — Kit/Bundle repurpose candidate)
+ *   - ProductBatch / ProductVariant — dormant, not used by hardware or electronics
  */
 
 const mongoose = require('mongoose');

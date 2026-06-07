@@ -52,14 +52,7 @@ const TIER_FEATURES = {
   },
 };
 
-const INDUSTRY_OVERRIDES = {
-  restaurant:     { erp_grn: false, erp_purchase_orders: false, module_bulk_import: false },
-  salon:          { nav_stock: false, module_bulk_import: false, erp_grn: false },
-  service_center: { nav_stock: false },
-  repair_shop:    { nav_stock: false },
-  bakery:         { erp_purchase_orders: false, erp_grn: false },
-  sweet_shop:     { erp_purchase_orders: false, erp_grn: false },
-};
+const INDUSTRY_OVERRIDES = {};
 
 export function getTierFeatures(tier = 'nano', industryType = 'general') {
   const base = TIER_FEATURES[tier] || TIER_FEATURES.nano;

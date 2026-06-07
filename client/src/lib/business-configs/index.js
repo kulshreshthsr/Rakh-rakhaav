@@ -3,10 +3,8 @@
  *
  * Usage anywhere in the app:
  *   import { getBusinessConfig } from '../lib/business-configs';
- *   const t = getBusinessConfig('pharmacy');
- *   t.searchProduct  →  'Search medicines by name, composition, batch...'
- *   t.noCustomers    →  'No patients found.'
- *   t.quickNewSale   →  'New Bill'
+ *   const t = getBusinessConfig('electronics');
+ *   t.searchProduct  →  'Search electronics by name, model, brand...'
  *
  * In components, prefer using the `term()` shorthand from useIndustry():
  *   const { term } = useIndustry();
@@ -20,60 +18,14 @@
 
 import { BASE_TERMINOLOGY } from './base.js';
 
-import general       from './general.js';
-import pharmacy      from './pharmacy.js';
-import restaurant    from './restaurant.js';
-import salon         from './salon.js';
-import clothing      from './clothing.js';
-import hardware      from './hardware.js';
-import electronics   from './electronics.js';
-import automobile    from './automobile.js';
-import retail        from './retail.js';
-import bookstall     from './bookstall.js';
-import kirana        from './kirana.js';
-import sweet_shop    from './sweet_shop.js';
-import bakery        from './bakery.js';
-import stationery    from './stationery.js';
-import mobile_shop   from './mobile_shop.js';
-import grocery       from './grocery.js';
-import cosmetics     from './cosmetics.js';
-import footwear      from './footwear.js';
-import furniture     from './furniture.js';
-import gift_shop     from './gift_shop.js';
-import toy_store     from './toy_store.js';
-import sports        from './sports.js';
-import jewellery     from './jewellery.js';
-import pet_shop      from './pet_shop.js';
-import service_center from './service_center.js';
-import repair_shop   from './repair_shop.js';
+import general     from './general.js';
+import hardware    from './hardware.js';
+import electronics from './electronics.js';
 
 const OVERRIDES = {
   general,
-  pharmacy,
-  restaurant,
-  salon,
-  clothing,
   hardware,
   electronics,
-  automobile,
-  retail,
-  bookstall,
-  kirana,
-  sweet_shop,
-  bakery,
-  stationery,
-  mobile_shop,
-  grocery,
-  cosmetics,
-  footwear,
-  furniture,
-  gift_shop,
-  toy_store,
-  sports,
-  jewellery,
-  pet_shop,
-  service_center,
-  repair_shop,
 };
 
 /**
@@ -105,7 +57,6 @@ const DEFAULT_KPI_CONFIG = {
 
 /**
  * Returns the kpiConfig for a business type, falling back to the default.
- * Used to drive dashboard KPI label customisation per industry.
  */
 export function getKpiConfig(businessType) {
   const config = getBusinessConfig(businessType);

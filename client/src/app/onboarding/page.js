@@ -33,13 +33,7 @@ const ALL_INDUSTRIES = listIndustries();
 
 const GST_RATES = ['0', '5', '12', '18', '28'];
 
-// ── Business-type step 4 mode ────────────────────────────────────────────────
-// 'service'  → salon, repair shop, service center (no stock, no cost price)
-// 'dish'     → restaurant (no stock)
-// 'product'  → everything else (full form)
-function getStep4Mode(businessType) {
-  if (['salon', 'service_center', 'repair_shop'].includes(businessType)) return 'service';
-  if (businessType === 'restaurant') return 'dish';
+function getStep4Mode(_businessType) {
   return 'product';
 }
 
@@ -86,24 +80,8 @@ const STEP4_CONFIG = {
 };
 
 const UNITS_BY_TYPE = {
-  pharmacy:    ['strip', 'tablet', 'bottle', 'tube', 'pcs', 'box', 'ml'],
-  kirana:      ['pcs', 'kg', 'g', 'litre', 'ml', 'packet', 'box'],
-  grocery:     ['pcs', 'kg', 'g', 'litre', 'ml', 'packet', 'box'],
-  hardware:    ['pcs', 'kg', 'metre', 'feet', 'litre', 'roll', 'bag'],
-  jewellery:   ['pcs', 'gm'],
-  sweet_shop:  ['kg', 'box', 'pcs', 'piece'],
-  bakery:      ['pcs', 'kg', 'box', 'dozen'],
-  restaurant:  ['plate', 'bowl', 'glass', 'half', 'full'],
-  salon:       ['service'],
-  service_center: ['service'],
-  repair_shop: ['service', 'job'],
-  clothing:    ['pcs'],
-  footwear:    ['pair', 'pcs'],
-  furniture:   ['pcs', 'set'],
+  hardware:    ['pcs', 'kg', 'metre', 'feet', 'litre', 'roll', 'bag', 'sheet', 'bundle', 'box'],
   electronics: ['pcs'],
-  mobile_shop: ['pcs'],
-  automobile:  ['pcs', 'set', 'litre', 'kg'],
-  pet_shop:    ['pcs', 'kg', 'packet', 'bottle'],
 };
 
 function getUnitsForType(businessType) {
@@ -112,22 +90,10 @@ function getUnitsForType(businessType) {
 
 function getProductNamePlaceholder(businessType) {
   const map = {
-    pharmacy: 'दवाई का नाम — जैसे Crocin 500mg',
-    kirana: 'सामान का नाम — जैसे Tata Salt 1kg',
-    grocery: 'सामान का नाम — जैसे Amul Butter',
-    clothing: 'कपड़े का नाम — जैसे Cotton Kurta',
-    sweet_shop: 'मिठाई का नाम — जैसे Gulab Jamun',
-    bakery: 'आइटम का नाम — जैसे Chocolate Cake',
-    jewellery: 'गहने का नाम — जैसे Gold Ring 22K',
-    mobile_shop: 'मोबाइल का नाम — जैसे Realme C35',
-    footwear: 'जूते का नाम — जैसे Bata Sneaker',
-    hardware: 'सामान का नाम — जैसे Anchor Switch 6A',
-    electronics: 'सामान का नाम — जैसे Philips LED Bulb',
-    furniture: 'फर्नीचर का नाम — जैसे Wooden Chair',
-    pet_shop: 'सामान का नाम — जैसे Pedigree Adult 3kg',
-    automobile: 'पार्ट का नाम — जैसे Bosch Spark Plug',
+    hardware:    'सामान का नाम — जैसे Anchor Switch 6A',
+    electronics: 'Product का नाम — जैसे Samsung LED TV 43"',
   };
-  return map[businessType] || 'Product का नाम — जैसे Premium Widget';
+  return map[businessType] || 'Product का नाम — जैसे Item Name';
 }
 
 // ─── Spinner ─────────────────────────────────────────────────────────────────
@@ -357,9 +323,8 @@ export default function OnboardingPage() {
 
   // ── Step 4 — Business profiling helpers ────────────────────────────────────
   function getProfileQuestions(businessType, gstType) {
-    const isServiceBusiness = ['salon', 'service_center', 'repair_shop', 'restaurant'].includes(businessType);
-    const canManufacture = ['hardware', 'electronics', 'clothing', 'kirana', 'grocery',
-      'furniture', 'mobile_shop', 'footwear', 'stationery', 'cosmetics'].includes(businessType);
+    const isServiceBusiness = false;
+    const canManufacture = ['hardware', 'electronics'].includes(businessType);
 
     return [
       {
