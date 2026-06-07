@@ -141,26 +141,6 @@ export default function useSaleForm({
   const showGstinError      = gstinTouched && gstinComplete && !gstinValid;
   const showGstinLengthHint = gstinTouched && !!gstinValue && !gstinComplete;
 
-  const scheduleWarning = useMemo(() => {
-    if (businessType !== 'pharmacy') return null;
-    const scheduleItems = items.filter((item) => {
-      if (!item.product_id) return false;
-      const prod = products.find((p) => p._id === item.product_id);
-      const schedule = prod?.metadata?.schedule || '';
-      return schedule && schedule !== 'OTC' && schedule !== '';
-    });
-    if (scheduleItems.length === 0) return null;
-    const hasScheduleX  = scheduleItems.some((item) => products.find((p) => p._id === item.product_id)?.metadata?.schedule === 'Schedule X');
-    const hasScheduleH1 = scheduleItems.some((item) => products.find((p) => p._id === item.product_id)?.metadata?.schedule === 'Schedule H1');
-    const prescriptionFilled = !!(extraFields?.prescription_no?.trim());
-    return {
-      hasControlled: true, hasScheduleX, hasScheduleH1, prescriptionFilled,
-      scheduleItems: scheduleItems.map((item) => {
-        const prod = products.find((p) => p._id === item.product_id);
-        return { name: prod?.name || 'Medicine', schedule: prod?.metadata?.schedule || '' };
-      }),
-    };
-  }, [items, extraFields, businessType, products]);
 
   /* ── Item handlers ── */
   const updateForm = (patch) => setForm((current) => ({ ...current, ...patch }));
@@ -303,9 +283,6 @@ export default function useSaleForm({
           printDeliveryChallan(data, { name: shopName, gstin: shopGstin, address: shopAddress, phone: '', logo: null });
           fetch(apiUrl(`/api/sales/${data._id}/mark-dispatched`), { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` } }).catch(() => {});
         }
-        if (businessType === 'salon' && redemptionMembershipId && data?._id) {
-          fetch(apiUrl(`/api/memberships/${redemptionMembershipId}/redeem`), { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ saleId: data._id, notes: 'Redeemed at visit' }) }).catch(() => {});
-        }
         /* Record last sale for duplicate detection */
         try {
           localStorage.setItem(LAST_SALE_KEY, JSON.stringify({
@@ -324,13 +301,6 @@ export default function useSaleForm({
   async function handleSubmit(e, opts = {}) {
     e?.preventDefault();
     setError(''); setGstinTouched(true);
-    if (businessType === 'pharmacy' && scheduleWarning?.hasScheduleX && !scheduleWarning?.prescriptionFilled) {
-      setError('Schedule X दवाई के लिए Prescription No. अनिवार्य है। Bill नहीं बनेगा।');
-      const fieldEl = document.getElementById('invoice-field-prescription_no');
-      fieldEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      fieldEl?.querySelector('input, select, textarea')?.focus();
-      return;
-    }
     if (!isChallanMode && form.payment_type === 'credit' && !form.buyer_name) { setError('Customer name is required for credit sales.'); return; }
     if (!gstinValid) { setError('Invalid GSTIN format'); return; }
     const validItems = isChallanMode
@@ -387,24 +357,6 @@ export default function useSaleForm({
 
   /* ── Effects ── */
   useEffect(() => {
-    if (businessType !== 'salon') return;
-    const advance = parseFloat(extraFields.advance_paid) || 0;
-    if (advance > 0) {
-      const balance = Math.max(0, billTotals.total - advance);
-      setExtraFields((prev) => ({ ...prev, balance_at_visit: String(balance.toFixed(2)) }));
-    }
-  }, [extraFields.advance_paid, billTotals.total, businessType]);
-
-  useEffect(() => {
-    if (businessType !== 'repair_shop') return;
-    const advance = parseFloat(extraFields.advance_collected) || 0;
-    if (advance > 0) {
-      const balance = Math.max(0, billTotals.total - advance);
-      setExtraFields((prev) => ({ ...prev, balance_on_delivery: String(balance.toFixed(2)) }));
-    }
-  }, [extraFields.advance_collected, billTotals.total, businessType]);
-
-  useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const className = 'sales-modal-open';
     if (showModal) document.body.classList.add(className);
@@ -452,7 +404,6 @@ export default function useSaleForm({
     balanceDue,
     roundedBill,
     rowGST,
-    scheduleWarning,
     duplicateWarning, setDuplicateWarning, handleConfirmDuplicate,
     amountPaidInputRef, buyerNameInputRef, customerComboRef, saleDateInputRef,
     resetForm,

@@ -521,14 +521,12 @@ function IndustryPanelCard({ panel, value, data }) {
   );
 }
 
-function IndustryPanels({ data, tableStatusData, appointmentData, bizConfig }) {
+function IndustryPanels({ data, bizConfig }) {
   const panels = bizConfig?.dashboardPanels || [];
   if (!panels.length) return null;
 
   const dataLookup = {
     ...data,
-    tableStatus:     tableStatusData,
-    appointmentData: appointmentData,
     fmt,
   };
 
@@ -664,8 +662,6 @@ function useDashboardData() {
   const [workflowCounts,   setWorkflowCounts]   = useState({});
   const [agingData,        setAgingData]        = useState(null);
   const [agingLoading,     setAgingLoading]     = useState(false);
-  const [tableStatusData,  setTableStatusData]  = useState(null);
-  const [appointmentData,  setAppointmentData]  = useState(null);
   const [selectedRange,    setSelectedRange]    = useState('today');
 
   const fetchDashboard = useCallback(async ({ silent = false, range } = {}) => {
@@ -736,25 +732,9 @@ function useDashboardData() {
 
     const deferredId = scheduleDeferred(async () => {
       setRefreshing(Boolean(cached?.data));
-      const bt = user.businessType || '';
-      const extraFetches = [];
-      if (bt === 'restaurant') {
-        extraFetches.push(
-          fetch(apiUrl('/api/dashboard/table-status'), { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.ok ? r.json() : null).then(d => d && setTableStatusData(d)).catch(() => {})
-        );
-      }
-      if (bt === 'salon') {
-        const todayDate = new Date().toISOString().split('T')[0];
-        extraFetches.push(
-          fetch(apiUrl(`/api/sales/appointments?date=${todayDate}`), { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.ok ? r.json() : null).then(d => d && setAppointmentData(d)).catch(() => {})
-        );
-      }
       await Promise.all([
         fetchDashboard({ silent: Boolean(cached?.data) }),
         fetchWorkflowCounts(),
-        ...extraFetches,
       ]);
       setRefreshing(false);
     });
@@ -779,7 +759,7 @@ function useDashboardData() {
     data, loading, refreshing, error, shopName, shop, hasGstin,
     userName, userRole, isStaffUser, greeting, today,
     fetchDashboard, workflowCounts, agingData, agingLoading,
-    fetchCreditAging, tableStatusData, appointmentData,
+    fetchCreditAging,
     notifications, taskCount, term, config, businessType,
     bizConfig, wfc, wfWidgets, wfActions, dashCfg,
     selectedRange, setSelectedRange,
@@ -794,7 +774,7 @@ function B2CDashboard() {
   const {
     data, loading, refreshing, error, shopName, shop, hasGstin,
     userName, userRole, isStaffUser, greeting, today,
-    fetchDashboard, workflowCounts, tableStatusData, appointmentData,
+    fetchDashboard, workflowCounts,
     notifications, taskCount, term, config, businessType,
     wfc, wfWidgets, wfActions, dashCfg, bizConfig,
     selectedRange, setSelectedRange,
@@ -947,8 +927,6 @@ function B2CDashboard() {
         {/* Industry-specific panels (config-driven) */}
         <IndustryPanels
           data={data}
-          tableStatusData={tableStatusData}
-          appointmentData={appointmentData}
           bizConfig={bizConfig}
         />
 
@@ -1195,7 +1173,7 @@ function HybridDashboard() {
     data, loading, refreshing, error, shopName, shop, hasGstin,
     userName, userRole, isStaffUser, greeting, today,
     fetchDashboard, agingData, agingLoading,
-    fetchCreditAging, tableStatusData, appointmentData,
+    fetchCreditAging,
     notifications, taskCount, term, config, businessType, dashCfg, bizConfig,
     selectedRange, setSelectedRange,
   } = useDashboardData();
@@ -1367,8 +1345,6 @@ function HybridDashboard() {
         {/* Industry-specific panels (config-driven) */}
         <IndustryPanels
           data={data}
-          tableStatusData={tableStatusData}
-          appointmentData={appointmentData}
           bizConfig={bizConfig}
         />
 

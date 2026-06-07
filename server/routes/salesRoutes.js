@@ -13,9 +13,6 @@ const {
   getGSTSummary,
   getGSTComplianceReport,
   getProfitSummary,
-  getAppointments,
-  getClientHistory,
-  createExchange,
   createChallan,
   markChallanDispatched,
   markChallanDelivered,
@@ -28,9 +25,6 @@ const {
 router.get('/profit-summary',  protect, requirePermission('VIEW_REPORTS'), getProfitSummary);
 router.get('/gst-summary',     protect, requirePermission('VIEW_GST'),     getGSTSummary);
 router.get('/gst-report',      protect, requirePermission('VIEW_GST'),     getGSTComplianceReport);
-router.get('/appointments',    protect, requirePermission('VIEW_SALES'),   getAppointments);
-router.get('/client-history',  protect, requirePermission('VIEW_SALES'),   getClientHistory);
-router.post('/exchange',      protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createExchange);
 router.post('/challan',       protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createChallan);
 router.post('/credit-note',   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createCreditNote);
 router.post('/debit-note',    protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createDebitNote);

@@ -41,23 +41,14 @@ export default function SaleCard({
   getToken,
   printInvoice,
   shareWhatsApp,
-  sendRepairReadyWhatsApp,
-  printKOT,
   startEditSale,
   handleDelete,
   advanceWorkflowStage,
   fetchAll,
   fetchSales,
-  setSplitSale,
-  setShowSplitModal,
-  setSplitMode,
-  setSplitCount,
-  setSplitAssignments,
   setDeliveredChallan,
   setDeliveredForm,
   setShowDeliveredModal,
-  setExchangeSale,
-  setShowExchangeModal,
   onReturnClick,
 }) {
   const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
@@ -184,18 +175,6 @@ export default function SaleCard({
             </div>
           )}
 
-          {/* Restaurant extra actions */}
-          {businessType === 'restaurant' && !s._isOffline && (
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => printKOT(s)}
-                className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-[11px] font-bold text-orange-700 hover:bg-orange-100 transition-all"
-              >🖨️ KOT</button>
-              <button onClick={() => { setSplitSale(s); setShowSplitModal(true); setSplitMode('equal'); setSplitCount(2); setSplitAssignments({}); }}
-                className="flex-1 min-h-[38px] py-2 rounded-xl border-2 border-purple-200 bg-purple-50 text-[11px] font-bold text-purple-700 hover:bg-purple-100 transition-all"
-              >✂️ Split Bill</button>
-            </div>
-          )}
-
           {/* Challan actions */}
           {s.document_type === 'challan' && !s._isOffline && (
             <div className="mt-2 space-y-2">
@@ -231,40 +210,6 @@ export default function SaleCard({
             </div>
           )}
 
-          {/* Repair shop: advance/balance + notify */}
-          {businessType === 'repair_shop' && !s._isOffline && (() => {
-            const ef = s.extra_fields instanceof Map ? Object.fromEntries(s.extra_fields) : (s.extra_fields || {});
-            const adv = parseFloat(ef.advance_collected || 0);
-            const bal = parseFloat(ef.balance_on_delivery || 0);
-            const status = ef.workflow_status;
-            return (
-              <div className="mt-2 space-y-2">
-                {(adv > 0 || bal > 0) && (
-                  <div className={`flex gap-3 px-3 py-2 rounded-xl ${status === 'ready' ? 'bg-green-50 border border-green-200' : 'bg-slate-50 border border-slate-200'}`}>
-                    {adv > 0 && <span className="text-[11px] font-bold text-slate-600">Adv: ₹{adv.toFixed(2)}</span>}
-                    {bal > 0 && <span className={`text-[11px] font-bold ${status === 'ready' ? 'text-green-700' : 'text-amber-700'}`}>
-                      {status === 'ready' ? `Collect ₹${bal.toFixed(2)} on delivery` : `Bal: ₹${bal.toFixed(2)}`}
-                    </span>}
-                  </div>
-                )}
-                {status === 'ready' && s.buyer_phone && (
-                  <button onClick={() => sendRepairReadyWhatsApp(s)}
-                    className="w-full min-h-[38px] py-2 rounded-xl border-2 border-green-200 bg-green-50 text-[11px] font-bold text-green-700 hover:bg-green-100 transition-all">
-                    📱 Notify Customer (WhatsApp)
-                  </button>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Clothing exchange */}
-          {businessType === 'clothing' && !s._isOffline && (!s.sale_type || s.sale_type === 'sale') && (
-            <div className="mt-2">
-              <button onClick={() => { setExchangeSale(s); setShowExchangeModal(true); }}
-                className="w-full min-h-[38px] py-2 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-700 hover:bg-rose-100 transition-all"
-              >↩ Exchange / Return</button>
-            </div>
-          )}
         </div>
       </div>
 

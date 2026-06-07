@@ -70,19 +70,6 @@ const createProduct = async (req, res) => {
       }
     }
 
-    // MRP validation for pharmacy (DPCO)
-    if (shop.businessType === 'pharmacy' && req.body.metadata) {
-      const mrp = req.body.metadata.mrp;
-      if (mrp !== undefined && mrp !== null && mrp !== '') {
-        const sellingPrice = Number(price);
-        if (sellingPrice > Number(mrp)) {
-          return res.status(400).json({
-            message: `Selling price (₹${sellingPrice}) cannot exceed MRP (₹${mrp}). DPCO violation.`,
-          });
-        }
-      }
-    }
-
     const product = await Product.create({
       shop: shop._id,
       name: name.trim(),
@@ -141,19 +128,6 @@ const updateProduct = async (req, res) => {
       });
       if (existingBarcodeProduct) {
         return res.status(400).json({ message: 'This barcode is already used by another product' });
-      }
-    }
-
-    // MRP validation for pharmacy (DPCO)
-    if (shop.businessType === 'pharmacy' && req.body.metadata) {
-      const mrp = req.body.metadata.mrp;
-      if (mrp !== undefined && mrp !== null && mrp !== '') {
-        const sellingPrice = price !== undefined ? Number(price) : product.price;
-        if (sellingPrice > Number(mrp)) {
-          return res.status(400).json({
-            message: `Selling price (₹${sellingPrice}) cannot exceed MRP (₹${mrp}). DPCO violation.`,
-          });
-        }
       }
     }
 

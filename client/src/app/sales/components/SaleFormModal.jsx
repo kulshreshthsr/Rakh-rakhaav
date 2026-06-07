@@ -29,7 +29,7 @@ export default function SaleFormModal({
   editingSaleId, error, submitting, isChallanMode, gstinValue, gstinValidation,
   gstinTouched, showGstinError, showGstinLengthHint, billTotals, amountPaidNum,
   challanForm, setChallanForm, documentType, setDocumentType, supplyType,
-  balanceDue, roundedBill, rowGST, scheduleWarning, invoicePreview,
+  balanceDue, roundedBill, rowGST, invoicePreview,
   handleSubmit, addItem, removeItem, updateItem, updateItemQuantityBy, duplicateItem,
   applyQuickQuantity, handleProductSelect, loadBatchesFor, loadVariantsFor,
   handleBuyerGstinChange,
@@ -531,11 +531,6 @@ export default function SaleFormModal({
                     </div>
                   );
                 })}
-                {businessType === 'pharmacy' && scheduleWarning?.hasControlled && scheduleWarning.prescriptionFilled && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-200 text-[11px] font-semibold text-green-700">
-                    ✓ Prescription on file — Schedule H dispensing authorised
-                  </div>
-                )}
               </div>
             )}
 
@@ -805,27 +800,6 @@ export default function SaleFormModal({
                 >+ Item जोड़ें <span className="text-[10px] opacity-60">(Ctrl+I)</span></button>
               </div>
             </div>
-
-            {/* Schedule H/X Warning */}
-            {scheduleWarning && !scheduleWarning.prescriptionFilled && (
-              <div className={`flex items-start gap-3 p-3 rounded-xl border-2 ${scheduleWarning.hasScheduleX ? 'bg-red-50 border-red-400' : 'bg-amber-50 border-amber-400'}`}>
-                <span className="text-2xl flex-shrink-0">{scheduleWarning.hasScheduleX ? '🚫' : '⚠️'}</span>
-                <div className="flex-1">
-                  <p className={`font-black text-sm ${scheduleWarning.hasScheduleX ? 'text-red-800' : 'text-amber-800'}`}>
-                    {scheduleWarning.hasScheduleX ? 'Schedule X दवाई — Prescription अनिवार्य है' : 'Schedule H दवाई — Prescription नंबर डालें'}
-                  </p>
-                  <p className={`text-xs mt-0.5 ${scheduleWarning.hasScheduleX ? 'text-red-700' : 'text-amber-700'}`}>
-                    {scheduleWarning.scheduleItems.map(i => `${i.name} (${i.schedule})`).join(', ')}
-                  </p>
-                  {scheduleWarning.hasScheduleX && (
-                    <p className="text-xs font-semibold text-red-700 mt-1">Drugs &amp; Cosmetics Act — Schedule X बिना valid prescription के नहीं बेच सकते।</p>
-                  )}
-                </div>
-                <button type="button" onClick={() => { const el = document.getElementById('invoice-field-prescription_no'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); el?.querySelector('input, select, textarea')?.focus(); }}
-                  className={`text-xs font-black px-3 py-1.5 rounded-lg flex-shrink-0 ${scheduleWarning.hasScheduleX ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
-                >Prescription भरें ↑</button>
-              </div>
-            )}
 
             {/* Insurance breakdown */}
             {businessType === 'pharmacy' && extraFields.insurance_type && extraFields.insurance_type !== 'None' && extraFields.insurance_type !== '' && (

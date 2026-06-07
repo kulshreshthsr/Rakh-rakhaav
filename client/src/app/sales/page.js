@@ -24,8 +24,6 @@ import { validateGSTIN as _validateGSTINFull, getSupplyType as _getSupplyType, s
 import SaleCard from './components/SaleCard';
 import ChallanSection from './components/ChallanSection';
 import MarkDeliveredModal from './components/MarkDeliveredModal';
-import SplitBillModal from './components/SplitBillModal';
-import ExchangeModal from './components/ExchangeModal';
 import SaleFormModal from './components/SaleFormModal';
 import SaleReturnModal from './components/SaleReturnModal';
 import EmptyState from '../../components/ui/EmptyState';
@@ -142,13 +140,6 @@ export default function SalesPage() {
   const [showHeldPicker, setShowHeldPicker] = useState(false);
 
   /* ── Split / delivery modal state ── */
-  const [showSplitModal, setShowSplitModal]     = useState(false);
-  const [splitSale, setSplitSale]               = useState(null);
-  const [splitMode, setSplitMode]               = useState('equal');
-  const [splitCount, setSplitCount]             = useState(2);
-  const [splitAssignments, setSplitAssignments] = useState({});
-  const [showExchangeModal, setShowExchangeModal]   = useState(false);
-  const [exchangeSale, setExchangeSale]             = useState(null);
   const [showDeliveredModal, setShowDeliveredModal] = useState(false);
   const [deliveredChallan, setDeliveredChallan]     = useState(null);
   const [deliveredForm, setDeliveredForm]           = useState({ received_by: '', received_at: getDefaultSaleDateValue(), notes: '' });
@@ -191,7 +182,7 @@ export default function SalesPage() {
     supplyType, gstinValidation, documentType, setDocumentType,
     challanForm, setChallanForm, isChallanMode, gstinValue, gstinValid,
     showGstinError, showGstinLengthHint,
-    billTotals, amountPaidNum, balanceDue, roundedBill, rowGST, scheduleWarning,
+    billTotals, amountPaidNum, balanceDue, roundedBill, rowGST,
     duplicateWarning, setDuplicateWarning, handleConfirmDuplicate,
     amountPaidInputRef, buyerNameInputRef, customerComboRef, saleDateInputRef,
     resetForm, updateItem, updateItemQuantityBy, applyQuickQuantity, duplicateItem,
@@ -356,25 +347,6 @@ export default function SalesPage() {
     } catch { setError('Barcode lookup failed. Please try again.'); }
   };
 
-  const printKOT = (sale) => {
-    const kotWindow = window.open('', '_blank', 'width=320,height=600');
-    if (!kotWindow) { showToast('Pop-up blocked. Please allow pop-ups to print KOT.', 'warning'); return; }
-    const ef = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
-    const tableNo = ef.table_no || 'Counter'; const orderType = ef.order_type || 'Dine-In';
-    const specialInstr = ef.special_instructions || ''; const waiter = ef.waiter_name || '';
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    const dateStr = now.toLocaleDateString('en-IN');
-    const kotNo = `KOT-${sale.invoice_number || Date.now()}`;
-    const itemRows = (sale.items || []).map(item => {
-      const meta = item.item_metadata instanceof Map ? Object.fromEntries(item.item_metadata) : (item.item_metadata || {});
-      const itemNote = meta.item_note || item.item_note || '';
-      return `<tr><td style="padding:4px 2px;font-size:14px;font-weight:bold;">${item.quantity} x</td><td style="padding:4px 2px;font-size:14px;">${item.product_name}${itemNote ? `<br><span style="font-size:11px;color:#555;">* ${itemNote}</span>` : ''}</td></tr>`;
-    }).join('');
-    kotWindow.document.write(`<!DOCTYPE html><html><head><title>KOT - ${kotNo}</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Courier New',monospace;width:280px;padding:8px;}.header{text-align:center;border-bottom:2px dashed #000;padding-bottom:8px;margin-bottom:8px;}.kot-no{font-size:18px;font-weight:bold;}.meta{font-size:12px;margin:2px 0;}.table-big{font-size:22px;font-weight:bold;text-align:center;border:2px solid #000;padding:4px;margin:8px 0;}table{width:100%;border-collapse:collapse;}.special{border:1px dashed #000;padding:6px;margin-top:8px;font-size:12px;font-weight:bold;}.footer{text-align:center;font-size:10px;margin-top:8px;border-top:1px dashed #000;padding-top:6px;}@media print{@page{margin:0;size:80mm auto;}body{width:72mm;}}</style></head><body><div class="header"><div class="kot-no">** KOT **</div><div class="meta">${kotNo}</div><div class="meta">${dateStr} | ${timeStr}</div>${waiter ? `<div class="meta">Waiter: ${waiter}</div>` : ''}</div><div class="table-big">${orderType !== 'Dine-In' ? orderType.toUpperCase() : `Table: ${tableNo}`}</div><table>${itemRows}</table>${specialInstr ? `<div class="special">⚠️ Special: ${specialInstr}</div>` : ''}<div class="footer">---- Kitchen Copy — No Prices ----</div><script>window.onload=function(){window.print();setTimeout(()=>window.close(),1000);};<\/script></body></html>`);
-    kotWindow.document.close();
-  };
-
   /* ── Bug 1: printInvoice — toast instead of alert() ── */
   const printInvoice = async (sale) => {
     if (sale?._isOffline) {
@@ -417,16 +389,6 @@ export default function SalesPage() {
     }
   };
 
-  const sendRepairReadyWhatsApp = (sale) => {
-    const ef      = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
-    const phone   = sale.buyer_phone; const device = ef.device_model || 'your device';
-    const jobNo   = sale.invoice_number; const balance = parseFloat(ef.balance_on_delivery || 0);
-    const message = balance > 0
-      ? `Namaste! 🙏\n\nAapka ${device} repair ho gaya hai aur pickup ke liye ready hai.\n\nJob No: ${jobNo}\nBalance amount: ₹${balance.toFixed(2)}\n\nKripya apna original receipt lekar aayein.\n\nDhanyawad! 🙏`
-      : `Namaste! 🙏\n\nAapka ${device} repair ho gaya hai aur pickup ke liye ready hai.\n\nJob No: ${jobNo}\n\nKripya apna original receipt lekar aayein.\n\nDhanyawad! 🙏`;
-    if (phone) window.open(`https://wa.me/91${phone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(message)}`, '_blank');
-  };
-
   const advanceWorkflowStage = async (saleId, nextStage, action) => {
     try {
       const res = await fetch(apiUrl(`/api/sales/${saleId}/workflow`), { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ workflow_status: nextStage }) });
@@ -434,9 +396,7 @@ export default function SalesPage() {
       const updated = await res.json();
       setSales((current) => current.map((s) => s._id === saleId ? { ...s, extra_fields: updated.extra_fields } : s));
       eventBus.emit('WORKFLOW_ADVANCED', { saleId, newStage: nextStage });
-      if (businessType === 'restaurant' && nextStage === 'cooking') { const sale = sales.find((s) => s._id === saleId); if (sale) printKOT({ ...sale, extra_fields: updated.extra_fields }); }
       if (action?.triggerInvoice) { const sale = sales.find((s) => s._id === saleId); if (sale) printInvoice({ ...sale, extra_fields: updated.extra_fields }); }
-      if (businessType === 'repair_shop' && nextStage === 'ready') { const sale = sales.find((s) => s._id === saleId); if (sale?.buyer_phone) { const shouldSend = window.confirm(`Job ready! Send WhatsApp notification to ${sale.buyer_name || 'customer'} (${sale.buyer_phone})?`); if (shouldSend) sendRepairReadyWhatsApp({ ...sale, extra_fields: updated.extra_fields }); } }
     } catch { setError('Status update failed'); }
   };
 
@@ -729,23 +689,14 @@ export default function SalesPage() {
                 getToken={getToken}
                 printInvoice={printInvoice}
                 shareWhatsApp={shareWhatsApp}
-                sendRepairReadyWhatsApp={sendRepairReadyWhatsApp}
-                printKOT={printKOT}
                 startEditSale={startEditSale}
                 handleDelete={handleDelete}
                 advanceWorkflowStage={advanceWorkflowStage}
                 fetchAll={fetchAll}
                 fetchSales={fetchSales}
-                setSplitSale={setSplitSale}
-                setShowSplitModal={setShowSplitModal}
-                setSplitMode={setSplitMode}
-                setSplitCount={setSplitCount}
-                setSplitAssignments={setSplitAssignments}
                 setDeliveredChallan={setDeliveredChallan}
                 setDeliveredForm={setDeliveredForm}
                 setShowDeliveredModal={setShowDeliveredModal}
-                setExchangeSale={setExchangeSale}
-                setShowExchangeModal={setShowExchangeModal}
                 onReturnClick={setReturnSale}
               />
             ))}
@@ -788,7 +739,6 @@ export default function SalesPage() {
         balanceDue={balanceDue}
         roundedBill={roundedBill}
         rowGST={rowGST}
-        scheduleWarning={scheduleWarning}
         invoicePreview={invoicePreview}
         handleSubmit={handleSubmit}
         addItem={addItem}
@@ -889,37 +839,6 @@ export default function SalesPage() {
             fetchSales();
             showToast(`Return ${ret.return_number} — ₹${Number(ret.total_amount || 0).toFixed(2)} refunded`, 'success');
           }}
-        />
-      )}
-
-      {/* ════ SPLIT BILL MODAL ════ */}
-      {showSplitModal && splitSale && businessType === 'restaurant' && (
-        <SplitBillModal
-          splitSale={splitSale}
-          splitMode={splitMode}
-          setSplitMode={setSplitMode}
-          splitCount={splitCount}
-          setSplitCount={setSplitCount}
-          splitAssignments={splitAssignments}
-          setSplitAssignments={setSplitAssignments}
-          onClose={() => { setShowSplitModal(false); setSplitSale(null); }}
-          onSplitComplete={() => { setShowSplitModal(false); setSplitSale(null); fetchAll(); }}
-          apiUrl={apiUrl}
-          getToken={getToken}
-          fmt={fmt}
-        />
-      )}
-
-      {/* ════ EXCHANGE MODAL ════ */}
-      {businessType === 'clothing' && showExchangeModal && exchangeSale && (
-        <ExchangeModal
-          exchangeSale={exchangeSale}
-          products={products}
-          onClose={() => setShowExchangeModal(false)}
-          onExchangeComplete={fetchSales}
-          apiUrl={apiUrl}
-          getToken={getToken}
-          fmt={fmt}
         />
       )}
 
