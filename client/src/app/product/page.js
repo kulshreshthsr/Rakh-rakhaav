@@ -98,13 +98,14 @@ export default function ProductsPage() {
   const [search,        setSearch]        = useState('');
   const [sortBy,        setSortBy]        = useState('name');
   const [filterStock,   setFilterStock]   = useState('all');
+  const [filterCategory, setFilterCategory] = useState('');
   const [expiringFilter, setExpiringFilter] = useState(false);
   const [sizeFilter,     setSizeFilter]     = useState('');
   const [urlLowStock,    setUrlLowStock]    = useState(false);
 
   const [showModal,   setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [form, setForm] = useState({ name:'', description:'', price:'', cost_price:'', quantity:'', unit:'pcs', barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5 });
+  const [form, setForm] = useState({ name:'', description:'', price:'', cost_price:'', quantity:'', unit:'pcs', barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5, category:'', sub_category:'' });
   const [metadata, setMetadata] = useState({});
   const [metaErrors, setMetaErrors] = useState({});
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -155,6 +156,7 @@ export default function ProductsPage() {
   useEffect(() => {
     let r = [...products];
     if (search)              r = r.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.description && p.description.toLowerCase().includes(search.toLowerCase())) || (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase())));
+    if (filterCategory)            r = r.filter(p => p.category === filterCategory);
     if (filterStock === 'low')     r = r.filter(p => p.quantity > 0 && p.is_low_stock);
     if (filterStock === 'out')     r = r.filter(p => p.quantity === 0);
     if (filterStock === 'instock') r = r.filter(p => p.quantity > 0 && !p.is_low_stock);
@@ -185,7 +187,7 @@ export default function ProductsPage() {
     if (sortBy === 'quantity')     r.sort((a, b) => a.quantity - b.quantity);
     if (sortBy === 'margin')       r.sort((a, b) => (b.margin || 0) - (a.margin || 0));
     setFiltered(r);
-  }, [search, sortBy, filterStock, expiringFilter, urlLowStock, sizeFilter, products]);
+  }, [search, sortBy, filterStock, filterCategory, expiringFilter, urlLowStock, sizeFilter, products]);
 
   /* ── All logic (UNCHANGED) ── */
   const fetchProducts = async () => {
@@ -234,14 +236,15 @@ export default function ProductsPage() {
     setForm({ name:'', description:'', price:'', cost_price:'',
       quantity: trackQty ? '' : '0',
       unit: unitOptions ? unitOptions[0] : 'pcs',
-      barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5 });
+      barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5,
+      category:'', sub_category:'' });
     setMetadata({}); setMetaErrors({});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
   };
 
   const openEdit = (p) => {
     setEditProduct(p);
-    setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5 });
+    setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5, category:p.category||'', sub_category:p.sub_category||'' });
     // Restore metadata from product (MongoDB Map serialises to plain object in JSON response)
     setMetadata(p.metadata && typeof p.metadata === 'object' ? { ...p.metadata } : {}); setMetaErrors({});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
@@ -430,6 +433,13 @@ export default function ProductsPage() {
             value={search} onChange={e => setSearch(e.target.value)}
           />
           <div className="flex gap-2">
+            {config.categoryConfig && (
+              <select className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
+                value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                <option value="">All Categories</option>
+                {config.categoryConfig.categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
             <select className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
               value={filterStock} onChange={e => setFilterStock(e.target.value)}>
               <option value="all">All Stock</option>
@@ -445,8 +455,8 @@ export default function ProductsPage() {
               <option value="quantity">Qty: Low → High</option>
               <option value="margin">Margin: Best</option>
             </select>
-            {(search || filterStock !== 'all') && (
-              <button onClick={() => { setSearch(''); setFilterStock('all'); }}
+            {(search || filterStock !== 'all' || filterCategory) && (
+              <button onClick={() => { setSearch(''); setFilterStock('all'); setFilterCategory(''); }}
                 className="px-4 h-11 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
               >Clear</button>
             )}
@@ -510,6 +520,11 @@ export default function ProductsPage() {
                           <p className="text-[11px] text-slate-400 mt-0.5">
                             {[p.barcode && `📷 ${p.barcode}`, p.hsn_code && `HSN ${p.hsn_code}`, p.unit].filter(Boolean).join(' · ')}
                           </p>
+                          {p.category && (
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-semibold text-indigo-600">
+                              {p.category}{p.sub_category ? ` › ${p.sub_category}` : ''}
+                            </span>
+                          )}
                         </div>
                         <span className={`rr-pill flex-shrink-0 ${p.quantity === 0 ? 'rr-pill-rose' : p.is_low_stock ? 'rr-pill-amber' : 'rr-pill-green'}`}>
                           {s.label}
@@ -785,17 +800,45 @@ export default function ProductsPage() {
                   )}
                 </div>
 
+                {/* ── CATEGORY ── */}
+                {config.categoryConfig && (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Category</p>
+                      <select className={SEL} value={form.category}
+                        onChange={e => setForm(prev => ({ ...prev, category: e.target.value, sub_category: '' }))}>
+                        <option value="">— Select Category —</option>
+                        {config.categoryConfig.categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    {form.category && config.categoryConfig.subCategories[form.category]?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Sub-Category</p>
+                        <select className={SEL} value={form.sub_category}
+                          onChange={e => setForm(prev => ({ ...prev, sub_category: e.target.value }))}>
+                          <option value="">— All Sub-categories —</option>
+                          {config.categoryConfig.subCategories[form.category].map(sc => <option key={sc} value={sc}>{sc}</option>)}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* ── INDUSTRY-SPECIFIC ATTRIBUTES (sections take priority over flat list) ── */}
                 {config.productAttributeSections?.length > 0
-                  ? config.productAttributeSections.map(section => (
-                      <DynamicFormSection
-                        key={section.title}
-                        section={section}
-                        values={metadata}
-                        onChange={(key, v) => { setMetadata(prev => ({ ...prev, [key]: v })); setMetaErrors(prev => { const n = { ...prev }; delete n[key]; return n; }); }}
-                        errors={metaErrors}
-                      />
-                    ))
+                  ? config.productAttributeSections.map(section => {
+                      if (section.visibleWhenCategory && section.visibleWhenCategory !== form.category) return null;
+                      return (
+                        <DynamicFormSection
+                          key={section.title}
+                          section={section}
+                          values={metadata}
+                          onChange={(key, v) => { setMetadata(prev => ({ ...prev, [key]: v })); setMetaErrors(prev => { const n = { ...prev }; delete n[key]; return n; }); }}
+                          errors={metaErrors}
+                        />
+                      );
+                    })
                   : config.productAttributes?.length > 0 && (
                       <div className="rounded-2xl border border-green-100 bg-green-50/60 p-4 space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-green-700">{attrsTitle}</p>

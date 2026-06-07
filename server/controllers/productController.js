@@ -11,9 +11,11 @@ const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim(
 const getProducts = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
-    const { search, limit: limitParam, cursor } = req.query;
+    const { search, limit: limitParam, cursor, category, sub_category } = req.query;
 
     const filter = { shop: shop._id, isActive: { $ne: false } };
+    if (category)     filter.category     = category;
+    if (sub_category) filter.sub_category = sub_category;
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
@@ -51,7 +53,7 @@ const getProducts = async (req, res) => {
 // CREATE PRODUCT
 // ─────────────────────────────────────────────────────────────────────────────
 const createProduct = async (req, res) => {
-  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate, low_stock_threshold, barcode } = req.body;
+  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate, low_stock_threshold, barcode, category = '', sub_category = '' } = req.body;
   try {
     if (!name) return res.status(400).json({ message: 'Product name is required' });
 
@@ -82,6 +84,8 @@ const createProduct = async (req, res) => {
       hsn_code: hsn_code || '',
       gst_rate: Number(gst_rate) || 0,
       low_stock_threshold: Number(low_stock_threshold) || 5,
+      category:     category || '',
+      sub_category: sub_category || '',
       metadata: req.body.metadata || {},
       // Log initial stock
       stock_history: qty > 0 ? [{
@@ -116,7 +120,7 @@ const updateProduct = async (req, res) => {
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
     if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
-    const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold, barcode } = req.body;
+    const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold, barcode, category, sub_category } = req.body;
     const normalizedBarcode = normalizeBarcode(barcode);
 
     if (normalizedBarcode) {
@@ -141,6 +145,8 @@ const updateProduct = async (req, res) => {
     product.hsn_code = hsn_code ?? product.hsn_code;
     product.gst_rate = gst_rate !== undefined ? Number(gst_rate) : product.gst_rate;
     product.low_stock_threshold = low_stock_threshold !== undefined ? Number(low_stock_threshold) : product.low_stock_threshold;
+    if (category     !== undefined) product.category     = category;
+    if (sub_category !== undefined) product.sub_category = sub_category;
     if (req.body.metadata !== undefined) {
       product.metadata = req.body.metadata;
       product.markModified('metadata');

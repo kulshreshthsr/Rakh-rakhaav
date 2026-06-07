@@ -80,11 +80,22 @@ export default {
     { key: 'serial_no', label: 'Serial No.', type: 'text', placeholder: 'Serial number' },
   ],
 
+  categoryConfig: {
+    categories: ['Home Appliances', 'Mobiles & Gadgets', 'Computing', 'Audio / Visual', 'Accessories & Spares', 'Other'],
+    subCategories: {
+      'Home Appliances':     ['Kitchen Appliances', 'Washing & Cleaning', 'Air Conditioning', 'Fans & Coolers', 'Water Purifiers'],
+      'Mobiles & Gadgets':   ['Smartphones', 'Feature Phones', 'Tablets', 'Smartwatches', 'TWS & Earbuds'],
+      'Computing':           ['Laptops', 'Desktops', 'Monitors', 'Printers & Scanners', 'Networking'],
+      'Audio / Visual':      ['Televisions', 'Speakers & Soundbars', 'Headphones', 'Cameras', 'Projectors'],
+      'Accessories & Spares':['Chargers & Cables', 'Phone Cases & Covers', 'Batteries', 'Screen Protectors', 'Spare Parts'],
+      'Other': [],
+    },
+  },
+
   productAttributeSections: [
     {
       title: 'Product Details',
       fields: [
-        { key: 'category', label: 'Category',      type: 'select', options: ['Home Appliances', 'Mobiles & Gadgets', 'Computing', 'Audio / Visual', 'Accessories & Spares', 'Other'] },
         { key: 'brand',    label: 'Brand',          type: 'text',   placeholder: 'e.g. Samsung, LG, Apple, Sony' },
         { key: 'model_no', label: 'Model No.',      type: 'text',   placeholder: 'Model number' },
         { key: 'color',    label: 'Color / Finish', type: 'text',   placeholder: 'e.g. Black, Silver, White' },

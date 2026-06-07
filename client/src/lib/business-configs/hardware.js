@@ -66,12 +66,24 @@ export default {
   ],
   invoiceLineFields:  [],
 
+  categoryConfig: {
+    categories: ['Tools & Power Tools', 'Plumbing & Sanitary', 'Electrical', 'Building Materials', 'Paints & Finishes', 'Fasteners & Fittings', 'Other'],
+    subCategories: {
+      'Tools & Power Tools':  ['Power Drills', 'Hand Tools', 'Measuring Tools', 'Safety Equipment', 'Cutting Tools'],
+      'Plumbing & Sanitary':  ['Pipes & Fittings', 'Taps & Valves', 'Sanitary Ware', 'Water Heaters', 'Pumps'],
+      'Electrical':           ['Wiring & Cables', 'Switches & Sockets', 'MCBs & Distribution', 'Lighting', 'Conduits'],
+      'Building Materials':   ['Cement & Aggregates', 'Bricks & Blocks', 'Tiles & Stone', 'Steel & Iron', 'TMT Bars'],
+      'Paints & Finishes':    ['Interior Paints', 'Exterior Paints', 'Primers', 'Varnishes & Polish', 'Waterproofing'],
+      'Fasteners & Fittings': ['Nuts & Bolts', 'Screws', 'Nails', 'Anchors & Plugs', 'Hinges & Locks'],
+      'Other': [],
+    },
+  },
+
   productAttributeSections: [
     {
       title: 'Item Details',
       fields: [
         { key: 'brand',    label: 'Brand',             type: 'text',   placeholder: 'Brand name' },
-        { key: 'category', label: 'Category',          type: 'select', options: ['Pipes & Fittings', 'Electrical', 'Paint & Chemicals', 'Hand Tools', 'Power Tools', 'Cement & Bricks', 'Steel & Iron', 'Wood & Timber', 'Sanitary', 'Wires & Cables', 'Fasteners', 'Adhesives', 'Safety Equipment', 'Other'] },
         { key: 'material', label: 'Material',          type: 'text',   placeholder: 'e.g. PVC, MS, SS304, GI' },
         { key: 'size_spec',label: 'Size / Specification', type: 'text',placeholder: 'e.g. 1 inch, 4mm, 10ft' },
       ],
