@@ -68,7 +68,7 @@ function Backdrop({ children, onClose }) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function ProductsPage() {
   const router = useRouter();
-  const { term, config, businessType } = useIndustry();
+  const { term, config } = useIndustry();
 
   /* ── Schema-derived constants ── */
   const pSchema    = config.productFormSchema || {};
@@ -340,7 +340,6 @@ export default function ProductsPage() {
     ? (((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1) : null;
   const liveProfit = liveMargin != null ? (Number(form.price) - Number(form.cost_price)).toFixed(2) : null;
   const liveMrp = metadata?.mrp ? Number(metadata.mrp) : null;
-  const mrpViolation = businessType === 'pharmacy' && liveMrp && form.price && Number(form.price) > liveMrp;
   const STOCK_TYPES = {
     manual_add:    { label:'Stock जोड़ो',   color:'border-emerald-400 bg-emerald-50 text-emerald-800', active:'bg-emerald-500 text-white border-emerald-500' },
     manual_remove: { label:'Stock हटाओ',   color:'border-rose-400 bg-rose-50 text-rose-800',         active:'bg-rose-500 text-white border-rose-500' },
@@ -383,15 +382,14 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* ── EXPIRING FILTER BANNER (pharmacy) ── */}
         {expiringFilter && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-orange-50 border-2 border-orange-300">
             <span className="text-xl flex-shrink-0">⏰</span>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-black text-orange-900">
-                Showing medicines expiring within 30 days — {filtered.length} items
+                Showing items with expiry within 30 days — {filtered.length} items
               </p>
-              <p className="text-[11px] text-orange-700 mt-0.5">Expired or expiring stock should be reviewed immediately</p>
+              <p className="text-[11px] text-orange-700 mt-0.5">Review and clear near-expiry stock immediately</p>
             </div>
             <button
               onClick={() => { setExpiringFilter(false); window.history.replaceState({}, '', '/product'); }}

@@ -38,18 +38,18 @@ const NAV_ITEMS = [
 // Bottom nav is dynamically computed per business type — see bottomNavItems below
 
 const MORE_DRAWER_ITEMS = [
-  { href: '/product',       key: 'products',       label: 'Stock',         sublabel: 'Products & Inventory', icon: 'products', permission: 'MANAGE_INVENTORY' },
-  { href: '/expenses',      key: 'expenses',       label: 'Expenses',      sublabel: 'Kharch Register',      icon: 'expenses', permission: 'VIEW_EXPENSES'    },
-  { href: '/income',        key: 'income',         label: 'Income',        sublabel: 'Other Income',         icon: 'income',   permission: 'VIEW_INCOME'      },
-  { href: '/bank-entries',  key: 'bank',           label: 'Bank',          sublabel: 'Bank Register',        icon: 'bank',     permission: 'VIEW_BANK'        },
-  { href: '/gst',           key: 'gst',            label: 'GST',           sublabel: 'Tax Filing',           icon: 'gst',      permission: 'VIEW_GST'         },
-  { href: '/reports',       key: 'reports',        label: 'रिपोर्ट',       sublabel: 'Reports',              icon: 'reports',  permission: 'VIEW_REPORTS'     },
-  { href: '/notifications', key: 'notifications', label: 'Alerts',     sublabel: 'Stock & Operation Alerts', icon: 'bell',      permission: 'VIEW_DASHBOARD' },
-  { href: '/tasks',         key: 'tasks',         label: 'Tasks',      sublabel: 'Operational Tasks',        icon: 'checklist', permission: 'VIEW_DASHBOARD' },
-  { href: '/audit',         key: 'audit',         label: 'Activity',   sublabel: 'Audit Trail',              icon: 'history',   permission: 'VIEW_REPORTS'   },
-  { href: '/profile',       key: 'profile',        label: 'Profile',       sublabel: 'दुकान की जानकारी',     icon: 'profile',  permission: null               },
-  { href: '/team',          key: 'team',           label: 'Team',          sublabel: 'User Management',      icon: 'team',     permission: 'MANAGE_USERS'     },
-  { href: '/roles',         key: 'roles',          label: 'Roles',         sublabel: 'Permissions',          icon: 'roles',    permission: 'MANAGE_ROLES'     },
+  { href: '/product',       key: 'products',       label: 'Stock',         sublabel: 'Items & Parts Inventory',  icon: 'products', permission: 'MANAGE_INVENTORY' },
+  { href: '/expenses',      key: 'expenses',       label: 'Expenses',      sublabel: 'Kharch Register',          icon: 'expenses', permission: 'VIEW_EXPENSES'    },
+  { href: '/income',        key: 'income',         label: 'Income',        sublabel: 'Other Income',             icon: 'income',   permission: 'VIEW_INCOME'      },
+  { href: '/bank-entries',  key: 'bank',           label: 'Bank',          sublabel: 'Bank Register',            icon: 'bank',     permission: 'VIEW_BANK'        },
+  { href: '/gst',           key: 'gst',            label: 'GST',           sublabel: 'Tax Filing & Returns',     icon: 'gst',      permission: 'VIEW_GST'         },
+  { href: '/reports',       key: 'reports',        label: 'रिपोर्ट',       sublabel: 'Sales & Stock Reports',    icon: 'reports',  permission: 'VIEW_REPORTS'     },
+  { href: '/notifications', key: 'notifications',  label: 'Alerts',        sublabel: 'Low Stock & Order Alerts', icon: 'bell',     permission: 'VIEW_DASHBOARD'   },
+  { href: '/tasks',         key: 'tasks',          label: 'Tasks',         sublabel: 'Operational Tasks',        icon: 'checklist',permission: 'VIEW_DASHBOARD'   },
+  { href: '/audit',         key: 'audit',          label: 'Activity',      sublabel: 'Audit Trail',              icon: 'history',  permission: 'VIEW_REPORTS'     },
+  { href: '/profile',       key: 'profile',        label: 'Profile',       sublabel: 'दुकान की जानकारी',        icon: 'profile',  permission: null               },
+  { href: '/team',          key: 'team',           label: 'Team',          sublabel: 'Staff Management',         icon: 'team',     permission: 'MANAGE_USERS'     },
+  { href: '/roles',         key: 'roles',          label: 'Roles',         sublabel: 'Permissions',              icon: 'roles',    permission: 'MANAGE_ROLES'     },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
@@ -393,8 +393,8 @@ function LayoutInner({ children }) {
               <button type="button" className="sidebar-user-card group" onClick={() => setDropdownOpen(v => !v)}>
                 <div className="sidebar-avatar bg-gradient-to-br from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 group-hover:scale-105 transition-transform">{initial}</div>
                 <div className="sidebar-user-copy">
-                  <div className="sidebar-user-name">{user?.name || 'Shopkeeper'}</div>
-                  <div className="sidebar-user-email">{user?.email || 'Business account'}</div>
+                  <div className="sidebar-user-name">{user?.name || 'Owner'}</div>
+                  <div className="sidebar-user-email">{user?.email || 'Hardware & Electronics'}</div>
                 </div>
                 <div className={`sidebar-chevron${dropdownOpen ? ' is-open' : ''}`}>⌄</div>
               </button>
@@ -451,7 +451,7 @@ function LayoutInner({ children }) {
             <Logo size="sm" />
             <div className="mobile-brand-copy">
               <div className="mobile-brand-title">रखरखाव</div>
-              <div className="mobile-brand-subtitle">Simple business app</div>
+              <div className="mobile-brand-subtitle">Hardware & Electronics ERP</div>
             </div>
           </div>
 

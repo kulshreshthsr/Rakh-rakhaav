@@ -124,8 +124,6 @@ export default function SalesPage() {
   const [billSearch, setBillSearch]     = useState('');
   const [billMonth, setBillMonth]       = useState('');
   const [wfFilter, setWfFilter]         = useState('');
-  const [deliveryFilter, setDeliveryFilter] = useState('');
-  const [insuranceFilter, setInsuranceFilter] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [customerQuery, setCustomerQuery] = useState('');
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
@@ -236,7 +234,6 @@ export default function SalesPage() {
     const params = new URLSearchParams(window.location.search);
     const wf = params.get('wf');
     if (wf) { setWfFilter(wf); router.replace('/sales'); return; }
-    if (params.get('filter') === 'insurance_pending') { setInsuranceFilter(true); return; }
     if (params.get('open') !== '1' || params.get('payment') !== 'credit') return;
 
     const token = localStorage.getItem('token');
@@ -478,12 +475,9 @@ export default function SalesPage() {
     const matchesSearch    = !normalizedBillSearch || getSaleSearchText(sale).includes(normalizedBillSearch);
     const matchesMonth     = !billMonth || getMonthFilterValue(sale.createdAt || sale.sold_at) === billMonth;
     const matchesWf        = !wfFilter  || getSaleWorkflowStatus(sale, wfc) === wfFilter;
-    const matchesInsurance = !insuranceFilter || (sale.insurance_status === 'pending_claim' && sale.insurance_type && sale.insurance_type !== 'none');
-    const ef = sale.extra_fields instanceof Map ? Object.fromEntries(sale.extra_fields) : (sale.extra_fields || {});
-    const matchesDelivery  = !deliveryFilter || ef.order_type === deliveryFilter || (deliveryFilter === 'Delivery' && ['Delivery', 'Swiggy', 'Zomato'].includes(ef.order_type));
-    return matchesSearch && matchesMonth && matchesWf && matchesInsurance && matchesDelivery;
+    return matchesSearch && matchesMonth && matchesWf;
   });
-  const hasBillFilters = Boolean(normalizedBillSearch || billMonth || wfFilter || insuranceFilter);
+  const hasBillFilters = Boolean(normalizedBillSearch || billMonth || wfFilter);
   const pastCustomers = useMemo(() => {
     const seen = new Set();
     return sales.filter((s) => s.buyer_name && s.buyer_name !== 'Walk-in Customer' && s.buyer_phone).filter((s) => { const key = s.buyer_phone; if (seen.has(key)) return false; seen.add(key); return true; }).map((s) => ({ name: s.buyer_name, phone: s.buyer_phone, state: s.buyer_state || '', address: s.buyer_address || '', gstin: s.buyer_gstin || '' }));
@@ -600,19 +594,6 @@ export default function SalesPage() {
           </div>
         </div>
 
-        {/* ── Restaurant delivery filter ── */}
-        {businessType === 'restaurant' && (
-          <div className="rr-tab-bar mb-4">
-            {['', 'Dine-In', 'Takeaway', 'Delivery', 'Swiggy', 'Zomato'].map((f) => {
-              const labels = { '': 'All', 'Dine-In': '🍽️ Dine-In', 'Takeaway': '📦 Takeaway', 'Delivery': '🛵 Delivery', 'Swiggy': '🟠 Swiggy', 'Zomato': '🔴 Zomato' };
-              return (
-                <button key={f} type="button" onClick={() => setDeliveryFilter(f)}
-                  className={`rr-tab ${deliveryFilter === f ? 'active' : ''}`}
-                >{labels[f]}</button>
-              );
-            })}
-          </div>
-        )}
 
         {/* ── Filters ── */}
         <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md mb-5">
@@ -629,7 +610,7 @@ export default function SalesPage() {
               onChange={(e) => setBillMonth(e.target.value)}
             />
             {hasBillFilters && (
-              <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); setWfFilter(''); setInsuranceFilter(false); }}
+              <button type="button" onClick={() => { setBillSearch(''); setBillMonth(''); setWfFilter(''); }}
                 className="h-11 px-4 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
               >Clear</button>
             )}

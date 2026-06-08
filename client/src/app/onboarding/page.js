@@ -33,41 +33,13 @@ const ALL_INDUSTRIES = listIndustries();
 
 const GST_RATES = ['0', '5', '12', '18', '28'];
 
-function getStep4Mode(_businessType) {
-  return 'product';
-}
+function getStep4Mode(_businessType) { return 'product'; }
 
 const STEP4_CONFIG = {
-  service: {
-    heading: 'अपनी एक service add करें',
-    subtext: 'सिर्फ देखने के लिए — optional है।',
-    namePlaceholder: 'जैसे — Hair Cut, AC Service, Mobile Screen Repair',
-    nameLabel: 'Service का नाम',
-    pricePlaceholder: '150',
-    priceLabel: 'Service charge (₹)',
-    btnLabel: '+ Service जोड़ें',
-    successVerb: 'service जोड़ी गई',
-    defaultUnit: 'service',
-    showStock: false,
-    showCostPrice: false,
-  },
-  dish: {
-    heading: 'अपना एक dish add करें',
-    subtext: 'Menu का पहला item — optional है।',
-    namePlaceholder: 'जैसे — Dal Makhani, Paneer Butter Masala',
-    nameLabel: 'Dish का नाम',
-    pricePlaceholder: '180',
-    priceLabel: 'Price (₹)',
-    btnLabel: '+ Dish जोड़ें',
-    successVerb: 'dish जोड़ी गई',
-    defaultUnit: 'plate',
-    showStock: false,
-    showCostPrice: false,
-  },
   product: {
     heading: 'एक product add करके देखें',
     subtext: 'सिर्फ देखने के लिए — optional है।',
-    namePlaceholder: null, // set dynamically
+    namePlaceholder: null,
     nameLabel: 'Product का नाम',
     pricePlaceholder: '0.00',
     priceLabel: 'Selling Price (₹)',

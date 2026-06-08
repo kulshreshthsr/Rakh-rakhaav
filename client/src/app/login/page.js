@@ -13,10 +13,10 @@ import {
 import { apiUrl } from '../../lib/api';
 
 const PERKS = [
-  { icon: '🧾', label: 'GST-ready billing' },
-  { icon: '📦', label: 'Stock always visible' },
-  { icon: '💸', label: 'उधार follow-up' },
-  { icon: '📊', label: 'One-tap reports' },
+  { icon: '🔧', label: 'Hardware & Electronics ERP' },
+  { icon: '🧾', label: 'GST-ready trade invoicing' },
+  { icon: '📦', label: 'Parts & serial tracking' },
+  { icon: '🏭', label: 'Dealer & contractor credit' },
 ];
 
 export default function LoginPage() {
@@ -95,7 +95,7 @@ export default function LoginPage() {
                 रखरखाव
               </div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
-                Simple Business App
+                Hardware & Electronics ERP
               </div>
             </div>
           </Link>
@@ -105,13 +105,13 @@ export default function LoginPage() {
               Welcome back
             </p>
             <h1 className="text-[clamp(28px,3vw,40px)] font-black text-white leading-tight tracking-tight">
-              अपनी दुकान का<br />
+              Hardware का<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
-                हिसाब खोलो।
+                पूरा हिसाब।
               </span>
             </h1>
             <p className="mt-4 text-[14px] leading-relaxed text-slate-400 max-w-xs">
-              GST billing, inventory, purchases और उधार — सब एक जगह आपका इंतज़ार कर रहा है।
+              GST billing, parts inventory, dealer purchases और contractor udhaar — hardware & electronics के लिए बना।
             </p>
           </div>
 
@@ -130,9 +130,9 @@ export default function LoginPage() {
         <div className="relative z-10 mt-10">
           <div className="px-4 py-4 rounded-2xl bg-white/5 border border-white/8">
             <p className="text-[13px] leading-relaxed text-slate-300 italic">
-              &quot;पहले हाथ से सब लिखते थे, अब रखरखाव से सब clear है।&quot;
+              &quot;Contractor billing और serial tracking — सब अब एक ही app में। GST return भी झंझट-मुक्त।&quot;
             </p>
-            <p className="mt-2 text-[11px] font-bold text-slate-500">— Kirana store owner, Kanpur</p>
+            <p className="mt-2 text-[11px] font-bold text-slate-500">— Hardware store owner, Delhi</p>
           </div>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function LoginPage() {
           </div>
           <div>
             <div className="text-[17px] font-black tracking-tight text-slate-900 leading-none">रखरखाव</div>
-            <div className="text-[9px] font-bold uppercase tracking-widest text-green-700 mt-0.5">Simple Business App</div>
+            <div className="text-[9px] font-bold uppercase tracking-widest text-green-700 mt-0.5">Hardware & Electronics ERP</div>
           </div>
         </div>
 

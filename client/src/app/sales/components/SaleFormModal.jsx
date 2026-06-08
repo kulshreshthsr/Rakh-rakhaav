@@ -520,9 +520,6 @@ export default function SaleFormModal({
                             <div className="flex items-center justify-between mb-1.5">
                               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Price (₹)
-                                {businessType === 'pharmacy' && prod?.metadata?.mrp && (
-                                  <span className="text-slate-400 font-normal ml-1">MRP: ₹{prod.metadata.mrp}</span>
-                                )}
                               </p>
                               <button
                                 type="button"
@@ -546,7 +543,6 @@ export default function SaleFormModal({
                                 type="number" step="0.01" placeholder="0.00"
                                 value={item.price_per_unit}
                                 onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)}
-                                max={businessType === 'pharmacy' && prod?.metadata?.mrp ? prod.metadata.mrp : undefined}
                               />
                             )}
                           </div>
@@ -707,25 +703,6 @@ export default function SaleFormModal({
               </div>
             </div>
 
-            {/* Insurance breakdown */}
-            {businessType === 'pharmacy' && extraFields.insurance_type && extraFields.insurance_type !== 'None' && extraFields.insurance_type !== '' && (
-              <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
-                <p className="text-[13px] font-black text-slate-900">Insurance Payment Breakdown</p>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-slate-400 mb-1.5">Insurance Coverage (₹)</p>
-                  <input className={INPUT} type="number" step="0.01" min="0" placeholder="Amount covered by insurance"
-                    value={extraFields.insurance_amount || ''}
-                    onChange={e => setExtraFields(prev => ({ ...prev, insurance_amount: e.target.value }))} max={billTotals.total} />
-                </div>
-                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white border border-blue-200">
-                  <span className="text-[12px] font-bold text-blue-700">Patient Copay</span>
-                  <span className="text-[15px] font-black text-blue-700">₹{Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}</span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  {extraFields.insurance_type} — {Number(extraFields.insurance_amount || 0) >= billTotals.total ? 'Fully covered by insurance' : `Patient pays ₹${Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}`}
-                </p>
-              </div>
-            )}
 
             {/* Advance payment */}
             {form.payment_type === 'credit' && (

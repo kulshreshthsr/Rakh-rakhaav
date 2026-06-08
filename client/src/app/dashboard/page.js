@@ -45,7 +45,7 @@ function DashboardHeader({ shopName, userName, greeting, today, dashboardMode })
     <div className="rr-page-hero rr-fade-in">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="rr-section-label mb-1">रखरखाव · दुकान हिसाब</p>
+          <p className="rr-section-label mb-1">🔧 Hardware & Electronics · दुकान हिसाब</p>
           <h1 className="text-[24px] font-black text-slate-900 leading-tight tracking-[-0.03em]">{greeting}</h1>
           {(userName || shopName) && (
             <p className="text-[13px] font-bold text-green-700 mt-1 truncate flex items-center gap-1.5">
