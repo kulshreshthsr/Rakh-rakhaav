@@ -53,11 +53,6 @@ export default function useSaleForm({
   setSelectedContractor,
   setContractorSearch,
   setShowContractorDrop,
-  setClientHistory,
-  setClientMemberships,
-  setPetProfiles,
-  redemptionMembershipId,
-  setRedemptionMembershipId,
   setCustomerQuery,
   setShowCustomerInfo,
   setShowCustomerSuggestions,
@@ -228,13 +223,9 @@ export default function useSaleForm({
     if (setShowCustomerInfo) setShowCustomerInfo(false);
     if (setShowCustomerSuggestions) setShowCustomerSuggestions(false);
     if (setShowMoreCustomerDetails) setShowMoreCustomerDetails(false);
-    if (setClientHistory) setClientHistory(null);
-    if (setClientMemberships) setClientMemberships([]);
-    if (setRedemptionMembershipId) setRedemptionMembershipId(null);
     if (setSelectedContractor) setSelectedContractor(null);
     if (setContractorSearch) setContractorSearch('');
     if (setShowContractorDrop) setShowContractorDrop(false);
-    if (setPetProfiles) setPetProfiles([]);
   }
 
   const startEditSale = (sale) => {
@@ -267,13 +258,14 @@ export default function useSaleForm({
     try {
       const isEditing = Boolean(editingSaleId);
       const isChallan = isChallanMode;
+      const isQuotation = !isEditing && documentType === 'quotation';
       const submitUrl = isEditing ? apiUrl(`/api/sales/${editingSaleId}`) : isChallan ? apiUrl('/api/sales/challan') : apiUrl('/api/sales');
       const submitItems = isChallan ? validItems.map((i) => ({ ...i, price_per_unit: Number(i.price_per_unit) || 0, unit_of_measurement: i.unit_of_measurement || 'NOS', remarks: i.remarks || '' })) : validItems;
       const challanPayload = isChallan ? { ...challanForm, challan_date: challanForm.challan_date || form.sale_date, consignee_name: challanForm.consignee_name || form.buyer_name || '', consignee_phone: challanForm.consignee_phone || form.buyer_phone || '' } : {};
       const res = await fetch(submitUrl, {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ items: submitItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: isChallan ? 0 : (form.payment_type === 'credit' ? amountPaidNum : billTotals.total), extra_fields: { ...extraFields, ...(businessType === 'hardware' && selectedContractor ? { contractor_id: String(selectedContractor._id), contractor_name: selectedContractor.name } : {}) }, ...challanPayload }),
+        body: JSON.stringify({ items: submitItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: isChallan ? 0 : (form.payment_type === 'credit' ? amountPaidNum : billTotals.total), extra_fields: { ...extraFields, ...(businessType === 'hardware' && selectedContractor ? { contractor_id: String(selectedContractor._id), contractor_name: selectedContractor.name } : {}) }, ...challanPayload, ...(isQuotation ? { document_type: 'quotation' } : {}) }),
       });
       const data = await res.json();
       if (res.ok) {

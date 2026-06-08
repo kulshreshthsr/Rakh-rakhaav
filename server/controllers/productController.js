@@ -268,27 +268,6 @@ const getStockHistory = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TOGGLE AVAILABILITY (Restaurant — daily sold-out flag)
-// ─────────────────────────────────────────────────────────────────────────────
-const toggleAvailability = async (req, res) => {
-  try {
-    const { available, unavailable_reason } = req.body;
-    const shop = await getShopOrFail(req.user.id);
-    const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
-    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
-
-    product.metadata.set('is_available_today', available ? 'true' : 'false');
-    product.metadata.set('unavailable_reason', unavailable_reason || '');
-    product.metadata.set('availability_set_at', new Date().toISOString());
-    await product.save();
-    res.json({ message: 'Availability updated', available });
-  } catch (err) {
-    logger.error('[productController]', err.message || err);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GET PRODUCT BY BARCODE (product-level or variant-level)
 // ─────────────────────────────────────────────────────────────────────────────
 const getByBarcode = async (req, res) => {
@@ -367,4 +346,25 @@ const bulkImportProducts = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory, toggleAvailability, getByBarcode, bulkImportProducts };
+// ─────────────────────────────────────────────────────────────────────────────
+// REORDER SUGGESTIONS  GET /api/products/reorder-suggestions
+// ─────────────────────────────────────────────────────────────────────────────
+const getReorderSuggestions = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const products = await Product.find({
+      shop: shop._id,
+      isActive: { $ne: false },
+      $expr: { $lte: ['$quantity', '$low_stock_threshold'] },
+    })
+      .select('name quantity low_stock_threshold unit category sub_category')
+      .sort({ quantity: 1 })
+      .limit(50);
+    res.json(products);
+  } catch (err) {
+    logger.error('[getReorderSuggestions]', err.message || err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory, getByBarcode, bulkImportProducts, getReorderSuggestions };

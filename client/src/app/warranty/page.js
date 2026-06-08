@@ -42,6 +42,11 @@ export default function WarrantyPage() {
   const [invoiceLookupLoading, setInvoiceLookupLoading] = useState(false);
   const [serialAlert, setSerialAlert] = useState(null);
 
+  // Device lookup
+  const [deviceQuery, setDeviceQuery]     = useState('');
+  const [deviceResult, setDeviceResult]   = useState(null);
+  const [deviceLooking, setDeviceLooking] = useState(false);
+
   // Update status modal
   const [showUpdateModal, setShowUpdateModal]   = useState(false);
   const [updateTarget, setUpdateTarget]         = useState(null);
@@ -104,6 +109,19 @@ export default function WarrantyPage() {
       }
     } catch { /* ignore */ }
     finally { setInvoiceLookupLoading(false); }
+  };
+
+  const lookupDevice = async () => {
+    const q = deviceQuery.trim();
+    if (q.length < 3) return;
+    setDeviceLooking(true); setDeviceResult(null);
+    try {
+      const res = await fetch(apiUrl(`/api/inventory/serials/lookup?q=${encodeURIComponent(q)}`), {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) setDeviceResult(await res.json());
+    } catch { /* ignore */ }
+    finally { setDeviceLooking(false); }
   };
 
   const checkSerial = async (sn) => {
@@ -177,6 +195,47 @@ export default function WarrantyPage() {
             onClick={() => { setNewForm(emptyNewClaim()); setFormError(''); setSerialAlert(null); setShowNewModal(true); }}
             className="flex-shrink-0 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-[13px] font-black hover:bg-teal-700 transition-colors shadow-md"
           >+ New Claim</button>
+        </div>
+
+        {/* Device Lookup */}
+        <div className="rounded-2xl border-2 border-slate-200 bg-slate-50 p-4 space-y-3">
+          <p className="text-[11px] font-black text-slate-500 uppercase tracking-wider">🔍 Device Lookup (Serial / IMEI)</p>
+          <div className="flex gap-2">
+            <input
+              value={deviceQuery}
+              onChange={e => setDeviceQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && lookupDevice()}
+              placeholder="Enter serial number or IMEI…"
+              className="flex-1 h-10 px-3 rounded-xl border-2 border-slate-200 bg-white text-[14px] text-slate-900 focus:outline-none focus:border-teal-500 transition-colors"
+            />
+            <button type="button" onClick={lookupDevice} disabled={deviceLooking || deviceQuery.trim().length < 3}
+              className="h-10 px-4 rounded-xl bg-teal-600 text-white text-[12px] font-black hover:bg-teal-700 disabled:opacity-50 transition-colors">
+              {deviceLooking ? '…' : 'Lookup'}
+            </button>
+          </div>
+          {deviceResult !== null && (
+            deviceResult.found ? (
+              <div className="rounded-xl bg-white border-2 border-teal-200 p-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[14px] font-black text-slate-900">{deviceResult.record.product?.name || 'Unknown Product'}</p>
+                  <span className={`rr-pill text-[10px] ${deviceResult.record.status === 'sold' ? 'rr-pill-rose' : 'rr-pill-green'}`}>
+                    {deviceResult.record.status === 'sold' ? 'Sold' : 'In Stock'}
+                  </span>
+                </div>
+                {deviceResult.record.serial_number && <p className="text-[11px] font-mono text-slate-500">S/N: {deviceResult.record.serial_number}</p>}
+                {deviceResult.record.imei_number    && <p className="text-[11px] font-mono text-slate-500">IMEI: {deviceResult.record.imei_number}</p>}
+                {deviceResult.record.sale_invoice   && <p className="text-[11px] text-slate-500">Invoice: <span className="font-bold text-green-700">{deviceResult.record.sale_invoice}</span></p>}
+                {deviceResult.record.sale_date      && <p className="text-[11px] text-slate-500">Sold: {new Date(deviceResult.record.sale_date).toLocaleDateString('en-IN')}</p>}
+                {deviceResult.record.warranty_expiry && (
+                  <p className={`text-[11px] font-bold ${deviceResult.warrantyExpired ? 'text-rose-600' : 'text-teal-600'}`}>
+                    Warranty {deviceResult.warrantyExpired ? 'expired' : 'valid till'}: {new Date(deviceResult.record.warranty_expiry).toLocaleDateString('en-IN')}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[12px] text-slate-500 text-center py-1">No device found for &quot;{deviceQuery}&quot;</p>
+            )
+          )}
         </div>
 
         {/* Filter tabs */}

@@ -32,6 +32,17 @@ const getFinancialYear = (date = new Date()) => {
   return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
 };
 
+function parseWarrantyExpiry(warrantyStr, fromDate = new Date()) {
+  if (!warrantyStr || warrantyStr === 'No Warranty') return null;
+  const d = new Date(fromDate);
+  const m = warrantyStr.match(/(\d+)\s*(month|year)/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  if (/year/i.test(m[2])) d.setFullYear(d.getFullYear() + n);
+  else d.setMonth(d.getMonth() + n);
+  return d;
+}
+
 const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new Date()) => {
   // Accept either a shop object (with invoice format fields) or just a shopId string
   const shopId = shopOrId?._id || shopOrId;
@@ -333,15 +344,22 @@ const syncSubInventory = async (previousItems = [], nextItems = [], invoiceNumbe
     // ── Serial — only mark/unmark when adding or removing serials ──────────
     if (Array.isArray(meta.serial_ids) && meta.serial_ids.length > 0) {
       if (delta > 0) {
-        await SerialInventory.updateMany(
-          { _id: { $in: meta.serial_ids } },
-          { $set: { status: 'sold', sale_invoice: invoiceNumber, sale_date: new Date() } },
-          opts
-        );
+        const saleDate = new Date();
+        const update = { status: 'sold', sale_invoice: invoiceNumber, sale_date: saleDate };
+
+        // Auto-set warranty_expiry from product metadata warranty period
+        if (product) {
+          const productDoc = await Product.findById(product).select('metadata').session(session || null);
+          const warrantyStr = productDoc?.metadata?.get?.('warranty') || '';
+          const expiry = parseWarrantyExpiry(warrantyStr, saleDate);
+          if (expiry) update.warranty_expiry = expiry;
+        }
+
+        await SerialInventory.updateMany({ _id: { $in: meta.serial_ids } }, { $set: update }, opts);
       } else {
         await SerialInventory.updateMany(
           { _id: { $in: meta.serial_ids } },
-          { $set: { status: 'in_stock' }, $unset: { sale_invoice: '', sale_date: '' } },
+          { $set: { status: 'in_stock' }, $unset: { sale_invoice: '', sale_date: '', warranty_expiry: '' } },
           opts
         );
       }

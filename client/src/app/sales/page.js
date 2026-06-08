@@ -152,10 +152,7 @@ export default function SalesPage() {
   const {
     contractors, selectedContractor, setSelectedContractor,
     contractorSearch, setContractorSearch, showContractorDrop, setShowContractorDrop,
-    contractorsLoaded, petProfiles, setPetProfiles, stylists,
-    clientHistory, setClientHistory, clientMemberships, setClientMemberships,
-    redemptionMembershipId, setRedemptionMembershipId,
-    fetchStylists, fetchClientHistory, loadContractors,
+    contractorsLoaded, loadContractors,
   } = industryData;
 
   const fetchProducts = useCallback(async () => {
@@ -195,8 +192,6 @@ export default function SalesPage() {
     isOnline, router, fetchAll, setSales,
     products, productBatches, setProductBatches, productVariants, setProductVariants,
     selectedContractor, setSelectedContractor, setContractorSearch, setShowContractorDrop,
-    setClientHistory, setClientMemberships, setPetProfiles,
-    redemptionMembershipId, setRedemptionMembershipId,
     setCustomerQuery, setShowCustomerInfo, setShowCustomerSuggestions, setShowMoreCustomerDetails,
     recipeSales, batchSales, variantSales,
   });
@@ -234,10 +229,6 @@ export default function SalesPage() {
     if (!showModal || businessType !== 'hardware' || contractorsLoaded) return;
     loadContractors();
   }, [showModal, businessType, contractorsLoaded, loadContractors]);
-  useEffect(() => {
-    if (!showModal || businessType !== 'salon') return;
-    fetchStylists();
-  }, [showModal, businessType, fetchStylists]);
 
   /* ── Bug 5: URL param open=1&payment=credit with auth guard ── */
   useEffect(() => {
@@ -758,14 +749,6 @@ export default function SalesPage() {
         setContractorSearch={setContractorSearch}
         showContractorDrop={showContractorDrop}
         setShowContractorDrop={setShowContractorDrop}
-        stylists={stylists}
-        clientHistory={clientHistory}
-        fetchClientHistory={fetchClientHistory}
-        clientMemberships={clientMemberships}
-        redemptionMembershipId={redemptionMembershipId}
-        setRedemptionMembershipId={setRedemptionMembershipId}
-        petProfiles={petProfiles}
-        setPetProfiles={setPetProfiles}
         products={products}
         productBatches={productBatches}
         productVariants={productVariants}

@@ -7,7 +7,7 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import DynamicFormField from '../../components/DynamicFormField';
-import EmptyState from '../../components/ui/EmptyState';
+
 import DynamicFormSection, { flattenSectionFields, formatMetaValue, validateSections } from '../../components/DynamicFormSection';
 import { getInvBehavior, hasInventoryPanel, isBatchMode, isVariantMode, isSerialMode, isRecipeMode, getPrimaryPanelLabel } from '../../lib/inventoryBehavior';
 import PageHeader from '../../components/ui/PageHeader';
@@ -90,10 +90,10 @@ export default function ProductsPage() {
   const [products,   setProducts]   = useState([]);
   const [filtered,   setFiltered]   = useState([]);
   const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [error,      setError]      = useState('');
   const [isOnline,   setIsOnline]   = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
+  const [, setCacheUpdatedAt] = useState(null);
 
   const [search,        setSearch]        = useState('');
   const [sortBy,        setSortBy]        = useState('name');
@@ -127,13 +127,16 @@ export default function ProductsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importBusy,      setImportBusy]      = useState(false);
 
+  const [reorderItems,     setReorderItems]     = useState([]);
+  const [showReorderPanel, setShowReorderPanel] = useState(true);
+
   /* ── All effects (UNCHANGED) ── */
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(PRODUCTS_CACHE_KEY);
     if (cached?.products) { setProducts(cached.products); setCacheUpdatedAt(cached.cachedAt || null); setLoading(false); }
-    const deferredId = scheduleDeferred(async () => { setRefreshing(Boolean(cached?.products)); await fetchProducts(); setRefreshing(false); });
+    const deferredId = scheduleDeferred(async () => { setRefreshing(Boolean(cached?.products)); await Promise.all([fetchProducts(), fetchReorderSuggestions()]); setRefreshing(false); });
     return () => cancelDeferred(deferredId);
   }, []);
   /* eslint-enable react-hooks/exhaustive-deps */
@@ -201,6 +204,13 @@ export default function ProductsPage() {
       setCacheUpdatedAt(new Date().toISOString());
     } catch { setError('Products could not be loaded'); }
     finally { setLoading(false); }
+  };
+
+  const fetchReorderSuggestions = async () => {
+    try {
+      const res = await fetch(apiUrl('/api/products/reorder-suggestions'), { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (res.ok) setReorderItems(await res.json());
+    } catch { /* non-critical */ }
   };
 
   const handleImport = async (file) => {
@@ -331,9 +341,6 @@ export default function ProductsPage() {
   const liveProfit = liveMargin != null ? (Number(form.price) - Number(form.cost_price)).toFixed(2) : null;
   const liveMrp = metadata?.mrp ? Number(metadata.mrp) : null;
   const mrpViolation = businessType === 'pharmacy' && liveMrp && form.price && Number(form.price) > liveMrp;
-  const cacheLabel = cacheUpdatedAt
-    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : null;
-
   const STOCK_TYPES = {
     manual_add:    { label:'Stock जोड़ो',   color:'border-emerald-400 bg-emerald-50 text-emerald-800', active:'bg-emerald-500 text-white border-emerald-500' },
     manual_remove: { label:'Stock हटाओ',   color:'border-rose-400 bg-rose-50 text-rose-800',         active:'bg-rose-500 text-white border-rose-500' },
@@ -425,6 +432,32 @@ export default function ProductsPage() {
             </div>
           ))}
         </div>
+
+        {/* ── REORDER SUGGESTIONS ── */}
+        {reorderItems.length > 0 && showReorderPanel && (
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[13px] font-black text-amber-900">⚠️ {reorderItems.length} item{reorderItems.length !== 1 ? 's' : ''} need restocking</p>
+              <button onClick={() => setShowReorderPanel(false)} className="text-amber-500 hover:text-amber-700 text-lg leading-none">✕</button>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {reorderItems.slice(0, 10).map(p => (
+                <div key={p._id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-amber-200">
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-bold text-slate-800 truncate">{p.name}</p>
+                    {p.category && <p className="text-[10px] text-slate-400">{p.category}</p>}
+                  </div>
+                  <span className={`flex-shrink-0 text-[11px] font-black px-2 py-0.5 rounded-lg ${p.quantity === 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {p.quantity === 0 ? 'Out' : `${p.quantity} ${p.unit || 'pcs'}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {reorderItems.length > 10 && (
+              <p className="text-[10px] text-amber-600 text-center">+{reorderItems.length - 10} more — use &quot;Low Stock&quot; filter to see all</p>
+            )}
+          </div>
+        )}
 
         {/* ── TOOLBAR ── */}
         <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md space-y-3">
@@ -563,40 +596,6 @@ export default function ProductsPage() {
                                 {pill.label}: {pill.value}
                               </span>
                             ))}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Restaurant: Availability toggle */}
-                      {businessType === 'restaurant' && (() => {
-                        const meta = p.metadata || {};
-                        const isAvailable = meta.is_available_today !== 'false';
-                        const reason = meta.unavailable_reason || '';
-                        const toggleAvail = async (available) => {
-                          const reasonInput = available ? '' : (window.prompt('Reason (optional):', 'Sold out today') ?? '');
-                          try {
-                            const res = await fetch(apiUrl(`/api/products/${p._id}/availability`), {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                              body: JSON.stringify({ available, unavailable_reason: reasonInput }),
-                            });
-                            if (res.ok) setProducts(prev => prev.map(x => x._id !== p._id ? x : {
-                              ...x,
-                              metadata: { ...(x.metadata instanceof Map ? Object.fromEntries(x.metadata) : (x.metadata || {})), is_available_today: available ? 'true' : 'false', unavailable_reason: reasonInput }
-                            }));
-                          } catch {}
-                        };
-                        return (
-                          <div className="mb-2">
-                            {isAvailable ? (
-                              <button onClick={() => toggleAvail(false)}
-                                className="w-full py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all"
-                              >✓ Available — Click to Mark Unavailable</button>
-                            ) : (
-                              <button onClick={() => toggleAvail(true)}
-                                className="w-full py-1.5 rounded-xl border-2 border-red-300 bg-red-50 text-[11px] font-bold text-red-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition-all"
-                              >✗ Sold Out{reason ? ` — ${reason}` : ''} — Click to Restore</button>
-                            )}
                           </div>
                         );
                       })()}

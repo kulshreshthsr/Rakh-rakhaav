@@ -175,6 +175,28 @@ export default function SaleCard({
             </div>
           )}
 
+          {/* Quotation actions */}
+          {s.document_type === 'quotation' && !s._isOffline && (
+            <div className="mt-2">
+              {!s.converted_to_invoice ? (
+                <button onClick={async () => {
+                  if (!confirm(`Convert Quotation ${s.invoice_number} to a Tax Invoice?\n\nThis will generate an invoice number and deduct stock.\n\nContinue?`)) return;
+                  try {
+                    const r = await fetch(apiUrl(`/api/sales/${s._id}/convert-quotation`), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` } });
+                    const d = await r.json();
+                    if (!r.ok) { alert(d.message || 'Conversion failed'); return; }
+                    fetchAll();
+                    if (d.invoice) printInvoice(d.invoice);
+                  } catch { alert('Server error'); }
+                }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-violet-200 bg-violet-50 text-[11px] font-bold text-violet-700 hover:bg-violet-100 transition-all">
+                  📄 Convert to Invoice →
+                </button>
+              ) : (
+                <p className="text-center text-[10px] font-bold text-violet-600 py-1">✓ Converted → {s.converted_to_invoice}</p>
+              )}
+            </div>
+          )}
+
           {/* Challan actions */}
           {s.document_type === 'challan' && !s._isOffline && (
             <div className="mt-2 space-y-2">
