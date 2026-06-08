@@ -127,7 +127,7 @@ export default function RegisterPage() {
           <div className="mt-12">
             <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">नया account</p>
             <h1 className="text-[clamp(26px,3vw,38px)] font-black text-white leading-tight tracking-tight">
-              Hardware का पूरा ERP,<br />
+              Hardware & Electronics ERP,<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
                 mobile पर।
               </span>
@@ -194,10 +194,10 @@ export default function RegisterPage() {
                 </p>
               </div>
               <h2 className="mt-3 text-[clamp(24px,4vw,30px)] font-black tracking-tight text-slate-900 leading-[1.12]">
-                Hardware ERP account बनाएं
+                Hardware & Electronics ERP — शुरू करें
               </h2>
               <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
-                Parts billing, dealer credit और GST — सब एक जगह।
+                Hardware store हो या electronics — parts, serials, dealer credit, GST — सब एक जगह।
               </p>
             </div>
 

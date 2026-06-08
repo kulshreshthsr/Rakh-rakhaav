@@ -7,100 +7,148 @@ import { getPostAuthRoute, readStoredSubscription } from '../lib/subscription';
 
 const FEATURES = [
   {
-    icon: '🧾',
-    titleHi: 'तेज़ Billing',
-    titleEn: 'Fast Billing',
-    desc: 'GST bill 10 second में बनाओ। Customer को WhatsApp पे भेजो — printed copy भी निकालो।',
+    icon: '🔧',
+    titleHi: 'Parts & Items Billing',
+    titleEn: 'Hardware Trade Invoicing',
+    desc: 'Wires, pipes, fittings, tools — har item ka GST bill 10 seconds mein. Contractor ko delivery challan, dealer ko tax invoice.',
+    accent: 'border-t-orange-600',
+    iconBg: 'bg-orange-50',
+  },
+  {
+    icon: '📺',
+    titleHi: 'Serial & Warranty Tracking',
+    titleEn: 'Electronics Inventory',
+    desc: 'Mobile, TV, AC, gadgets — IMEI / serial number attach karo. Warranty date set karo. Supplier claim kaafi aasaan ho jaata hai.',
+    accent: 'border-t-blue-600',
+    iconBg: 'bg-blue-50',
+  },
+  {
+    icon: '🏭',
+    titleHi: 'Dealer & Contractor Udhaar',
+    titleEn: 'B2B Credit Ledger',
+    desc: 'Contractor ki site par maal gaya, payment baad mein aayega — udhaar bahi mein sab track. WhatsApp se reminder — ek tap.',
     accent: 'border-t-emerald-700',
     iconBg: 'bg-emerald-50',
   },
   {
-    icon: '📦',
-    titleHi: 'Stock Control',
-    titleEn: 'Inventory Management',
-    desc: 'हर product का stock real-time में दिखता है। कम होने पर alert मिलता है।',
+    icon: '📊',
+    titleHi: 'GST Trade Returns',
+    titleEn: 'GSTR-1 & GSTR-3B',
+    desc: 'B2B, B2C alag — GSTR-1 JSON export, GSTR-3B summary ready. CA ko file do — ek click mein.',
     accent: 'border-t-green-700',
     iconBg: 'bg-green-50',
   },
   {
-    icon: '💸',
-    titleHi: 'उधार बही',
-    titleEn: 'Credit Ledger',
-    desc: 'Customer का उधार कभी भूलो मत। WhatsApp से reminder भेजो — payment track करो।',
-    accent: 'border-t-teal-700',
-    iconBg: 'bg-teal-50',
+    icon: '📋',
+    titleHi: 'Purchase Order & Challan',
+    titleEn: 'Trade Document Flow',
+    desc: 'Supplier ko PO bhejo, maal aane par GRN karo, delivery challan nikalo — poora trade document flow ek jagah.',
+    accent: 'border-t-violet-600',
+    iconBg: 'bg-violet-50',
   },
   {
-    icon: '📊',
-    titleHi: 'GST Summary',
-    titleEn: 'GST Reports',
-    desc: 'GSTR-1, GSTR-3B ready। CA को CSV भेजो — एक click में काम हो जाए।',
-    accent: 'border-t-lime-600',
-    iconBg: 'bg-lime-50',
+    icon: '📦',
+    titleHi: 'Stock & Low-Stock Alert',
+    titleEn: 'Inventory Alerts',
+    desc: 'Har item ka real-time stock. Reorder level set karo — stock khatam hone se pehle alert milta hai.',
+    accent: 'border-t-amber-600',
+    iconBg: 'bg-amber-50',
   },
 ];
 
 const TESTIMONIALS = [
   {
-    name: 'राजेश कुमार',
-    shop: 'राजेश किराना स्टोर, दिल्ली',
-    text: 'पहले रजिस्टर में लिखता था, अब mobile में। सब organized रहता है। बढ़िया app है भाई।',
+    name: 'रमेश अग्रवाल',
+    shop: 'अग्रवाल हार्डवेयर, लुधियाना',
+    text: 'Contractor billing aur delivery challan ek jagah. Pehle 3 alag registers likhne padte the, ab sab mobile pe. GST bhi automatically calculate hoti hai.',
     rating: 5,
-    photo: '👨‍💼'
+    photo: '👨‍🔧',
+    tag: 'Hardware Store'
   },
   {
-    name: 'सुनील पाटिल',
-    shop: 'पाटिल ट्रेडर्स, पुणे',
-    text: 'GST filing आसान हो गई। CA को CSV file देता हूँ — 5 मिनट में काम हो जाता है।',
+    name: 'अंकित सोनी',
+    shop: 'सोनी इलेक्ट्रॉनिक्स, इंदौर',
+    text: 'Serial number aur warranty tracking ne supplier claim process bahut aasaan kar di. Customer ata hai, serial se warranty check kar lete hain — 2 second mein.',
     rating: 5,
-    photo: '👨'
+    photo: '👨‍💻',
+    tag: 'Electronics Store'
   },
   {
-    name: 'अमित शर्मा',
-    shop: 'शर्मा इलेक्ट्रॉनिक्स, कानपुर',
-    text: 'उधार का पूरा हिसाब रहता है। Customer को WhatsApp reminder — पैसा समय पे आ जाता है।',
+    name: 'विजय पटेल',
+    shop: 'पटेल इलेक्ट्रिकल, सूरत',
+    text: 'Dealer udhaar aur contractor credit dono track hote hain. WhatsApp reminder se payment waqt par aane lagi. Highly recommend karta hoon.',
     rating: 5,
-    photo: '👨‍💻'
+    photo: '👨‍💼',
+    tag: 'Electrical Hardware'
   },
 ];
 
 const TRUST_BADGES = [
-  { icon: '✓', text: 'GST Ready', color: 'text-emerald-700' },
+  { icon: '✓', text: 'GST Trade Ready', color: 'text-emerald-700' },
   { icon: '🇮🇳', text: 'Made in India', color: 'text-orange-600' },
   { icon: '🔒', text: 'Data Safe', color: 'text-green-700' },
-  { icon: '📱', text: 'Offline चले', color: 'text-teal-700' },
+  { icon: '📟', text: 'IMEI Tracking', color: 'text-blue-700' },
 ];
 
 const PRICING = [
-  { 
+  {
     duration: '7 दिन',
     price: 'FREE',
     priceHi: 'बिल्कुल मुफ्त',
-    features: ['सभी features unlock', 'कोई limit नहीं', 'Credit card की ज़रूरत नहीं'],
+    features: ['सभी features unlock', 'Serial tracking bhi', 'Credit card की ज़रूरत नहीं'],
     popular: false
   },
-  { 
+  {
     duration: 'हफ्ता',
     price: '₹120',
     priceHi: 'बस ₹17/दिन',
-    features: ['Unlimited bills', 'WhatsApp support', 'GST reports'],
+    features: ['Unlimited trade bills', 'WhatsApp support', 'GST reports'],
     popular: false
   },
-  { 
+  {
     duration: 'साल',
     price: '₹3,600',
     priceHi: 'सिर्फ ₹300/महीना',
     features: ['सबसे सस्ता plan', '38% बचत', 'Priority support'],
     popular: true,
-    badge: '⭐ सबसे ज्यादा लोग यही लेते हैं'
+    badge: '⭐ सबसे ज्यादा dealers यही लेते हैं'
   },
 ];
 
 const STATS = [
-  { value: '1,000+', label: 'दुकानें trust करती हैं', icon: '🏪' },
-  { value: '50,000+', label: 'Bills बने', icon: '🧾' },
+  { value: '1,000+', label: 'Hardware & Electronics stores', icon: '🏪' },
+  { value: '50,000+', label: 'Trade bills बने', icon: '🧾' },
   { value: '100%', label: 'GST Compliant', icon: '✓' },
   { value: '4.8★', label: 'Rating', icon: '⭐' },
+];
+
+const STORE_TYPES_SECTION = [
+  {
+    icon: '🔧',
+    type: 'Hardware Store',
+    color: 'from-orange-500 to-amber-600',
+    lightBg: 'bg-orange-50',
+    border: 'border-orange-200',
+    points: [
+      'Wires, pipes, fittings, tools, cement',
+      'Contractor site billing & delivery challan',
+      'PO number on every purchase',
+      'Plumbing, electrical, building materials',
+    ],
+  },
+  {
+    icon: '📺',
+    type: 'Electronics Store',
+    color: 'from-blue-500 to-indigo-600',
+    lightBg: 'bg-blue-50',
+    border: 'border-blue-200',
+    points: [
+      'Mobiles, TVs, ACs, appliances, gadgets',
+      'IMEI & serial number on every item',
+      'Warranty period — auto expiry alert',
+      'Distributor & dealer B2B invoicing',
+    ],
+  },
 ];
 
 export default function HomePage() {
@@ -113,7 +161,6 @@ export default function HomePage() {
     router.replace(getPostAuthRoute(readStoredSubscription()));
   }, [router]);
 
-  // Auto-rotate testimonials
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % TESTIMONIALS.length);
@@ -136,7 +183,7 @@ export default function HomePage() {
                 रखरखाव
               </div>
               <div className="text-[10px] font-semibold text-green-700 uppercase tracking-wide">
-                Simple Business App
+                Hardware & Electronics ERP
               </div>
             </div>
           </div>
@@ -153,39 +200,38 @@ export default function HomePage() {
 
       {/* ── HERO SECTION ── */}
       <section className="relative overflow-hidden py-12 sm:py-20 lg:py-28">
-        {/* Decorative background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-green-200/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-200/15 rounded-full blur-3xl" />
+          <div className="absolute top-20 left-10 w-64 h-64 bg-blue-200/15 rounded-full blur-3xl" />
           <div className="absolute -bottom-32 -left-32 w-[600px] h-[600px] bg-emerald-200/20 rounded-full blur-3xl" />
         </div>
-        
+
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 sm:mb-16">
             {/* Trust badge */}
             <div className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2.5 bg-white border-2 border-green-200 rounded-full mb-8 shadow-md">
-              <span className="text-xl sm:text-2xl">🇮🇳</span>
+              <span className="text-xl sm:text-2xl">🔧</span>
               <span className="text-xs sm:text-sm font-bold text-green-800">
-                Indian Dukaan के लिए बना है
+                Hardware & Electronics ERP — purpose-built
               </span>
             </div>
 
             {/* Main headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 mb-6 leading-[1.1] px-4">
-              रोज़ का<br />
+              Hardware & Electronics<br />
               <span className="relative inline-block">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-700 via-emerald-700 to-green-800">
-                  हिसाब, GST & Stock
+                  का पूरा ERP, mobile पर।
                 </span>
                 <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full" />
               </span>
-              <br />सब एक जगह।
             </h1>
 
             <p className="text-base sm:text-lg md:text-xl text-slate-600 mb-3 max-w-2xl mx-auto leading-relaxed px-4">
-              Bill बनाओ, उधार track करो, GST ready रखो।
+              Parts billing, serial tracking, dealer udhaar और GST returns —
             </p>
             <p className="text-sm sm:text-base text-slate-500 mb-10 max-w-xl mx-auto px-4">
-              बिल्कुल simple — किसी भी दुकान के लिए। Internet नहीं तो भी चलता है।
+              Hardware और electronics की दुकान के लिए बना। Generic app नहीं — आपके trade के हिसाब से।
             </p>
 
             {/* CTA Buttons */}
@@ -203,25 +249,30 @@ export default function HomePage() {
               {TRUST_BADGES.map((badge) => (
                 <span key={badge.text} className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-white rounded-lg border border-slate-200 text-xs sm:text-sm font-semibold ${badge.color} shadow-sm`}>
                   <span className="text-base sm:text-lg">{badge.icon}</span>
-                  <span className="hidden sm:inline">{badge.text}</span>
-                  <span className="sm:hidden">{badge.text.split(' ')[0]}</span>
+                  {badge.text}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* App Screenshot placeholder */}
-          <div className="max-w-5xl mx-auto px-4">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 aspect-[16/10] sm:aspect-video flex items-center justify-center">
-                <div className="text-center p-6">
-                  <div className="text-5xl sm:text-7xl mb-4">📱</div>
-                  <p className="text-lg sm:text-2xl font-bold text-slate-700 mb-2">App Dashboard</p>
-                  <p className="text-xs sm:text-sm text-slate-500">Bills • Stock • GST Reports</p>
+          {/* Hardware vs Electronics dual-card */}
+          <div className="max-w-4xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {STORE_TYPES_SECTION.map((s) => (
+              <div key={s.type} className={`rounded-2xl border-2 ${s.border} ${s.lightBg} p-5 sm:p-6`}>
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${s.color} mb-4`}>
+                  <span className="text-lg">{s.icon}</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-white">{s.type}</span>
                 </div>
+                <ul className="flex flex-col gap-2">
+                  {s.points.map((pt) => (
+                    <li key={pt} className="flex items-start gap-2 text-[13px] text-slate-700">
+                      <span className="text-green-600 font-bold mt-0.5">✓</span>
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-green-900/10 to-transparent pointer-events-none" />
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -245,27 +296,27 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section className="py-12 sm:py-20 lg:py-24">
+      <section className="py-12 sm:py-20 lg:py-24" id="features">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-green-700 mb-2 sm:mb-3">सब कुछ मिलेगा</p>
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-green-700 mb-2 sm:mb-3">purpose-built modules</p>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-3 sm:mb-4 px-4">
-              जो दुकान को चाहिए,<br className="sm:hidden" /> वो सब है यहाँ
+              Hardware & Electronics trade<br className="sm:hidden" /> के लिए बना हर feature
             </h2>
             <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-4">
-              बिल्कुल simple — किसी को भी समझ आएगा
+              Generic billing app नहीं — आपके trade के workflows में।
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {FEATURES.map((feature) => (
-              <div key={feature.titleHi} className={`group bg-white rounded-2xl border-2 border-slate-200 border-t-4 ${feature.accent} p-5 sm:p-7 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}>
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl ${feature.iconBg} flex items-center justify-center text-3xl sm:text-4xl mb-4 shadow-sm group-hover:scale-110 transition-transform`}>
+              <div key={feature.titleHi} className={`group bg-white rounded-2xl border-2 border-slate-200 border-t-4 ${feature.accent} p-5 sm:p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300`}>
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl ${feature.iconBg} flex items-center justify-center text-2xl sm:text-3xl mb-4 shadow-sm group-hover:scale-110 transition-transform`}>
                   {feature.icon}
                 </div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 mb-1">{feature.titleHi}</h3>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-1">{feature.titleHi}</h3>
                 <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">{feature.titleEn}</p>
-                <p className="text-sm sm:text-base leading-relaxed text-slate-600">{feature.desc}</p>
+                <p className="text-sm leading-relaxed text-slate-600">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -278,10 +329,10 @@ export default function HomePage() {
           <div className="text-center mb-10 sm:mb-12">
             <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-green-700 mb-2 sm:mb-3">Real Reviews</p>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-3 sm:mb-4 px-4">
-              दूसरे दुकानदार<br className="sm:hidden" /> क्या कहते हैं
+              Hardware & Electronics<br className="sm:hidden" /> owners क्या कहते हैं
             </h2>
             <p className="text-base sm:text-lg text-slate-600 px-4">
-              अपने जैसे लोगों की बात सुनो
+              आपके जैसे trade owners की बात
             </p>
           </div>
 
@@ -294,10 +345,15 @@ export default function HomePage() {
                 <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
                   <div className="text-4xl sm:text-5xl">{testimonial.photo}</div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-1 mb-1 sm:mb-2">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <span key={i} className="text-yellow-500 text-base sm:text-xl">★</span>
-                      ))}
+                    <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                      <div className="flex items-center gap-1">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <span key={i} className="text-yellow-500 text-base sm:text-xl">★</span>
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                        {testimonial.tag}
+                      </span>
                     </div>
                     <h4 className="font-bold text-base sm:text-lg text-slate-900">{testimonial.name}</h4>
                     <p className="text-xs sm:text-sm text-green-700 font-medium">{testimonial.shop}</p>
@@ -309,7 +365,6 @@ export default function HomePage() {
               </div>
             ))}
 
-            {/* Dots */}
             <div className="flex justify-center gap-2 mt-6 sm:mt-8">
               {TESTIMONIALS.map((_, idx) => (
                 <button
@@ -329,18 +384,18 @@ export default function HomePage() {
           <div className="text-center mb-10 sm:mb-14">
             <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-green-700 mb-2 sm:mb-3">तीन आसान Steps</p>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-3 sm:mb-4 px-4">
-              3 steps में<br className="sm:hidden" /> शुरू हो जाओ
+              5 मिनट में<br className="sm:hidden" /> दुकान live करो
             </h2>
             <p className="text-base sm:text-lg text-slate-600 px-4">
-              बस 5 मिनट — कोई झंझट नहीं
+              Hardware या electronics — setup एक जैसा ही है
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-10">
             {[
-              { num: '1', title: 'Account बनाओ', desc: 'बस mobile number — 2 मिनट में ready', color: 'from-green-100 to-green-200' },
-              { num: '2', title: 'Products डालो', desc: 'माल add करो — price, stock, GST', color: 'from-emerald-100 to-emerald-200' },
-              { num: '3', title: 'Bill बनाओ', desc: 'WhatsApp पे भेजो — हो गया!', color: 'from-teal-100 to-teal-200' }
+              { num: '1', title: 'Account बनाओ', desc: 'Hardware या electronics — store type select करो। 2 मिनट में ready।', color: 'from-green-100 to-green-200' },
+              { num: '2', title: 'Items & Parties डालो', desc: 'Products, serial numbers, suppliers और dealers add करो।', color: 'from-emerald-100 to-emerald-200' },
+              { num: '3', title: 'Bill बनाओ & Track करो', desc: 'Trade invoice, challan, udhaar — सब WhatsApp पे भेजो।', color: 'from-teal-100 to-teal-200' }
             ].map((step) => (
               <div key={step.num} className="text-center group">
                 <div className={`w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}>
@@ -358,7 +413,7 @@ export default function HomePage() {
       <section className="py-12 sm:py-20 lg:py-24 bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
-            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-green-700 mb-2 sm:mb-3">Affordable Pricing</p>
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-green-700 mb-2 sm:mb-3">Simple Pricing</p>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-3 sm:mb-4 px-4">
               हर जेब के<br className="sm:hidden" /> अनुसार Plan
             </h2>
@@ -375,7 +430,7 @@ export default function HomePage() {
                     {plan.badge}
                   </div>
                 )}
-                
+
                 <div className="text-center mb-5 sm:mb-6 pt-2">
                   <div className="text-xs sm:text-sm font-bold text-slate-500 uppercase mb-2">{plan.duration}</div>
                   <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-1">{plan.price}</div>
@@ -408,13 +463,17 @@ export default function HomePage() {
       <section className="py-16 sm:py-24 bg-gradient-to-r from-green-700 via-emerald-700 to-green-800 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-        
+
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 border border-white/25 mb-6">
+            <span>🔧</span>
+            <span className="text-sm font-bold">Hardware & Electronics — purpose-built</span>
+          </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 px-4">
             आज ही शुरू करो —<br className="sm:hidden" /> 7 दिन Free
           </h2>
           <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-12 opacity-95 px-4">
-            हजारों दुकानदार इस्तेमाल कर रहे हैं। अब आपकी बारी।
+            Hardware और electronics store owners इस्तेमाल कर रहे हैं। अब आपकी बारी।
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
             <Link href="/register" className="w-full sm:w-auto px-6 sm:px-10 py-4 bg-white text-green-800 text-base sm:text-lg font-black rounded-xl shadow-2xl hover:shadow-3xl hover:-translate-y-1 transition-all">
@@ -441,11 +500,11 @@ export default function HomePage() {
                 </div>
                 <div>
                   <div className="text-base sm:text-lg font-black leading-none">रखरखाव</div>
-                  <div className="text-[10px] font-semibold text-green-400 uppercase mt-0.5">Simple Business App</div>
+                  <div className="text-[10px] font-semibold text-green-400 uppercase mt-0.5">Hardware & Electronics ERP</div>
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 max-w-xs">
-                भारतीय दुकानों के लिए बनाया गया<br />
+                Hardware & electronics stores के लिए बनाया गया।<br />
                 Made with ❤️ in India 🇮🇳
               </p>
             </div>
@@ -476,7 +535,7 @@ export default function HomePage() {
           </div>
 
           <div className="pt-6 sm:pt-8 border-t border-slate-800 text-center text-xs sm:text-sm text-slate-500">
-            © 2026 Rakh-Rakhaav • GST Compliant • Secure • Trusted by 1000+ Shops
+            © 2026 Rakh-Rakhaav • Hardware & Electronics ERP • GST Compliant • Trusted by 1000+ Trade Stores
           </div>
         </div>
       </footer>
