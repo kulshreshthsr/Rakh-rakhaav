@@ -495,7 +495,7 @@ export default function OnboardingPage() {
         </div>
         <div className="flex-1">
           <div className="text-[16px] font-black tracking-tight text-slate-900 leading-none">रखरखाव</div>
-          <div className="text-[9px] font-bold uppercase tracking-widest text-green-700">Setup</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-green-700">Hardware & Electronics ERP</div>
         </div>
         <div className="text-[11px] font-bold text-slate-400">Step {step} of 6</div>
       </div>
@@ -715,7 +715,7 @@ function Step1({ shopName, setShopName, city, setCity, shopPhone, setShopPhone, 
             value={shopName}
             onChange={(e) => setShopName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onContinue()}
-            placeholder="जैसे — राम जनरल स्टोर"
+            placeholder="जैसे — राम हार्डवेयर / अंकित इलेक्ट्रॉनिक्स"
             className="w-full border-2 border-slate-200 rounded-xl px-4 py-3.5 text-[15px] font-medium text-slate-900 placeholder:text-slate-400 focus:border-green-600 focus:ring-2 focus:ring-green-500/30 outline-none transition-all"
           />
           {error && (
@@ -755,17 +755,46 @@ function Step1({ shopName, setShopName, city, setCity, shopPhone, setShopPhone, 
 }
 
 // ─── Step 2: Business Type ────────────────────────────────────────────────────
-function Step2({ selected, setSelected, error, saving, onContinue }) {
-  const selectedConfig = ALL_INDUSTRIES.find((i) => i.id === selected);
+const STORE_TYPES = [
+  {
+    id: 'hardware',
+    icon: '🔧',
+    title: 'Hardware की दुकान',
+    subtitle: 'Hardware Store',
+    points: ['Wires, pipes, fittings, tools', 'Contractor & site billing', 'Delivery challan, PO number', 'Plumbing, electrical, building materials'],
+    color: 'from-orange-500 to-amber-600',
+    lightBg: 'from-orange-50 to-amber-50',
+    borderActive: 'border-orange-400',
+    shadow: 'shadow-orange-500/15',
+    badgeBg: 'bg-orange-500',
+  },
+  {
+    id: 'electronics',
+    icon: '📺',
+    title: 'Electronics की दुकान',
+    subtitle: 'Electronics Store',
+    points: ['Mobiles, TVs, appliances, gadgets', 'Serial / IMEI number tracking', 'Warranty period management', 'Distributor & dealer billing'],
+    color: 'from-blue-500 to-indigo-600',
+    lightBg: 'from-blue-50 to-indigo-50',
+    borderActive: 'border-blue-400',
+    shadow: 'shadow-blue-500/15',
+    badgeBg: 'bg-blue-500',
+  },
+];
 
+function Step2({ selected, setSelected, error, saving, onContinue }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="text-center">
-        <h1 className="text-[clamp(20px,5vw,28px)] font-black tracking-tight text-slate-900 leading-tight">
-          अपना व्यापार चुनें
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 mb-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-green-800">Step 2 of 6</span>
+        </div>
+        <h1 className="text-[clamp(20px,5vw,26px)] font-black tracking-tight text-slate-900 leading-tight">
+          दुकान का type बताइए
         </h1>
-        <p className="mt-2 text-[13px] text-slate-500 leading-relaxed max-w-sm mx-auto">
-          इससे app आपके लिए खुद को customize कर लेगी।
+        <p className="mt-2 text-[13px] text-slate-500 leading-relaxed max-w-xs mx-auto">
+          App आपकी दुकान के हिसाब से billing, stock और reports customize करेगी।
         </p>
       </div>
 
@@ -775,55 +804,50 @@ function Step2({ selected, setSelected, error, saving, onContinue }) {
         </div>
       )}
 
-      {/* Industry grid */}
-      <div className="relative">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[52vh] overflow-y-auto pr-1 pb-1">
-        {ALL_INDUSTRIES.map((ind) => {
-          const active = selected === ind.id;
+      <div className="flex flex-col gap-3">
+        {STORE_TYPES.map((st) => {
+          const active = selected === st.id;
           return (
             <button
-              key={ind.id}
+              key={st.id}
               type="button"
-              onClick={() => setSelected(ind.id)}
-              className={`relative flex flex-col items-center gap-1.5 px-2 py-3.5 rounded-2xl text-center transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500/40 active:scale-95
+              onClick={() => setSelected(st.id)}
+              className={`relative text-left w-full rounded-2xl border-2 transition-all duration-200 focus:outline-none active:scale-[0.99]
                 ${active
-                  ? 'border-2 border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg shadow-green-500/15'
-                  : 'border border-slate-200 bg-white hover:border-green-300'
+                  ? `${st.borderActive} bg-gradient-to-br ${st.lightBg} shadow-lg ${st.shadow} -translate-y-0.5`
+                  : 'border-slate-200 bg-white hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-md'
                 }`}
             >
               {active && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-green-600 flex items-center justify-center shadow-sm">
-                  <svg width="8" height="7" viewBox="0 0 8 7" fill="none">
-                    <path d="M1 3.5L3 6L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <span className={`absolute top-3 right-3 w-5 h-5 rounded-full ${st.badgeBg} flex items-center justify-center shadow-sm`}>
+                  <svg width="9" height="8" viewBox="0 0 9 8" fill="none">
+                    <path d="M1.5 4L3.5 6.5L7.5 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
               )}
-              <span className="text-2xl leading-none">{ind.icon}</span>
-              <div className="flex flex-col gap-0.5">
-                <span className={`text-[10px] font-black leading-tight ${active ? 'text-green-900' : 'text-slate-800'}`}>
-                  {ind.labelHindi}
-                </span>
-                <span className="text-[9px] text-slate-400 font-medium leading-tight">{ind.label}</span>
+              <div className="flex items-start gap-4 p-4">
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${st.color} flex items-center justify-center text-3xl flex-shrink-0 shadow-md`}>
+                  {st.icon}
+                </div>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <div className={`text-[16px] font-black leading-tight ${active ? 'text-slate-900' : 'text-slate-800'}`}>{st.title}</div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">{st.subtitle}</div>
+                  <ul className="mt-2.5 space-y-1">
+                    {st.points.map((pt) => (
+                      <li key={pt} className="flex items-center gap-1.5 text-[12px] text-slate-600">
+                        <span className="w-1 h-1 rounded-full bg-slate-400 flex-shrink-0" />
+                        {pt}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </button>
           );
         })}
       </div>
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent" />
-      </div>
 
-      {/* Selected preview strip */}
-      {selectedConfig && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-green-200 bg-green-50/60">
-          <span className="text-2xl">{selectedConfig.icon}</span>
-          <div>
-            <div className="text-[13px] font-black text-green-900">{selectedConfig.labelHindi} चुना है</div>
-            <div className="text-[11px] text-slate-500 font-medium">{selectedConfig.label}</div>
-          </div>
-        </div>
-      )}
-
-      <ContinueButton onClick={onContinue} loading={saving} label="यह business चुनें →" />
+      <ContinueButton onClick={onContinue} loading={saving} label="इस type से शुरू करें →" />
     </div>
   );
 }
@@ -999,9 +1023,7 @@ function Step4({
           <span className="text-2xl">✅</span>
           <div>
             <div className="text-[14px] font-black text-green-800">"{productAdded}" {successLabel}!</div>
-            <div className="text-[11px] text-green-600 font-medium">
-              {mode === 'service' ? 'Service list में add हो गई।' : mode === 'dish' ? 'Menu में add हो गई।' : 'Inventory में add हो गया।'}
-            </div>
+            <div className="text-[11px] text-green-600 font-medium">Inventory में add हो गया।</div>
           </div>
         </div>
       )}
