@@ -23,7 +23,7 @@ const shopSchema = new mongoose.Schema({
   owner_photo: { type: String, default: '', select: false },
   terms: { type: String, default: 'Goods once sold will not be taken back.\nSubject to local jurisdiction.' },
   // Industry identity — drives terminology, invoice fields, and enabled modules
-  businessType: { type: String, enum: BUSINESS_TYPES, default: 'general' },
+  businessType: { type: String, enum: BUSINESS_TYPES, default: 'hardware' },
   dashboardMode: {
     type: String,
     enum: ['b2c', 'b2b', 'hybrid'],
