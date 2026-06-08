@@ -642,11 +642,10 @@ export default function ProfilePage() {
               {shopForm.gst_type === 'composition' && (
                 <div className="space-y-3">
                   <Field label="Composition Category">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {[
-                        { value: 'trader',     label: 'Trader / Manufacturer', rate: '1%' },
-                        { value: 'restaurant', label: 'Restaurant',             rate: '5%' },
-                        { value: 'service',    label: 'Service Provider',       rate: '6%' },
+                        { value: 'trader',  label: 'Trader / Manufacturer', rate: '1%' },
+                        { value: 'service', label: 'Service Provider',       rate: '6%' },
                       ].map(cat => (
                         <button
                           key={cat.value}

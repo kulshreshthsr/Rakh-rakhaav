@@ -7,7 +7,6 @@ const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Udhaar   = require('../models/udhaarModel');
 const DocumentSequence = require('../models/documentSequenceModel');
-const NarcoticsRegister = require('../models/narcoticsRegisterModel');
 const { generateGSTComplianceReport } = require('../utils/gstReportGenerator');
 const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
 const ruleEngine = require('../services/ruleEngine');
@@ -32,6 +31,17 @@ const getFinancialYear = (date = new Date()) => {
   const endYear = startYear + 1;
   return `${String(startYear).slice(-2)}-${String(endYear).slice(-2)}`;
 };
+
+function parseWarrantyExpiry(warrantyStr, fromDate = new Date()) {
+  if (!warrantyStr || warrantyStr === 'No Warranty') return null;
+  const d = new Date(fromDate);
+  const m = warrantyStr.match(/(\d+)\s*(month|year)/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  if (/year/i.test(m[2])) d.setFullYear(d.getFullYear() + n);
+  else d.setMonth(d.getMonth() + n);
+  return d;
+}
 
 const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new Date()) => {
   // Accept either a shop object (with invoice format fields) or just a shopId string
@@ -334,15 +344,22 @@ const syncSubInventory = async (previousItems = [], nextItems = [], invoiceNumbe
     // ── Serial — only mark/unmark when adding or removing serials ──────────
     if (Array.isArray(meta.serial_ids) && meta.serial_ids.length > 0) {
       if (delta > 0) {
-        await SerialInventory.updateMany(
-          { _id: { $in: meta.serial_ids } },
-          { $set: { status: 'sold', sale_invoice: invoiceNumber, sale_date: new Date() } },
-          opts
-        );
+        const saleDate = new Date();
+        const update = { status: 'sold', sale_invoice: invoiceNumber, sale_date: saleDate };
+
+        // Auto-set warranty_expiry from product metadata warranty period
+        if (product) {
+          const productDoc = await Product.findById(product).select('metadata').session(session || null);
+          const warrantyStr = productDoc?.metadata?.get?.('warranty') || '';
+          const expiry = parseWarrantyExpiry(warrantyStr, saleDate);
+          if (expiry) update.warranty_expiry = expiry;
+        }
+
+        await SerialInventory.updateMany({ _id: { $in: meta.serial_ids } }, { $set: update }, opts);
       } else {
         await SerialInventory.updateMany(
           { _id: { $in: meta.serial_ids } },
-          { $set: { status: 'in_stock' }, $unset: { sale_invoice: '', sale_date: '' } },
+          { $set: { status: 'in_stock' }, $unset: { sale_invoice: '', sale_date: '', warranty_expiry: '' } },
           opts
         );
       }
@@ -606,16 +623,6 @@ const buildSaleRecordData = async ({
     const ppu = Number(item.price_per_unit);
     if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(ppu) || ppu < 0) {
       throw _bizErr(`Invalid quantity or price for ${product.name}`);
-    }
-
-    // MRP enforcement for pharmacy — DPCO hard block
-    if (shop.businessType === 'pharmacy') {
-      const mrp = product.metadata?.get('mrp');
-      if (mrp !== undefined && mrp !== null && mrp !== '' && ppu > Number(mrp)) {
-        throw _bizErr(
-          `${product.name}: Selling price ₹${ppu} exceeds MRP ₹${mrp}. Cannot create bill. (DPCO violation)`
-        );
-      }
     }
 
     const previousQty = previousQuantities.get(String(product._id)) || 0;
@@ -911,45 +918,6 @@ const createSale = async (req, res) => {
           note:           `Sale to ${data.buyer_name || 'Walk-in'}`,
         })));
         await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
-      }
-
-      // ── Narcotics register (pharmacy only) — MUST be inside transaction ──
-      // If this insert fails the whole sale rolls back atomically.
-      if (shop.businessType === 'pharmacy') {
-        const scheduleItems = (createdSale.items || []).filter(item => {
-          const meta = item.item_metadata instanceof Map
-            ? Object.fromEntries(item.item_metadata)
-            : (item.item_metadata || {});
-          return meta.schedule === 'Schedule X' || meta.schedule === 'Schedule H1';
-        });
-        if (scheduleItems.length > 0) {
-          const efObj = createdSale.extra_fields instanceof Map
-            ? Object.fromEntries(createdSale.extra_fields)
-            : (createdSale.extra_fields || {});
-          const narcoticsEntries = scheduleItems.map(item => {
-            const meta = item.item_metadata instanceof Map
-              ? Object.fromEntries(item.item_metadata)
-              : (item.item_metadata || {});
-            return {
-              shop:               shop._id,
-              saleId:             createdSale._id,
-              invoiceNumber:      createdSale.invoice_number,
-              dispensedAt:        data.createdAt || new Date(),
-              productId:          item.product,
-              drugName:           item.product_name,
-              schedule:           meta.schedule,
-              batchNumber:        meta.batch_no || meta.batch_number || '',
-              quantityDispensed:  item.quantity,
-              unit:               'units',
-              prescriptionNumber: efObj.prescription_no || '',
-              prescribingDoctor:  efObj.doctor_name || '',
-              patientName:        data.buyer_name || 'Walk-in Patient',
-              patientPhone:       data.buyer_phone || '',
-              dispensedBy:        req.user?.username || '',
-            };
-          });
-          await NarcoticsRegister.insertMany(narcoticsEntries, { session });
-        }
       }
 
       // Update contractor outstanding after sale created
@@ -1389,214 +1357,6 @@ const updateSaleWorkflow = async (req, res) => {
   } catch (err) {
     logger.error('[salesController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GET APPOINTMENTS (Salon — sales with appointment_date)
-// ─────────────────────────────────────────────────────────────────────────────
-const getAppointments = async (req, res) => {
-  try {
-    const { date, stylist_id } = req.query;
-    const shop = await getShopOrFail(req.user.id);
-    const targetDate = date ? new Date(date) : new Date();
-    const dayStr = targetDate.toISOString().split('T')[0];
-
-    const match = {
-      shop: shop._id,
-      'extra_fields.appointment_date': dayStr,
-    };
-    if (stylist_id) match['extra_fields.stylist_id'] = stylist_id;
-
-    const appointments = await Sale.find(match)
-      .sort({ 'extra_fields.appointment_time': 1 })
-      .select('extra_fields buyer_name buyer_phone invoice_number total_amount items workflow_status payment_status createdAt');
-
-    res.json({ appointments, date: dayStr });
-  } catch (err) {
-    logger.error('[salesController]', err.message || err);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GET CLIENT HISTORY (Salon)
-// ─────────────────────────────────────────────────────────────────────────────
-const getClientHistory = async (req, res) => {
-  try {
-    const { phone, name } = req.query;
-    if (!phone && !name) return res.status(400).json({ message: 'Phone or name required' });
-    const shop = await getShopOrFail(req.user.id);
-
-    const match = { shop: shop._id };
-    if (phone) match.buyer_phone = { $regex: phone.replace(/\D/g, '').slice(-10) };
-    else match.buyer_name = { $regex: name, $options: 'i' };
-
-    const history = await Sale.find(match)
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .select('createdAt invoice_number total_amount items extra_fields payment_status buyer_name');
-
-    const visitCount = history.length;
-    const totalSpend = history.reduce((s, h) => s + (h.total_amount || 0), 0);
-    const lastVisit  = history[0]?.createdAt;
-    const daysSince  = lastVisit ? Math.floor((Date.now() - new Date(lastVisit)) / 86400000) : null;
-
-    const serviceCount = {};
-    history.forEach(sale => {
-      (sale.items || []).forEach(item => {
-        serviceCount[item.product_name] = (serviceCount[item.product_name] || 0) + item.quantity;
-      });
-    });
-    const topServices = Object.entries(serviceCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, count]) => ({ name, count }));
-
-    const lastEf = history[0]?.extra_fields instanceof Map
-      ? Object.fromEntries(history[0].extra_fields)
-      : (history[0]?.extra_fields || {});
-    const lastNotes = lastEf.client_notes || '';
-
-    res.json({ history, summary: { visitCount, totalSpend: round2(totalSpend), daysSince, topServices, lastNotes } });
-  } catch (err) {
-    logger.error('[salesController]', err.message || err);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EXCHANGE WORKFLOW (clothing only)
-// ─────────────────────────────────────────────────────────────────────────────
-const createExchange = async (req, res) => {
-  const session = await mongoose.startSession();
-  try {
-    let exchangeSaleId;
-    let auditShopId;
-
-    await session.withTransaction(async () => {
-      const shop = await getShopOrFail(req.user.id);
-      auditShopId = shop._id;
-
-      const {
-        original_invoice_no,
-        returned_items  = [],
-        exchange_items  = [],
-        customer_name,
-        customer_phone,
-        buyer_gstin,
-        buyer_state,
-        payment_type    = 'cash',
-        amount_paid     = 0,
-        notes,
-      } = req.body;
-
-      if (!exchange_items.length && !returned_items.length) {
-        throw Object.assign(new Error('Exchange ke liye kam se kam ek item zaroori hai'), { statusCode: 400 });
-      }
-
-      // ── 1. Restore stock for returned items ─────────────────────────────
-      for (const item of returned_items) {
-        const product = await Product.findOne({ _id: item.product_id, shop: shop._id }).session(session);
-        if (!product) continue;
-
-        if (item.variant_id) {
-          const variant = await ProductVariant.findOne({ _id: item.variant_id, shop: shop._id }).session(session);
-          if (variant) {
-            variant.quantity += Number(item.quantity) || 1;
-            await variant.save({ session });
-          }
-        }
-        const qty = Number(item.quantity) || 1;
-        const qAfter = round2(product.quantity + qty);
-        await Product.findByIdAndUpdate(product._id, {
-          $inc: { quantity: qty },
-          $push: {
-            stock_history: {
-              type: 'sale_return',
-              quantity_change: qty,
-              quantity_after: qAfter,
-              reference_id: original_invoice_no || 'exchange',
-              date: new Date(),
-            },
-          },
-        }, { session });
-      }
-
-      // ── 2. Build exchange-out sale via buildSaleRecordData ───────────────
-      // Routes exchange_items through the same helper as createSale — gives us
-      // proper GST, sequential invoice number, COGS, and customer ledger update.
-      if (exchange_items.length > 0) {
-        const salePayload = {
-          items: exchange_items.map(i => ({
-            product_id:     i.product_id,
-            product_name:   i.product_name || '',
-            quantity:       Number(i.quantity) || 1,
-            price_per_unit: Number(i.price) || 0,
-            gst_rate:       Number(i.gst_rate) || undefined,
-            item_metadata:  i.item_metadata || { size: i.size || '', color: i.color || '' },
-          })),
-          buyer_name:   customer_name || '',
-          buyer_phone:  customer_phone || '',
-          buyer_gstin:  buyer_gstin || '',
-          buyer_state:  buyer_state || '',
-          payment_type,
-          amount_paid,
-          notes: notes || `Exchange against invoice ${original_invoice_no || ''}`,
-          extra_fields: {
-            exchange_note:  `Exchange against invoice ${original_invoice_no || ''}`,
-            returned_items: JSON.stringify(returned_items),
-          },
-        };
-
-        const { data, itemNames } = await buildSaleRecordData({
-          shop,
-          payload: salePayload,
-          session,
-        });
-
-        await syncSaleStock(null, data.items, data.invoice_number, session);
-        await syncSubInventory([], data.items, data.invoice_number, session);
-
-        const [createdSale] = await Sale.create([{
-          ...data,
-          shop:               shop._id,
-          sale_type:          'exchange',
-          exchange_reference: original_invoice_no || '',
-        }], { session });
-
-        exchangeSaleId = createdSale._id;
-        await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
-      }
-    });
-
-    const hydratedSale = exchangeSaleId
-      ? await Sale.findById(exchangeSaleId).populate('customer', 'name phone gstin')
-      : null;
-
-    if (hydratedSale) {
-      await logAuditEvent({
-        shopId:      auditShopId || hydratedSale.shop,
-        userId:      req.user.id,
-        actionType:  'create',
-        entity:      'sale',
-        entityId:    hydratedSale._id,
-        referenceId: hydratedSale.invoice_number,
-        afterValue:  hydratedSale,
-      });
-    }
-
-    res.status(201).json({
-      exchangeSale: hydratedSale,
-      message: 'Exchange processed successfully',
-    });
-  } catch (err) {
-    const _sc = err.statusCode || err.status || 500;
-    if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
-  } finally {
-    await session.endSession();
   }
 };
 
@@ -2119,9 +1879,6 @@ module.exports = {
   getGSTComplianceReport,
   getProfitSummary,
   calculateGSTR3BSummary,
-  getAppointments,
-  getClientHistory,
-  createExchange,
   createChallan,
   markChallanDispatched,
   markChallanDelivered,

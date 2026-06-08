@@ -13,10 +13,10 @@ import { setOnboardingPending } from '../onboarding/page';
 import { apiUrl } from '../../lib/api';
 
 const PERKS = [
-  { icon: '⚡', title: 'Quick setup', desc: 'Account बनाओ और real business kaam par jao।' },
-  { icon: '🇮🇳', title: 'Indian retail के लिए', desc: 'GST, उधार, stock — daily shop workflow।' },
-  { icon: '🆓', title: 'Free शुरू करो', desc: 'Trial-ready workspace के साथ start करें।' },
-  { icon: '📱', title: 'Mobile-first', desc: 'छोटी screen पर भी perfectly काम करता है।' },
+  { icon: '🔧', title: 'Hardware & Electronics ERP', desc: 'Parts, serials, warranty — purpose-built, not generic.' },
+  { icon: '🧾', title: 'GST trade invoicing', desc: 'Challan, PO number, contractor billing in every invoice.' },
+  { icon: '📦', title: 'Stock & serial tracking', desc: 'Item-wise stock, IMEI / serial numbers, low-stock alerts.' },
+  { icon: '🏭', title: 'Dealer & contractor credit', desc: 'B2B udhaar, aging, WhatsApp reminders — one tap.' },
 ];
 
 export default function RegisterPage() {
@@ -120,20 +120,20 @@ export default function RegisterPage() {
             </div>
             <div>
               <div className="text-[18px] font-black text-white tracking-tight leading-none">रखरखाव</div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Simple Business App</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Hardware & Electronics ERP</div>
             </div>
           </Link>
 
           <div className="mt-12">
             <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-3">नया account</p>
             <h1 className="text-[clamp(26px,3vw,38px)] font-black text-white leading-tight tracking-tight">
-              एक बार setup करो,<br />
+              Hardware का पूरा ERP,<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
-                हमेशा के लिए clear।
+                mobile पर।
               </span>
             </h1>
             <p className="mt-4 text-[14px] leading-relaxed text-slate-400 max-w-xs">
-              पहले invoice से ही business professional लगेगा।
+              Parts billing, serial tracking, dealer udhaar और GST returns — hardware & electronics के लिए बना।
             </p>
           </div>
 
@@ -155,7 +155,7 @@ export default function RegisterPage() {
         <div className="relative z-10 mt-8">
           <div className="px-4 py-4 rounded-2xl bg-white/5 border border-white/8">
             <p className="text-[12px] font-semibold text-slate-400">
-              🔒 आपका data secure है। कोई credit card नहीं चाहिए।
+              🔒 Hardware & electronics stores के लिए — secure, Indian GST compliant।
             </p>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <div className="text-[17px] font-black tracking-tight text-slate-900 leading-none">रखरखाव</div>
-            <div className="text-[9px] font-bold uppercase tracking-widest text-green-700 mt-0.5">Simple Business App</div>
+            <div className="text-[9px] font-bold uppercase tracking-widest text-green-700 mt-0.5">Hardware & Electronics ERP</div>
           </div>
         </div>
 
@@ -194,10 +194,10 @@ export default function RegisterPage() {
                 </p>
               </div>
               <h2 className="mt-3 text-[clamp(24px,4vw,30px)] font-black tracking-tight text-slate-900 leading-[1.12]">
-                नया account बनाओ
+                Hardware ERP account बनाएं
               </h2>
               <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
-                आज ही अपना business workspace शुरू करें।
+                Parts billing, dealer credit और GST — सब एक जगह।
               </p>
             </div>
 
@@ -361,7 +361,7 @@ export default function RegisterPage() {
             </p>
 
             <div className="mt-5 rounded-2xl bg-green-50 border border-green-200 px-4 py-3 text-[11.5px] text-green-800 leading-relaxed">
-              🎉 7 दिन का free trial। कोई credit card नहीं चाहिए।
+              🔧 Hardware & Electronics ERP — 7 दिन free trial। कोई credit card नहीं।
             </div>
           </div>
         </div>

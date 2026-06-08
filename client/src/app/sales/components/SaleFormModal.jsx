@@ -29,15 +29,12 @@ export default function SaleFormModal({
   editingSaleId, error, submitting, isChallanMode, gstinValue, gstinValidation,
   gstinTouched, showGstinError, showGstinLengthHint, billTotals, amountPaidNum,
   challanForm, setChallanForm, documentType, setDocumentType, supplyType,
-  balanceDue, roundedBill, rowGST, scheduleWarning, invoicePreview,
+  balanceDue, roundedBill, rowGST, invoicePreview,
   handleSubmit, addItem, removeItem, updateItem, updateItemQuantityBy, duplicateItem,
   applyQuickQuantity, handleProductSelect, loadBatchesFor, loadVariantsFor,
   handleBuyerGstinChange,
   contractors, selectedContractor, setSelectedContractor,
   contractorSearch, setContractorSearch, showContractorDrop, setShowContractorDrop,
-  stylists, clientHistory, fetchClientHistory, clientMemberships,
-  redemptionMembershipId, setRedemptionMembershipId,
-  petProfiles, setPetProfiles,
   products, productBatches, productVariants,
   shopName, shopState, shopGstin, shopAddress, shopPhone,
   businessType, config, term, sSchema, activeTabs, barcodeEnabled,
@@ -171,12 +168,21 @@ export default function SaleFormModal({
               ))}
             </div>
 
-            {/* Document type toggle — hardware only */}
-            {businessType === 'hardware' && !editingSaleId && (
+            {/* Document type toggle */}
+            {!editingSaleId && businessType === 'hardware' && (
               <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mt-2">
                 {[{id:'invoice',label:'Invoice'},{id:'challan',label:'Delivery Challan'}].map(d => (
                   <button key={d.id} type="button" onClick={() => setDocumentType(d.id)}
                     className={`flex-1 py-2 rounded-lg text-[12px] font-black transition-all ${documentType === d.id ? (d.id === 'challan' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white') : 'text-slate-500 hover:text-slate-700'}`}
+                  >{d.label}</button>
+                ))}
+              </div>
+            )}
+            {!editingSaleId && businessType === 'electronics' && (
+              <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mt-2">
+                {[{id:'invoice',label:'Invoice'},{id:'quotation',label:'Quotation'}].map(d => (
+                  <button key={d.id} type="button" onClick={() => setDocumentType(d.id)}
+                    className={`flex-1 py-2 rounded-lg text-[12px] font-black transition-all ${documentType === d.id ? (d.id === 'quotation' ? 'bg-violet-600 text-white' : 'bg-green-600 text-white') : 'text-slate-500 hover:text-slate-700'}`}
                   >{d.label}</button>
                 ))}
               </div>
@@ -320,107 +326,12 @@ export default function SaleFormModal({
                     value={form.buyer_phone}
                     onChange={(e) => {
                       updateForm({ buyer_phone: e.target.value });
-                      if (businessType === 'pet_shop' && e.target.value.replace(/\D/g,'').length < 10) setPetProfiles([]);
-                    }}
-                    onBlur={(e) => {
-                      fetchClientHistory(e.target.value);
-                      if (businessType === 'pet_shop' && e.target.value.replace(/\D/g,'').length >= 10) {
-                        fetch(apiUrl(`/api/pets/owner?phone=${encodeURIComponent(e.target.value)}`), { headers: { Authorization: `Bearer ${getToken()}` } })
-                          .then(r => r.json()).then(d => {
-                            setPetProfiles(Array.isArray(d) ? d : []);
-                            if (Array.isArray(d) && d.length > 0 && !form.buyer_name) {
-                              updateForm({ buyer_name: d[0].ownerName });
-                            }
-                          }).catch(() => {});
-                      }
                     }}
                   />
 
                   <button type="button" onClick={() => setShowMoreCustomerDetails(v => !v)}
                     className="text-[12px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
                   >{showMoreCustomerDetails ? '▴ Less Details' : '▾ More Details (GSTIN, Address)'}</button>
-
-                  {businessType === 'pet_shop' && petProfiles.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {petProfiles.map(pet => {
-                        const dueVacc = pet.vaccinations?.filter(v => v.nextDueDate).sort((a,b) => new Date(a.nextDueDate) - new Date(b.nextDueDate))[0];
-                        const dueDate = dueVacc?.nextDueDate ? new Date(dueVacc.nextDueDate).toLocaleDateString('en-IN') : null;
-                        const isOverdue = dueVacc?.nextDueDate ? new Date(dueVacc.nextDueDate) < new Date() : false;
-                        return (
-                          <div key={pet._id} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-teal-200 bg-teal-50/60">
-                            <span className="text-xl flex-shrink-0">{{'Dog':'🐕','Cat':'🐈','Bird':'🐦','Fish':'🐠','Rabbit':'🐰','Hamster':'🐹','Reptile':'🦎'}[pet.species] || '🐾'}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-black text-teal-900">{pet.petName} {pet.breed ? `(${pet.breed})` : ''}</p>
-                              {dueDate && <p className={`text-[10px] font-bold mt-0.5 ${isOverdue ? 'text-red-600' : 'text-amber-700'}`}>
-                                💉 Next vaccine: {dueDate}{isOverdue ? ' — OVERDUE' : ''}
-                              </p>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {businessType === 'salon' && clientHistory && (
-                    <div className="mt-2 rounded-xl border border-purple-200 bg-purple-50/60 p-3 space-y-1.5">
-                      <p className="text-[12px] font-black text-purple-800">👤 Returning Client — {form.buyer_name || 'Known Client'}</p>
-                      <p className="text-[11px] text-purple-700">🗓️ Last visit: {clientHistory.daysSince != null ? `${clientHistory.daysSince} days ago` : '—'}  •  {clientHistory.visitCount} visits</p>
-                      <p className="text-[11px] text-purple-700">💰 Total spent: ₹{clientHistory.totalSpend?.toLocaleString('en-IN') || 0}</p>
-                      {clientHistory.topServices?.length > 0 && (
-                        <p className="text-[11px] text-purple-700">💆 Favourite: {clientHistory.topServices.map(s => `${s.name} (${s.count}x)`).join(', ')}</p>
-                      )}
-                      {clientHistory.lastNotes && (
-                        <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 rounded-lg px-2 py-1">📝 Last visit notes: &quot;{clientHistory.lastNotes}&quot;</p>
-                      )}
-                      {clientHistory.topServices?.length > 0 && addOrIncrementProduct && (
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          {clientHistory.topServices.slice(0, 3).map(s => {
-                            const prod = products.find(p => p.name === s.name);
-                            if (!prod) return null;
-                            return (
-                              <button key={s.name} type="button" onClick={() => addOrIncrementProduct(prod)}
-                                className="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-[10px] font-bold hover:bg-purple-700 transition-colors"
-                              >+ {s.name}</button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {businessType === 'salon' && clientMemberships.length > 0 && (
-                    <div className="mt-2 rounded-xl border border-teal-200 bg-teal-50/60 p-3 space-y-2">
-                      <p className="text-[11px] font-black text-teal-800">💳 Active Packages</p>
-                      {clientMemberships.map(m => (
-                        <div key={m._id} className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-bold text-teal-900">{m.serviceName}</p>
-                            <p className="text-[10px] text-teal-700">{m.totalSessions - m.usedSessions} sessions remaining</p>
-                          </div>
-                          {redemptionMembershipId === m._id ? (
-                            <span className="text-[10px] font-black text-teal-700 px-2 py-1 bg-teal-100 rounded-lg">✓ Redeeming</span>
-                          ) : (
-                            <button type="button" onClick={() => {
-                              setRedemptionMembershipId(m._id);
-                              const prod = products.find(p => p._id === m.serviceId || p.name === m.serviceName);
-                              if (prod) {
-                                setItems(prev => {
-                                  const exists = prev.findIndex(i => i.product_id === prod._id);
-                                  if (exists >= 0) return prev.map((i, idx) => idx === exists ? { ...i, price_per_unit: '0', _isRedemption: true } : i);
-                                  const emptyIdx = prev.findIndex(i => !i.product_id);
-                                  const entry = { product_id: prod._id, quantity: 1, price_per_unit: '0', item_metadata: { _isRedemption: true } };
-                                  if (emptyIdx >= 0) return prev.map((i, idx) => idx === emptyIdx ? entry : i);
-                                  return [...prev, entry];
-                                });
-                              }
-                            }}
-                              className="text-[10px] font-black text-teal-700 px-2 py-1 bg-teal-100 rounded-lg hover:bg-teal-200 transition-colors flex-shrink-0"
-                            >Redeem Now</button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                   {showMoreCustomerDetails && (
                     <div className="space-y-3">
@@ -517,25 +428,15 @@ export default function SaleFormModal({
                     if (sw.notEmpty && (!watchVal || String(watchVal).trim() === '')) return null;
                   }
                   const handleChange = (v) => {
-                    if (field.key === 'stylist_id') {
-                      const stylist = stylists.find(s => s._id === v);
-                      setExtraFields(prev => ({ ...prev, stylist_id: v, stylist_name: stylist?.name || '' }));
-                    } else {
-                      setExtraFields(prev => ({ ...prev, [field.key]: v }));
-                    }
+                    setExtraFields(prev => ({ ...prev, [field.key]: v }));
                   };
                   return (
                     <div key={field.key} id={`invoice-field-${field.key}`}>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{field.label}{field.required && <span className="text-rose-500 ml-0.5">*</span>}</p>
-                      <DynamicFormField field={field} value={extraFields[field.key] || ''} onChange={handleChange} allValues={extraFields} availableStylists={stylists} />
+                      <DynamicFormField field={field} value={extraFields[field.key] || ''} onChange={handleChange} allValues={extraFields} />
                     </div>
                   );
                 })}
-                {businessType === 'pharmacy' && scheduleWarning?.hasControlled && scheduleWarning.prescriptionFilled && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-200 text-[11px] font-semibold text-green-700">
-                    ✓ Prescription on file — Schedule H dispensing authorised
-                  </div>
-                )}
               </div>
             )}
 
@@ -619,9 +520,6 @@ export default function SaleFormModal({
                             <div className="flex items-center justify-between mb-1.5">
                               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Price (₹)
-                                {businessType === 'pharmacy' && prod?.metadata?.mrp && (
-                                  <span className="text-slate-400 font-normal ml-1">MRP: ₹{prod.metadata.mrp}</span>
-                                )}
                               </p>
                               <button
                                 type="button"
@@ -645,7 +543,6 @@ export default function SaleFormModal({
                                 type="number" step="0.01" placeholder="0.00"
                                 value={item.price_per_unit}
                                 onChange={(e) => updateItem(index, 'price_per_unit', e.target.value)}
-                                max={businessType === 'pharmacy' && prod?.metadata?.mrp ? prod.metadata.mrp : undefined}
                               />
                             )}
                           </div>
@@ -806,46 +703,6 @@ export default function SaleFormModal({
               </div>
             </div>
 
-            {/* Schedule H/X Warning */}
-            {scheduleWarning && !scheduleWarning.prescriptionFilled && (
-              <div className={`flex items-start gap-3 p-3 rounded-xl border-2 ${scheduleWarning.hasScheduleX ? 'bg-red-50 border-red-400' : 'bg-amber-50 border-amber-400'}`}>
-                <span className="text-2xl flex-shrink-0">{scheduleWarning.hasScheduleX ? '🚫' : '⚠️'}</span>
-                <div className="flex-1">
-                  <p className={`font-black text-sm ${scheduleWarning.hasScheduleX ? 'text-red-800' : 'text-amber-800'}`}>
-                    {scheduleWarning.hasScheduleX ? 'Schedule X दवाई — Prescription अनिवार्य है' : 'Schedule H दवाई — Prescription नंबर डालें'}
-                  </p>
-                  <p className={`text-xs mt-0.5 ${scheduleWarning.hasScheduleX ? 'text-red-700' : 'text-amber-700'}`}>
-                    {scheduleWarning.scheduleItems.map(i => `${i.name} (${i.schedule})`).join(', ')}
-                  </p>
-                  {scheduleWarning.hasScheduleX && (
-                    <p className="text-xs font-semibold text-red-700 mt-1">Drugs &amp; Cosmetics Act — Schedule X बिना valid prescription के नहीं बेच सकते।</p>
-                  )}
-                </div>
-                <button type="button" onClick={() => { const el = document.getElementById('invoice-field-prescription_no'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); el?.querySelector('input, select, textarea')?.focus(); }}
-                  className={`text-xs font-black px-3 py-1.5 rounded-lg flex-shrink-0 ${scheduleWarning.hasScheduleX ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
-                >Prescription भरें ↑</button>
-              </div>
-            )}
-
-            {/* Insurance breakdown */}
-            {businessType === 'pharmacy' && extraFields.insurance_type && extraFields.insurance_type !== 'None' && extraFields.insurance_type !== '' && (
-              <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 space-y-3">
-                <p className="text-[13px] font-black text-slate-900">Insurance Payment Breakdown</p>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-slate-400 mb-1.5">Insurance Coverage (₹)</p>
-                  <input className={INPUT} type="number" step="0.01" min="0" placeholder="Amount covered by insurance"
-                    value={extraFields.insurance_amount || ''}
-                    onChange={e => setExtraFields(prev => ({ ...prev, insurance_amount: e.target.value }))} max={billTotals.total} />
-                </div>
-                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white border border-blue-200">
-                  <span className="text-[12px] font-bold text-blue-700">Patient Copay</span>
-                  <span className="text-[15px] font-black text-blue-700">₹{Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}</span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  {extraFields.insurance_type} — {Number(extraFields.insurance_amount || 0) >= billTotals.total ? 'Fully covered by insurance' : `Patient pays ₹${Math.max(0, billTotals.total - Number(extraFields.insurance_amount || 0)).toFixed(2)}`}
-                </p>
-              </div>
-            )}
 
             {/* Advance payment */}
             {form.payment_type === 'credit' && (

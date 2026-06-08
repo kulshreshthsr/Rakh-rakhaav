@@ -30,7 +30,11 @@ const productSchema = new mongoose.Schema({
   low_stock_threshold: { type: Number, default: 5 }, // alert when stock <= this
   isActive: { type: Boolean, default: true },         // soft delete
 
-  // ── Industry-specific attributes (pharmacy: manufacturer/schedule, clothing: brand, etc.)
+  // ── Classification ────────────────────────────────────────────────
+  category:     { type: String, default: '' },
+  sub_category: { type: String, default: '' },
+
+  // ── Industry-specific attributes
   metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
 
   // ── Stock history log ─────────────────────────────────────────
@@ -58,6 +62,7 @@ productSchema.index({ shop: 1 });
 productSchema.index({ shop: 1, isActive: 1 });
 productSchema.index({ shop: 1, quantity: 1 });
 productSchema.index({ shop: 1, barcode: 1 }, { sparse: true });
+productSchema.index({ shop: 1, category: 1 });
 
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });

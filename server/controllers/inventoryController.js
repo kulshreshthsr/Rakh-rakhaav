@@ -1,14 +1,10 @@
 /**
  * inventoryController.js
  *
- * Handles CRUD for all sub-inventory records:
- *   - ProductBatch   (pharmacy, bakery, grocery, cosmetics, sweet_shop)
- *   - ProductVariant (clothing, footwear, sports)
- *   - Recipe         (restaurant, bakery, sweet_shop)
- *   - SerialInventory(electronics, mobile_shop)
- *
- * These records are additive to the core product.quantity field.
- * The core sale/purchase flow (and invoice totals) are untouched.
+ * Handles CRUD for sub-inventory records:
+ *   - SerialInventory (electronics — serial / IMEI tracking)
+ *   - Recipe          (dormant — Kit/Bundle repurpose candidate)
+ *   - ProductBatch / ProductVariant — dormant, not used by hardware or electronics
  */
 
 const mongoose = require('mongoose');
@@ -468,6 +464,36 @@ const getProductInventorySummary = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GLOBAL SERIAL / IMEI LOOKUP  GET /api/inventory/serials/lookup?q=<sn>
+// ─────────────────────────────────────────────────────────────────────────────
+const lookupSerial = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const q = String(req.query.q || '').trim();
+    if (q.length < 3) return res.status(400).json({ message: 'Query must be at least 3 characters' });
+
+    const record = await SerialInventory.findOne({
+      shop: shop._id,
+      $or: [
+        { serial_number: { $regex: q, $options: 'i' } },
+        { imei_number: q },
+        { imei2_number: q },
+      ],
+    }).populate('product', 'name category sub_category metadata');
+
+    if (!record) return res.json({ found: false });
+
+    const warrantyExpired = record.warranty_expiry
+      ? new Date() > new Date(record.warranty_expiry)
+      : null;
+
+    res.json({ found: true, record, warrantyExpired });
+  } catch (err) {
+    res.status(err.status || 500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   // Batch
   getBatches, addBatch, updateBatch, deleteBatch, getExpiringBatches,
@@ -476,7 +502,7 @@ module.exports = {
   // Recipe
   getRecipe, saveRecipe, deleteRecipe,
   // Serial
-  getSerials, addSerials, updateSerial, deleteSerial,
+  getSerials, addSerials, updateSerial, deleteSerial, lookupSerial,
   // Summary
   getProductInventorySummary,
 };

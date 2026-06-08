@@ -11,9 +11,11 @@ const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim(
 const getProducts = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
-    const { search, limit: limitParam, cursor } = req.query;
+    const { search, limit: limitParam, cursor, category, sub_category } = req.query;
 
     const filter = { shop: shop._id, isActive: { $ne: false } };
+    if (category)     filter.category     = category;
+    if (sub_category) filter.sub_category = sub_category;
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
@@ -51,7 +53,7 @@ const getProducts = async (req, res) => {
 // CREATE PRODUCT
 // ─────────────────────────────────────────────────────────────────────────────
 const createProduct = async (req, res) => {
-  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate, low_stock_threshold, barcode } = req.body;
+  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate, low_stock_threshold, barcode, category = '', sub_category = '' } = req.body;
   try {
     if (!name) return res.status(400).json({ message: 'Product name is required' });
 
@@ -70,19 +72,6 @@ const createProduct = async (req, res) => {
       }
     }
 
-    // MRP validation for pharmacy (DPCO)
-    if (shop.businessType === 'pharmacy' && req.body.metadata) {
-      const mrp = req.body.metadata.mrp;
-      if (mrp !== undefined && mrp !== null && mrp !== '') {
-        const sellingPrice = Number(price);
-        if (sellingPrice > Number(mrp)) {
-          return res.status(400).json({
-            message: `Selling price (₹${sellingPrice}) cannot exceed MRP (₹${mrp}). DPCO violation.`,
-          });
-        }
-      }
-    }
-
     const product = await Product.create({
       shop: shop._id,
       name: name.trim(),
@@ -95,6 +84,8 @@ const createProduct = async (req, res) => {
       hsn_code: hsn_code || '',
       gst_rate: Number(gst_rate) || 0,
       low_stock_threshold: Number(low_stock_threshold) || 5,
+      category:     category || '',
+      sub_category: sub_category || '',
       metadata: req.body.metadata || {},
       // Log initial stock
       stock_history: qty > 0 ? [{
@@ -129,7 +120,7 @@ const updateProduct = async (req, res) => {
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
     if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
-    const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold, barcode } = req.body;
+    const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold, barcode, category, sub_category } = req.body;
     const normalizedBarcode = normalizeBarcode(barcode);
 
     if (normalizedBarcode) {
@@ -144,19 +135,6 @@ const updateProduct = async (req, res) => {
       }
     }
 
-    // MRP validation for pharmacy (DPCO)
-    if (shop.businessType === 'pharmacy' && req.body.metadata) {
-      const mrp = req.body.metadata.mrp;
-      if (mrp !== undefined && mrp !== null && mrp !== '') {
-        const sellingPrice = price !== undefined ? Number(price) : product.price;
-        if (sellingPrice > Number(mrp)) {
-          return res.status(400).json({
-            message: `Selling price (₹${sellingPrice}) cannot exceed MRP (₹${mrp}). DPCO violation.`,
-          });
-        }
-      }
-    }
-
     // Note: quantity is NOT updated here — use /adjust-stock for that
     product.name = name?.trim() || product.name;
     product.description = description ?? product.description;
@@ -167,6 +145,8 @@ const updateProduct = async (req, res) => {
     product.hsn_code = hsn_code ?? product.hsn_code;
     product.gst_rate = gst_rate !== undefined ? Number(gst_rate) : product.gst_rate;
     product.low_stock_threshold = low_stock_threshold !== undefined ? Number(low_stock_threshold) : product.low_stock_threshold;
+    if (category     !== undefined) product.category     = category;
+    if (sub_category !== undefined) product.sub_category = sub_category;
     if (req.body.metadata !== undefined) {
       product.metadata = req.body.metadata;
       product.markModified('metadata');
@@ -288,27 +268,6 @@ const getStockHistory = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TOGGLE AVAILABILITY (Restaurant — daily sold-out flag)
-// ─────────────────────────────────────────────────────────────────────────────
-const toggleAvailability = async (req, res) => {
-  try {
-    const { available, unavailable_reason } = req.body;
-    const shop = await getShopOrFail(req.user.id);
-    const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
-    if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
-
-    product.metadata.set('is_available_today', available ? 'true' : 'false');
-    product.metadata.set('unavailable_reason', unavailable_reason || '');
-    product.metadata.set('availability_set_at', new Date().toISOString());
-    await product.save();
-    res.json({ message: 'Availability updated', available });
-  } catch (err) {
-    logger.error('[productController]', err.message || err);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GET PRODUCT BY BARCODE (product-level or variant-level)
 // ─────────────────────────────────────────────────────────────────────────────
 const getByBarcode = async (req, res) => {
@@ -387,4 +346,25 @@ const bulkImportProducts = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory, toggleAvailability, getByBarcode, bulkImportProducts };
+// ─────────────────────────────────────────────────────────────────────────────
+// REORDER SUGGESTIONS  GET /api/products/reorder-suggestions
+// ─────────────────────────────────────────────────────────────────────────────
+const getReorderSuggestions = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const products = await Product.find({
+      shop: shop._id,
+      isActive: { $ne: false },
+      $expr: { $lte: ['$quantity', '$low_stock_threshold'] },
+    })
+      .select('name quantity low_stock_threshold unit category sub_category')
+      .sort({ quantity: 1 })
+      .limit(50);
+    res.json(products);
+  } catch (err) {
+    logger.error('[getReorderSuggestions]', err.message || err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+module.exports = { getProducts, createProduct, updateProduct, deleteProduct, adjustStock, getStockHistory, getByBarcode, bulkImportProducts, getReorderSuggestions };

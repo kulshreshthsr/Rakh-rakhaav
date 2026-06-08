@@ -7,7 +7,7 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import DynamicFormField from '../../components/DynamicFormField';
-import EmptyState from '../../components/ui/EmptyState';
+
 import DynamicFormSection, { flattenSectionFields, formatMetaValue, validateSections } from '../../components/DynamicFormSection';
 import { getInvBehavior, hasInventoryPanel, isBatchMode, isVariantMode, isSerialMode, isRecipeMode, getPrimaryPanelLabel } from '../../lib/inventoryBehavior';
 import PageHeader from '../../components/ui/PageHeader';
@@ -68,7 +68,7 @@ function Backdrop({ children, onClose }) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function ProductsPage() {
   const router = useRouter();
-  const { term, config, businessType } = useIndustry();
+  const { term, config } = useIndustry();
 
   /* ── Schema-derived constants ── */
   const pSchema    = config.productFormSchema || {};
@@ -90,21 +90,22 @@ export default function ProductsPage() {
   const [products,   setProducts]   = useState([]);
   const [filtered,   setFiltered]   = useState([]);
   const [loading,    setLoading]    = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [error,      setError]      = useState('');
   const [isOnline,   setIsOnline]   = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [cacheUpdatedAt, setCacheUpdatedAt] = useState(null);
+  const [, setCacheUpdatedAt] = useState(null);
 
   const [search,        setSearch]        = useState('');
   const [sortBy,        setSortBy]        = useState('name');
   const [filterStock,   setFilterStock]   = useState('all');
+  const [filterCategory, setFilterCategory] = useState('');
   const [expiringFilter, setExpiringFilter] = useState(false);
   const [sizeFilter,     setSizeFilter]     = useState('');
   const [urlLowStock,    setUrlLowStock]    = useState(false);
 
   const [showModal,   setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [form, setForm] = useState({ name:'', description:'', price:'', cost_price:'', quantity:'', unit:'pcs', barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5 });
+  const [form, setForm] = useState({ name:'', description:'', price:'', cost_price:'', quantity:'', unit:'pcs', barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5, category:'', sub_category:'' });
   const [metadata, setMetadata] = useState({});
   const [metaErrors, setMetaErrors] = useState({});
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -126,13 +127,16 @@ export default function ProductsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importBusy,      setImportBusy]      = useState(false);
 
+  const [reorderItems,     setReorderItems]     = useState([]);
+  const [showReorderPanel, setShowReorderPanel] = useState(true);
+
   /* ── All effects (UNCHANGED) ── */
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(PRODUCTS_CACHE_KEY);
     if (cached?.products) { setProducts(cached.products); setCacheUpdatedAt(cached.cachedAt || null); setLoading(false); }
-    const deferredId = scheduleDeferred(async () => { setRefreshing(Boolean(cached?.products)); await fetchProducts(); setRefreshing(false); });
+    const deferredId = scheduleDeferred(async () => { setRefreshing(Boolean(cached?.products)); await Promise.all([fetchProducts(), fetchReorderSuggestions()]); setRefreshing(false); });
     return () => cancelDeferred(deferredId);
   }, []);
   /* eslint-enable react-hooks/exhaustive-deps */
@@ -155,6 +159,7 @@ export default function ProductsPage() {
   useEffect(() => {
     let r = [...products];
     if (search)              r = r.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.description && p.description.toLowerCase().includes(search.toLowerCase())) || (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase())));
+    if (filterCategory)            r = r.filter(p => p.category === filterCategory);
     if (filterStock === 'low')     r = r.filter(p => p.quantity > 0 && p.is_low_stock);
     if (filterStock === 'out')     r = r.filter(p => p.quantity === 0);
     if (filterStock === 'instock') r = r.filter(p => p.quantity > 0 && !p.is_low_stock);
@@ -185,7 +190,7 @@ export default function ProductsPage() {
     if (sortBy === 'quantity')     r.sort((a, b) => a.quantity - b.quantity);
     if (sortBy === 'margin')       r.sort((a, b) => (b.margin || 0) - (a.margin || 0));
     setFiltered(r);
-  }, [search, sortBy, filterStock, expiringFilter, urlLowStock, sizeFilter, products]);
+  }, [search, sortBy, filterStock, filterCategory, expiringFilter, urlLowStock, sizeFilter, products]);
 
   /* ── All logic (UNCHANGED) ── */
   const fetchProducts = async () => {
@@ -199,6 +204,13 @@ export default function ProductsPage() {
       setCacheUpdatedAt(new Date().toISOString());
     } catch { setError('Products could not be loaded'); }
     finally { setLoading(false); }
+  };
+
+  const fetchReorderSuggestions = async () => {
+    try {
+      const res = await fetch(apiUrl('/api/products/reorder-suggestions'), { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (res.ok) setReorderItems(await res.json());
+    } catch { /* non-critical */ }
   };
 
   const handleImport = async (file) => {
@@ -234,14 +246,15 @@ export default function ProductsPage() {
     setForm({ name:'', description:'', price:'', cost_price:'',
       quantity: trackQty ? '' : '0',
       unit: unitOptions ? unitOptions[0] : 'pcs',
-      barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5 });
+      barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5,
+      category:'', sub_category:'' });
     setMetadata({}); setMetaErrors({});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
   };
 
   const openEdit = (p) => {
     setEditProduct(p);
-    setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5 });
+    setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5, category:p.category||'', sub_category:p.sub_category||'' });
     // Restore metadata from product (MongoDB Map serialises to plain object in JSON response)
     setMetadata(p.metadata && typeof p.metadata === 'object' ? { ...p.metadata } : {}); setMetaErrors({});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
@@ -327,10 +340,6 @@ export default function ProductsPage() {
     ? (((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1) : null;
   const liveProfit = liveMargin != null ? (Number(form.price) - Number(form.cost_price)).toFixed(2) : null;
   const liveMrp = metadata?.mrp ? Number(metadata.mrp) : null;
-  const mrpViolation = businessType === 'pharmacy' && liveMrp && form.price && Number(form.price) > liveMrp;
-  const cacheLabel = cacheUpdatedAt
-    ? new Date(cacheUpdatedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : null;
-
   const STOCK_TYPES = {
     manual_add:    { label:'Stock जोड़ो',   color:'border-emerald-400 bg-emerald-50 text-emerald-800', active:'bg-emerald-500 text-white border-emerald-500' },
     manual_remove: { label:'Stock हटाओ',   color:'border-rose-400 bg-rose-50 text-rose-800',         active:'bg-rose-500 text-white border-rose-500' },
@@ -373,15 +382,14 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* ── EXPIRING FILTER BANNER (pharmacy) ── */}
         {expiringFilter && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-orange-50 border-2 border-orange-300">
             <span className="text-xl flex-shrink-0">⏰</span>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-black text-orange-900">
-                Showing medicines expiring within 30 days — {filtered.length} items
+                Showing items with expiry within 30 days — {filtered.length} items
               </p>
-              <p className="text-[11px] text-orange-700 mt-0.5">Expired or expiring stock should be reviewed immediately</p>
+              <p className="text-[11px] text-orange-700 mt-0.5">Review and clear near-expiry stock immediately</p>
             </div>
             <button
               onClick={() => { setExpiringFilter(false); window.history.replaceState({}, '', '/product'); }}
@@ -423,6 +431,32 @@ export default function ProductsPage() {
           ))}
         </div>
 
+        {/* ── REORDER SUGGESTIONS ── */}
+        {reorderItems.length > 0 && showReorderPanel && (
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[13px] font-black text-amber-900">⚠️ {reorderItems.length} item{reorderItems.length !== 1 ? 's' : ''} need restocking</p>
+              <button onClick={() => setShowReorderPanel(false)} className="text-amber-500 hover:text-amber-700 text-lg leading-none">✕</button>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {reorderItems.slice(0, 10).map(p => (
+                <div key={p._id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-amber-200">
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-bold text-slate-800 truncate">{p.name}</p>
+                    {p.category && <p className="text-[10px] text-slate-400">{p.category}</p>}
+                  </div>
+                  <span className={`flex-shrink-0 text-[11px] font-black px-2 py-0.5 rounded-lg ${p.quantity === 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {p.quantity === 0 ? 'Out' : `${p.quantity} ${p.unit || 'pcs'}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {reorderItems.length > 10 && (
+              <p className="text-[10px] text-amber-600 text-center">+{reorderItems.length - 10} more — use &quot;Low Stock&quot; filter to see all</p>
+            )}
+          </div>
+        )}
+
         {/* ── TOOLBAR ── */}
         <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 shadow-md space-y-3">
           <input className="h-11 w-full px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
@@ -430,6 +464,13 @@ export default function ProductsPage() {
             value={search} onChange={e => setSearch(e.target.value)}
           />
           <div className="flex gap-2">
+            {config.categoryConfig && (
+              <select className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
+                value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                <option value="">All Categories</option>
+                {config.categoryConfig.categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
             <select className="flex-1 h-11 px-4 rounded-xl border-2 border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all"
               value={filterStock} onChange={e => setFilterStock(e.target.value)}>
               <option value="all">All Stock</option>
@@ -445,8 +486,8 @@ export default function ProductsPage() {
               <option value="quantity">Qty: Low → High</option>
               <option value="margin">Margin: Best</option>
             </select>
-            {(search || filterStock !== 'all') && (
-              <button onClick={() => { setSearch(''); setFilterStock('all'); }}
+            {(search || filterStock !== 'all' || filterCategory) && (
+              <button onClick={() => { setSearch(''); setFilterStock('all'); setFilterCategory(''); }}
                 className="px-4 h-11 rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors"
               >Clear</button>
             )}
@@ -510,6 +551,11 @@ export default function ProductsPage() {
                           <p className="text-[11px] text-slate-400 mt-0.5">
                             {[p.barcode && `📷 ${p.barcode}`, p.hsn_code && `HSN ${p.hsn_code}`, p.unit].filter(Boolean).join(' · ')}
                           </p>
+                          {p.category && (
+                            <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-semibold text-indigo-600">
+                              {p.category}{p.sub_category ? ` › ${p.sub_category}` : ''}
+                            </span>
+                          )}
                         </div>
                         <span className={`rr-pill flex-shrink-0 ${p.quantity === 0 ? 'rr-pill-rose' : p.is_low_stock ? 'rr-pill-amber' : 'rr-pill-green'}`}>
                           {s.label}
@@ -548,40 +594,6 @@ export default function ProductsPage() {
                                 {pill.label}: {pill.value}
                               </span>
                             ))}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Restaurant: Availability toggle */}
-                      {businessType === 'restaurant' && (() => {
-                        const meta = p.metadata || {};
-                        const isAvailable = meta.is_available_today !== 'false';
-                        const reason = meta.unavailable_reason || '';
-                        const toggleAvail = async (available) => {
-                          const reasonInput = available ? '' : (window.prompt('Reason (optional):', 'Sold out today') ?? '');
-                          try {
-                            const res = await fetch(apiUrl(`/api/products/${p._id}/availability`), {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                              body: JSON.stringify({ available, unavailable_reason: reasonInput }),
-                            });
-                            if (res.ok) setProducts(prev => prev.map(x => x._id !== p._id ? x : {
-                              ...x,
-                              metadata: { ...(x.metadata instanceof Map ? Object.fromEntries(x.metadata) : (x.metadata || {})), is_available_today: available ? 'true' : 'false', unavailable_reason: reasonInput }
-                            }));
-                          } catch {}
-                        };
-                        return (
-                          <div className="mb-2">
-                            {isAvailable ? (
-                              <button onClick={() => toggleAvail(false)}
-                                className="w-full py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-[11px] font-bold text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-all"
-                              >✓ Available — Click to Mark Unavailable</button>
-                            ) : (
-                              <button onClick={() => toggleAvail(true)}
-                                className="w-full py-1.5 rounded-xl border-2 border-red-300 bg-red-50 text-[11px] font-bold text-red-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition-all"
-                              >✗ Sold Out{reason ? ` — ${reason}` : ''} — Click to Restore</button>
-                            )}
                           </div>
                         );
                       })()}
@@ -785,17 +797,45 @@ export default function ProductsPage() {
                   )}
                 </div>
 
+                {/* ── CATEGORY ── */}
+                {config.categoryConfig && (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Category</p>
+                      <select className={SEL} value={form.category}
+                        onChange={e => setForm(prev => ({ ...prev, category: e.target.value, sub_category: '' }))}>
+                        <option value="">— Select Category —</option>
+                        {config.categoryConfig.categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    {form.category && config.categoryConfig.subCategories[form.category]?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Sub-Category</p>
+                        <select className={SEL} value={form.sub_category}
+                          onChange={e => setForm(prev => ({ ...prev, sub_category: e.target.value }))}>
+                          <option value="">— All Sub-categories —</option>
+                          {config.categoryConfig.subCategories[form.category].map(sc => <option key={sc} value={sc}>{sc}</option>)}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* ── INDUSTRY-SPECIFIC ATTRIBUTES (sections take priority over flat list) ── */}
                 {config.productAttributeSections?.length > 0
-                  ? config.productAttributeSections.map(section => (
-                      <DynamicFormSection
-                        key={section.title}
-                        section={section}
-                        values={metadata}
-                        onChange={(key, v) => { setMetadata(prev => ({ ...prev, [key]: v })); setMetaErrors(prev => { const n = { ...prev }; delete n[key]; return n; }); }}
-                        errors={metaErrors}
-                      />
-                    ))
+                  ? config.productAttributeSections.map(section => {
+                      if (section.visibleWhenCategory && section.visibleWhenCategory !== form.category) return null;
+                      return (
+                        <DynamicFormSection
+                          key={section.title}
+                          section={section}
+                          values={metadata}
+                          onChange={(key, v) => { setMetadata(prev => ({ ...prev, [key]: v })); setMetaErrors(prev => { const n = { ...prev }; delete n[key]; return n; }); }}
+                          errors={metaErrors}
+                        />
+                      );
+                    })
                   : config.productAttributes?.length > 0 && (
                       <div className="rounded-2xl border border-green-100 bg-green-50/60 p-4 space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-green-700">{attrsTitle}</p>

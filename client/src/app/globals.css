@@ -26,10 +26,10 @@
   --android-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --android-ring: 0 0 0 3px rgba(21,128,61,0.13), 0 0 0 1px rgba(52,211,153,0.28);
   --android-bg:
-    radial-gradient(ellipse 92% 68% at 50% -26%, rgba(21,128,61,0.08), transparent 57%),
-    radial-gradient(ellipse 56% 40% at 100% 0%, rgba(4,120,87,0.06), transparent 52%),
-    radial-gradient(ellipse 48% 34% at 0% 10%, rgba(74,222,128,0.06), transparent 45%),
-    linear-gradient(180deg, #f0fdf4 0%, #f7fdf9 34%, #fafffe 72%, #ffffff 100%);
+    radial-gradient(ellipse 92% 68% at 50% -26%, rgba(21,128,61,0.10), transparent 57%),
+    radial-gradient(ellipse 56% 40% at 100% 0%, rgba(4,120,87,0.08), transparent 52%),
+    radial-gradient(ellipse 48% 34% at 0% 10%, rgba(74,222,128,0.07), transparent 45%),
+    linear-gradient(180deg, #edfaf1 0%, #f4fbf7 34%, #f9fffe 72%, #ffffff 100%);
 }
 
 @layer base {
@@ -47,10 +47,12 @@
     z-index: -1;
     pointer-events: none;
     background-image:
-      linear-gradient(rgba(148,163,184,0.028) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(148,163,184,0.028) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: linear-gradient(180deg, rgba(255,255,255,0.14), transparent 72%);
+      linear-gradient(rgba(21,128,61,0.032) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(21,128,61,0.032) 1px, transparent 1px),
+      linear-gradient(rgba(148,163,184,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.018) 1px, transparent 1px);
+    background-size: 48px 48px, 48px 48px, 12px 12px, 12px 12px;
+    mask-image: linear-gradient(180deg, rgba(255,255,255,0.22), transparent 68%);
   }
   h1, h2, h3, h4, h5 { color: var(--ink); }
   a { @apply text-inherit; }
@@ -100,7 +102,7 @@
     position: absolute;
     inset: 0 auto 0 0;
     width: 4px;
-    background: #16a34a;
+    background: linear-gradient(180deg, #065f46 0%, #16a34a 50%, #34d399 100%);
   }
   .card:hover, .metric-card:hover, .stat-card:hover, .ui-list-card:hover, .ui-stat-card.is-clickable:hover, .soft-panel:hover, .toolbar-card:hover {
     @apply -translate-y-[2px];
@@ -128,12 +130,13 @@
   .toolbar, .ui-card-actions, .flow-actions, .subscription-modal-actions, .read-only-actions { @apply flex flex-wrap items-center gap-2; }
 
   .hero-panel {
-    @apply relative overflow-hidden rounded-[8px] border border-slate-300/80 p-6 sm:p-7;
+    @apply relative overflow-hidden rounded-[8px] border p-6 sm:p-7;
+    border-color: rgba(21,128,61,0.18);
     background:
-      radial-gradient(circle at 92% 8%, rgba(21,128,61,0.10), transparent 42%),
-      radial-gradient(circle at 0% 100%, rgba(52,211,153,0.12), transparent 38%),
-      linear-gradient(145deg, rgba(255,255,255,0.99) 0%, rgba(244,253,250,0.98) 48%, rgba(237,252,246,0.96) 100%);
-    box-shadow: var(--surface-shadow-strong), 0 28px 54px -34px rgba(21,128,61,0.22);
+      radial-gradient(circle at 92% 8%, rgba(21,128,61,0.12), transparent 42%),
+      radial-gradient(circle at 0% 100%, rgba(52,211,153,0.14), transparent 38%),
+      linear-gradient(145deg, rgba(255,255,255,0.99) 0%, rgba(240,253,244,0.98) 48%, rgba(230,252,241,0.96) 100%);
+    box-shadow: var(--surface-shadow-strong), 0 28px 54px -34px rgba(21,128,61,0.26);
   }
   .hero-panel::after {
     content: '';
@@ -220,11 +223,11 @@
   .table-container, .ui-table-wrap { @apply overflow-hidden rounded-[8px] border border-slate-300/90 bg-white/95; box-shadow: var(--surface-shadow-strong); }
   .ui-table-wrap { @apply overflow-x-auto rounded-[8px]; }
   table, .ui-table { @apply w-full border-collapse; }
-  thead { @apply bg-slate-50/95; }
-  th, .ui-table th { @apply px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500; border-bottom: 1px solid rgba(148,163,184,0.14); }
-  td, .ui-table td { @apply px-4 py-3 text-[13px] text-slate-900 align-middle; border-bottom: 1px solid rgba(148,163,184,0.12); }
-  tbody tr:nth-child(even) td, .ui-table tbody tr:nth-child(even) td { background: rgba(248,250,255,0.52); }
-  tbody tr:hover td, .ui-table tbody tr:hover td { background: rgba(235,238,255,0.78); }
+  thead { background: linear-gradient(180deg, rgba(5,46,22,0.04), rgba(240,253,244,0.80)); }
+  th, .ui-table th { @apply px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-green-900/60; border-bottom: 1px solid rgba(21,128,61,0.12); }
+  td, .ui-table td { @apply px-4 py-3 text-[13px] text-slate-900 align-middle; border-bottom: 1px solid rgba(148,163,184,0.10); }
+  tbody tr:nth-child(even) td, .ui-table tbody tr:nth-child(even) td { background: rgba(240,253,244,0.38); }
+  tbody tr:hover td, .ui-table tbody tr:hover td { background: rgba(220,252,231,0.55); }
   .gstr3b-total-row td { @apply bg-rose-50 font-bold text-rose-500; }
 
   .ui-data-row { @apply flex items-center justify-between gap-3 rounded-[6px] border border-slate-300/90 px-4 py-3; background: var(--surface-card-soft); box-shadow: var(--surface-shadow); }
@@ -252,10 +255,10 @@
   .alert-warning { @apply border-amber-300 bg-amber-50 text-amber-800; }
   .alert-info { @apply border-sky-200 bg-sky-50 text-sky-700; }
 
-  .empty-state, .ui-empty { @apply rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500; }
-  .empty-state-icon { @apply mx-auto mb-3.5 flex h-[60px] w-[60px] items-center justify-center rounded-[18px] bg-gradient-to-r from-green-600/12 to-emerald-500/8 text-[24px] font-black text-green-700; }
+  .empty-state, .ui-empty { @apply rounded-[22px] border border-dashed px-6 py-10 text-center text-slate-500; border-color: rgba(21,128,61,0.22); background: linear-gradient(160deg, rgba(240,253,244,0.60), rgba(255,255,255,0.80)); }
+  .empty-state-icon { @apply mx-auto mb-3.5 flex h-[60px] w-[60px] items-center justify-center rounded-[18px] text-[24px] font-black text-green-700; background: linear-gradient(135deg, rgba(21,128,61,0.10), rgba(52,211,153,0.08)); border: 1px solid rgba(21,128,61,0.14); }
   .divider { @apply my-[18px] h-px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); }
-  .skeleton { @apply rounded-[10px]; background: linear-gradient(90deg, #f0fdf4 25%, #dcfce7 50%, #f0fdf4 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  .skeleton { @apply rounded-[10px]; background: linear-gradient(90deg, #f0fdf4 25%, #bbf7d0 50%, #f0fdf4 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
   .status-dot { @apply inline-block h-2 w-2 rounded-full; }
   .status-dot.is-green { @apply bg-emerald-500; }
   .status-dot.is-yellow { @apply bg-amber-500; }

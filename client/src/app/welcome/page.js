@@ -6,16 +6,16 @@ import { hasWelcomePending, markTrialGateSeen, setWelcomePending } from '../../l
 
 const featureCards = [
   {
-    title: 'Fast billing',
-    copy: 'Mobile se jaldi invoice banao, bill print karo aur share karo.',
+    title: 'Hardware & Electronics ERP',
+    copy: 'Parts billing, serial tracking, warranty, contractor udhaar — ek hi jagah.',
   },
   {
-    title: 'GST ready',
-    copy: 'Tax data, reports aur exports ko bina extra tension ke ready rakho.',
+    title: 'GST Trade Invoicing',
+    copy: 'Challan, PO number, GSTIN — har invoice ek professional trade document.',
   },
   {
-    title: 'Inventory + udhaar',
-    copy: 'Stock, purchases aur customer dues ko ek clean workspace se track karo.',
+    title: 'Stock & Dealer Credit',
+    copy: 'Item-wise stock alerts, IMEI tracking, aur B2B aging ek clean dashboard se.',
   },
 ];
 
@@ -43,17 +43,17 @@ export default function WelcomePage() {
     <div className="trial-gate-root welcome-gate-root trust-welcome-root">
       <div className="trial-gate-shell trust-welcome-shell">
         <section className="trial-gate-hero trust-welcome-hero">
-          <div className="subscription-pill">Welcome to Rakhrakhaav</div>
-          <h1>Yeh aapka naya smart business workspace hai jo har screen par professional feel deta hai.</h1>
+          <div className="subscription-pill">🔧 Hardware & Electronics ERP</div>
+          <h1>आपका Hardware & Electronics ERP तैयार है।</h1>
           <p>
-            Is experience ko aise design kiya gaya hai ki pehli screen se final bill tak aapka business zyada clear,
-            reliable aur modern lage.
+            Parts billing से लेकर serial tracking, contractor udhaar और GST returns तक — सब एक workspace में।
+            Hardware और electronics की दुकान के लिए purpose-built।
           </p>
 
           <div className="trial-gate-chip-row">
             <span>7-day free trial</span>
-            <span>Green smart theme</span>
-            <span>Mobile-friendly flow</span>
+            <span>GST trade invoicing</span>
+            <span>Serial & warranty tracking</span>
           </div>
 
           <div className="trial-gate-feature-grid">
@@ -69,21 +69,20 @@ export default function WelcomePage() {
         <aside className="trial-gate-sidecard trust-welcome-sidecard">
           <div className="trial-gate-side-kicker">Trial access</div>
           <div className="trial-gate-side-title">
-            Trial ready to start
+            Dashboard खोलें
           </div>
           <p>
-            Dashboard kholo aur naya clean visual system explore karo, jo product ko modern bhi banata hai aur
-            business credibility bhi maintain karta hai.
+            पहला bill बनाएं, stock add करें, या dealer udhaar setup करें। Hardware & electronics ERP आपके साथ।
           </p>
 
           <div className="trust-mini-strip trust-mini-strip-dark">
-            <span>Premium visuals</span>
-            <span>Business credibility</span>
-            <span>Cleaner hierarchy</span>
+            <span>Parts billing</span>
+            <span>Contractor credit</span>
+            <span>GST ready</span>
           </div>
 
           <button type="button" className="btn-primary trust-submit-btn" onClick={startTrial}>
-            Free trial start karein
+            Dashboard खोलें →
           </button>
         </aside>
       </div>

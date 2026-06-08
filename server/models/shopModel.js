@@ -2,13 +2,7 @@ const mongoose = require('mongoose');
 const { STATE_CODES } = require('../lib/gstUtils');
 
 // All supported business types. Add new entries here to extend the system.
-const BUSINESS_TYPES = [
-  'general', 'pharmacy', 'clothing', 'hardware', 'electronics',
-  'restaurant', 'automobile', 'retail', 'bookstall', 'kirana',
-  'sweet_shop', 'bakery', 'salon', 'stationery', 'mobile_shop',
-  'grocery', 'cosmetics', 'footwear', 'furniture', 'gift_shop',
-  'toy_store', 'sports', 'jewellery', 'pet_shop', 'service_center', 'repair_shop',
-];
+const BUSINESS_TYPES = ['hardware', 'electronics'];
 
 const shopSchema = new mongoose.Schema({
   name: { type: String, required: true },
