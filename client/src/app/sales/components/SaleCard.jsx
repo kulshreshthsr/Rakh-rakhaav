@@ -197,6 +197,48 @@ export default function SaleCard({
             </div>
           )}
 
+          {/* E-Way Bill */}
+          {!s._isOffline && (s.ewb_status === 'pending' || s.ewb_status === 'generated') && (
+            <div className="mt-2">
+              {s.ewb_status === 'pending' && (
+                <button onClick={async () => {
+                  if (!confirm(`Generate E-Way Bill for ${s.invoice_number}?\n\nThis will call the NIC EWB API and requires valid credentials in server config.`)) return;
+                  try {
+                    const r = await fetch(apiUrl(`/api/sales/${s._id}/generate-ewb`), { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } });
+                    const d = await r.json();
+                    if (!r.ok) { alert(d.message || 'EWB generation failed'); return; }
+                    alert(`E-Way Bill generated!\nEWB No: ${d.ewb_number}\nValid until: ${d.ewb_valid_until ? new Date(d.ewb_valid_until).toLocaleDateString() : 'N/A'}`);
+                    fetchAll();
+                  } catch { alert('Server error'); }
+                }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-[11px] font-bold text-orange-700 hover:bg-orange-100 transition-all">
+                  🛣️ Generate E-Way Bill
+                </button>
+              )}
+              {s.ewb_status === 'generated' && (
+                <div className="rounded-xl border-2 border-orange-200 bg-orange-50 px-3 py-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-orange-700">E-Way Bill</span>
+                    <span className="text-[10px] font-bold text-emerald-700">✓ Generated</span>
+                  </div>
+                  <p className="text-xs font-black text-slate-800">{s.ewb_number}</p>
+                  {s.ewb_valid_until && <p className="text-[10px] text-slate-500">Valid till {new Date(s.ewb_valid_until).toLocaleDateString()}</p>}
+                  <button onClick={async () => {
+                    const reason = prompt('Cancellation reason:\n1. Duplicate\n2. Order Cancelled\n3. Data Entry Mistake\n4. Others\n\nEnter reason:') || 'Others';
+                    try {
+                      const r = await fetch(apiUrl(`/api/sales/${s._id}/cancel-ewb`), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ reason }) });
+                      const d = await r.json();
+                      if (!r.ok) { alert(d.message || 'Cancellation failed'); return; }
+                      alert('E-Way Bill cancelled.');
+                      fetchAll();
+                    } catch { alert('Server error'); }
+                  }} className="w-full min-h-[32px] py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] font-bold text-rose-600 hover:bg-rose-100 transition-all">
+                    Cancel EWB
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Challan actions */}
           {s.document_type === 'challan' && !s._isOffline && (
             <div className="mt-2 space-y-2">

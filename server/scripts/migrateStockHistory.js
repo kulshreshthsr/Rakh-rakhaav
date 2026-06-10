@@ -49,6 +49,7 @@ async function run() {
         quantity_change: e.quantity_change,
         quantity_after:  e.quantity_after,
         reference_id:    e.reference_id,
+        reference_type:  'migrated_history',
         note:            e.note,
         date:            e.date || new Date(),
       }));
@@ -68,7 +69,7 @@ async function run() {
       }
 
       // Clear the embedded array after successful migration
-      await Product.findByIdAndUpdate(product._id, { $set: { stock_history: [] } });
+      await Product.updateOne({ _id: product._id }, { $unset: { stock_history: 1 } });
     }
   }
 

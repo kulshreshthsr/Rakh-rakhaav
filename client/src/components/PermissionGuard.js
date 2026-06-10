@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { hasPermission, isOwner } from '../lib/permissions';
 
@@ -14,18 +14,13 @@ import { hasPermission, isOwner } from '../lib/permissions';
  *   redirect    — path to redirect to when access is denied (optional)
  */
 export default function PermissionGuard({ permission, ownerOnly = false, fallback = null, redirect, children }) {
-  const [allowed, setAllowed] = useState(false);
-  const [checked, setChecked] = useState(false);
   const router = useRouter();
+  const allowed = ownerOnly ? isOwner() : (!permission || hasPermission(permission));
 
   useEffect(() => {
-    const ok = ownerOnly ? isOwner() : (!permission || hasPermission(permission));
-    setAllowed(ok);
-    setChecked(true);
-    if (!ok && redirect) router.replace(redirect);
-  }, [permission, ownerOnly, redirect, router]);
+    if (!allowed && redirect) router.replace(redirect);
+  }, [allowed, redirect, router]);
 
-  if (!checked) return null;
   if (!allowed) return fallback;
   return children;
 }

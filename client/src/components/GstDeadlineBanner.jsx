@@ -28,16 +28,22 @@ function getGstDeadlines() {
 const SESSION_KEY = 'rr-gst-deadline-dismissed';
 
 export default function GstDeadlineBanner({ shop }) {
-  const [dismissed, setDismissed] = useState({});
-  const [deadlines, setDeadlines] = useState([]);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(sessionStorage.getItem(SESSION_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const [deadlines, setDeadlines] = useState(() => getGstDeadlines());
 
   useEffect(() => {
     if (shop?.gst_type !== 'regular') return;
-    try {
-      const stored = JSON.parse(sessionStorage.getItem(SESSION_KEY) || '{}');
-      setDismissed(stored);
-    } catch { /* ignore */ }
-    setDeadlines(getGstDeadlines());
+    const timer = window.setTimeout(() => {
+      setDeadlines(getGstDeadlines());
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [shop?.gst_type]);
 
   if (!shop || shop.gst_type !== 'regular') return null;

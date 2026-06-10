@@ -360,7 +360,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <p className="text-base sm:text-lg leading-relaxed text-slate-700 italic">
-                  "{testimonial.text}"
+                  &ldquo;{testimonial.text}&rdquo;
                 </p>
               </div>
             ))}

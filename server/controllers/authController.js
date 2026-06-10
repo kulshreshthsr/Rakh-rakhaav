@@ -13,7 +13,8 @@ const {
   syncSubscriptionState,
 } = require('../services/subscriptionService');
 
-const AUTH_TOKEN_TTL = '30d';
+const AUTH_TOKEN_TTL = '7d';
+const REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const MAX_OWNER_PHOTO_SIZE = 5 * 1024 * 1024;
 
 const isValidOwnerPhoto = (value = '') => {
@@ -39,6 +40,7 @@ const serializeAuthUser = (user) => ({
   subscription: getSubscriptionSnapshot(user),
   role: user.role || 'owner',
   isSubUser: user.isSubUser || false,
+  ui_language: user.ui_language || 'hi_en',
 });
 
 const register = async (req, res) => {
@@ -54,14 +56,37 @@ const register = async (req, res) => {
       username: username.toLowerCase(),
       password: hashedPassword,
       email: req.body.email ? req.body.email.toLowerCase().trim() : null,
+      ui_language: req.body.ui_language || 'hi_en',
       trialStartDate: now,
       trialEndDate: new Date(now.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000)),
       paymentStatus: 'trial',
     });
     await Shop.create({ name: 'My Shop', owner: user._id });
 
-    const token = jwt.sign({ id: user._id, username: user.username, tv: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
-    res.status(201).json({ user: serializeAuthUser(user), token });
+    const token         = jwt.sign({ id: user._id, username: user.username, tv: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
+    const refresh_token = await issueRefreshToken(user);
+    res.status(201).json({ user: serializeAuthUser(user), token, refresh_token, requires_language_selection: true });
+  } catch (err) {
+    logger.error('[authController]', err.message || err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+const updateLanguage = async (req, res) => {
+  const { ui_language } = req.body;
+  const userId = req.user.subUserId || req.user.id;
+  try {
+    if (!['en', 'hi', 'hi_en'].includes(ui_language)) {
+      return res.status(400).json({ message: 'Invalid language selection' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.ui_language = ui_language;
+    await user.save();
+
+    res.json({ user: serializeAuthUser(user) });
   } catch (err) {
     logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
@@ -81,7 +106,8 @@ const login = async (req, res) => {
       if (user.isActive === false) {
         return res.status(403).json({ message: 'Your account has been disabled. Contact the shop owner.' });
       }
-      const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
+      const token         = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
+      const refresh_token = await issueRefreshToken(user);
       return res.json({
         user: {
           id: user._id,
@@ -89,11 +115,13 @@ const login = async (req, res) => {
           username: user.username,
           role: user.role || 'cashier',
           isSubUser: true,
+          ui_language: user.ui_language || 'hi_en',
           isPro: false,
           subscription: null,
           permissions: [],  // populated by subscription-status refresh in Layout
         },
         token,
+        refresh_token,
       });
     }
 
@@ -105,8 +133,9 @@ const login = async (req, res) => {
       await user.save();
     }
 
-    const token = jwt.sign({ id: user._id, username: user.username, tv: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
-    res.json({ user: serializeAuthUser(user), token });
+    const token         = jwt.sign({ id: user._id, username: user.username, tv: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
+    const refresh_token = await issueRefreshToken(user);
+    res.json({ user: serializeAuthUser(user), token, refresh_token });
   } catch (err) {
     logger.error('[authController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' });
@@ -254,6 +283,7 @@ const getSubscriptionStatus = async (req, res) => {
           username: subUser.username,
           role: subUser.role || 'cashier',
           isSubUser: true,
+          ui_language: subUser.ui_language || responseUser.ui_language || 'hi_en',
           permissions: req.user.permissions || [],
         };
       }
@@ -261,7 +291,7 @@ const getSubscriptionStatus = async (req, res) => {
 
     // Include businessType, dashboardMode, and businessTier so frontend context stays fresh
     const shopForBiz = await Shop.findOne({ owner: req.user.id }).select('businessType dashboardMode businessTier');
-    responseUser.businessType  = shopForBiz?.businessType  || 'general';
+    responseUser.businessType  = shopForBiz?.businessType  || 'hardware';
     responseUser.dashboardMode = shopForBiz?.dashboardMode || 'b2c';
     responseUser.businessTier  = shopForBiz?.businessTier  || 'nano';
 
@@ -278,6 +308,14 @@ const getSubscriptionStatus = async (req, res) => {
 };
 
 const crypto = require('crypto');
+
+async function issueRefreshToken(user) {
+  const raw = crypto.randomBytes(64).toString('hex');
+  user.refresh_token_hash    = crypto.createHash('sha256').update(raw).digest('hex');
+  user.refresh_token_expires = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+  await user.save();
+  return raw;
+}
 
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -329,11 +367,37 @@ const resetPassword = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user.id, { $inc: { tokenVersion: 1 } });
+    await User.findByIdAndUpdate(req.user.id, {
+      $inc: { tokenVersion: 1 },
+      $set: { refresh_token_hash: null, refresh_token_expires: null },
+    });
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
     logger.error('[logout]', err.message);
     res.status(500).json({ message: 'Logout failed' });
+  }
+};
+
+const refreshToken = async (req, res) => {
+  const { refresh_token } = req.body;
+  if (!refresh_token) return res.status(400).json({ message: 'Refresh token required' });
+  try {
+    const hashed = crypto.createHash('sha256').update(refresh_token).digest('hex');
+    const user = await User.findOne({
+      refresh_token_hash: hashed,
+      refresh_token_expires: { $gt: new Date() },
+    }).select('+refresh_token_hash');
+    if (!user) return res.status(401).json({ message: 'Refresh token invalid or expired' });
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username, tv: user.tokenVersion || 0 },
+      process.env.JWT_SECRET,
+      { expiresIn: AUTH_TOKEN_TTL }
+    );
+    res.json({ token });
+  } catch (err) {
+    logger.error('[refreshToken]', err.message);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
 
@@ -377,4 +441,4 @@ const completeBusinessProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus, forgotPassword, resetPassword, logout, completeBusinessProfile };
+module.exports = { register, login, updateProfile, updatePassword, getShop, updateShop, getSubscriptionStatus, forgotPassword, resetPassword, logout, refreshToken, completeBusinessProfile, updateLanguage };

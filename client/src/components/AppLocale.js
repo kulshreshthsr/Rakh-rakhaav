@@ -1,108 +1,90 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+/**
+ * AppLocaleProvider / useAppLocale
+ *
+ * Thin provider that wraps the i18n system and exposes { locale, setLocale, t }
+ * to all components. Reads ui_language from the logged-in user in localStorage
+ * and falls back to 'hi_en'. Syncs document.lang attribute.
+ *
+ * Usage:
+ *   const { locale, setLocale, t } = useAppLocale();
+ *   t('sale_new')  →  locale-correct string
+ */
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { getLocaleMap, VALID_LANGS } from '../lib/i18n/index.js';
 
 const STORAGE_KEY = 'rakhaav-locale';
 
-const dictionary = {
-  en: {
-    brand: 'Business Manager',
-    workspace: 'Workspace',
-    workspaceCopy: 'Inventory, billing and GST operations',
-    live: 'Live',
-    mainMenu: 'Main Menu',
-    plans: 'Membership',
-    pricing: 'Go Pro',
-    reports: 'Reports',
-    reportsShortcut: 'Open reports',
-    profile: 'Profile',
-    logout: 'Logout',
-    trialEnds: 'Your free trial ends in {days} day{suffix}',
-    trialCopy: 'Keep billing, GST, reports, WhatsApp sharing and ledgers running without interruption.',
-    upgrade: 'Unlock Premium',
-    viewPricing: 'See membership',
-    dashboard: 'Dashboard',
-    products: 'Products',
-    sales: 'Sales',
-    purchases: 'Purchases',
-    udhaar: 'Ledgers',
-    gst: 'GST',
-    language: 'Language',
-    english: 'English',
-    hindi: 'Hindi',
-    welcome: 'Welcome back',
-    quickSwitch: 'Quick switch',
-    quickSwitchCopy: 'Move across core workflows faster.',
-  },
-  hi: {
-    brand: '\u092c\u093f\u095b\u0928\u0947\u0938 \u092e\u0948\u0928\u0947\u091c\u0930',
-    workspace: '\u0915\u093e\u092e',
-    workspaceCopy: '\u0938\u094d\u091f\u0949\u0915, \u092c\u093f\u0932 \u0914\u0930 GST',
-    live: '\u091a\u093e\u0932\u0942',
-    mainMenu: '\u092e\u0947\u0928\u0942',
-    plans: '\u092e\u0947\u092e\u094d\u092c\u0930\u0936\u093f\u092a',
-    pricing: '\u0917\u094b \u092a\u094d\u0930\u094b',
-    reports: '\u0930\u093f\u092a\u094b\u0930\u094d\u091f',
-    reportsShortcut: '\u0930\u093f\u092a\u094b\u0930\u094d\u091f \u0916\u094b\u0932\u0947\u0902',
-    profile: '\u092a\u094d\u0930\u094b\u092b\u093e\u0907\u0932',
-    logout: '\u0932\u0949\u0917\u0906\u0909\u091f',
-    trialEnds: '\u0906\u092a\u0915\u093e \u092b\u094d\u0930\u0940 \u091f\u094d\u0930\u093e\u092f\u0932 {days} \u0926\u093f\u0928{suffix} \u092e\u0947\u0902 \u0916\u0924\u094d\u092e \u0939\u094b\u0917\u093e',
-    trialCopy: '\u092c\u093f\u0932\u093f\u0902\u0917, GST, \u0930\u093f\u092a\u094b\u0930\u094d\u091f \u0914\u0930 \u0909\u0927\u093e\u0930 \u0935\u0930\u094d\u0915\u092b\u094d\u0932\u094b\u091c \u092c\u093f\u0928\u093e \u0930\u0941\u0915\u093e\u0935\u091f \u091a\u093e\u0932\u0942 \u0930\u0939\u0947\u0902.',
-    upgrade: '\u092a\u094d\u0930\u0940\u092e\u093f\u092f\u092e \u0932\u0947\u0902',
-    viewPricing: '\u092e\u0947\u092e\u094d\u092c\u0930\u0936\u093f\u092a \u0926\u0947\u0916\u0947\u0902',
-    dashboard: '\u0921\u0948\u0936\u092c\u094b\u0930\u094d\u0921',
-    products: '\u092a\u094d\u0930\u094b\u0921\u0915\u094d\u091f',
-    sales: '\u092c\u093f\u0915\u094d\u0930\u0940',
-    purchases: '\u0916\u0930\u0940\u0926',
-    udhaar: '\u0909\u0927\u093e\u0930',
-    gst: 'GST',
-    language: '\u092d\u093e\u0937\u093e',
-    english: 'English',
-    hindi: '\u0939\u093f\u0902\u0926\u0940',
-    welcome: '\u092b\u093f\u0930 \u0938\u0947 \u0938\u094d\u0935\u093e\u0917\u0924 \u0939\u0948',
-    quickSwitch: '\u091c\u0932\u094d\u0926\u0940 \u091c\u093e\u090f\u0902',
-    quickSwitchCopy: '\u091c\u0930\u0942\u0930\u0940 \u0915\u093e\u092e \u0924\u0915 \u091c\u0932\u094d\u0926\u0940 \u092a\u0939\u0941\u0901\u091a\u0947\u0902.',
-  },
-};
-
-const AppLocaleContext = createContext(null);
+function readInitialLang() {
+  if (typeof window === 'undefined') return 'hi_en';
+  try {
+    // Prefer ui_language from the authenticated user object
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (VALID_LANGS.includes(user?.ui_language)) return user.ui_language;
+    // Fall back to the standalone locale key (set by legacy code or manual override)
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (VALID_LANGS.includes(stored)) return stored;
+  } catch {
+    // ignore
+  }
+  return 'hi_en';
+}
 
 function interpolate(template, vars = {}) {
+  if (!vars || typeof template !== 'string') return template;
   return Object.entries(vars).reduce(
-    (output, [key, value]) => output.replaceAll(`{${key}}`, String(value)),
+    (out, [k, v]) => out.replaceAll(`{${k}}`, String(v)),
     template
   );
 }
 
+const AppLocaleContext = createContext(null);
+
 export function AppLocaleProvider({ children }) {
-  const [locale, setLocale] = useState(() => {
-    if (typeof window === 'undefined') return 'hi';
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored === 'en' || stored === 'hi' ? stored : 'hi';
-  });
+  const [locale, setLocaleState] = useState(readInitialLang);
+
+  const setLocale = useCallback((lang) => {
+    const safe = VALID_LANGS.includes(lang) ? lang : 'hi_en';
+    setLocaleState(safe);
+    try {
+      localStorage.setItem(STORAGE_KEY, safe);
+      // Mirror into user object so useTranslation() stays in sync
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      user.ui_language = safe;
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.documentElement.lang = locale;
-    }
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, locale);
+      document.documentElement.lang = locale === 'hi' || locale === 'hi_en' ? 'hi' : 'en';
     }
   }, [locale]);
 
-  const value = useMemo(() => {
-    const messages = dictionary[locale] || dictionary.en;
+  // Rehydrate locale from user object when the component mounts (handles post-login)
+  useEffect(() => {
+    const lang = readInitialLang();
+    if (lang !== locale) setLocaleState(lang);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  const value = useMemo(() => {
+    const map = getLocaleMap(locale);
     return {
       locale,
       setLocale,
-      isHindi: locale === 'hi',
+      isHindi: locale === 'hi' || locale === 'hi_en',
+      isEnglish: locale === 'en',
       t(key, vars) {
-        const template = messages[key] || dictionary.en[key] || key;
+        const template = map[key] ?? key;
         return interpolate(template, vars);
       },
     };
-  }, [locale]);
+  }, [locale, setLocale]);
 
   return <AppLocaleContext.Provider value={value}>{children}</AppLocaleContext.Provider>;
 }

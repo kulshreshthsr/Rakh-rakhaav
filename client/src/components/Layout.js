@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import UpgradeModal from './subscription/UpgradeModal';
 import ReadOnlyOverlay from './subscription/ReadOnlyOverlay';
@@ -12,6 +13,7 @@ import {
   setWelcomePending, writeStoredSubscription,
 } from '../lib/subscription';
 import { useAppLocale } from './AppLocale';
+import { apiUrl } from '../lib/api';
 import { SYSTEM_ROLES as FRONTEND_ROLES } from '../lib/permissions';
 import { useIndustry } from '../contexts/IndustryContext';
 import { useTier } from '../contexts/TierContext';
@@ -27,6 +29,7 @@ const NAV_ITEMS = [
   { href: '/product',      key: 'products',  shortLabel: 'Stock',    tone: 'stock',   permission: 'MANAGE_INVENTORY'  },
   { href: '/sales',        key: 'sales',     shortLabel: 'Sale',     tone: 'sales',   permission: 'VIEW_SALES'        },
   { href: '/purchases',    key: 'purchases', shortLabel: 'Purchase', tone: 'purchase',permission: 'VIEW_PURCHASES'    },
+  { href: '/purchase-orders', key: 'purchase_orders', shortLabel: 'PO', tone: 'purchase', permission: 'VIEW_PURCHASES' },
   { href: '/expenses',     key: 'expenses',  shortLabel: 'Expense',  tone: 'reports', permission: 'VIEW_EXPENSES'     },
   { href: '/income',       key: 'income',    shortLabel: 'Income',   tone: 'income',  permission: 'VIEW_INCOME'       },
   { href: '/bank-entries', key: 'bank',      shortLabel: 'Bank',     tone: 'bank',    permission: 'VIEW_BANK'         },
@@ -38,18 +41,24 @@ const NAV_ITEMS = [
 // Bottom nav is dynamically computed per business type — see bottomNavItems below
 
 const MORE_DRAWER_ITEMS = [
-  { href: '/product',       key: 'products',       label: 'Stock',         sublabel: 'Items & Parts Inventory',  icon: 'products', permission: 'MANAGE_INVENTORY' },
-  { href: '/expenses',      key: 'expenses',       label: 'Expenses',      sublabel: 'Kharch Register',          icon: 'expenses', permission: 'VIEW_EXPENSES'    },
-  { href: '/income',        key: 'income',         label: 'Income',        sublabel: 'Other Income',             icon: 'income',   permission: 'VIEW_INCOME'      },
-  { href: '/bank-entries',  key: 'bank',           label: 'Bank',          sublabel: 'Bank Register',            icon: 'bank',     permission: 'VIEW_BANK'        },
-  { href: '/gst',           key: 'gst',            label: 'GST',           sublabel: 'Tax Filing & Returns',     icon: 'gst',      permission: 'VIEW_GST'         },
-  { href: '/reports',       key: 'reports',        label: 'रिपोर्ट',       sublabel: 'Sales & Stock Reports',    icon: 'reports',  permission: 'VIEW_REPORTS'     },
-  { href: '/notifications', key: 'notifications',  label: 'Alerts',        sublabel: 'Low Stock & Order Alerts', icon: 'bell',     permission: 'VIEW_DASHBOARD'   },
-  { href: '/tasks',         key: 'tasks',          label: 'Tasks',         sublabel: 'Operational Tasks',        icon: 'checklist',permission: 'VIEW_DASHBOARD'   },
-  { href: '/audit',         key: 'audit',          label: 'Activity',      sublabel: 'Audit Trail',              icon: 'history',  permission: 'VIEW_REPORTS'     },
-  { href: '/profile',       key: 'profile',        label: 'Profile',       sublabel: 'दुकान की जानकारी',        icon: 'profile',  permission: null               },
-  { href: '/team',          key: 'team',           label: 'Team',          sublabel: 'Staff Management',         icon: 'team',     permission: 'MANAGE_USERS'     },
-  { href: '/roles',         key: 'roles',          label: 'Roles',         sublabel: 'Permissions',              icon: 'roles',    permission: 'MANAGE_ROLES'     },
+  // Money section
+  { href: '/expenses',      key: 'expenses',       label: 'Expenses',      sublabel: 'Kharch Register',          icon: 'expenses',  permission: 'VIEW_EXPENSES'    },
+  { href: '/income',        key: 'income',         label: 'Income',        sublabel: 'Other Income',             icon: 'income',    permission: 'VIEW_INCOME'      },
+  { href: '/bank-entries',  key: 'bank',           label: 'Bank',          sublabel: 'Bank Register',            icon: 'bank',      permission: 'VIEW_BANK'        },
+  // Purchases / Stock
+  { href: '/purchases',     key: 'purchases',      label: 'Purchases',     sublabel: 'Stock Inward',             icon: 'purchases', permission: 'VIEW_PURCHASES'   },
+  { href: '/purchase-orders', key: 'purchase_orders', label: 'Purchase Orders', sublabel: 'PO → GRN flow',    icon: 'purchases', permission: 'VIEW_PURCHASES'   },
+  // Compliance
+  { href: '/gst',           key: 'gst',            label: 'GST',           sublabel: 'Tax Filing & Returns',     icon: 'gst',       permission: 'VIEW_GST'         },
+  { href: '/reports',       key: 'reports',        label: 'Reports',       sublabel: 'Sales & Stock Reports',    icon: 'reports',   permission: 'VIEW_REPORTS'     },
+  // Operations
+  { href: '/notifications', key: 'notifications',  label: 'Alerts',        sublabel: 'Low Stock & Alerts',       icon: 'bell',      permission: 'VIEW_DASHBOARD'   },
+  { href: '/tasks',         key: 'tasks',          label: 'Tasks',         sublabel: 'Operational Tasks',        icon: 'checklist', permission: 'VIEW_DASHBOARD'   },
+  { href: '/audit',         key: 'audit',          label: 'Activity',      sublabel: 'Audit Trail',              icon: 'history',   permission: 'VIEW_REPORTS'     },
+  // Account
+  { href: '/profile',       key: 'profile',        label: 'Profile',       sublabel: 'दुकान की जानकारी',        icon: 'profile',   permission: null               },
+  { href: '/team',          key: 'team',           label: 'Team',          sublabel: 'Staff Management',         icon: 'team',      permission: 'MANAGE_USERS'     },
+  { href: '/roles',         key: 'roles',          label: 'Roles',         sublabel: 'Permissions',              icon: 'roles',     permission: 'MANAGE_ROLES'     },
 ];
 
 const SUBSCRIPTION_REFRESH_TTL_MS = 60 * 1000;
@@ -119,9 +128,14 @@ function Logo({ size = 'md' }) {
   if (!err) {
     return (
       <div className={`brand-logo-frame ${frameClass}`}>
-        <img src="/logo.png" alt="Rakh-Rakhaav logo" width={dim} height={dim}
+        <Image
+          src="/logo.png"
+          alt="Rakh-Rakhaav logo"
+          width={dim}
+          height={dim}
           className="h-full w-full object-contain"
-          onError={() => setErr(true)} />
+          onError={() => setErr(true)}
+        />
       </div>
     );
   }
@@ -177,6 +191,7 @@ function LayoutInner({ children }) {
       });
       if (res.status === 401) {
         localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         clearTrialGateSeen();
         setWelcomePending(false);
@@ -199,7 +214,7 @@ function LayoutInner({ children }) {
       markSubscriptionRefreshNow();
       return true;
     } catch { return false; }
-  }, [router, updateBusinessType, updateDashboardMode]);
+  }, [router, updateBusinessType, updateDashboardMode, updateTier]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -262,7 +277,13 @@ function LayoutInner({ children }) {
 
   const logout = () => {
     setDropdownOpen(false); setMobileProfileOpen(false); setMoreOpen(false);
-    localStorage.removeItem('token'); localStorage.removeItem('user');
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(apiUrl('/api/auth/logout'), { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
     clearTrialGateSeen();
     setWelcomePending(false);
     router.push('/login');
@@ -321,23 +342,12 @@ function LayoutInner({ children }) {
 
   // Dynamic bottom nav — slot 0 is always Dashboard, slot 1 is always Sales,
   // slots 2-3 are chosen based on business type.
-  const bottomNavItems = useMemo(() => {
-    const ALL_ITEMS = {
-      dashboard: { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',                         icon: 'dashboard', permission: 'VIEW_DASHBOARD'   },
-      sales:     { href: '/sales',     key: 'sales',     shortLabel: term('sale', 'Sale'),            icon: 'sales',     permission: 'VIEW_SALES'       },
-      purchases: { href: '/purchases', key: 'purchases', shortLabel: 'Purchase',                      icon: 'purchases', permission: 'VIEW_PURCHASES'   },
-      udhaar:    { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',                        icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
-      product:   { href: '/product',   key: 'products',  shortLabel: term('inventory', 'Stock'),      icon: 'products',  permission: 'MANAGE_INVENTORY' },
-      reports:   { href: '/reports',   key: 'reports',   shortLabel: 'Reports',                       icon: 'reports',   permission: 'VIEW_REPORTS'     },
-      expenses:  { href: '/expenses',  key: 'expenses',  shortLabel: 'Expense',                       icon: 'expenses',  permission: 'VIEW_EXPENSES'    },
-    };
-    const typeMap = {
-      hardware:    ['purchases', 'udhaar'],
-      electronics: ['product',   'udhaar'],
-    };
-    const [slot2, slot3] = typeMap[businessType] || ['purchases', 'udhaar'];
-    return [ALL_ITEMS.dashboard, ALL_ITEMS.sales, ALL_ITEMS[slot2], ALL_ITEMS[slot3]];
-  }, [businessType, term]);
+  const bottomNavItems = useMemo(() => [
+    { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',                         icon: 'dashboard', permission: 'VIEW_DASHBOARD'   },
+    { href: '/sales',     key: 'sales',     shortLabel: term('sale', 'Sale'),            icon: 'sales',     permission: 'VIEW_SALES'       },
+    { href: '/product',   key: 'products',  shortLabel: term('inventory', 'Stock'),      icon: 'products',  permission: 'MANAGE_INVENTORY' },
+    { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',                        icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
+  ], [term]);
 
   const filteredBottomNav = useMemo(
     () => bottomNavItems
@@ -349,22 +359,26 @@ function LayoutInner({ children }) {
   const filteredDrawerItems = useMemo(() => {
     const base = MORE_DRAWER_ITEMS
       .filter(item => canAccess(item.permission))
-      .filter(item => isEnabled(item.key))
-      .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key))
-      .map(item => {
-        if (item.key === 'products') return { ...item, label: term('inventory', 'Stock'), sublabel: `${term('products','Products')} & Inventory` };
-        return item;
-      });
-    // Hardware-specific pages
+      .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key));
+
+    const extras = [];
     if (businessType === 'hardware') {
-      base.push({ href: '/contractors', key: 'contractors', label: 'Contractors', sublabel: 'Account management', icon: 'team', permission: 'VIEW_SALES' });
+      extras.push(
+        { href: '/contractors', key: 'contractors', label: 'Contractors',  sublabel: 'Credit accounts', icon: 'team',     permission: 'VIEW_SALES'       },
+        { href: '/projects',    key: 'projects',    label: 'Projects',     sublabel: 'Site management', icon: 'checklist',permission: 'VIEW_SALES'       },
+        { href: '/warehouses',  key: 'warehouses',  label: 'Warehouses',   sublabel: 'Multi-godown',    icon: 'products', permission: 'MANAGE_INVENTORY' },
+      );
     }
-    // Electronics-specific pages
     if (businessType === 'electronics') {
-      base.push({ href: '/warranty', key: 'warranty', label: 'Warranty Claims', sublabel: 'Claim register', icon: 'reports', permission: 'VIEW_SALES' });
+      extras.push(
+        { href: '/warranty',    key: 'warranty',    label: 'Warranty',     sublabel: 'Claim register',   icon: 'reports',  permission: 'VIEW_SALES'       },
+        { href: '/service',     key: 'service',     label: 'Service Jobs', sublabel: 'Repair tracking',  icon: 'checklist',permission: 'VIEW_SALES'       },
+        { href: '/amc',         key: 'amc',         label: 'AMC',          sublabel: 'Annual contracts', icon: 'udhaar',   permission: 'VIEW_SALES'       },
+      );
     }
-    return base;
-  }, [canAccess, isEnabled, term, businessType, isNavVisible, TIER_NAV_GATE]);
+
+    return [...base, ...extras.filter(e => canAccess(e.permission))];
+  }, [canAccess, businessType, isNavVisible, TIER_NAV_GATE]);
 
   return (
     <NotificationProvider>

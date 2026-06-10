@@ -360,21 +360,44 @@ const addSerials = async (req, res) => {
       const product = await assertProduct(req.params.productId, shop._id);
       const serials = Array.isArray(req.body) ? req.body : [req.body];
 
-      const docs = serials.map(s => ({
-        shop: shop._id, product: product._id,
-        serial_number:   String(s.serial_number || '').trim(),
-        imei_number:     s.imei_number  ? String(s.imei_number).trim()  : undefined,
-        imei2_number:    s.imei2_number ? String(s.imei2_number).trim() : undefined,
-        status:          'in_stock',
-        purchase_invoice: s.purchase_invoice,
-        warranty_expiry: s.warranty_expiry ? new Date(s.warranty_expiry) : undefined,
-        color:   s.color,
-        storage: s.storage,
-        ram:     s.ram,
-        notes:   s.notes,
-      })).filter(s => s.serial_number);
+      const docs = serials.map(s => {
+        const imei1 = s.imei_1 ? String(s.imei_1).trim() : (s.imei_number  ? String(s.imei_number).trim()  : '');
+        const imei2 = s.imei_2 ? String(s.imei_2).trim() : (s.imei2_number ? String(s.imei2_number).trim() : '');
+        return {
+          shop: shop._id, product: product._id,
+          serial_number:    String(s.serial_number || '').trim(),
+          imei_number:      imei1 || undefined,
+          imei2_number:     imei2 || undefined,
+          imei_1:           imei1,
+          imei_2:           imei2,
+          status:           'in_stock',
+          purchase_invoice: s.purchase_invoice,
+          warranty_expiry:  s.warranty_expiry ? new Date(s.warranty_expiry) : undefined,
+          color:   s.color,
+          storage: s.storage,
+          ram:     s.ram,
+          notes:   s.notes,
+        };
+      }).filter(s => s.serial_number);
 
       if (!docs.length) throw new Error('At least one valid serial number is required');
+
+      // IMEI duplicate check before insert
+      const imeiValues = docs.flatMap(d => [d.imei_1, d.imei_2].filter(Boolean));
+      if (imeiValues.length) {
+        const duplicates = await SerialInventory.find({
+          shop: shop._id,
+          $or: [
+            { imei_1:      { $in: imeiValues } },
+            { imei_2:      { $in: imeiValues } },
+            { imei_number: { $in: imeiValues } },
+          ],
+        }).select('imei_1 imei_number serial_number status').lean().session(session);
+        if (duplicates.length) {
+          const dupImeis = duplicates.map(d => d.imei_1 || d.imei_number).join(', ');
+          throw Object.assign(new Error(`Duplicate IMEI(s) detected: ${dupImeis}. These may already be in stock or were previously sold.`), { status: 409 });
+        }
+      }
 
       created = await SerialInventory.create(docs, { session });
       await Product.findByIdAndUpdate(product._id, { $inc: { quantity: docs.length } }, { session });
@@ -477,19 +500,66 @@ const lookupSerial = async (req, res) => {
       shop: shop._id,
       $or: [
         { serial_number: { $regex: q, $options: 'i' } },
+        { imei_1:      q },
+        { imei_2:      q },
         { imei_number: q },
         { imei2_number: q },
       ],
     }).populate('product', 'name category sub_category metadata');
 
     if (!record) return res.json({ found: false });
-
-    const warrantyExpired = record.warranty_expiry
-      ? new Date() > new Date(record.warranty_expiry)
-      : null;
-
+    const warrantyExpired = record.warranty_expiry ? new Date() > new Date(record.warranty_expiry) : null;
     res.json({ found: true, record, warrantyExpired });
   } catch (err) {
+    res.status(err.status || 500).json({ message: err.message });
+  }
+};
+
+// GET /api/inventory/serials/search?q=<imei_or_serial>  (full device history)
+const searchSerials = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const q = String(req.query.q || '').trim();
+    if (q.length < 5) return res.status(400).json({ message: 'Enter at least 5 characters' });
+
+    const record = await SerialInventory.findOne({
+      shop: shop._id,
+      $or: [
+        { serial_number: { $regex: q, $options: 'i' } },
+        { imei_1:       q },
+        { imei_2:       q },
+        { imei_number:  q },
+        { imei2_number: q },
+      ],
+    }).populate('product', 'name category price cost_price gst_rate').lean();
+
+    if (!record) return res.json({ found: false });
+
+    const Sale = require('../models/salesModel');
+    const WarrantyClaim = require('../models/warrantyClaimModel');
+
+    // Fetch sale and warranty details in parallel
+    const [saleDoc, warrantyClaims] = await Promise.all([
+      record.sale_invoice
+        ? Sale.findOne({ shop: shop._id, invoice_number: record.sale_invoice })
+            .select('invoice_number createdAt buyer_name buyer_phone total_amount')
+            .lean()
+        : null,
+      WarrantyClaim.find({ shop: shop._id, $or: [{ serialNumber: record.serial_number }, { imeiNumber: record.imei_1 || record.imei_number }] })
+        .sort({ claimDate: -1 }).limit(5).lean(),
+    ]);
+
+    const warrantyExpired = record.warranty_expiry ? new Date() > new Date(record.warranty_expiry) : null;
+
+    return res.json({
+      found: true,
+      record,
+      warrantyExpired,
+      saleDetails: saleDoc || null,
+      warrantyClaims,
+    });
+  } catch (err) {
+    logger.error('[inventoryController:searchSerials]', err.message || err);
     res.status(err.status || 500).json({ message: err.message });
   }
 };
@@ -502,7 +572,7 @@ module.exports = {
   // Recipe
   getRecipe, saveRecipe, deleteRecipe,
   // Serial
-  getSerials, addSerials, updateSerial, deleteSerial, lookupSerial,
+  getSerials, addSerials, updateSerial, deleteSerial, lookupSerial, searchSerials,
   // Summary
   getProductInventorySummary,
 };

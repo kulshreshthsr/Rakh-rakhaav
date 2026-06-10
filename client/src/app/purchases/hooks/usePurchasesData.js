@@ -134,10 +134,13 @@ export default function usePurchasesData({ router, isOnline, products, setProduc
     hasBootstrappedRef.current = true;
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(PURCHASES_CACHE_KEY);
+    let cachedTimer = null;
     if (cached?.purchases) {
-      mergePurchasesWithPendingQueue(cached.purchases).then((merged) => setPurchases(merged));
-      setSummary(cached.summary || {});
-      setLoading(false);
+      cachedTimer = window.setTimeout(() => {
+        mergePurchasesWithPendingQueue(cached.purchases).then((merged) => setPurchases(merged));
+        setSummary(cached.summary || {});
+        setLoading(false);
+      }, 0);
     }
     const deferredId = scheduleDeferred(async () => {
       setRefreshing(Boolean(cached?.purchases));
@@ -145,7 +148,10 @@ export default function usePurchasesData({ router, isOnline, products, setProduc
       if (fetchProducts) await fetchProducts();
       setRefreshing(false);
     });
-    return () => cancelDeferred(deferredId);
+    return () => {
+      if (cachedTimer) window.clearTimeout(cachedTimer);
+      cancelDeferred(deferredId);
+    };
   }, [fetchAll, fetchProducts, mergePurchasesWithPendingQueue, router]);
 
   // Sync-complete listener

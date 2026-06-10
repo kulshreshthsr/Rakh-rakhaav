@@ -11,6 +11,7 @@ const SerialInventory = require('../models/serialInventoryModel');
 const { logAuditEvent } = require('../utils/auditTrail');
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
+const { logStockMovements } = require('../utils/stockMovementLogger');
 
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
 
@@ -165,16 +166,17 @@ const createSaleReturn = async (req, res) => {
         const quantityAfter = round2((currentProduct?.quantity || 0) + qty);
         await Product.findByIdAndUpdate(product._id, {
           $inc: { quantity: qty },
-          $push: {
-            stock_history: {
-              type: 'sale_return',
-              quantity_change: qty,
-              quantity_after: quantityAfter,
-              reference_id: originalSale.invoice_number,
-              date: new Date(),
-            },
-          },
         }, { session });
+        await logStockMovements(shop._id, [{
+          product: product._id,
+          type: 'sale_return',
+          quantityChange: qty,
+          quantityAfter,
+          referenceId: originalSale.invoice_number,
+          referenceType: 'sale_return',
+          note: '',
+          performedBy: req.user?.id,
+        }], { session });
 
         // Restore sub-inventory
         const meta = item.item_metadata || originalItem.item_metadata || {};

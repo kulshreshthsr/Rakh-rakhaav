@@ -12,6 +12,7 @@ const customerSchema = new mongoose.Schema({
   totalPaid: { type: Number, default: 0 },
   totalUdhaar: { type: Number, default: 0 },
   opening_balance: { type: Number, default: 0 },
+  customer_type: { type: String, enum: ['walk_in', 'contractor', 'project'], default: 'walk_in' },
 
   isActive: { type: Boolean, default: true },
   notes: { type: String },

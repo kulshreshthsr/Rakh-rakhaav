@@ -8,33 +8,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const hpp = require('hpp');
 
-const authRoutes = require('./routes/authRoutes');
-const dashboardRoutes = require('./routes/dashboardRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const productRoutes = require('./routes/productRoutes');
-const salesRoutes = require('./routes/salesRoutes');
-const purchaseRoutes = require('./routes/purchaseRoutes');
-const customerRoutes = require('./routes/customerRoutes');
-const supplierRoutes = require('./routes/supplierRoutes');
-const expenseRoutes = require('./routes/expenseRoutes');
-const incomeRoutes = require('./routes/incomeRoutes');
-const bankEntryRoutes = require('./routes/bankEntryRoutes');
-const accountingRoutes = require('./routes/accountingRoutes');
-const rbacRoutes = require('./routes/rbacRoutes');
-const industryRoutes = require('./routes/industryRoutes');
-const inventoryRoutes = require('./routes/inventoryRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
-const taskRoutes = require('./routes/taskRoutes');
-const auditRoutes = require('./routes/auditRoutes');
-const saleReturnRoutes = require('./routes/saleReturnRoutes');
-const purchaseReturnRoutes = require('./routes/purchaseReturnRoutes');
-const contractorRoutes = require('./routes/contractorRoutes');
-const warrantyRoutes   = require('./routes/warrantyRoutes');
-const gstRoutes        = require('./routes/gstRoutes');
-const itcRoutes        = require('./routes/itcRoutes');
+const apiRouter   = require('./routes/apiRouter');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
+const { initScheduler } = require('./services/schedulerService');
 
 const app = express();
 
@@ -73,7 +50,6 @@ const corsOptions = {
       callback(null, true);
       return;
     }
-
     callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
@@ -88,39 +64,19 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
+app.get('/api/health',    (req, res) => res.status(200).json({ status: 'ok' }));
+app.get('/api/v1/health', (req, res) => res.status(200).json({ status: 'ok', version: 'v1' }));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/sales', salesRoutes);
-app.use('/api/purchases', purchaseRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/suppliers', supplierRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/income', incomeRoutes);
-app.use('/api/bank-entries', bankEntryRoutes);
-app.use('/api/accounting', accountingRoutes);
-app.use('/api/rbac', rbacRoutes);
-app.use('/api/industry', industryRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/audit', auditRoutes);
-app.use('/api/sale-returns', saleReturnRoutes);
-app.use('/api/purchase-returns', purchaseReturnRoutes);
-app.use('/api/contractors', contractorRoutes);
-app.use('/api/warranty',    warrantyRoutes);
-app.use('/api/gst',         gstRoutes);
-app.use('/api/itc',         itcRoutes);
+// Mount all routes at both /api (legacy) and /api/v1 (versioned)
+app.use('/api/v1', apiRouter);
+app.use('/api',    apiRouter);
 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
+  initScheduler();
 });
 
 module.exports = app;

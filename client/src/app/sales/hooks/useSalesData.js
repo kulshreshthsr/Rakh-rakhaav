@@ -100,9 +100,13 @@ export default function useSalesData({ router, isOnline, products, fetchProducts
     hasBootstrappedRef.current = true;
     if (!localStorage.getItem('token')) { router.push('/login'); return; }
     const cached = readPageCache(SALES_CACHE_KEY);
+    let cachedTimer = null;
     if (cached?.sales) {
-      mergeSalesWithPendingQueue(cached.sales).then((mergedSales) => setSales(mergedSales));
-      setSummary(cached.summary || {}); setLoading(false);
+      cachedTimer = window.setTimeout(() => {
+        mergeSalesWithPendingQueue(cached.sales).then((mergedSales) => setSales(mergedSales));
+        setSummary(cached.summary || {});
+        setLoading(false);
+      }, 0);
     }
     const deferredId = scheduleDeferred(async () => {
       setRefreshing(Boolean(cached?.sales));
@@ -110,7 +114,10 @@ export default function useSalesData({ router, isOnline, products, fetchProducts
       if (fetchProducts) await fetchProducts();
       setRefreshing(false);
     });
-    return () => cancelDeferred(deferredId);
+    return () => {
+      if (cachedTimer) window.clearTimeout(cachedTimer);
+      cancelDeferred(deferredId);
+    };
   }, [fetchAll, fetchProducts, mergeSalesWithPendingQueue, router]);
 
   // Sync-complete listener

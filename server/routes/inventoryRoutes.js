@@ -6,8 +6,9 @@ const ctrl = require('../controllers/inventoryController');
 router.use(protect);
 router.use(requirePermission('MANAGE_INVENTORY'));
 
-// ── Global serial/IMEI lookup (must be before /:productId param routes) ─────
+// ── Global serial/IMEI lookup / search (must be before /:productId param routes) ─
 router.get('/serials/lookup',               ctrl.lookupSerial);
+router.get('/serials/search',               ctrl.searchSerials);
 
 // ── Batch routes ────────────────────────────────────────────────────────────
 router.get ('/batches/expiring',            ctrl.getExpiringBatches);

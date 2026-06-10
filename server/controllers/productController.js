@@ -1,9 +1,42 @@
 const Product = require('../models/productModel');
 const ProductVariant = require('../models/productVariantModel');
+const StockMovement = require('../models/stockMovementModel');
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
+const { logStockMovements } = require('../utils/stockMovementLogger');
 
 const normalizeBarcode = (value = '') => String(value).replace(/\s+/g, '').trim();
+const parseNumber = (value, fallback = 0) => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+};
+
+const parseBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
+  return Boolean(value);
+};
+
+const buildPriceWarnings = (productLike) => {
+  const tiers = [
+    ['mrp', parseNumber(productLike.mrp)],
+    ['price', parseNumber(productLike.price)],
+    ['dealer_price', parseNumber(productLike.dealer_price)],
+    ['project_price', parseNumber(productLike.project_price)],
+  ];
+  const warnings = [];
+
+  for (let index = 0; index < tiers.length - 1; index += 1) {
+    const [currentKey, currentValue] = tiers[index];
+    const [nextKey, nextValue] = tiers[index + 1];
+    if (currentValue > 0 && nextValue > 0 && currentValue < nextValue) {
+      warnings.push(`${currentKey} should be greater than or equal to ${nextKey}`);
+    }
+  }
+
+  return warnings;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL PRODUCTS
@@ -27,7 +60,6 @@ const getProducts = async (req, res) => {
 
     const pageSize = Math.min(Number(limitParam) || 500, 1000);
     const products = await Product.find(filter)
-      .select('-stock_history')
       .sort({ name: 1 })
       .limit(pageSize + 1);
 
@@ -53,13 +85,18 @@ const getProducts = async (req, res) => {
 // CREATE PRODUCT
 // ─────────────────────────────────────────────────────────────────────────────
 const createProduct = async (req, res) => {
-  const { name, description, price, cost_price, quantity, unit, hsn_code, gst_rate, low_stock_threshold, barcode, category = '', sub_category = '' } = req.body;
+  const {
+    name, description, price, mrp, dealer_price, project_price, cost_price, quantity, unit, hsn_code, gst_rate,
+    low_stock_threshold, barcode, category = '', sub_category = '', sku, pack_size, pack_unit, loose_unit,
+    sold_in_loose, loose_price, batch_tracking_enabled,
+  } = req.body;
   try {
     if (!name) return res.status(400).json({ message: 'Product name is required' });
 
     const shop = await getShopOrFail(req.user.id);
     const qty = Number(quantity) || 0;
     const normalizedBarcode = normalizeBarcode(barcode);
+    const warnings = buildPriceWarnings({ mrp, price, dealer_price, project_price });
 
     if (normalizedBarcode) {
       const existingBarcodeProduct = await Product.findOne({
@@ -77,31 +114,47 @@ const createProduct = async (req, res) => {
       name: name.trim(),
       description,
       price: Number(price),
+      mrp: parseNumber(mrp),
+      dealer_price: parseNumber(dealer_price),
+      project_price: parseNumber(project_price),
       cost_price: Number(cost_price) || 0,
       quantity: qty,
       unit: unit || 'pcs',
       barcode: normalizedBarcode,
+      sku: String(sku || '').trim(),
       hsn_code: hsn_code || '',
       gst_rate: Number(gst_rate) || 0,
       low_stock_threshold: Number(low_stock_threshold) || 5,
       category:     category || '',
       sub_category: sub_category || '',
+      pack_size: parseNumber(pack_size, 1) || 1,
+      pack_unit: String(pack_unit || '').trim(),
+      loose_unit: String(loose_unit || '').trim(),
+      sold_in_loose: parseBoolean(sold_in_loose),
+      loose_price: parseNumber(loose_price),
+      batch_tracking_enabled: parseBoolean(batch_tracking_enabled),
       metadata: req.body.metadata || {},
-      // Log initial stock
-      stock_history: qty > 0 ? [{
-        type: 'manual_add',
-        quantity_change: qty,
-        quantity_after: qty,
-        note: 'Opening stock',
-        date: new Date(),
-      }] : [],
     });
+
+    if (qty > 0) {
+      await logStockMovements(shop._id, [{
+        product: product._id,
+        type: 'manual_add',
+        quantityChange: qty,
+        quantityAfter: qty,
+        referenceId: '',
+        referenceType: 'opening_stock',
+        note: 'Opening stock',
+        performedBy: req.user?.id,
+      }]);
+    }
 
     res.status(201).json({
       ...product.toJSON(),
       margin: product.cost_price > 0
         ? parseFloat((((product.price - product.cost_price) / product.cost_price) * 100).toFixed(1))
         : null,
+      warnings,
     });
   } catch (err) {
     logger.error('[productController]', err.message || err);
@@ -120,8 +173,18 @@ const updateProduct = async (req, res) => {
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id });
     if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
-    const { name, description, price, cost_price, unit, hsn_code, gst_rate, low_stock_threshold, barcode, category, sub_category } = req.body;
+    const {
+      name, description, price, mrp, dealer_price, project_price, cost_price, unit, hsn_code, gst_rate,
+      low_stock_threshold, barcode, category, sub_category, sku, pack_size, pack_unit, loose_unit,
+      sold_in_loose, loose_price, batch_tracking_enabled,
+    } = req.body;
     const normalizedBarcode = normalizeBarcode(barcode);
+    const warnings = buildPriceWarnings({
+      mrp: mrp !== undefined ? mrp : product.mrp,
+      price: price !== undefined ? price : product.price,
+      dealer_price: dealer_price !== undefined ? dealer_price : product.dealer_price,
+      project_price: project_price !== undefined ? project_price : product.project_price,
+    });
 
     if (normalizedBarcode) {
       const existingBarcodeProduct = await Product.findOne({
@@ -139,6 +202,9 @@ const updateProduct = async (req, res) => {
     product.name = name?.trim() || product.name;
     product.description = description ?? product.description;
     product.price = price !== undefined ? Number(price) : product.price;
+    if (mrp !== undefined) product.mrp = parseNumber(mrp);
+    if (dealer_price !== undefined) product.dealer_price = parseNumber(dealer_price);
+    if (project_price !== undefined) product.project_price = parseNumber(project_price);
     product.cost_price = cost_price !== undefined ? Number(cost_price) : product.cost_price;
     product.unit = unit || product.unit;
     product.barcode = barcode !== undefined ? normalizedBarcode : product.barcode;
@@ -147,6 +213,13 @@ const updateProduct = async (req, res) => {
     product.low_stock_threshold = low_stock_threshold !== undefined ? Number(low_stock_threshold) : product.low_stock_threshold;
     if (category     !== undefined) product.category     = category;
     if (sub_category !== undefined) product.sub_category = sub_category;
+    if (sku !== undefined) product.sku = String(sku || '').trim();
+    if (pack_size !== undefined) product.pack_size = parseNumber(pack_size, 1) || 1;
+    if (pack_unit !== undefined) product.pack_unit = String(pack_unit || '').trim();
+    if (loose_unit !== undefined) product.loose_unit = String(loose_unit || '').trim();
+    if (sold_in_loose !== undefined) product.sold_in_loose = parseBoolean(sold_in_loose, product.sold_in_loose);
+    if (loose_price !== undefined) product.loose_price = parseNumber(loose_price);
+    if (batch_tracking_enabled !== undefined) product.batch_tracking_enabled = parseBoolean(batch_tracking_enabled, product.batch_tracking_enabled);
     if (req.body.metadata !== undefined) {
       product.metadata = req.body.metadata;
       product.markModified('metadata');
@@ -159,6 +232,7 @@ const updateProduct = async (req, res) => {
       margin: product.cost_price > 0
         ? parseFloat((((product.price - product.cost_price) / product.cost_price) * 100).toFixed(1))
         : null,
+      warnings,
     });
   } catch (err) {
     logger.error('[productController]', err.message || err);
@@ -214,18 +288,9 @@ const adjustStock = async (req, res) => {
     }
 
     product.quantity = newQty;
-    product.stock_history.push({
-      type: type || 'adjustment',
-      quantity_change: change,
-      quantity_after: newQty,
-      note: note || (type === 'manual_add' ? 'Manual stock added' : type === 'manual_remove' ? 'Manual stock removed' : 'Stock adjustment'),
-      date: new Date(),
-    });
-
     await product.save();
 
-    const { logStockMovements } = require('../utils/stockMovementLogger');
-    logStockMovements(shop._id, [{
+    await logStockMovements(shop._id, [{
       product:        product._id,
       type:           type || 'adjustment',
       quantityChange: change,
@@ -254,12 +319,28 @@ const getStockHistory = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
     const product = await Product.findOne({ _id: req.params.id, shop: shop._id })
-      .select('name stock_history quantity unit');
+      .select('name quantity unit');
     if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
+
+    const { before, limit: limitParam } = req.query;
+    const filter = { product: product._id, shop: shop._id };
+    const beforeDate = before ? new Date(before) : null;
+    if (beforeDate && !Number.isNaN(beforeDate.getTime())) {
+      filter.date = { $lt: beforeDate };
+    }
+    const pageSize = Math.min(Number(limitParam) || 100, 500);
+    const movements = await StockMovement.find(filter)
+      .sort({ date: -1, _id: -1 })
+      .limit(pageSize + 1)
+      .lean();
+    const hasMore = movements.length > pageSize;
+    const history = hasMore ? movements.slice(0, pageSize) : movements;
 
     res.json({
       product: { name: product.name, quantity: product.quantity, unit: product.unit },
-      history: product.stock_history.sort((a, b) => new Date(b.date) - new Date(a.date)),
+      history,
+      hasMore,
+      next_before: hasMore && history.length ? history[history.length - 1].date : null,
     });
   } catch (err) {
     logger.error('[productController]', err.message || err);
@@ -277,7 +358,7 @@ const getByBarcode = async (req, res) => {
     if (!barcode) return res.status(400).json({ message: 'Barcode required' });
 
     // 1. Product-level barcode (existing behavior)
-    const byProduct = await Product.findOne({ shop: shop._id, barcode, isActive: { $ne: false } }).select('-stock_history');
+    const byProduct = await Product.findOne({ shop: shop._id, barcode, isActive: { $ne: false } });
     if (byProduct) {
       return res.json({ product: byProduct.toJSON(), variant: null, matchType: 'product' });
     }
@@ -286,7 +367,7 @@ const getByBarcode = async (req, res) => {
     const variant = await ProductVariant.findOne({ shop: shop._id, barcode, isActive: true });
     if (!variant) return res.status(404).json({ message: 'Barcode not found' });
 
-    const product = await Product.findOne({ _id: variant.product, shop: shop._id, isActive: { $ne: false } }).select('-stock_history');
+    const product = await Product.findOne({ _id: variant.product, shop: shop._id, isActive: { $ne: false } });
     if (!product) return res.status(404).json({ message: 'Product नहीं मिला' });
 
     return res.json({ product: product.toJSON(), variant: variant.toJSON(), matchType: 'variant' });
@@ -296,46 +377,96 @@ const getByBarcode = async (req, res) => {
   }
 };
 
+// Column name aliases for flexible header matching
+const COL = (row, ...keys) => {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== '') return row[k];
+  }
+  return '';
+};
+
+function normalizeRow(raw) {
+  return {
+    name:                String(COL(raw, 'name', 'Name', 'ITEM NAME', 'PRODUCT NAME', 'Item Name') || '').trim(),
+    description:         String(COL(raw, 'description', 'Description', 'DESC') || '').trim(),
+    price:               Number(COL(raw, 'price', 'Price', 'Selling Price', 'RATE', 'MRP', 'Rate') || 0),
+    mrp:                 Number(COL(raw, 'mrp', 'MRP', 'Maximum Retail Price') || 0),
+    dealer_price:        Number(COL(raw, 'dealer_price', 'Dealer Price', 'DEALER PRICE') || 0),
+    project_price:       Number(COL(raw, 'project_price', 'Project Price', 'PROJECT PRICE') || 0),
+    cost_price:          Number(COL(raw, 'cost_price', 'Cost Price', 'COST', 'Purchase Price') || 0),
+    quantity:            Number(COL(raw, 'quantity', 'Quantity', 'QTY', 'Stock') || 0),
+    unit:                String(COL(raw, 'unit', 'Unit', 'UNIT') || 'pcs').trim(),
+    barcode:             normalizeBarcode(String(COL(raw, 'barcode', 'Barcode', 'BARCODE') || '')),
+    hsn_code:            String(COL(raw, 'hsn_code', 'hsn', 'HSN', 'HSN Code', 'HSN CODE') || '').trim(),
+    gst_rate:            Number(COL(raw, 'gst_rate', 'gst', 'GST', 'GST %', 'GST%', 'Tax Rate') || 0),
+    low_stock_threshold: Number(COL(raw, 'low_stock_threshold', 'Min Stock', 'MIN STOCK', 'Reorder Level') || 5),
+    category:            String(COL(raw, 'category', 'Category', 'CATEGORY') || '').trim(),
+    brand:               String(COL(raw, 'brand', 'Brand', 'BRAND') || '').trim(),
+  };
+}
+
+function parseFileToRows(file) {
+  const ext = (file.originalname || '').split('.').pop().toLowerCase();
+  if (ext === 'xlsx' || ext === 'xls') {
+    const XLSX = require('xlsx');
+    const wb = XLSX.read(file.buffer, { type: 'buffer' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws, { defval: '' });
+  }
+  // CSV fallback
+  const text = file.buffer.toString('utf-8');
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
+  });
+}
+
 const bulkImportProducts = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
-    const rows = req.body.products;
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return res.status(400).json({ message: 'products array is required' });
+    const isPreview = req.query.preview === 'true';
+
+    let rawRows;
+
+    // Multipart file upload (multer puts file in req.file)
+    if (req.file) {
+      rawRows = parseFileToRows(req.file);
+    } else {
+      // JSON fallback (legacy)
+      rawRows = req.body.products;
+      if (!Array.isArray(rawRows) || rawRows.length === 0) {
+        return res.status(400).json({ message: 'File or products array is required' });
+      }
     }
-    if (rows.length > 1000) {
+
+    if (!rawRows || rawRows.length === 0) {
+      return res.status(400).json({ message: 'File is empty or has no valid rows' });
+    }
+    if (rawRows.length > 1000) {
       return res.status(400).json({ message: 'Maximum 1000 products per import' });
+    }
+
+    const rows = rawRows.map(normalizeRow).filter(r => r.name);
+
+    if (isPreview) {
+      return res.json({ preview: rows.slice(0, 5), total: rows.length });
     }
 
     const results = { created: 0, skipped: 0, errors: [] };
 
     for (const row of rows) {
       try {
-        const name = String(row.name || row.Name || '').trim();
-        if (!name) { results.skipped++; continue; }
-
-        const barcode = normalizeBarcode(row.barcode || row.Barcode || '');
-        if (barcode) {
-          const exists = await Product.findOne({ shop: shop._id, barcode, isActive: { $ne: false } });
+        if (row.barcode) {
+          const exists = await Product.findOne({ shop: shop._id, barcode: row.barcode, isActive: { $ne: false } });
           if (exists) { results.skipped++; continue; }
         }
-
-        await Product.create({
-          shop:                shop._id,
-          name,
-          description:         String(row.description || row.Description || '').trim(),
-          price:               Number(row.price || row['Selling Price'] || 0),
-          cost_price:          Number(row.cost_price || row['Cost Price'] || 0),
-          quantity:            Number(row.quantity || row.Quantity || 0),
-          unit:                String(row.unit || row.Unit || 'pcs').trim(),
-          barcode,
-          hsn_code:            String(row.hsn_code || row['HSN Code'] || '').trim(),
-          gst_rate:            Number(row.gst_rate || row['GST %'] || 0),
-          low_stock_threshold: Number(row.low_stock_threshold || row['Min Stock'] || 5),
-        });
+        await Product.create({ shop: shop._id, ...row });
         results.created++;
       } catch (rowErr) {
-        results.errors.push({ row: row.name || row.Name, error: rowErr.message });
+        results.errors.push({ row: row.name, error: rowErr.message });
       }
     }
 

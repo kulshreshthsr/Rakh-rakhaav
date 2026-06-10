@@ -47,7 +47,7 @@ function AddMemberModal({ open, roles, onClose, onCreated, defaultRole }) {
 
   const reset = () => { setForm({ name: '', username: '', password: '', role: defaultRole || 'cashier' }); setError(''); setCreatedPassword(''); };
 
-  useEffect(() => { if (!open) reset(); }, [open, defaultRole]);
+  useEffect(() => { if (!open) reset(); }, [open, defaultRole, reset]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

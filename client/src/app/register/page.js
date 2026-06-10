@@ -84,12 +84,15 @@ export default function RegisterPage() {
 
       if (data.token) {
         localStorage.setItem('token', data.token);
+        if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('user', JSON.stringify(data.user));
         writeStoredSubscription(data.user?.subscription || null);
         setWelcomePending(true);
         clearTrialGateSeen();
         setOnboardingPending();
-        router.push('/onboarding');
+        // Route to language selection before onboarding for new accounts
+        const dest = data.requires_language_selection ? '/language-setup' : '/onboarding';
+        router.push(dest);
       } else {
         setError(data.message || 'Registration failed');
       }

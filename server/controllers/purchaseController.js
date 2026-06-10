@@ -121,21 +121,29 @@ const syncPurchaseStock = async (previousPurchase, nextItems, invoiceNumber = ''
     const quantityAfter = round2(product.quantity + delta);
     const nextItem = nextItems.find((item) => String(item.product) === productId);
 
-    const update = {
-      $inc: { quantity: delta },
-      $push: {
-        stock_history: {
-          type: delta > 0 ? 'purchase' : 'purchase_return',
-          quantity_change: delta,
-          quantity_after: quantityAfter,
-          reference_id: invoiceNumber,
-          date: new Date(),
-        },
-      },
-    };
-    if (nextItem) update.$set = { cost_price: nextItem.price_per_unit };
+    const update = { $inc: { quantity: delta } };
+    if (nextItem) {
+      const purchasePrice = nextItem.price_per_unit || 0;
+      const currentQty    = product.quantity;
+      const currentWAC    = product.weighted_avg_cost > 0 ? product.weighted_avg_cost : (product.cost_price || 0);
+      const newQty        = currentQty + delta;
+      const newWAC        = delta > 0 && newQty > 0
+        ? round2(((currentQty * currentWAC) + (delta * purchasePrice)) / newQty)
+        : currentWAC;
+      update.$set = { cost_price: purchasePrice, weighted_avg_cost: newWAC };
+    }
 
     await Product.findByIdAndUpdate(productId, update, session ? { session } : {});
+    await logStockMovements(product.shop, [{
+      product: product._id,
+      type: delta > 0 ? 'purchase' : 'purchase_return',
+      quantityChange: delta,
+      quantityAfter,
+      referenceId: invoiceNumber,
+      referenceType: 'purchase',
+      note: '',
+      performedBy: req.user?.id,
+    }], { session });
   }
 };
 
@@ -721,20 +729,20 @@ const deletePurchase = async (req, res) => {
           if (session) productQuery = productQuery.session(session);
           const product = await productQuery;
           if (!product) continue;
-          const quantityAfter = round2(product.quantity - Number(item.quantity || 0));
-          await Product.findByIdAndUpdate(item.product, {
-            $inc: { quantity: -item.quantity },
-            $push: {
-              stock_history: {
-                type: 'purchase_return',
-                quantity_change: -Number(item.quantity),
-                quantity_after: quantityAfter,
-                note: `Purchase deleted: ${purchase.invoice_number}`,
-                reference_id: purchase.invoice_number,
-                date: new Date(),
-              },
-            },
-          }, { session });
+        const quantityAfter = round2(product.quantity - Number(item.quantity || 0));
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { quantity: -item.quantity },
+        }, { session });
+        await logStockMovements(purchase.shop, [{
+          product: product._id,
+          type: 'purchase_return',
+          quantityChange: -Number(item.quantity),
+          quantityAfter,
+          referenceId: purchase.invoice_number,
+          referenceType: 'purchase_delete',
+          note: `Purchase deleted: ${purchase.invoice_number}`,
+          performedBy: req.user?.id,
+        }], { session });
         }
 
         // Reverse sub-inventory records (batches, variants, serials)
@@ -929,17 +937,17 @@ const receivePurchase = async (req, res) => {
         const qAfter = round2(product.quantity + delta);
         await Product.findByIdAndUpdate(productId, {
           $inc: { quantity: delta },
-          $push: {
-            stock_history: {
-              type:            'purchase',
-              quantity_change: delta,
-              quantity_after:  qAfter,
-              reference_id:    purchase.invoice_number,
-              note:            `GRN receive: ${purchase.invoice_number}`,
-              date:            new Date(),
-            },
-          },
         }, { session });
+        await logStockMovements(purchase.shop, [{
+          product: product._id,
+          type: 'purchase',
+          quantityChange: delta,
+          quantityAfter: qAfter,
+          referenceId: purchase.invoice_number,
+          referenceType: 'grn_receive',
+          note: `GRN receive: ${purchase.invoice_number}`,
+          performedBy: req.user?.id,
+        }], { session });
 
         // Handle sub-inventory (batches/variants/serials) for this item
         const originalItem = allItems.find(i => String(i.product) === productId);

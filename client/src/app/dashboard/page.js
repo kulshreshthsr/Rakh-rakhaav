@@ -155,6 +155,59 @@ function QuickActionCard({ href, emoji, label, sublabel }) {
   );
 }
 
+// ── Hero dual-metric row: Today's Revenue | Total Udhaar ──────────────
+function HeroDualMetric({ revenue, udhaar, udhaarCount, delta, term }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <Link href="/sales" className="rounded-2xl bg-white border border-slate-200 p-4 hover:border-green-300 transition-colors">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">आज की कमाई</p>
+        <p className="text-[26px] font-black text-slate-900 leading-tight mt-1">₹{fmt(revenue)}</p>
+        {delta != null && (
+          <span className={`text-[11px] font-bold mt-1 inline-block ${delta >= 0 ? 'text-green-600' : 'text-rose-500'}`}>
+            {delta >= 0 ? '↑' : '↓'} {Math.abs(Math.round(delta))}%
+          </span>
+        )}
+        <p className="text-[10px] text-slate-400 mt-0.5">Today&apos;s sales</p>
+      </Link>
+      <Link href="/udhaar" className="rounded-2xl bg-white border border-slate-200 p-4 hover:border-amber-300 transition-colors">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">कुल उधार</p>
+        <p className="text-[26px] font-black text-amber-700 leading-tight mt-1">₹{fmt(udhaar)}</p>
+        <p className="text-[10px] text-slate-400 mt-0.5">{udhaarCount} ग्राहक</p>
+        <p className="text-[10px] text-amber-600 font-bold mt-0.5">Total udhaar</p>
+      </Link>
+    </div>
+  );
+}
+
+// ── Collapsed alert strip ─────────────────────────────────────────────
+function AlertStrip({ alertCount, items }) {
+  const [open, setOpen] = useState(false);
+  if (!alertCount) return null;
+  return (
+    <div className="rounded-2xl border overflow-hidden border-red-200 bg-red-50">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+      >
+        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 animate-pulse" />
+        <span className="text-[13px] font-bold text-red-800 flex-1">{alertCount} alert{alertCount > 1 ? 's' : ''} — tap to view</span>
+        <span className="text-red-600 text-[12px]">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && items.length > 0 && (
+        <div className="border-t border-red-200 divide-y divide-red-100">
+          {items.map((item, i) => (
+            <Link key={i} href={item.href} className="flex items-center gap-3 px-4 py-2.5 hover:bg-red-100 transition-colors">
+              <span className="text-base">{item.emoji}</span>
+              <span className="text-[12px] font-medium text-red-900">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Monthly goal progress card
 function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
   const today = new Date();
@@ -766,6 +819,43 @@ function useDashboardData() {
   };
 }
 
+// ─── AMC Expiry Banner (electronics only) ───────────────────────────────────
+
+function AMCExpiryBanner() {
+  const [amcs, setAmcs] = useState([]);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch(apiUrl('/api/amc/expiring'), { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setAmcs(Array.isArray(d) ? d : d.amcs || []))
+      .catch(() => {});
+  }, []);
+
+  if (dismissed || amcs.length === 0) return null;
+
+  return (
+    <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+      <span className="text-xl flex-shrink-0">🔔</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-black text-amber-900">
+          {amcs.length} AMC{amcs.length > 1 ? 's' : ''} expiring this month
+        </p>
+        <p className="text-[11px] text-amber-700 font-medium mt-0.5">
+          {amcs.slice(0, 2).map(a => a.product_name || a.customer_name).join(', ')}
+          {amcs.length > 2 && ` +${amcs.length - 2} more`}
+        </p>
+      </div>
+      <div className="flex-shrink-0 flex items-center gap-2">
+        <Link href="/amc" className="text-[11px] font-black text-amber-700 underline">View</Link>
+        <button onClick={() => setDismissed(true)} className="text-amber-400 text-lg leading-none">×</button>
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════
 //  B2C DASHBOARD
 // ═══════════════════════════════════════════════════
@@ -801,13 +891,23 @@ function B2CDashboard() {
   const primaryLabel  = RANGE_LABELS[selectedRange] || 'आज';
 
   const b2cActions = [
-    { href: '/sales?open=1&payment=cash',   emoji: config?.icon || '🧾', label: term('quickNewSaleHindi', 'Bill बनाओ'),       sublabel: 'New Invoice',   permission: 'CREATE_INVOICE'  },
-    { href: '/sales?open=1&payment=credit', emoji: '📒',                  label: 'उधार दो',                                   sublabel: 'Credit Sale',   permission: 'CREATE_INVOICE'  },
-    { href: '/product',                     emoji: '📦',                  label: term('quickAddStockHindi', 'Product जोड़ो'), sublabel: 'Add Stock',     permission: 'MANAGE_INVENTORY'},
-    { href: '/purchases',                   emoji: '🛒',                  label: term('quickPurchaseHindi', 'माल खरीदो'),    sublabel: 'Purchase',      permission: 'CREATE_PURCHASE' },
-    { href: '/expenses',                    emoji: '💳',                  label: 'खर्च लिखो',                                 sublabel: 'Expenses',      permission: 'VIEW_EXPENSES'   },
-    { href: '/udhaar',                      emoji: '💸',                  label: 'उधार लो',                                   sublabel: 'Collect',       permission: 'VIEW_UDHAAR'     },
+    { href: '/sales/new',       emoji: config?.icon || '🧾', label: term('quickNewSaleHindi', 'Bill बनाओ'),       sublabel: 'New Invoice',   permission: 'CREATE_INVOICE'  },
+    { href: '/purchases',      emoji: '🛒',                  label: term('quickPurchaseHindi', 'माल खरीदो'),    sublabel: 'New Purchase',  permission: 'CREATE_PURCHASE' },
+    { href: '/udhaar',         emoji: '💸',                  label: 'Payment लो',                                sublabel: 'Add Payment',   permission: 'VIEW_UDHAAR'     },
+    { href: '/product',        emoji: '📦',                  label: term('quickAddStockHindi', 'Stock जोड़ो'),  sublabel: 'Receive Stock', permission: 'MANAGE_INVENTORY'},
   ].filter(a => hasPermission(a.permission));
+
+  const deltaRevenuePct = yest_revenue > 0
+    ? ((today_sales - yest_revenue) / yest_revenue) * 100
+    : null;
+
+  const alertItems = [
+    out_of_stock > 0 && { emoji: '🔴', label: `${out_of_stock} items out of stock`, href: '/product' },
+    low_stock > 0    && { emoji: '🟡', label: `${low_stock} items low on stock`, href: '/product' },
+    gst_payable > 0 && hasPermission('VIEW_GST') && { emoji: '🧾', label: `GST payable ₹${fmt(gst_payable)}`, href: '/gst' },
+    payablesDue > 0  && { emoji: '💳', label: `Supplier dues ₹${fmt(payablesDue)}`, href: '/purchases?filter=credit_due' },
+  ].filter(Boolean);
+  const alertCount = alertItems.length;
 
   const payablesDue   = data?.purchases?.totalDue    || 0;
   const payablesCount = data?.purchases?.creditCount || 0;
@@ -832,18 +932,40 @@ function B2CDashboard() {
 
         <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="b2c" />
         {isStaffUser && userRole && <StaffBanner userRole={userRole} config={config} />}
-
-        {/* GST Filing Deadline Banner */}
         {hasGstin && <GstDeadlineBanner shop={shop} />}
 
-        {/* Today's snapshot */}
+        {/* ── Hero: Revenue | Udhaar side-by-side ── */}
+        {hasPermission('VIEW_SALES') && (
+          <HeroDualMetric
+            revenue={today_sales}
+            udhaar={total_udhaar}
+            udhaarCount={udhaar_count}
+            delta={deltaRevenuePct}
+          />
+        )}
+
+        {/* ── Primary action grid 2×2 ── */}
+        {b2cActions.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {b2cActions.map(a => <QuickActionCard key={a.href} href={a.href} emoji={a.emoji} label={a.label} sublabel={a.sublabel} />)}
+          </div>
+        )}
+
+        {/* ── AMC expiry banner (electronics only) ── */}
+        {businessType === 'electronics' && <AMCExpiryBanner />}
+
+        {/* ── Collapsed alert strip ── */}
+        <AlertStrip alertCount={alertCount} items={alertItems} />
+
+        {/* ── Monthly Goal ── */}
+        <MonthlyGoalCard monthRevenue={month_sales} monthlyTarget={monthlyTarget} />
+
+        {/* ── Full revenue detail (range picker) ── */}
         {hasPermission('VIEW_SALES') && (
           <div>
             <div className="page-section-row px-0.5">
               <span className="page-section-label">{primaryLabel} का हाल</span>
-              <div className="flex items-center gap-2">
-                <Link href="/sales" className="page-section-link">सभी bills →</Link>
-              </div>
+              <Link href="/sales" className="page-section-link">सभी bills →</Link>
             </div>
             <DateRangePicker selected={selectedRange} onChange={setSelectedRange} />
             <div className="mt-3">
@@ -853,7 +975,6 @@ function B2CDashboard() {
                   <p className="text-[36px] font-black text-slate-900 leading-none">₹{fmt(today_sales)}</p>
                   {selectedRange === 'today' && <DeltaBadge current={today_sales} yesterday={yest_revenue} />}
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">Revenue</p>
                 <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wide">Bills</p>
@@ -873,23 +994,8 @@ function B2CDashboard() {
           </div>
         )}
 
-        {/* Monthly Goal */}
-        <MonthlyGoalCard monthRevenue={month_sales} monthlyTarget={monthlyTarget} />
-
         {/* KPI strip */}
         {kpiTiles.length > 0 && <KPIStrip tiles={kpiTiles} />}
-
-        {/* Quick actions */}
-        {b2cActions.length > 0 && (
-          <div>
-            <div className="page-section-row px-0.5 mb-3">
-              <span className="page-section-label">जल्दी काम</span>
-            </div>
-            <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
-              {b2cActions.map(a => <QuickActionCard key={a.href} href={a.href} emoji={a.emoji} label={a.label} sublabel={a.sublabel} />)}
-            </div>
-          </div>
-        )}
 
         {/* Workflow widgets */}
         {wfc && wfWidgets.length > 0 && hasPermission('CREATE_INVOICE') && (

@@ -214,7 +214,7 @@ export default function SalesPage() {
         setShopGstin(shop.gstin || ''); setShopAddress(shop.address || ''); setShopPhone(shop.phone || '');
         setChallanForm(prev => ({ ...prev, dispatch_from: prev.dispatch_from || shop.address || '' }));
       }).catch(() => {});
-  }, [showModal, sales.length, shopName, shopState]);
+  }, [setChallanForm, showModal, sales.length, shopName, shopState]);
 
   /* ── Product fetch trigger ── */
   useEffect(() => {
@@ -241,9 +241,12 @@ export default function SalesPage() {
       router.replace(`/login?next=${encodeURIComponent('/sales?open=1&payment=credit')}`);
       return;
     }
-    setEditingSaleId(''); setItems([emptyItem()]); setForm(buildInitialForm({ payment_type: 'credit' }));
-    setGstinTouched(false); setError(''); setShowModal(true); router.replace('/sales');
-  }, [router]);
+    const timer = window.setTimeout(() => {
+      setEditingSaleId(''); setItems([emptyItem()]); setForm(buildInitialForm({ payment_type: 'credit' }));
+      setGstinTouched(false); setError(''); setShowModal(true); router.replace('/sales');
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [router, setEditingSaleId, setError, setForm, setGstinTouched, setItems, setShowModal]);
 
   /* ── Keyboard shortcuts ── */
   useEffect(() => {
@@ -272,7 +275,7 @@ export default function SalesPage() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showModal, editingSaleId, items, barcodeEnabled]);
+  }, [showModal, addItem, barcodeEnabled, editingSaleId, handleHoldBill, handleSubmit, items, resetForm, setShowModal]);
 
   /* ── Feature 4: Recurring invoice due-date checker (runs once on mount) ── */
   useEffect(() => {
@@ -411,8 +414,8 @@ export default function SalesPage() {
   };
 
   /* ── Hold Bill handlers ── */
-  const handleHoldBill = () => {
-    if (!items.some(i => i.product_id)) return;
+  function handleHoldBill() {
+    if (!items.some((item) => item.product_id)) return;
     const id = `hold_${Date.now()}`;
     const label = form.buyer_name?.trim() || `Bill #${getHeldBills().length + 1}`;
     const bill = { id, label, items, form, extraFields, savedAt: new Date().toISOString(), customerName: form.buyer_name || '' };
@@ -421,7 +424,7 @@ export default function SalesPage() {
     resetForm();
     setShowModal(false);
     showToast(`"${label}" hold हो गया ⏸`, 'info');
-  };
+  }
 
   const handleRestoreBill = (bill) => {
     removeHeldBill(bill.id);
@@ -532,12 +535,18 @@ export default function SalesPage() {
               >
                 👥 {term('customers', 'Customers')}
               </Link>
+              <Link
+                href="/sales/new"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
+              >
+                ⚡ Quick Invoice
+              </Link>
               <button
                 type="button"
                 onClick={() => { resetForm(); setShowModal(true); }}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold text-slate-700 bg-white border-2 border-slate-200 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all"
               >
-                + {term('newSale', 'New Sale')}
+                + {term('newSale', 'Full Sale')}
               </button>
             </div>
           </div>

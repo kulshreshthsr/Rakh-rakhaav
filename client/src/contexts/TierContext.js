@@ -29,7 +29,7 @@ const TierContext = createContext(null);
 
 export function TierProvider({ children }) {
   const [tier, setTier] = useState(readStoredTier);
-  const [industryType, setIndustryType] = useState('general');
+  const [industryType, setIndustryType] = useState('hardware');
 
   const features = useMemo(() => getTierFeatures(tier, industryType), [tier, industryType]);
 

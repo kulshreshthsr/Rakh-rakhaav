@@ -124,7 +124,8 @@ export default function SaleFormModal({
                   {heldBills.map((bill) => {
                     const itemCount = bill.items?.filter(i => i.product_id).length || 0;
                     const approxTotal = bill.items?.reduce((s, i) => s + (Number(i.quantity || 0) * Number(i.price_per_unit || 0)), 0) || 0;
-                    const isOld = Date.now() - new Date(bill.savedAt).getTime() > 86400000;
+                    const currentTime = new Date().getTime();
+                    const isOld = currentTime - new Date(bill.savedAt).getTime() > 86400000;
                     return (
                       <div key={bill.id} className="flex items-center gap-3 px-4 py-3">
                         <div className="flex-1 min-w-0">

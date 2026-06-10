@@ -27,10 +27,13 @@ const userSchema = new mongoose.Schema({
     trim: true,
     sparse: true,
   },
+  ui_language: { type: String, enum: ['en', 'hi', 'hi_en'], default: 'hi_en' },
   passwordResetToken: { type: String, default: null },
   passwordResetExpires: { type: Date, default: null },
   passwordChangedAt: { type: Date, default: null },
   tokenVersion: { type: Number, default: 0 },
+  refresh_token_hash:    { type: String, default: null, select: false },
+  refresh_token_expires: { type: Date,   default: null },
   // RBAC fields — safe defaults ensure backward compat for existing users
   role: { type: String, default: 'owner' },
   isSubUser: { type: Boolean, default: false },

@@ -48,13 +48,15 @@ const TIER_FEATURES = {
     report_basic_pl: true, report_gst: true, report_full_pl: true, report_balance_sheet: true,
     erp_purchase_orders: true, erp_grn: true, erp_multi_location: true,
     erp_credit_aging: true, erp_pl_statement: true, erp_supplier_ledger: true,
-    erp_eway_bill: true, max_sub_users: Infinity,
+    erp_eway_bill: true, erp_einvoice: true,
+    report_stock_valuation: true, report_stock_aging: true,
+    max_sub_users: Infinity,
   },
 };
 
 const INDUSTRY_OVERRIDES = {};
 
-export function getTierFeatures(tier = 'nano', industryType = 'general') {
+export function getTierFeatures(tier = 'nano', industryType = 'hardware') {
   const base = TIER_FEATURES[tier] || TIER_FEATURES.nano;
   const overrides = INDUSTRY_OVERRIDES[industryType] || {};
   const result = { ...base };
@@ -64,6 +66,6 @@ export function getTierFeatures(tier = 'nano', industryType = 'general') {
   return result;
 }
 
-export function isFeatureEnabled(feature, tier = 'nano', industryType = 'general') {
+export function isFeatureEnabled(feature, tier = 'nano', industryType = 'hardware') {
   return getTierFeatures(tier, industryType)[feature] === true;
 }

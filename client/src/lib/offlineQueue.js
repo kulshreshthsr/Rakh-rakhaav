@@ -252,3 +252,39 @@ export async function removeQueuedOperation(id) {
     return null;
   }
 }
+
+export async function queueStockAdjust(productId, adjustmentData) {
+  try {
+    if (!isBrowser()) return null;
+    const operation = {
+      id: crypto.randomUUID(),
+      type: 'STOCK_ADJUST',
+      payload: { product_id: productId, ...adjustmentData },
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      retryCount: 0,
+      tempId: `TEMP-STOCK-${Date.now()}`,
+    };
+    return await addToQueue(operation);
+  } catch {
+    return null;
+  }
+}
+
+export async function queueServiceJobUpdate(jobId, updateData) {
+  try {
+    if (!isBrowser()) return null;
+    const operation = {
+      id: crypto.randomUUID(),
+      type: 'SERVICE_JOB_UPDATE',
+      payload: { job_id: jobId, ...updateData },
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      retryCount: 0,
+      tempId: `TEMP-SVC-${Date.now()}`,
+    };
+    return await addToQueue(operation);
+  } catch {
+    return null;
+  }
+}

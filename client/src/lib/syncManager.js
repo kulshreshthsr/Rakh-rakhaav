@@ -170,6 +170,52 @@ async function syncPurchase(operation) {
   }
 }
 
+async function syncStockAdjust(operation) {
+  const { product_id, ...body } = operation?.payload || {};
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), SYNC_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(apiUrl(`/api/products/${product_id}/adjust-stock`), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      signal: controller.signal,
+      body: JSON.stringify(body),
+    });
+    if (response.ok) return { success: true, data: await response.json() };
+    if (response.status === 401) throw new Error('AUTH_EXPIRED');
+    throw new Error('SERVER_ERROR');
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('SYNC_TIMEOUT');
+    if (error instanceof TypeError) throw new Error('NETWORK_ERROR');
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function syncServiceJobUpdate(operation) {
+  const { job_id, ...body } = operation?.payload || {};
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), SYNC_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(apiUrl(`/api/service-jobs/${job_id}/status`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      signal: controller.signal,
+      body: JSON.stringify(body),
+    });
+    if (response.ok) return { success: true, data: await response.json() };
+    if (response.status === 401) throw new Error('AUTH_EXPIRED');
+    throw new Error('SERVER_ERROR');
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('SYNC_TIMEOUT');
+    if (error instanceof TypeError) throw new Error('NETWORK_ERROR');
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export async function syncQueue() {
   try {
     if (!isBrowser()) {
@@ -196,6 +242,10 @@ export async function syncQueue() {
           await syncSale(operation);
         } else if (operation.type === 'CREATE_PURCHASE') {
           await syncPurchase(operation);
+        } else if (operation.type === 'STOCK_ADJUST') {
+          await syncStockAdjust(operation);
+        } else if (operation.type === 'SERVICE_JOB_UPDATE') {
+          await syncServiceJobUpdate(operation);
         } else {
           throw new Error('UNSUPPORTED_OPERATION');
         }

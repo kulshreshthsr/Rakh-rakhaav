@@ -25,6 +25,7 @@ const saleItemSchema = new mongoose.Schema({
   // Industry-specific line fields (pharmacy: batch_number/expiry, clothing: size/color, etc.)
   item_metadata: { type: Map, of: mongoose.Schema.Types.Mixed, default: {} },
   notes: { type: String, default: '' },
+  price_tier_used: { type: String, enum: ['mrp', 'dealer', 'project', 'custom', 'default'], default: 'default' },
 });
 
 const saleSchema = new mongoose.Schema({
@@ -192,6 +193,32 @@ const saleSchema = new mongoose.Schema({
   original_invoice_no:   { type: String },
   original_invoice_date: { type: Date },
   credit_debit_reason: { type: String }, // 'return_of_goods', 'price_correction', 'post_sale_discount', 'additional_charges', etc.
+
+  // ── Project linkage (hardware: site billing) ─────────────────
+  project:      { type: mongoose.Schema.Types.ObjectId, ref: 'Project', default: null },
+  project_name: { type: String, default: '' },
+
+  // ── E-Invoice / IRN (NIC IRP API) ────────────────────────────
+  irn:             { type: String, default: null },
+  ack_no:          { type: String, default: null },
+  ack_date:        { type: Date,   default: null },
+  signed_qr_code:  { type: String, default: null },
+  einvoice_status: {
+    type: String,
+    enum: ['not_applicable', 'pending', 'generated', 'cancelled'],
+    default: 'not_applicable',
+  },
+
+  // ── E-Way Bill (NIC / GST EWB API) ───────────────────────────
+  ewb_status: {
+    type: String,
+    enum: ['not_required', 'pending', 'generated', 'cancelled'],
+    default: 'not_required',
+  },
+  ewb_number:       { type: String, default: null },
+  ewb_generated_at: { type: Date,   default: null },
+  ewb_valid_until:  { type: Date,   default: null },
+  ewb_cancel_reason:{ type: String, default: null },
 
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true },

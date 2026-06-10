@@ -13,30 +13,28 @@
  * How it works:
  *   Each industry file exports only the keys that DIFFER from the base.
  *   getBusinessConfig merges BASE_TERMINOLOGY + industry overrides.
- *   Unknown business types fall back to 'general' (which is the base itself).
+ *   Unknown business types fall back to hardware.
  */
 
 import { BASE_TERMINOLOGY } from './base.js';
 
-import general     from './general.js';
 import hardware    from './hardware.js';
 import electronics from './electronics.js';
 
 const OVERRIDES = {
-  general,
   hardware,
   electronics,
 };
 
 /**
  * Returns the complete merged terminology config for a given business type.
- * Falls back to 'general' (base) for unknown types.
+ * Falls back to hardware for unknown types.
  *
  * @param {string} businessType
  * @returns {typeof BASE_TERMINOLOGY}
  */
 export function getBusinessConfig(businessType) {
-  const overrides = OVERRIDES[businessType] ?? OVERRIDES.general;
+  const overrides = OVERRIDES[businessType] ?? OVERRIDES.hardware;
   return { ...BASE_TERMINOLOGY, ...overrides };
 }
 

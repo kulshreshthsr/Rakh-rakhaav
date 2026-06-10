@@ -28,9 +28,14 @@ function useSyncStatus(open) {
   }, []);
 
   useEffect(() => {
-    refresh();
+    const initialTimer = window.setTimeout(() => {
+      refresh();
+    }, 0);
     timerRef.current = window.setInterval(refresh, open ? 2000 : 10000);
-    return () => { if (timerRef.current) window.clearInterval(timerRef.current); };
+    return () => {
+      window.clearTimeout(initialTimer);
+      if (timerRef.current) window.clearInterval(timerRef.current);
+    };
   }, [open, refresh]);
 
   return { status, items, refresh };

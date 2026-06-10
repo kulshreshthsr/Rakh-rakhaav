@@ -40,6 +40,15 @@ const warrantyClaimSchema = new mongoose.Schema({
   resolution:      { type: String },
   replacedSerial:  { type: String },
 
+  // Enhanced tracking fields (Phase 2D)
+  estimated_repair_cost: { type: Number, default: 0 },
+  actual_repair_cost:    { type: Number, default: 0 },
+  warranty_expiry_date:  { type: Date, default: null },
+  is_within_warranty:    { type: Boolean, default: null },
+  sla_days:              { type: Number, default: 7 },
+  escalated:             { type: Boolean, default: false },
+  customer_notified_at:  { type: Date, default: null },
+
   // Tracking
   receivedBy: { type: String },
   notes:      { type: String },

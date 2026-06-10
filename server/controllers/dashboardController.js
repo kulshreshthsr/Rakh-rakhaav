@@ -4,7 +4,6 @@ const Purchase = require('../models/purchaseModel');
 const Customer = require('../models/customerModel');
 const Shop = require('../models/shopModel');
 const WarrantyClaim = require('../models/warrantyClaimModel');
-const ruleEngine = require('../services/ruleEngine');
 const { checkUsageUpgrade } = require('../services/tierInference');
 const { calculateGSTR3BSummary } = require('./salesController');
 
@@ -340,9 +339,6 @@ const getDashboardSummary = async (req, res) => {
     };
 
     res.json(responseObj);
-
-    // Fire-and-forget rule scan — never blocks the response
-    ruleEngine.scanShop(shop._id, shop.businessType || 'general').catch(() => {});
 
     // Fire-and-forget tier upgrade check
     setImmediate(async () => {

@@ -10,7 +10,7 @@
  *
  * Usage:
  *   const { config, term, isEnabled } = useIndustry();
- *   config.terminology.product  → 'Medicine' for pharmacy, 'Product' for general
+ *   config.terminology.product  → industry-specific label for the current shop
  *   term('product')             → same, shorthand
  *   isEnabled('batchTracking')  → true for pharmacy
  */
@@ -22,13 +22,13 @@ const STORAGE_KEY = 'rr-business-type';
 const DASHBOARD_MODE_KEY = 'rr-dashboard-mode';
 
 function readStoredBusinessType() {
-  if (typeof window === 'undefined') return 'general';
-  try { return localStorage.getItem(STORAGE_KEY) || 'general'; } catch { return 'general'; }
+  if (typeof window === 'undefined') return 'hardware';
+  try { return localStorage.getItem(STORAGE_KEY) || 'hardware'; } catch { return 'hardware'; }
 }
 
 export function writeStoredBusinessType(type) {
   if (typeof window === 'undefined') return;
-  try { localStorage.setItem(STORAGE_KEY, type || 'general'); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, type || 'hardware'); } catch {}
 }
 
 function readStoredDashboardMode() {

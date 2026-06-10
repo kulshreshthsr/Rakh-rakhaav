@@ -213,6 +213,7 @@ export default function UdhaarPage() {
   const [showAging,           setShowAging]           = useState(false);
   const [sortBy,              setSortBy]              = useState('due_desc');
   const [filterDue,           setFilterDue]           = useState('all');
+  const [riskFilter,          setRiskFilter]          = useState('all'); // all | high_risk | recent
   const [payToast,            setPayToast]            = useState('');
 
   /* Feature 5: manual entry */
@@ -651,10 +652,25 @@ export default function UdhaarPage() {
   const isCustomer = activeTab === 'customers';
 
   const normalizedPartySearch = partySearch.trim().toLowerCase();
+  const now60dAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
+  const now7dAgo  = Date.now() - 7  * 24 * 60 * 60 * 1000;
+
   const processedList = list
     .filter((item) => {
       if (filterDue === 'pending') return item.totalUdhaar > 0;
       if (filterDue === 'settled') return item.totalUdhaar <= 0;
+      return true;
+    })
+    .filter((item) => {
+      if (riskFilter === 'high_risk') {
+        if (!item.totalUdhaar || item.totalUdhaar <= 0) return false;
+        const lastDate = item.last_payment_date || item.createdAt;
+        return !lastDate || new Date(lastDate).getTime() < now60dAgo;
+      }
+      if (riskFilter === 'recent') {
+        const lastDate = item.last_payment_date || item.updatedAt || item.createdAt;
+        return lastDate && new Date(lastDate).getTime() >= now7dAgo;
+      }
       return true;
     })
     .filter((item) => {
@@ -902,6 +918,24 @@ export default function UdhaarPage() {
                   value={partySearch}
                   onChange={(e) => setPartySearch(e.target.value)}
                 />
+
+                {/* Risk filter tabs */}
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                  {[
+                    { val: 'all',       label: 'All',                   color: 'bg-slate-500 border-slate-500' },
+                    { val: 'high_risk', label: '🔴 High Risk (>60d)',   color: 'bg-rose-500 border-rose-500'   },
+                    { val: 'recent',    label: '🟢 Recently Active',    color: 'bg-green-500 border-green-500' },
+                  ].map((f) => (
+                    <button key={f.val} type="button" onClick={() => setRiskFilter(f.val)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border ${
+                        riskFilter === f.val
+                          ? `${f.color} text-white shadow-sm`
+                          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                      }`}
+                    >{f.label}</button>
+                  ))}
+                </div>
+
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex gap-1.5">
                     {[
@@ -990,6 +1024,13 @@ export default function UdhaarPage() {
                                 onClick={(e) => { e.stopPropagation(); setSelected(item); setShowSettle(true); resetSettleForm(); }}
                                 className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-[11px] font-black shadow-sm hover:shadow-md hover:-translate-y-px transition-all"
                               >💰 Payment</button>
+                            )}
+                            {isCustomer && item.phone && (
+                              <a href={`tel:${cleanPhone(item.phone)}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 text-sm hover:bg-blue-100 transition-colors"
+                                title="Call"
+                              >📞</a>
                             )}
                             {isCustomer && item.phone && isPending && (
                               <button type="button"

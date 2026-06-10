@@ -20,6 +20,10 @@ const {
   convertQuotation,
   createCreditNote,
   createDebitNote,
+  generateEwayBill,
+  cancelEwayBill,
+  generateIRN,
+  cancelIRN,
 } = require('../controllers/salesController');
 
 router.get('/profit-summary',  protect, requirePermission('VIEW_REPORTS'), getProfitSummary);
@@ -32,6 +36,10 @@ router.patch('/:id/mark-dispatched', protect, requirePermission('CREATE_INVOICE'
 router.patch('/:id/mark-delivered', protect, requirePermission('CREATE_INVOICE'), markChallanDelivered);
 router.post('/:id/convert-to-invoice', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), convertToInvoice);
 router.post('/:id/convert-quotation',  protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), requireFeature('billing_quotation'), convertQuotation);
+router.post('/:id/generate-ewb', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), requireFeature('erp_eway_bill'), generateEwayBill);
+router.post('/:id/cancel-ewb',   protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),   requireFeature('erp_eway_bill'), cancelEwayBill);
+router.post('/:id/generate-irn', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), requireFeature('erp_einvoice'),  generateIRN);
+router.post('/:id/cancel-irn',   protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),   requireFeature('erp_einvoice'),  cancelIRN);
 
 router.get('/',    protect, requirePermission('VIEW_SALES'),   getSales);
 router.get('/:id', protect, requirePermission('VIEW_SALES'),   getSaleById);

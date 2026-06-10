@@ -64,6 +64,8 @@ const purchaseSchema = new mongoose.Schema({
   supplier_state: { type: String },
   supplier_state_code: { type: String },   // 2-digit code extracted from supplier GSTIN
   supplier_state_name: { type: String },
+  purchase_order: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseOrder', default: null },
+  purchase_order_number: { type: String, default: '' },
 
   // Supplier's own invoice details (required for GSTR-2B reconciliation)
   supplier_invoice_no: { type: String },    // supplier's bill number (not our internal number)

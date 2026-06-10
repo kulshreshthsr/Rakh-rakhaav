@@ -513,6 +513,117 @@ const validateGSTINEndpoint = (req, res) => {
 // GET /api/gst/filing-period
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GSTR-4 (Annual return for Composition Dealers)
+// GET /api/gst/gstr4?year=YYYY
+// ─────────────────────────────────────────────────────────────────────────────
+
+const generateGSTR4 = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+
+    if (shop.gst_type !== 'composition') {
+      return res.status(400).json({ message: 'GSTR-4 is only applicable for composition dealers. Your shop is registered as: ' + shop.gst_type });
+    }
+    if (!shop.gstin) {
+      return res.status(400).json({ message: 'GSTIN not configured. Please update your profile first.' });
+    }
+
+    const year = parseInt(req.query.year, 10);
+    if (!year || year < 2017) return res.status(400).json({ message: 'Valid fiscal year (e.g. 2024) is required' });
+
+    // Financial year: April year to March year+1
+    const fromDate = new Date(year, 3, 1);       // 1 Apr
+    const toDate   = new Date(year + 1, 2, 31, 23, 59, 59, 999); // 31 Mar
+
+    // ── Outward supplies (all sales — no GST collected by composition dealers) ─
+    const sales = await Sale.find({
+      shop: shop._id,
+      createdAt: { $gte: fromDate, $lte: toDate },
+      document_type: 'invoice',
+    }).select('total_amount taxable_amount buyer_gstin createdAt').lean();
+
+    const totalTurnover      = round2(sumField(sales, 'total_amount'));
+    const registeredSupplies = sales.filter(s => s.buyer_gstin);
+    const unregisteredSupplies = sales.filter(s => !s.buyer_gstin);
+
+    // ── Inward supplies (purchases) ──────────────────────────────────────────
+    const purchases = await Purchase.find({
+      shop: shop._id,
+      purchase_date: { $gte: fromDate, $lte: toDate },
+    }).select('total_amount taxable_amount supplier_gstin cgst_amount sgst_amount igst_amount').lean();
+
+    const b2bPurchases   = purchases.filter(p => p.supplier_gstin);
+    const unregPurchases = purchases.filter(p => !p.supplier_gstin);
+
+    const totalB2BPurchases   = round2(sumField(b2bPurchases, 'total_amount'));
+    const totalUnregPurchases = round2(sumField(unregPurchases, 'taxable_amount'));
+    const totalInwardGST      = round2(
+      sumField(purchases, 'cgst_amount') + sumField(purchases, 'sgst_amount') + sumField(purchases, 'igst_amount')
+    );
+
+    // ── Composition tax payable ───────────────────────────────────────────────
+    const compositionRate = shop.composition_rate || 1; // 1%, 5%, or 6%
+    const taxPayable      = round2(totalTurnover * compositionRate / 100);
+
+    // ── Quarterly breakdown ───────────────────────────────────────────────────
+    const quarters = [1, 2, 3, 4].map((q) => {
+      const { fromDate: qFrom, toDate: qTo } = getQuarterDateRange(year, q);
+      const qSales = sales.filter(s => new Date(s.createdAt) >= qFrom && new Date(s.createdAt) <= qTo);
+      const qTurnover = round2(sumField(qSales, 'total_amount'));
+      return {
+        quarter:    `Q${q}`,
+        from:       qFrom.toISOString().slice(0, 10),
+        to:         qTo.toISOString().slice(0, 10),
+        turnover:   qTurnover,
+        tax_payable: round2(qTurnover * compositionRate / 100),
+        invoice_count: qSales.length,
+      };
+    });
+
+    return res.json({
+      gstin:        shop.gstin,
+      period:       `${year}-${year + 1}`,
+      composition_category: shop.composition_category || 'goods',
+      composition_rate:     compositionRate,
+
+      // Table 4A — Outward supplies
+      outward_supplies: {
+        total_invoices:        sales.length,
+        total_turnover:        totalTurnover,
+        registered_supplies:   round2(sumField(registeredSupplies,   'total_amount')),
+        unregistered_supplies: round2(sumField(unregisteredSupplies, 'total_amount')),
+      },
+
+      // Table 4B — Inward supplies
+      inward_supplies: {
+        total_purchases:     purchases.length,
+        b2b_purchases:       totalB2BPurchases,
+        unregistered_inward: totalUnregPurchases,
+        total_inward_gst:    totalInwardGST,
+      },
+
+      // Table 6 — Tax payable
+      tax_summary: {
+        total_turnover:  totalTurnover,
+        composition_rate: `${compositionRate}%`,
+        tax_payable:      taxPayable,
+        late_fee:         0,
+        interest:         0,
+        total_due:        taxPayable,
+      },
+
+      quarterly_breakup: quarters,
+      generated_at: new Date(),
+      note: 'Composition dealers do not collect GST from customers. Tax is paid on total turnover.',
+    });
+  } catch (err) {
+    logger.error('[gstController:generateGSTR4]', err.message || err);
+    const isDev = process.env.NODE_ENV !== 'production';
+    return res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', ...(isDev && { debug: err.message }) });
+  }
+};
+
 const getFilingPeriodInfo = async (req, res) => {
   try {
     const shop = await getShopOrFail(req.user.id);
@@ -525,4 +636,4 @@ const getFilingPeriodInfo = async (req, res) => {
   }
 };
 
-module.exports = { generateGSTR1, generateGSTR3B, validateGSTINEndpoint, getFilingPeriodInfo };
+module.exports = { generateGSTR1, generateGSTR3B, validateGSTINEndpoint, getFilingPeriodInfo, generateGSTR4 };

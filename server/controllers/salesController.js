@@ -245,16 +245,17 @@ const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', sessio
     const quantityAfter = round2(product.quantity - delta);
     await Product.findByIdAndUpdate(productId, {
       $inc: { quantity: -delta },
-      $push: {
-        stock_history: {
-          type: delta > 0 ? 'sale' : 'sale_return',
-          quantity_change: -delta,
-          quantity_after: quantityAfter,
-          reference_id: invoiceNumber,
-          date: new Date(),
-        },
-      },
     }, session ? { session } : {});
+    await logStockMovements(shop._id, [{
+      product: product._id,
+      type: delta > 0 ? 'sale' : 'sale_return',
+      quantityChange: -delta,
+      quantityAfter,
+      referenceId: invoiceNumber,
+      referenceType: 'sale',
+      note: '',
+      performedBy: req.user?.id,
+    }], { session });
   }
 };
 
@@ -529,6 +530,19 @@ const reverseSubInventoryForSale = async (items = [], session = null) => {
   }
 };
 
+const CUSTOMER_TYPE_TO_TIER = {
+  contractor: 'dealer',
+  project:    'project',
+  walk_in:    'default',
+};
+
+function resolveItemPrice(product, tier) {
+  if (tier === 'dealer')  return product.dealer_price  > 0 ? product.dealer_price  : product.price;
+  if (tier === 'project') return product.project_price > 0 ? product.project_price : product.price;
+  if (tier === 'mrp')     return product.mrp           > 0 ? product.mrp           : product.price;
+  return product.price;
+}
+
 const buildSaleRecordData = async ({
   shop,
   payload,
@@ -550,6 +564,10 @@ const buildSaleRecordData = async ({
     extra_fields,
     discount_type = 'none',
     discount_value = 0,
+    price_tier: saleTierParam,
+    customer: customerId,
+    project: projectId,
+    project_name: projectNameParam,
   } = payload;
 
   if (!items || items.length === 0) {
@@ -606,6 +624,17 @@ const buildSaleRecordData = async ({
     throw _bizErr('Invalid amount paid');
   }
 
+  // ── Resolve sale-level price tier from customer_type ─────────────────────
+  let saleLevelTier = saleTierParam || 'default';
+  if (saleLevelTier === 'default' && customerId) {
+    let custQ = Customer.findById(customerId).select('customer_type').lean();
+    if (session) custQ = custQ.session(session);
+    const cust = await custQ;
+    if (cust?.customer_type) {
+      saleLevelTier = CUSTOMER_TYPE_TO_TIER[cust.customer_type] || 'default';
+    }
+  }
+
   let totalTaxable = 0, totalCGST = 0, totalSGST = 0;
   let totalIGST = 0, totalGST = 0, grandTotal = 0;
   let totalCost = 0;
@@ -620,7 +649,19 @@ const buildSaleRecordData = async ({
     if (!product) throw _bizErr(`Product not found: ${item.product_id}`);
 
     const qty = Number(item.quantity);
-    const ppu = Number(item.price_per_unit);
+
+    // ── Resolve price: item.price_per_unit takes priority; fall back to tier ─
+    const itemTier = item.price_tier || saleLevelTier;
+    let ppu;
+    let priceTierUsed;
+    if (item.price_per_unit !== undefined && item.price_per_unit !== null) {
+      ppu = Number(item.price_per_unit);
+      priceTierUsed = item.price_tier || 'custom';
+    } else {
+      ppu = resolveItemPrice(product, itemTier);
+      priceTierUsed = itemTier;
+    }
+
     if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(ppu) || ppu < 0) {
       throw _bizErr(`Invalid quantity or price for ${product.name}`);
     }
@@ -631,7 +672,9 @@ const buildSaleRecordData = async ({
       throw _bizErr(`${product.name}: sirf ${product.quantity} stock available hai`);
     }
 
-    const cost = Number.isFinite(Number(item.cost_price)) ? Number(item.cost_price) : (product.cost_price || 0);
+    const cost = Number.isFinite(Number(item.cost_price)) && Number(item.cost_price) > 0
+      ? Number(item.cost_price)
+      : (product.weighted_avg_cost > 0 ? product.weighted_avg_cost : (product.cost_price || 0));
     const gst_rate = Number.isFinite(Number(item.gst_rate)) ? Number(item.gst_rate) : (product.gst_rate || 0);
     const taxable = parseFloat((qty * ppu).toFixed(2));
     const gstCalc = calculateGST(taxable, gst_rate, shop.state, resolvedBuyerState);
@@ -658,6 +701,7 @@ const buildSaleRecordData = async ({
       ...gstCalc,
       total_amount: lineTotal,
       item_metadata: item.item_metadata || {},
+      price_tier_used: priceTierUsed,
     });
   }
 
@@ -729,6 +773,9 @@ const buildSaleRecordData = async ({
       buyer_state: resolvedBuyerState,
       notes,
       extra_fields: extra_fields || {},
+      customer: customerId || null,
+      project: projectId || null,
+      project_name: projectNameParam || '',
       createdAt: saleDate,
     },
   };
@@ -899,6 +946,11 @@ const createSale = async (req, res) => {
         await syncSubInventory([], data.items, data.invoice_number, session);
       }
 
+      // Auto-flag EWB required when invoice value >= ₹50,000 and vehicle is present
+      if (!isQuotation && data.total_amount >= 50000 && req.body.vehicle_number) {
+        data.ewb_status = 'pending';
+      }
+
       const createdSales = await Sale.create([{
         ...data,
         shop: shop._id,
@@ -918,6 +970,15 @@ const createSale = async (req, res) => {
           note:           `Sale to ${data.buyer_name || 'Walk-in'}`,
         })));
         await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
+
+        // Update last_sale_date in product.metadata for slow-moving stock rule
+        const soldProductIds = [...new Set((data.items || []).map((item) => String(item.product)))];
+        if (soldProductIds.length > 0) {
+          Product.updateMany(
+            { _id: { $in: soldProductIds } },
+            { $set: { 'metadata.last_sale_date': new Date() } }
+          ).catch(() => {});
+        }
       }
 
       // Update contractor outstanding after sale created
@@ -931,6 +992,23 @@ const createSale = async (req, res) => {
     if (!hydratedSale) {
       logger.error('[createSale] hydratedSale is null after transaction, createdSaleId:', createdSaleId);
       return res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR' });
+    }
+
+    // Auto-generate IRN for B2B invoices when e-invoice is configured (fire-and-forget)
+    if (
+      hydratedSale.buyer_gstin &&
+      hydratedSale.document_type === 'invoice' &&
+      process.env.E_INVOICE_API_KEY
+    ) {
+      eInvoiceService.generateIRN(hydratedSale, createdShop)
+        .then(({ irn, ack_no, ack_date, signed_qr_code }) =>
+          Sale.findByIdAndUpdate(hydratedSale._id, {
+            $set: { irn, ack_no, ack_date, signed_qr_code, einvoice_status: 'generated' },
+          }).catch(() => {})
+        )
+        .catch(() =>
+          Sale.findByIdAndUpdate(hydratedSale._id, { $set: { einvoice_status: 'pending' } }).catch(() => {})
+        );
     }
 
     // Fire-and-forget — audit failure must never block the sale response
@@ -1060,17 +1138,17 @@ const deleteSale = async (req, res) => {
         const quantityAfter = round2(product.quantity + Number(item.quantity || 0));
         await Product.findByIdAndUpdate(item.product, {
           $inc: { quantity: item.quantity },
-          $push: {
-            stock_history: {
-              type: 'sale_return',
-              quantity_change: Number(item.quantity),
-              quantity_after: quantityAfter,
-              note: `Sale deleted: ${sale.invoice_number}`,
-              reference_id: sale.invoice_number,
-              date: new Date(),
-            },
-          },
         }, { session });
+        await logStockMovements(sale.shop, [{
+          product: product._id,
+          type: 'sale_return',
+          quantityChange: Number(item.quantity),
+          quantityAfter,
+          referenceId: sale.invoice_number,
+          referenceType: 'sale_delete',
+          note: `Sale deleted: ${sale.invoice_number}`,
+          performedBy: req.user?.id,
+        }], { session });
       }
 
       await reverseSubInventoryForSale(sale.items || [], session);
@@ -1868,6 +1946,101 @@ const createDebitNote = async (req, res) => {
   }
 };
 
+// ── E-INVOICE (IRN) ───────────────────────────────────────────────────────────
+
+const eInvoiceService = require('../services/eInvoiceService');
+
+const generateIRN = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
+    if (!sale) return res.status(404).json({ message: 'Invoice not found' });
+    if (sale.einvoice_status === 'generated') return res.status(400).json({ message: 'IRN already generated', irn: sale.irn });
+    if (!sale.buyer_gstin) return res.status(400).json({ message: 'IRN is only applicable for B2B invoices with a buyer GSTIN' });
+
+    const { irn, ack_no, ack_date, signed_qr_code } = await eInvoiceService.generateIRN(sale, shop);
+    sale.irn             = irn;
+    sale.ack_no          = ack_no;
+    sale.ack_date        = ack_date;
+    sale.signed_qr_code  = signed_qr_code;
+    sale.einvoice_status = 'generated';
+    await sale.save();
+
+    return res.json({ irn, ack_no, ack_date, signed_qr_code, einvoice_status: 'generated' });
+  } catch (err) {
+    logger.error('[salesController:generateIRN]', err.message || err);
+    return res.status(500).json({ message: err.message || 'IRN generation failed' });
+  }
+};
+
+const cancelIRN = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
+    if (!sale) return res.status(404).json({ message: 'Invoice not found' });
+    if (sale.einvoice_status !== 'generated') return res.status(400).json({ message: 'No active IRN to cancel' });
+
+    const { reason = '4', remarks = '' } = req.body;
+    await eInvoiceService.cancelIRN(sale.irn, reason, remarks);
+    sale.einvoice_status = 'cancelled';
+    await sale.save();
+
+    return res.json({ message: 'IRN cancelled', einvoice_status: 'cancelled' });
+  } catch (err) {
+    logger.error('[salesController:cancelIRN]', err.message || err);
+    return res.status(500).json({ message: err.message || 'IRN cancellation failed' });
+  }
+};
+
+// ── E-WAY BILL ────────────────────────────────────────────────────────────────
+
+const ewayBillService = require('../services/ewayBillService');
+
+const generateEwayBill = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
+    if (!sale) return res.status(404).json({ message: 'Invoice not found' });
+    if (sale.ewb_status === 'generated') return res.status(400).json({ message: 'E-Way Bill already generated', ewb_number: sale.ewb_number });
+    if (sale.ewb_status === 'cancelled') return res.status(400).json({ message: 'Cannot generate EWB for a cancelled bill' });
+
+    const { ewb_number, ewb_valid_until } = await ewayBillService.generateEWB(sale, shop);
+
+    sale.ewb_number       = ewb_number;
+    sale.ewb_generated_at = new Date();
+    sale.ewb_valid_until  = ewb_valid_until;
+    sale.ewb_status       = 'generated';
+    if (!sale.eway_bill_number) sale.eway_bill_number = ewb_number;
+    await sale.save();
+
+    return res.json({ ewb_number, ewb_valid_until, ewb_status: 'generated' });
+  } catch (err) {
+    logger.error('[salesController:generateEwayBill]', err.message || err);
+    return res.status(500).json({ message: err.message || 'E-Way Bill generation failed' });
+  }
+};
+
+const cancelEwayBill = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const sale = await Sale.findOne({ _id: req.params.id, shop: shop._id });
+    if (!sale) return res.status(404).json({ message: 'Invoice not found' });
+    if (sale.ewb_status !== 'generated') return res.status(400).json({ message: 'No active E-Way Bill to cancel' });
+
+    const { reason = 'Others', remarks = '' } = req.body;
+    await ewayBillService.cancelEWB(sale.ewb_number, reason, remarks);
+
+    sale.ewb_status       = 'cancelled';
+    sale.ewb_cancel_reason = reason;
+    await sale.save();
+
+    return res.json({ message: 'E-Way Bill cancelled', ewb_status: 'cancelled' });
+  } catch (err) {
+    logger.error('[salesController:cancelEwayBill]', err.message || err);
+    return res.status(500).json({ message: err.message || 'E-Way Bill cancellation failed' });
+  }
+};
+
 module.exports = {
   getSaleById,
   getSales,
@@ -1886,4 +2059,8 @@ module.exports = {
   convertQuotation,
   createCreditNote,
   createDebitNote,
+  generateEwayBill,
+  cancelEwayBill,
+  generateIRN,
+  cancelIRN,
 };

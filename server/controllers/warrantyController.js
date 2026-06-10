@@ -67,12 +67,29 @@ const createClaim = async (req, res) => {
       if (sale) { originalSaleId = sale._id; purchaseDate = sale.createdAt; }
     }
 
+    // Auto-compute warranty validity
+    let is_within_warranty = null;
+    let warranty_expiry_date = null;
+    if (purchaseDate) {
+      // Look up warranty expiry from SerialInventory if we have a serial
+      if (serialNumber) {
+        const SerialInventory = require('../models/serialInventoryModel');
+        const unit = await SerialInventory.findOne({ shop: shop._id, serial_number: serialNumber }).lean();
+        if (unit?.warranty_expiry) {
+          warranty_expiry_date = unit.warranty_expiry;
+          is_within_warranty = new Date() <= new Date(unit.warranty_expiry);
+        }
+      }
+    }
+
     const claim = await WarrantyClaim.create({
       shop: shop._id,
       originalSaleId, originalInvoiceNo, purchaseDate,
       productName, serialNumber, imeiNumber, brandName, modelNumber,
       issueDescription, claimType, customerName, customerPhone,
       brandTicketNo, receivedBy, notes,
+      is_within_warranty,
+      warranty_expiry_date,
     });
 
     res.status(201).json(claim);
@@ -101,15 +118,29 @@ const updateClaim = async (req, res) => {
     const claim = await WarrantyClaim.findOne({ _id: req.params.id, shop: shop._id });
     if (!claim) return res.status(404).json({ message: 'Claim not found' });
 
-    const allowed = ['claimStatus', 'brandTicketNo', 'resolution', 'replacedSerial', 'notes', 'receivedBy'];
+    const allowed = [
+      'claimStatus', 'brandTicketNo', 'resolution', 'replacedSerial', 'notes', 'receivedBy',
+      'estimated_repair_cost', 'actual_repair_cost', 'sla_days', 'escalated',
+    ];
     allowed.forEach(k => { if (req.body[k] !== undefined) claim[k] = req.body[k]; });
 
     if (req.body.claimStatus === 'delivered' && !claim.resolvedAt) {
       claim.resolvedAt = new Date();
     }
 
+    // Build WhatsApp notification link when status moves to 'ready'
+    let whatsappLink = null;
+    if (req.body.claimStatus === 'ready' && claim.customerPhone) {
+      claim.customer_notified_at = new Date();
+      const phone = claim.customerPhone.replace(/\D/g, '').slice(-10);
+      const shopDoc = await require('../models/shopModel').findOne({ _id: claim.shop }).select('name').lean();
+      const shopName = shopDoc?.name || 'our store';
+      const msg = encodeURIComponent(`Dear ${claim.customerName}, your ${claim.productName} is ready for pickup at ${shopName}. Reference: ${claim.originalInvoiceNo || claim._id}.`);
+      whatsappLink = `https://wa.me/91${phone}?text=${msg}`;
+    }
+
     await claim.save();
-    res.json(claim);
+    res.json({ claim, whatsappLink });
   } catch (err) { logger.error('[warrantyController]', err.message || err);
     res.status(500).json({ message: 'Something went wrong' }); }
 };

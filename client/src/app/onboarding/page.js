@@ -135,7 +135,7 @@ export default function OnboardingPage() {
   const [step1Saving, setStep1Saving] = useState(false);
 
   // Step 2 — Business type
-  const [selectedBusiness, setSelectedBusiness] = useState('general');
+  const [selectedBusiness, setSelectedBusiness] = useState('hardware');
   const [step2Saving, setStep2Saving] = useState(false);
   const [step2Error, setStep2Error] = useState('');
 
@@ -1022,7 +1022,7 @@ function Step4({
         >
           <span className="text-2xl">✅</span>
           <div>
-            <div className="text-[14px] font-black text-green-800">"{productAdded}" {successLabel}!</div>
+            <div className="text-[14px] font-black text-green-800">&quot;{productAdded}&quot; {successLabel}!</div>
             <div className="text-[11px] text-green-600 font-medium">Inventory में add हो गया।</div>
           </div>
         </div>

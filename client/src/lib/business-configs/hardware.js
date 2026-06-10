@@ -100,8 +100,8 @@ export default {
 
   // ─── Inventory behavior ───────────────────────────────────────────────────
   inventoryBehavior: {
-    mode: 'simple',
-    trackBatches:    false,
+    mode: 'batch',
+    trackBatches:    true,
     trackExpiry:     false,
     trackVariants:   false,
     trackSerials:    false,
@@ -111,12 +111,12 @@ export default {
     allowedUnits: ['Piece', 'Kg', 'Gram', 'Litre', 'ML', 'Feet', 'Metre', 'Bag', 'Bundle', 'Roll', 'Box', 'Dozen'],
     expiryAlertDays: 30,
     stockLabel:   'Stock',
-    batchLabel:   'Batch',
+    batchLabel:   'Lot / Heat Number',
     expiryLabel:  'Expiry',
     variantLabel: 'Variant',
     serialLabel:  'Serial No.',
     recipeLabel:  'Recipe',
-    deductionMethod: 'simple',
+    deductionMethod: 'batch',
   },
 
   dashboardConfig: {

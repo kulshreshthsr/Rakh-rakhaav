@@ -174,12 +174,18 @@ export default function PurchasesPage() {
 
   useEffect(() => {
     if (!showModal || products.length > 0 || !localStorage.getItem('token')) return;
-    fetchProducts();
+    const timer = window.setTimeout(() => {
+      fetchProducts();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchProducts, products.length, showModal]);
 
   useEffect(() => {
     if (shopState || !localStorage.getItem('token')) return;
-    fetchShopMeta();
+    const timer = window.setTimeout(() => {
+      fetchShopMeta();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchShopMeta, shopState]);
 
   /* Feature 4 — Handle ?filter=credit_due URL param */
@@ -187,8 +193,11 @@ export default function PurchasesPage() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('filter') === 'credit_due') {
-      setCreditDueFilter(true);
-      router.replace('/purchases');
+      const timer = window.setTimeout(() => {
+        setCreditDueFilter(true);
+        router.replace('/purchases');
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [router]);
 
@@ -258,6 +267,10 @@ export default function PurchasesPage() {
               <Link href="/purchases/suppliers"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white text-[13px] font-bold text-slate-700 shadow-md hover:border-green-300 hover:bg-green-50 hover:-translate-y-0.5 transition-all">
                 {term('supplierDirectoryHindi', 'सप्लायर लिस्ट')}
+              </Link>
+              <Link href="/purchase-orders"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50 text-[13px] font-bold text-amber-800 shadow-md hover:border-amber-300 hover:bg-amber-100 hover:-translate-y-0.5 transition-all">
+                PO Flow
               </Link>
               <button type="button" onClick={() => { resetModal(); setShowModal(true); }}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all">

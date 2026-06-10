@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
+import { buildWhatsappMessage } from '../../lib/whatsappTemplates';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { useRouter } from 'next/navigation';
 import EmptyState from '../../components/ui/EmptyState';
@@ -29,6 +30,8 @@ const emptyNewClaim = () => ({
 export default function WarrantyPage() {
   const router = useRouter();
   const { businessType } = useIndustry();
+  const uiLang   = typeof window === 'undefined' ? 'hi_en' : (JSON.parse(localStorage.getItem('user') || '{}').ui_language || 'hi_en');
+  const shopName = typeof window === 'undefined' ? '' : (JSON.parse(localStorage.getItem('user') || '{}').shop_name || '');
 
   const [claims, setClaims]           = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -178,8 +181,23 @@ export default function WarrantyPage() {
     finally { setUpdateSaving(false); }
   };
 
-  const buildWhatsAppMsg = (claim) => {
-    return `Dear ${claim.customerName},\n\nYour ${claim.productName} warranty claim is ready for pickup.\nClaim Ref: ${claim.brandTicketNo || 'N/A'}.\n\nPlease bring your original invoice.\n\nThank you.`;
+  const buildWhatsAppUrl = (claim) => {
+    const { url } = buildWhatsappMessage('warranty_ready', {
+      name: claim.customerName || 'Customer',
+      product: claim.productName,
+      shop: shopName,
+      ref: claim.brandTicketNo || 'N/A',
+    }, uiLang, claim.customerPhone);
+    return url;
+  };
+  const buildWhatsAppPreview = (claim) => {
+    const { text } = buildWhatsappMessage('warranty_ready', {
+      name: claim.customerName || 'Customer',
+      product: claim.productName,
+      shop: shopName,
+      ref: claim.brandTicketNo || 'N/A',
+    }, uiLang, claim.customerPhone);
+    return text;
   };
 
   return (
@@ -314,7 +332,7 @@ export default function WarrantyPage() {
                           className="flex-1 h-9 flex items-center justify-center rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-600 hover:border-slate-400 transition-colors">View Invoice</Link>
                       )}
                       {c.claimStatus === 'ready' && c.customerPhone && (
-                        <a href={`https://wa.me/91${c.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(buildWhatsAppMsg(c))}`}
+                        <a href={buildWhatsAppUrl(c)}
                           target="_blank" rel="noreferrer"
                           className="h-9 px-3 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-[12px] font-bold text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center">WhatsApp</a>
                       )}
@@ -485,8 +503,9 @@ export default function WarrantyPage() {
               ))}
 
               {updateForm.claimStatus === 'ready' && updateTarget.customerPhone && (
-                <a href={`https://wa.me/91${updateTarget.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(buildWhatsAppMsg({ ...updateTarget, brandTicketNo: updateForm.brandTicketNo || updateTarget.brandTicketNo }))}`}
+                <a href={buildWhatsAppUrl({ ...updateTarget, brandTicketNo: updateForm.brandTicketNo || updateTarget.brandTicketNo })}
                   target="_blank" rel="noreferrer"
+                  onClick={() => { const t = buildWhatsAppPreview({ ...updateTarget, brandTicketNo: updateForm.brandTicketNo || updateTarget.brandTicketNo }); if (!confirm(`Send WhatsApp to ${updateTarget.customerName}?\n\n${t}`)) event.preventDefault(); }}
                   className="flex items-center justify-center gap-2 h-10 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 transition-colors">
                   📲 Send WhatsApp Notification
                 </a>

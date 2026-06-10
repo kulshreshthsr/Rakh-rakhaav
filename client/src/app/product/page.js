@@ -10,6 +10,7 @@ import DynamicFormField from '../../components/DynamicFormField';
 
 import DynamicFormSection, { flattenSectionFields, formatMetaValue, validateSections } from '../../components/DynamicFormSection';
 import { getInvBehavior, hasInventoryPanel, isBatchMode, isVariantMode, isSerialMode, isRecipeMode, getPrimaryPanelLabel } from '../../lib/inventoryBehavior';
+import { queueStockAdjust } from '../../lib/offlineQueue';
 import PageHeader from '../../components/ui/PageHeader';
 import BatchInventoryPanel from '../../components/BatchInventoryPanel';
 import VariantInventoryPanel from '../../components/VariantInventoryPanel';
@@ -126,6 +127,8 @@ export default function ProductsPage() {
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importBusy,      setImportBusy]      = useState(false);
+  const [importPreview,   setImportPreview]   = useState(null);
+  const [importFile,      setImportFile]      = useState(null);
 
   const [reorderItems,     setReorderItems]     = useState([]);
   const [showReorderPanel, setShowReorderPanel] = useState(true);
@@ -213,23 +216,46 @@ export default function ProductsPage() {
     } catch { /* non-critical */ }
   };
 
-  const handleImport = async (file) => {
+  const handleImportFileChange = async (file) => {
     if (!file) return;
+    setImportFile(file);
     setImportBusy(true);
     try {
-      const text = await file.text();
-      const products = parseProductCSV(text);
-      if (!products.length) { alert('CSV में कोई valid row नहीं मिला।'); return; }
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(apiUrl('/api/products/bulk-import?preview=true'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.message || 'Preview failed'); setImportFile(null); return; }
+      setImportPreview(data);
+    } catch (e) {
+      alert(`Preview error: ${e.message}`);
+      setImportFile(null);
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importFile) return;
+    setImportBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', importFile);
       const res = await fetch(apiUrl('/api/products/bulk-import'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ products }),
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
       });
       const data = await res.json();
       if (!res.ok) { alert(data.message || 'Import failed'); return; }
-      alert(`✅ Import complete: ${data.created} added, ${data.skipped} skipped${data.errors.length ? `, ${data.errors.length} errors` : ''}`);
+      alert(`✅ Import complete: ${data.created} added, ${data.skipped} skipped${data.errors?.length ? `, ${data.errors.length} errors` : ''}`);
       setShowImportModal(false);
-      setLoading(true);
+      setImportPreview(null);
+      setImportFile(null);
       const refresh = await fetch(apiUrl('/api/products'), { headers: { Authorization: `Bearer ${getToken()}` } });
       const refreshData = await refresh.json();
       const list = Array.isArray(refreshData) ? refreshData : (refreshData.products || []);
@@ -301,8 +327,17 @@ export default function ProductsPage() {
 
   const handleStockAdjust = async (e) => {
     e.preventDefault(); setError('');
-    if (!isOnline) { setError('Offline mode me stock adjust nahi hoga.'); return; }
     setStockSubmitting(true);
+    if (!isOnline) {
+      await queueStockAdjust(stockProduct._id, { ...stockForm, product_name: stockProduct.name });
+      setProducts(prev => prev.map(p => p._id === stockProduct._id
+        ? { ...p, quantity: p.quantity + (stockForm.type === 'manual_add' ? Number(stockForm.quantity) : -Number(stockForm.quantity)) }
+        : p
+      ));
+      setShowStockModal(false);
+      setStockSubmitting(false);
+      return;
+    }
     try {
       const res = await fetch(apiUrl(`/api/products/${stockProduct._id}/adjust-stock`), { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${getToken()}` }, body: JSON.stringify(stockForm) });
       const data = await res.json();
@@ -375,7 +410,7 @@ export default function ProductsPage() {
               type="button"
               onClick={() => setShowImportModal(true)}
               className="action-soft flex items-center gap-1.5 px-3 py-2 text-[12px]"
-            >📥 CSV Import</button>
+            >📥 Excel / CSV Import</button>
             <button onClick={openAdd} disabled={!isOnline}
               className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 transition-all"
             >+ {term('addProduct', 'Add Product')}</button>
@@ -563,12 +598,13 @@ export default function ProductsPage() {
                       </div>
 
                       {/* Stats grid */}
-                      <div className="grid grid-cols-5 gap-2 mb-3">
+                      <div className={`grid gap-2 mb-3 ${isSerialMode(inv) ? 'grid-cols-6' : 'grid-cols-5'}`}>
                         {[
                           { label: 'Cost',   value: p.cost_price ? '₹' + parseFloat(p.cost_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—', cls: 'text-slate-600' },
                           { label: 'Price',  value: '₹' + parseFloat(p.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), cls: 'text-slate-900 font-black' },
                           { label: 'Margin', value: p.margin != null ? `${p.margin}%` : '—',  cls: marginColor(p.margin) + ' font-black' },
-                          { label: 'Qty',    value: `${p.quantity}`,                           cls: (p.quantity === 0 ? 'text-rose-600' : p.is_low_stock ? 'text-amber-600' : 'text-emerald-600') + ' font-black text-[16px]' },
+                          { label: isSerialMode(inv) ? 'Units' : 'Qty', value: `${p.quantity}`, cls: (p.quantity === 0 ? 'text-rose-600' : p.is_low_stock ? 'text-amber-600' : 'text-emerald-600') + ' font-black text-[16px]' },
+                          ...(isSerialMode(inv) ? [{ label: 'Serials', value: `${p.serial_count ?? p.quantity}`, cls: 'text-indigo-600 font-black text-[16px]' }] : []),
                           { label: 'GST',    value: p.gst_rate > 0 ? `${p.gst_rate}%` : 'NIL', cls: 'text-green-700 font-bold' },
                         ].map(item => (
                           <div key={item.label} className="text-center">
@@ -577,6 +613,11 @@ export default function ProductsPage() {
                           </div>
                         ))}
                       </div>
+                      {isSerialMode(inv) && (
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-bold text-indigo-600">🔢 IMEI/Serial tracked</span>
+                        </div>
+                      )}
 
                       {/* Industry-specific attribute pills (supports sections + flat attributes) */}
                       {(() => {
@@ -1094,41 +1135,100 @@ export default function ProductsPage() {
       />
 
       {showImportModal && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6">
+        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-[18px] font-black text-slate-900">CSV Bulk Import</h3>
-                <p className="text-[12px] text-slate-500 mt-0.5">Products को CSV file से import करें</p>
+                <h3 className="text-[18px] font-black text-slate-900">Excel / CSV Import</h3>
+                <p className="text-[12px] text-slate-500 mt-0.5">Products को Excel या CSV file से import करें</p>
               </div>
-              <button type="button" onClick={() => setShowImportModal(false)} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-[16px]">✕</button>
+              <button type="button" onClick={() => { setShowImportModal(false); setImportPreview(null); setImportFile(null); }} className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-[16px]">✕</button>
             </div>
 
-            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-[12px] text-slate-600 mb-4">
-              <p className="font-bold text-slate-800 mb-2">CSV Format (required columns):</p>
-              <code className="block text-[11px] font-mono text-slate-700">name, price, cost_price, quantity, unit, gst_rate, hsn_code, barcode, low_stock_threshold</code>
-              <a
-                href={`data:text/csv;charset=utf-8,name,price,cost_price,quantity,unit,gst_rate,hsn_code,barcode,low_stock_threshold%0ASample Product,100,60,50,pcs,18,1234,BAR001,5`}
-                download="rakhaav_product_template.csv"
-                className="inline-block mt-2 text-green-600 font-bold underline"
-              >
-                📄 Template download करें
-              </a>
-            </div>
+            {!importPreview ? (
+              <>
+                <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-[12px] text-slate-600 mb-4">
+                  <p className="font-bold text-slate-800 mb-1">Supported columns:</p>
+                  <code className="block text-[10px] font-mono text-slate-700 leading-5">
+                    name, price, MRP, Dealer Price, Project Price,<br/>
+                    cost_price, quantity, unit, HSN, GST %, barcode, category, brand
+                  </code>
+                  <a
+                    href={`data:text/csv;charset=utf-8,name,price,cost_price,quantity,unit,gst_rate,hsn_code,barcode,low_stock_threshold%0ASample Product,100,60,50,pcs,18,1234,BAR001,5`}
+                    download="rakhaav_product_template.csv"
+                    className="inline-block mt-2 text-green-600 font-bold underline"
+                  >📄 Template download करें</a>
+                </div>
 
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              disabled={importBusy}
-              onChange={e => handleImport(e.target.files?.[0])}
-              className="w-full h-11 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 text-[13px] text-slate-600 cursor-pointer file:mr-3 file:rounded-lg file:border-0 file:bg-green-50 file:px-3 file:py-1.5 file:text-[12px] file:font-bold file:text-green-700"
-            />
+                <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors">
+                  <span className="text-[13px] font-bold text-slate-600">📂 Click to choose file</span>
+                  <span className="text-[11px] text-slate-400 mt-1">.xlsx, .xls, .csv supported</span>
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    disabled={importBusy}
+                    className="hidden"
+                    onChange={e => handleImportFileChange(e.target.files?.[0])}
+                  />
+                </label>
 
-            {importBusy && (
-              <div className="mt-3 flex items-center gap-2 text-[13px] font-bold text-green-700">
-                <div className="w-4 h-4 rounded-full border-2 border-green-600 border-t-transparent animate-spin" />
-                Importing...
-              </div>
+                {importBusy && (
+                  <div className="mt-3 flex items-center gap-2 text-[13px] font-bold text-green-700">
+                    <div className="w-4 h-4 rounded-full border-2 border-green-600 border-t-transparent animate-spin" />
+                    Parsing file...
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="rounded-xl bg-green-50 border border-green-200 p-3 mb-4 text-[12px]">
+                  <p className="font-bold text-green-800">Preview — first 5 rows of {importPreview.total} total products</p>
+                  <p className="text-green-700 mt-0.5">Confirm करें तो सभी {importPreview.total} products import होंगे।</p>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200 mb-4">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-slate-100">
+                      <tr>
+                        {['Name','Price','Cost','Qty','Unit','HSN','GST%'].map(h => (
+                          <th key={h} className="px-2 py-2 text-left font-bold text-slate-700 whitespace-nowrap">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreview.preview.map((r, i) => (
+                        <tr key={i} className="border-t border-slate-100">
+                          <td className="px-2 py-1.5 text-slate-800 font-medium max-w-[120px] truncate">{r.name}</td>
+                          <td className="px-2 py-1.5 text-slate-600">₹{r.price || 0}</td>
+                          <td className="px-2 py-1.5 text-slate-600">₹{r.cost_price || 0}</td>
+                          <td className="px-2 py-1.5 text-slate-600">{r.quantity || 0}</td>
+                          <td className="px-2 py-1.5 text-slate-600">{r.unit}</td>
+                          <td className="px-2 py-1.5 text-slate-600">{r.hsn_code}</td>
+                          <td className="px-2 py-1.5 text-slate-600">{r.gst_rate}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setImportPreview(null); setImportFile(null); }}
+                    className="flex-1 h-11 rounded-xl border-2 border-slate-200 text-[13px] font-bold text-slate-600"
+                  >← Change File</button>
+                  <button
+                    type="button"
+                    onClick={handleImportConfirm}
+                    disabled={importBusy}
+                    className="flex-1 h-11 rounded-xl bg-green-600 text-white text-[13px] font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {importBusy
+                      ? <><div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"/>Importing...</>
+                      : `Import ${importPreview.total} Products`}
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

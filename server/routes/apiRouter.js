@@ -1,0 +1,36 @@
+const express = require('express');
+const router  = express.Router();
+
+router.use('/auth',            require('./authRoutes'));
+router.use('/dashboard',       require('./dashboardRoutes'));
+router.use('/payments',        require('./paymentRoutes'));
+router.use('/admin',           require('./adminRoutes'));
+router.use('/products',        require('./productRoutes'));
+router.use('/sales',           require('./salesRoutes'));
+router.use('/purchases',       require('./purchaseRoutes'));
+router.use('/purchase-orders', require('./purchaseOrderRoutes'));
+router.use('/customers',       require('./customerRoutes'));
+router.use('/suppliers',       require('./supplierRoutes'));
+router.use('/expenses',        require('./expenseRoutes'));
+router.use('/income',          require('./incomeRoutes'));
+router.use('/bank-entries',    require('./bankEntryRoutes'));
+router.use('/accounting',      require('./accountingRoutes'));
+router.use('/rbac',            require('./rbacRoutes'));
+router.use('/industry',        require('./industryRoutes'));
+router.use('/inventory',       require('./inventoryRoutes'));
+router.use('/notifications',   require('./notificationRoutes'));
+router.use('/tasks',           require('./taskRoutes'));
+router.use('/audit',           require('./auditRoutes'));
+router.use('/sale-returns',    require('./saleReturnRoutes'));
+router.use('/purchase-returns',require('./purchaseReturnRoutes'));
+router.use('/contractors',     require('./contractorRoutes'));
+router.use('/warranty',        require('./warrantyRoutes'));
+router.use('/gst',             require('./gstRoutes'));
+router.use('/itc',             require('./itcRoutes'));
+router.use('/projects',        require('./projectRoutes'));
+router.use('/warehouses',      require('./warehouseRoutes'));
+router.use('/amc',             require('./amcRoutes'));
+router.use('/service-jobs',    require('./serviceJobRoutes'));
+router.use('/reports',         require('./reportsRoutes'));
+
+module.exports = router;
