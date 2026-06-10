@@ -11,7 +11,7 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getTierFeatures } from '../lib/tierConfig';
+import { getTierFeatures } from '../lib/tierConfig.frontend';
 
 const TIER_KEY = 'rr-business-tier';
 

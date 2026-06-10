@@ -1,5 +1,5 @@
 const Shop = require('../models/shopModel');
-const { isFeatureEnabled } = require('../lib/tierConfig');
+const { isFeatureEnabled } = require('../lib/tierConfig.backend');
 
 function requireFeature(feature) {
   return async (req, res, next) => {

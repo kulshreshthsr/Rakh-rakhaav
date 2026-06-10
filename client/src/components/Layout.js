@@ -165,7 +165,7 @@ function UserDropdown({ onProfile, onLogout, extraItems, className = '' }) {
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
   const { updateBusinessType, updateDashboardMode, term, isEnabled, businessType } = useIndustry();
-  const { isNavVisible, updateTier } = useTier();
+  const { isNavVisible, isFeatureEnabled, updateTier } = useTier();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -304,6 +304,20 @@ function LayoutInner({ children }) {
 
   const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
 
+  // i18n with graceful fallback: if a key is missing, show the fallback text
+  const tf = useCallback((key, fallback) => {
+    const v = t(key);
+    return v === key ? fallback : v;
+  }, [t]);
+
+  // item.key -> i18n key (nav_* keys already exist in en/hi/hi_en locale files)
+  const NAV_I18N = useMemo(() => ({
+    dashboard: 'nav_dashboard', products: 'nav_stock', sales: 'nav_sales',
+    purchases: 'nav_purchases', purchase_orders: 'nav_po', expenses: 'nav_expenses',
+    income: 'nav_income', bank: 'nav_bank', udhaar: 'nav_udhaar',
+    gst: 'nav_gst', reports: 'nav_reports',
+  }), []);
+
   const bilingualLabels = useMemo(() => ({
     dashboard: 'होम / Dashboard',
     products:  `स्टॉक / ${term('inventory', 'Products')}`,
@@ -336,18 +350,25 @@ function LayoutInner({ children }) {
       .filter(item => canAccess(item.permission))
       .filter(item => isEnabled(item.key))
       .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key))
-      .map((item) => ({ ...item, label: bilingualLabels[item.key] || t(item.key) })),
-    [bilingualLabels, t, canAccess, isEnabled, isNavVisible, TIER_NAV_GATE]
+      .filter(item => item.key !== 'purchase_orders' || isFeatureEnabled('erp_purchase_orders'))
+      .map((item) => ({
+        ...item,
+        // hi_en keeps the signature bilingual sidebar style; en/hi use pure locale strings
+        label: locale === 'hi_en'
+          ? (bilingualLabels[item.key] || tf(NAV_I18N[item.key] || item.key, item.key))
+          : tf(NAV_I18N[item.key] || item.key, bilingualLabels[item.key] || item.key),
+      })),
+    [bilingualLabels, t, tf, locale, NAV_I18N, canAccess, isEnabled, isNavVisible, isFeatureEnabled, TIER_NAV_GATE]
   );
 
   // Dynamic bottom nav — slot 0 is always Dashboard, slot 1 is always Sales,
   // slots 2-3 are chosen based on business type.
   const bottomNavItems = useMemo(() => [
-    { href: '/dashboard', key: 'dashboard', shortLabel: 'Home',                         icon: 'dashboard', permission: 'VIEW_DASHBOARD'   },
-    { href: '/sales',     key: 'sales',     shortLabel: term('sale', 'Sale'),            icon: 'sales',     permission: 'VIEW_SALES'       },
-    { href: '/product',   key: 'products',  shortLabel: term('inventory', 'Stock'),      icon: 'products',  permission: 'MANAGE_INVENTORY' },
-    { href: '/udhaar',    key: 'udhaar',    shortLabel: 'Udhaar',                        icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
-  ], [term]);
+    { href: '/dashboard', key: 'dashboard', shortLabel: tf('navs_home', 'Home'),                          icon: 'dashboard', permission: 'VIEW_DASHBOARD'   },
+    { href: '/sales',     key: 'sales',     shortLabel: tf('navs_sale', term('sale', 'Sale')),            icon: 'sales',     permission: 'VIEW_SALES'       },
+    { href: '/product',   key: 'products',  shortLabel: tf('navs_stock', term('inventory', 'Stock')),     icon: 'products',  permission: 'MANAGE_INVENTORY' },
+    { href: '/udhaar',    key: 'udhaar',    shortLabel: tf('navs_udhaar', 'Udhaar'),                      icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
+  ], [term, tf]);
 
   const filteredBottomNav = useMemo(
     () => bottomNavItems
@@ -359,7 +380,13 @@ function LayoutInner({ children }) {
   const filteredDrawerItems = useMemo(() => {
     const base = MORE_DRAWER_ITEMS
       .filter(item => canAccess(item.permission))
-      .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key));
+      .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key))
+      .filter(item => item.key !== 'purchase_orders' || isFeatureEnabled('erp_purchase_orders'))
+      .map(item => ({
+        ...item,
+        label:    tf(`drawer_${item.key}`, item.label),
+        sublabel: tf(`drawer_${item.key}_sub`, item.sublabel),
+      }));
 
     const extras = [];
     if (businessType === 'hardware') {
@@ -378,7 +405,7 @@ function LayoutInner({ children }) {
     }
 
     return [...base, ...extras.filter(e => canAccess(e.permission))];
-  }, [canAccess, businessType, isNavVisible, TIER_NAV_GATE]);
+  }, [canAccess, businessType, isNavVisible, isFeatureEnabled, tf, TIER_NAV_GATE]);
 
   return (
     <NotificationProvider>
@@ -441,7 +468,7 @@ function LayoutInner({ children }) {
               </div>
             </div>
 
-            <div className="sidebar-section-label">{t('mainMenu')}</div>
+            <div className="sidebar-section-label">{tf('lbl_main_menu', 'Main Menu')}</div>
 
             <nav className="sidebar-nav">
               {translatedNav.map(item => (
@@ -465,7 +492,7 @@ function LayoutInner({ children }) {
             <Logo size="sm" />
             <div className="mobile-brand-copy">
               <div className="mobile-brand-title">रखरखाव</div>
-              <div className="mobile-brand-subtitle">Hardware & Electronics ERP</div>
+              <div className="mobile-brand-subtitle">{tf('brand_tagline', 'Hardware & Electronics ERP')}</div>
             </div>
           </div>
 
@@ -545,7 +572,7 @@ function LayoutInner({ children }) {
                   : <Glyph name="menu" size={21} stroke={2} />
                 }
               </span>
-              <span className={`mobile-nav-label font-bold ${moreOpen ? 'text-green-700' : ''}`}>More</span>
+              <span className={`mobile-nav-label font-bold ${moreOpen ? 'text-green-700' : ''}`}>{tf('nav_more', 'More')}</span>
             </button>
 
           </div>

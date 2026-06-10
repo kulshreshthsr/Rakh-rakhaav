@@ -7,7 +7,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const hpp = require('hpp');
-const mongoSanitize = require('express-mongo-sanitize');
 
 const apiRouter   = require('./routes/apiRouter');
 const errorHandler = require('./middleware/errorHandler');
@@ -28,21 +27,24 @@ const staticAllowedOrigins = [
   ...configuredOrigins,
 ];
 
+// SECURITY: only explicitly listed origins are allowed. Wildcarding all of
+// *.vercel.app / *.onrender.com with credentials:true would let ANY app
+// deployed on those platforms make authenticated requests from a logged-in
+// user's browser. Add your real frontend hostnames to FRONTEND_URLS instead.
 const isAllowedOrigin = (origin = '') => {
-  if (!origin) return true;
+  if (!origin) return true; // same-origin / curl / mobile webview
   if (staticAllowedOrigins.includes(origin)) return true;
 
-  try {
-    const { hostname } = new URL(origin);
-    return (
-      hostname.endsWith('.vercel.app') ||
-      hostname.endsWith('.onrender.com') ||
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1'
-    );
-  } catch {
-    return false;
+  // localhost convenience for development only
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const { hostname } = new URL(origin);
+      return hostname === 'localhost' || hostname === '127.0.0.1';
+    } catch {
+      return false;
+    }
   }
+  return false;
 };
 
 const corsOptions = {
@@ -64,7 +66,6 @@ app.use(hpp());
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(mongoSanitize({ replaceWith: '_' }));
 
 app.get('/api/health',    (req, res) => res.status(200).json({ status: 'ok' }));
 app.get('/api/v1/health', (req, res) => res.status(200).json({ status: 'ok', version: 'v1' }));

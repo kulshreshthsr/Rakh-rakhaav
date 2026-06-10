@@ -50,7 +50,7 @@ const TIER_FEATURES = {
     erp_credit_aging: true, erp_pl_statement: true, erp_supplier_ledger: true,
     erp_eway_bill: true, erp_einvoice: true,
     report_stock_valuation: true, report_stock_aging: true,
-    max_sub_users: Infinity,
+    max_sub_users: -1, // -1 = unlimited (raw Infinity does not survive JSON)
   },
 };
 
