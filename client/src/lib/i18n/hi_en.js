@@ -114,6 +114,7 @@ const hi_en = {
   dash_greeting_morning:  'Good morning',
   dash_greeting_afternoon:'नमस्ते',
   dash_greeting_evening:  'Good evening',
+  dash_greeting_night:    'शुभ रात्रि',
   dash_revenue_today:     'आज की कमाई',
   dash_bills_today:       'Bills Today',
   dash_profit:            'मुनाफा',

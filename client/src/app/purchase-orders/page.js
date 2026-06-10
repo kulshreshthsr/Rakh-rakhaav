@@ -58,6 +58,11 @@ export default function PurchaseOrdersPage() {
     return purchaseOrders.filter((order) => order.status === statusFilter);
   }, [purchaseOrders, statusFilter]);
 
+  const pendingGrnCount = useMemo(
+    () => purchaseOrders.filter((o) => o.status === 'ordered' || o.status === 'partially_received').length,
+    [purchaseOrders],
+  );
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -240,7 +245,14 @@ export default function PurchaseOrdersPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-amber-700">Purchase Orders</p>
-              <h1 className="mt-1 text-2xl font-black text-slate-900">PO to GRN flow</h1>
+              <h1 className="mt-1 text-2xl font-black text-slate-900 flex items-center gap-2.5">
+                PO to GRN flow
+                {pendingGrnCount > 0 && (
+                  <span className="inline-flex items-center justify-center h-6 min-w-[24px] rounded-full bg-amber-500 px-1.5 text-[11px] font-black text-white">
+                    {pendingGrnCount}
+                  </span>
+                )}
+              </h1>
               <p className="mt-1 text-sm text-slate-600">Draft PO, receive stock in parts, and auto-create the purchase record.</p>
             </div>
             <button

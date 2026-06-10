@@ -214,8 +214,15 @@ const getCurrentFilingPeriod = (shop, referenceDate = new Date()) => {
 
   if (shop.gst_type === 'composition') {
     const q = getFiscalQuarter(month);
-    const qLabels = { 1: 'Q1 (Apr-Jun)', 2: 'Q2 (Jul-Sep)', 3: 'Q3 (Oct-Dec)', 4: 'Q4 (Jan-Mar)' };
-    return { type: 'composition', quarter: q, label: qLabels[q], year, dueDate: '18th of month after quarter end (CMP-08)' };
+    const fyStart = month >= 4 ? year : year - 1;
+    const fyLabel = `FY ${fyStart}-${String(fyStart + 1).slice(2)}`;
+    const qLabels = {
+      1: `Q1 Apr-Jun ${fyStart} (${fyLabel})`,
+      2: `Q2 Jul-Sep ${fyStart} (${fyLabel})`,
+      3: `Q3 Oct-Dec ${fyStart} (${fyLabel})`,
+      4: `Q4 Jan-Mar ${fyStart + 1} (${fyLabel})`,
+    };
+    return { type: 'composition', quarter: q, label: qLabels[q], year, fiscalYear: fyLabel, dueDate: '18th of month after quarter end (CMP-08)' };
   }
 
   if (shop.filing_frequency === 'quarterly') {

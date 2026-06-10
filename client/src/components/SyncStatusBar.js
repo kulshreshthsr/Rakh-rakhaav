@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useOfflineSync from '../hooks/useOfflineSync';
+import { useToast } from '../hooks/useToast';
 
 const bannerBaseClass = 'fixed left-0 right-0 top-0 z-[9999] flex items-center gap-2 px-4 py-2 text-[12.5px] font-semibold';
 const actionButtonClass = 'cursor-pointer rounded-full border-0 bg-white/20 px-3 py-1 text-[11px] font-bold text-white hover:bg-white/30 transition-colors ml-auto flex-shrink-0';
@@ -9,8 +10,10 @@ const actionButtonClass = 'cursor-pointer rounded-full border-0 bg-white/20 px-3
 export default function SyncStatusBar() {
   const { isOnline, isSyncing, pendingCount, lastSyncResult, syncNow, syncError } =
     useOfflineSync();
+  const { showToast } = useToast();
   const [syncTick, setSyncTick] = useState(0);
   const [dismissedToastAt, setDismissedToastAt] = useState(null);
+  const lastToastedAt = useRef(null);
 
   useEffect(() => {
     if (!isSyncing || typeof window === 'undefined') {
@@ -31,6 +34,18 @@ export default function SyncStatusBar() {
       return undefined;
     }
 
+    if (
+      lastSyncResult.synced > 0 &&
+      lastToastedAt.current !== lastSyncResult.completedAt
+    ) {
+      lastToastedAt.current = lastSyncResult.completedAt;
+      const count = lastSyncResult.synced;
+      showToast(
+        `${count} bill${count > 1 ? 's' : ''} synced successfully ✓`,
+        'success'
+      );
+    }
+
     const timeoutId = window.setTimeout(() => {
       setDismissedToastAt(lastSyncResult.completedAt);
     }, 4000);
@@ -38,7 +53,7 @@ export default function SyncStatusBar() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [lastSyncResult]);
+  }, [lastSyncResult, showToast]);
 
   const dots = useMemo(() => {
     if (!isSyncing) {

@@ -76,7 +76,6 @@
   input:focus, select:focus, textarea:focus, .form-input:focus {
     @apply border-green-500 bg-white outline-none;
     box-shadow: 0 0 0 3px rgba(22,163,74,0.12), 0 0 0 1px rgba(74,222,128,0.3), 0 8px 20px rgba(22,163,74,0.06);
-    transform: translateY(-1px);
   }
   select option, optgroup { @apply bg-white text-slate-900; }
   ::selection { background: rgba(6,182,212,0.18); color: #0f172a; }
@@ -682,6 +681,8 @@
       max-width: none !important;
       padding-bottom: 2rem !important;
     }
+    .metric-grid { grid-template-columns: repeat(4, 1fr); }
+    .mini-stat-grid { grid-template-columns: repeat(4, 1fr); }
   }
   .desktop-sidebar { display: flex; }
   .mobile-topbar, .mobile-bottom-nav { display: none; }
@@ -2014,6 +2015,17 @@
 @keyframes admin-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes drawerSlideIn { from { transform: translateX(28px); opacity: 0.6; } to { transform: translateX(0); opacity: 1; } }
 
+@media (max-width: 700px) {
+  .trust-auth-shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 16px;
+  }
+  .trust-auth-showcase {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   .trust-auth-shell, .subscription-plan-grid, .membership-hero-grid, .trial-gate-shell { @apply grid-cols-1; }
   .trust-auth-shell { min-height: 100vh; padding: 20px; gap: 12px; }
@@ -2840,6 +2852,22 @@
   .modal-overlay, .flow-modal-overlay {
     align-items: flex-end !important;
     padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  /* Full-screen modal variant for complex forms on mobile (e.g. SaleFormModal) */
+  .flow-modal.full-screen-mobile {
+    border-radius: 0 !important;
+    max-height: 100dvh !important;
+    height: 100dvh;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 0 env(safe-area-inset-bottom) !important;
+    overflow-y: auto;
+  }
+  .flow-modal-overlay:has(.flow-modal.full-screen-mobile) {
+    align-items: flex-start !important;
+    padding-bottom: 0 !important;
   }
 }
 

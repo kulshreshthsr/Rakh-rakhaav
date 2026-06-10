@@ -271,6 +271,24 @@ export async function queueStockAdjust(productId, adjustmentData) {
   }
 }
 
+export async function queuePayment(saleId, paymentData) {
+  try {
+    if (!isBrowser()) return null;
+    const operation = {
+      id: crypto.randomUUID(),
+      type: 'UPDATE_PAYMENT',
+      payload: { sale_id: saleId, ...paymentData },
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      retryCount: 0,
+      tempId: `TEMP-PAY-${Date.now()}`,
+    };
+    return await addToQueue(operation);
+  } catch {
+    return null;
+  }
+}
+
 export async function queueServiceJobUpdate(jobId, updateData) {
   try {
     if (!isBrowser()) return null;

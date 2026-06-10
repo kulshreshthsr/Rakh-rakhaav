@@ -110,9 +110,10 @@ const hi = {
   lang_save_btn:          'आगे बढ़ें',
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
-  dash_greeting_morning:  'सुप्रभात',
+  dash_greeting_morning:  'शुभ प्रभात',
   dash_greeting_afternoon:'नमस्ते',
   dash_greeting_evening:  'शुभ संध्या',
+  dash_greeting_night:    'शुभ रात्रि',
   dash_revenue_today:     'आज की कमाई',
   dash_bills_today:       'आज के बिल',
   dash_profit:            'मुनाफा',

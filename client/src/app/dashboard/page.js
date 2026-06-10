@@ -7,6 +7,8 @@ import GstDeadlineBanner from '../../components/GstDeadlineBanner';
 import { apiUrl } from '../../lib/api';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { hasPermission, getRoleLabel, getRoleColor } from '../../lib/permissions';
+import { translate } from '../../lib/i18n/index';
+import { buildWhatsappMessage } from '../../lib/whatsappTemplates';
 import { getSuggestedRoles } from '../../lib/roleConfig';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getWorkflowConfig, getDashboardWidgets, getQuickActions } from '../../lib/workflowEngine';
@@ -20,10 +22,10 @@ const fmtD = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFraction
 
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'शुभ प्रभात 🌅';
-  if (h < 17) return 'नमस्ते 🙏';
-  if (h < 20) return 'शुभ संध्या 🌇';
-  return 'शुभ रात्रि 🌙';
+  if (h < 12) return `${translate('dash_greeting_morning')} 🌅`;
+  if (h < 17) return `${translate('dash_greeting_afternoon')} 🙏`;
+  if (h < 20) return `${translate('dash_greeting_evening')} 🌇`;
+  return `${translate('dash_greeting_night')} 🌙`;
 }
 
 function getTodayLabel() {
@@ -33,19 +35,28 @@ function getTodayLabel() {
 }
 
 function buildUdhaarReminder(customer, shopName) {
-  return `नमस्ते ${customer.name} जी 🙏\n\nहमारी दुकान *${shopName || 'रखरखाव'}* से आपका उधार बाकी है:\n\n*₹${fmtD(customer.due)}*\n\nकृपया जल्द से जल्द payment करें।\n\nधन्यवाद 🙏`;
+  return buildWhatsappMessage('udhaar_reminder', {
+    name: customer.name,
+    amount: fmtD(customer.due),
+    shop: shopName || 'हमारी दुकान',
+  }).text;
 }
 
 // ═══════════════════════════════════════════════════
 //  SHARED COMPONENTS
 // ═══════════════════════════════════════════════════
 
-function DashboardHeader({ shopName, userName, greeting, today, dashboardMode }) {
+function DashboardHeader({ shopName, userName, greeting, today, dashboardMode, businessType }) {
+  const eyebrow = businessType === 'electronics'
+    ? '📺 Electronics · दुकान हिसाब'
+    : businessType === 'hardware'
+    ? '🔧 Hardware · दुकान हिसाब'
+    : '🏪 दुकान हिसाब';
   return (
     <div className="rr-page-hero rr-fade-in">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="rr-section-label mb-1">🔧 Hardware & Electronics · दुकान हिसाब</p>
+          <p className="rr-section-label mb-1">{eyebrow}</p>
           <h1 className="text-[24px] font-black text-slate-900 leading-tight tracking-[-0.03em]">{greeting}</h1>
           {(userName || shopName) && (
             <p className="text-[13px] font-bold text-green-700 mt-1 truncate flex items-center gap-1.5">
@@ -930,7 +941,7 @@ function B2CDashboard() {
           </div>
         )}
 
-        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="b2c" />
+        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="b2c" businessType={businessType} />
         {isStaffUser && userRole && <StaffBanner userRole={userRole} config={config} />}
         {hasGstin && <GstDeadlineBanner shop={shop} />}
 
@@ -1133,7 +1144,7 @@ function B2BDashboard() {
           </div>
         )}
 
-        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="b2b" />
+        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="b2b" businessType={businessType} />
         {isStaffUser && userRole && <StaffBanner userRole={userRole} config={config} />}
 
         {/* GST Filing Deadline Banner */}
@@ -1336,7 +1347,7 @@ function HybridDashboard() {
           </div>
         )}
 
-        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="hybrid" />
+        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="hybrid" businessType={businessType} />
         {isStaffUser && userRole && <StaffBanner userRole={userRole} config={config} />}
 
         {/* GST Filing Deadline Banner */}

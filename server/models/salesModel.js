@@ -125,7 +125,7 @@ const saleSchema = new mongoose.Schema({
   // ── Challan / Document type (hardware + GST credit/debit notes) ──
   document_type: {
     type: String,
-    enum: ['invoice', 'challan', 'quotation', 'credit_note', 'debit_note', 'revised_invoice'],
+    enum: ['invoice', 'challan', 'quotation', 'credit_note', 'debit_note', 'revised_invoice', 'bill_of_supply'],
     default: 'invoice',
   },
   quotation_valid_till: { type: Date, default: null },
@@ -221,7 +221,7 @@ const saleSchema = new mongoose.Schema({
   ewb_cancel_reason:{ type: String, default: null },
 
   // ── Bill ──────────────────────────────────────────────────────
-  invoice_number: { type: String, required: true },
+  invoice_number: { type: String, required: true, maxlength: 60 },
   offline_operation_id: { type: String },
   notes: { type: String },
   // Industry-specific invoice-level fields (restaurant: table_number/order_type, automobile: vehicle_number, etc.)

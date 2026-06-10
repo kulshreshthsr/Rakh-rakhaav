@@ -257,6 +257,103 @@ const settlePayment = async (req, res) => {
   }
 };
 
+// ── RECALCULATE ALL UDHAAR RUNNING BALANCES FOR A CUSTOMER ──────────────────
+const recalculateUdhaarBalances = async (shopId, customerId) => {
+  const entries = await Udhaar.find({ shop: shopId, customer: customerId }).sort({ date: 1, createdAt: 1 });
+  let balance = 0;
+  const bulkOps = entries.map((entry) => {
+    if (entry.type === 'debit') balance = parseFloat((balance + entry.amount).toFixed(2));
+    else balance = parseFloat((balance - entry.amount).toFixed(2));
+    return {
+      updateOne: {
+        filter: { _id: entry._id },
+        update: { $set: { running_balance: balance } },
+      },
+    };
+  });
+  if (bulkOps.length > 0) await Udhaar.bulkWrite(bulkOps);
+  await Customer.findOneAndUpdate(
+    { _id: customerId, shop: shopId },
+    { $set: { totalUdhaar: Math.max(0, balance) } }
+  );
+  return balance;
+};
+
+// ── UPDATE MANUAL UDHAAR ENTRY ───────────────────────────────────────────────
+const updateUdhaar = async (req, res) => {
+  const { amount, note, date, payment_mode, due_date } = req.body;
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const entry = await Udhaar.findOne({ _id: req.params.entryId, shop: shop._id, customer: req.params.id });
+    if (!entry) return res.status(404).json({ message: 'Udhaar entry नहीं मिली' });
+    if (entry.reference_type !== 'manual') {
+      return res.status(400).json({ message: 'Only manual entries can be edited' });
+    }
+
+    if (amount !== undefined) entry.amount = Number(amount);
+    if (note !== undefined) entry.note = note;
+    if (date !== undefined) entry.date = new Date(date);
+    if (payment_mode !== undefined) entry.payment_mode = payment_mode;
+    if (due_date !== undefined) entry.due_date = due_date ? new Date(due_date) : null;
+    await entry.save();
+
+    await recalculateUdhaarBalances(shop._id, req.params.id);
+    await logAuditEvent({
+      shopId: shop._id, userId: req.user.id, actionType: 'update',
+      entity: 'customer_ledger', entityId: entry._id, afterValue: entry,
+      metadata: { customer_id: req.params.id },
+    });
+    res.json(entry);
+  } catch (err) {
+    logger.error('[customerController]', err.message || err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+// ── DELETE MANUAL UDHAAR ENTRY ───────────────────────────────────────────────
+const deleteUdhaar = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const entry = await Udhaar.findOne({ _id: req.params.entryId, shop: shop._id, customer: req.params.id });
+    if (!entry) return res.status(404).json({ message: 'Udhaar entry नहीं मिली' });
+    if (entry.reference_type !== 'manual') {
+      return res.status(400).json({ message: 'Only manual entries can be deleted' });
+    }
+
+    await Udhaar.deleteOne({ _id: entry._id });
+    await recalculateUdhaarBalances(shop._id, req.params.id);
+    await logAuditEvent({
+      shopId: shop._id, userId: req.user.id, actionType: 'delete',
+      entity: 'customer_ledger', entityId: entry._id, beforeValue: entry,
+      metadata: { customer_id: req.params.id },
+    });
+    res.json({ message: 'Entry deleted' });
+  } catch (err) {
+    logger.error('[customerController]', err.message || err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+// ── ADMIN: BACKFILL ALL UDHAAR BALANCES FOR A SHOP ──────────────────────────
+const backfillUdhaarBalances = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const customers = await Customer.find({ shop: shop._id }).select('_id').lean();
+    let processed = 0;
+    for (const cust of customers) {
+      const entries = await Udhaar.find({ shop: shop._id, customer: cust._id }).countDocuments();
+      if (entries > 0) {
+        await recalculateUdhaarBalances(shop._id, cust._id);
+        processed++;
+      }
+    }
+    res.json({ message: `Backfilled ${processed} customers` });
+  } catch (err) {
+    logger.error('[customerController]', err.message || err);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
 // ── UPDATE REMINDER TIMESTAMP ────────────────────────────────────────────────
 const updateReminderTimestamp = async (req, res) => {
   try {
@@ -281,6 +378,9 @@ module.exports = {
   deleteCustomer,
   getUdhaar,
   addUdhaar,
+  updateUdhaar,
+  deleteUdhaar,
   settlePayment,
   updateReminderTimestamp,
+  backfillUdhaarBalances,
 };

@@ -286,10 +286,17 @@ export default function Gstr2bReconciliation({ month, year, systemPurchases = []
           <>
             <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-blue-50 border border-blue-200">
               <span className="text-base flex-shrink-0 mt-0.5">ℹ️</span>
-              <div className="text-[12px] text-blue-800 leading-relaxed space-y-0.5">
-                <p className="font-black">GSTR-2B JSON कैसे download करें:</p>
-                <p>GST portal → Returns Dashboard → GSTR-2B → <strong>View</strong> → <strong>Download JSON</strong></p>
-                <p className="text-blue-600 text-[11px] mt-1">यह JSON आपके device पर ही process होगी — कहीं upload नहीं होगी।</p>
+              <div className="text-[12px] text-blue-800 leading-relaxed">
+                <p className="font-black mb-1.5">GSTR-2B JSON कैसे download करें:</p>
+                <ol className="list-decimal list-inside space-y-1 text-[11.5px]">
+                  <li><a href="https://www.gst.gov.in" target="_blank" rel="noopener noreferrer" className="underline font-semibold">gst.gov.in</a> पर login करें।</li>
+                  <li>ऊपर menu में <strong>Services → Returns → Returns Dashboard</strong> पर जाएं।</li>
+                  <li>सही <strong>Financial Year</strong> और <strong>Return Filing Period</strong> (महीना) चुनें।</li>
+                  <li><strong>GSTR-2B</strong> tile में <strong>View</strong> button click करें।</li>
+                  <li>Page के नीचे <strong>Download JSON</strong> button click करें।</li>
+                  <li>Download हुई <code className="bg-blue-100 px-1 rounded">.json</code> file नीचे drop zone में डालें।</li>
+                </ol>
+                <p className="text-blue-600 text-[11px] mt-2">🔒 यह JSON आपके device पर ही process होगी — कहीं upload नहीं होगी।</p>
               </div>
             </div>
 

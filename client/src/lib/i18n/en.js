@@ -113,6 +113,7 @@ const en = {
   dash_greeting_morning:  'Good morning',
   dash_greeting_afternoon:'Good afternoon',
   dash_greeting_evening:  'Good evening',
+  dash_greeting_night:    'Good night',
   dash_revenue_today:     "Today's Revenue",
   dash_bills_today:       'Bills Today',
   dash_profit:            'Gross Profit',

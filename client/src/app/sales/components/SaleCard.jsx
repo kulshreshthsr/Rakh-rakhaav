@@ -197,10 +197,40 @@ export default function SaleCard({
             </div>
           )}
 
-          {/* E-Way Bill */}
-          {!s._isOffline && (s.ewb_status === 'pending' || s.ewb_status === 'generated') && (
+          {/* E-Invoice / IRN */}
+          {!s._isOffline && s.document_type === 'invoice' && s.buyer_gstin && (s.total_amount >= 500000) && (s.einvoice_status === 'pending' || s.einvoice_status === 'not_applicable') && (
             <div className="mt-2">
-              {s.ewb_status === 'pending' && (
+              {s.einvoice_status !== 'generated' && (
+                <button onClick={async () => {
+                  if (!confirm(`Generate IRN for ${s.invoice_number}?\n\nThis calls the IRP API and requires valid NIC credentials in server config.`)) return;
+                  try {
+                    const r = await fetch(apiUrl(`/api/sales/${s._id}/generate-irn`), { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } });
+                    const d = await r.json();
+                    if (!r.ok) { alert(d.message || 'IRN generation failed'); return; }
+                    alert(`IRN Generated!\nIRN: ${d.irn}\nAck No: ${d.ack_no}`);
+                    fetchAll();
+                  } catch { alert('Server error'); }
+                }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 transition-all">
+                  🔏 Generate IRN (E-Invoice)
+                </button>
+              )}
+              {s.einvoice_status === 'generated' && s.irn && (
+                <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 px-3 py-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-indigo-700">E-Invoice / IRN</span>
+                    <span className="text-[10px] font-bold text-emerald-700">✓ Generated</span>
+                  </div>
+                  <p className="text-[10px] font-mono text-slate-700 break-all">{s.irn}</p>
+                  {s.ack_no && <p className="text-[10px] text-slate-500">Ack No: {s.ack_no}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* E-Way Bill */}
+          {!s._isOffline && (s.ewb_status === 'pending' || s.ewb_status === 'generated' || (s.ewb_status === 'not_required' && s.total_amount > 50000 && s.document_type === 'invoice')) && (
+            <div className="mt-2">
+              {(s.ewb_status === 'pending' || s.ewb_status === 'not_required') && (
                 <button onClick={async () => {
                   if (!confirm(`Generate E-Way Bill for ${s.invoice_number}?\n\nThis will call the NIC EWB API and requires valid credentials in server config.`)) return;
                   try {

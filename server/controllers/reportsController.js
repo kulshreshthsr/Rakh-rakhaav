@@ -148,4 +148,38 @@ const getStockAging = async (req, res) => {
   }
 };
 
-module.exports = { getStockValuation, getStockAging };
+// ── STOCK VALUATION CSV EXPORT ────────────────────────────────────────────────
+const exportStockValuationCsv = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const { category } = req.query;
+
+    const filter = { shop: shop._id, isActive: true, quantity: { $gt: 0 } };
+    if (category) filter.category = category;
+
+    const products = await Product.find(filter)
+      .select('name sku unit category quantity cost_price weighted_avg_cost price')
+      .sort({ category: 1, name: 1 })
+      .lean();
+
+    const header = ['Name', 'SKU', 'Category', 'Unit', 'Qty', 'WAC (Cost)', 'Stock Value', 'Selling Price', 'Potential Revenue'];
+    const rows = products.map((p) => {
+      const wac        = p.weighted_avg_cost > 0 ? p.weighted_avg_cost : (p.cost_price || 0);
+      const stockValue = round2(p.quantity * wac);
+      const potRevenue = round2(p.quantity * (p.price || 0));
+      return [p.name, p.sku || '', p.category || '', p.unit || 'pcs', p.quantity, wac, stockValue, p.price || 0, potRevenue];
+    });
+
+    const csv = [header, ...rows].map((row) => row.map((v) => `"${v}"`).join(',')).join('\n');
+    const filename = `Stock_Valuation_${new Date().toISOString().slice(0, 10)}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send('﻿' + csv); // BOM for Excel UTF-8 detection
+  } catch (err) {
+    logger.error('[reportsController:exportStockValuationCsv]', err.message || err);
+    return res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+module.exports = { getStockValuation, getStockAging, exportStockValuationCsv };

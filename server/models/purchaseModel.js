@@ -95,7 +95,7 @@ const purchaseSchema = new mongoose.Schema({
   gstr2b_checked_at: { type: Date },
 
   // ── Bill ──────────────────────────────────────────────────────
-  invoice_number: { type: String, required: true },
+  invoice_number: { type: String, required: true, maxlength: 60 },
   offline_operation_id: { type: String },
   notes: { type: String },
 

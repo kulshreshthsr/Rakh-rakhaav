@@ -71,6 +71,15 @@ const generateGSTR1 = async (req, res) => {
       const gstin = sale.buyer_gstin;
       if (!gstin) continue;
       if (!b2bGrouped[gstin]) b2bGrouped[gstin] = { ctin: gstin, inv: [] };
+      const b2bLineItems = (sale.items && sale.items.length > 0)
+        ? sale.items
+        : [{
+            gst_rate:       sale.gst_rate       || 0,
+            taxable_amount: sale.taxable_amount || 0,
+            cgst_amount:    sale.cgst_amount    || 0,
+            sgst_amount:    sale.sgst_amount    || 0,
+            igst_amount:    sale.igst_amount    || 0,
+          }];
       b2bGrouped[gstin].inv.push({
         inum:    sale.invoice_number,
         idt:     formatGSTNDate(sale.createdAt),
@@ -78,7 +87,7 @@ const generateGSTR1 = async (req, res) => {
         pos:     sale.place_of_supply || sale.buyer_state_code || shop.gst_state_code || '00',
         rchrg:   sale.is_reverse_charge ? 'Y' : 'N',
         inv_typ: getInvTyp(sale),
-        itms:    (sale.items || []).map((item, idx) => ({
+        itms:    b2bLineItems.map((item, idx) => ({
           num: idx + 1,
           itm_det: {
             txval: round2(item.taxable_amount || 0),
@@ -104,11 +113,18 @@ const generateGSTR1 = async (req, res) => {
     for (const sale of b2clInvoices) {
       const pos = sale.place_of_supply || sale.buyer_state_code || '00';
       if (!b2clGrouped[pos]) b2clGrouped[pos] = { pos, inv: [] };
+      const b2clLineItems = (sale.items && sale.items.length > 0)
+        ? sale.items
+        : [{
+            gst_rate:       sale.gst_rate       || 0,
+            taxable_amount: sale.taxable_amount || 0,
+            igst_amount:    sale.igst_amount    || 0,
+          }];
       b2clGrouped[pos].inv.push({
         inum: sale.invoice_number,
         idt:  formatGSTNDate(sale.createdAt),
         val:  round2(sale.total_amount),
-        itms: (sale.items || []).map((item, idx) => ({
+        itms: b2clLineItems.map((item, idx) => ({
           num: idx + 1,
           itm_det: {
             txval: round2(item.taxable_amount || 0),
@@ -129,7 +145,16 @@ const generateGSTR1 = async (req, res) => {
     );
     const b2csGrouped = {};
     for (const sale of b2csInvoices) {
-      for (const item of (sale.items || [])) {
+      const b2csLineItems = (sale.items && sale.items.length > 0)
+        ? sale.items
+        : [{
+            gst_rate:       sale.gst_rate       || 0,
+            taxable_amount: sale.taxable_amount || 0,
+            cgst_amount:    sale.cgst_amount    || 0,
+            sgst_amount:    sale.sgst_amount    || 0,
+            igst_amount:    sale.igst_amount    || 0,
+          }];
+      for (const item of b2csLineItems) {
         const pos     = sale.place_of_supply || shop.gst_state_code || '00';
         const splyTy  = sale.supply_type === 'inter_state' ? 'INTER' : 'INTRA';
         const key     = `${item.gst_rate}_${splyTy}_${pos}`;

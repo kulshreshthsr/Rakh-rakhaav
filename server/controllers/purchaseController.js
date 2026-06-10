@@ -899,11 +899,14 @@ const receivePurchase = async (req, res) => {
       }
 
       const orderedMap = new Map();
+      const purchasePriceMap = new Map();
       const allItems = purchase.items && purchase.items.length > 0
         ? purchase.items
-        : (purchase.product ? [{ product: purchase.product, quantity: purchase.quantity }] : []);
+        : (purchase.product ? [{ product: purchase.product, quantity: purchase.quantity, price_per_unit: purchase.price_per_unit }] : []);
       for (const item of allItems) {
-        orderedMap.set(String(item.product), Number(item.quantity || 0));
+        const pid = String(item.product);
+        orderedMap.set(pid, Number(item.quantity || 0));
+        if (item.price_per_unit > 0) purchasePriceMap.set(pid, Number(item.price_per_unit));
       }
 
       // Validate and compute deltas
@@ -930,14 +933,22 @@ const receivePurchase = async (req, res) => {
         prevReceivedMap.set(productId, prevReceived + nowReceiving);
       }
 
-      // Increment stock for each delta
+      // Increment stock for each delta, updating weighted average cost
       for (const { productId, delta } of stockIncrements) {
         const product = await Product.findById(productId).session(session);
         if (!product) continue;
         const qAfter = round2(product.quantity + delta);
-        await Product.findByIdAndUpdate(productId, {
-          $inc: { quantity: delta },
-        }, { session });
+        const purchasePrice = purchasePriceMap.get(productId) || 0;
+        const currentWAC = product.weighted_avg_cost > 0 ? product.weighted_avg_cost : (product.cost_price || 0);
+        const newQty = product.quantity + delta;
+        const newWAC = purchasePrice > 0 && delta > 0 && newQty > 0
+          ? round2(((product.quantity * currentWAC) + (delta * purchasePrice)) / newQty)
+          : currentWAC;
+        const grnUpdate = { $inc: { quantity: delta } };
+        if (purchasePrice > 0 && delta > 0) {
+          grnUpdate.$set = { cost_price: newWAC, weighted_avg_cost: newWAC };
+        }
+        await Product.findByIdAndUpdate(productId, grnUpdate, { session });
         await logStockMovements(purchase.shop, [{
           product: product._id,
           type: 'purchase',

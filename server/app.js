@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const hpp = require('hpp');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const apiRouter   = require('./routes/apiRouter');
 const errorHandler = require('./middleware/errorHandler');
@@ -63,6 +64,7 @@ app.use(hpp());
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(mongoSanitize({ replaceWith: '_' }));
 
 app.get('/api/health',    (req, res) => res.status(200).json({ status: 'ok' }));
 app.get('/api/v1/health', (req, res) => res.status(200).json({ status: 'ok', version: 'v1' }));

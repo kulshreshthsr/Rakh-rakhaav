@@ -75,6 +75,7 @@ const UNIVERSAL_RULES = [
         description: `Current stock: ${product.quantity} ${product.unit || 'units'} — below threshold of ${threshold}. Create a purchase order.`,
         assignedTo: 'manager',
         priority: 'medium',
+        note: 'action_restock',
         relatedEntity: { type: 'product', id: String(product._id), name: product.name },
       };
     },
@@ -97,6 +98,7 @@ const UNIVERSAL_RULES = [
       description: `Out of stock! Create a purchase order immediately to resume sales.`,
       assignedTo: 'manager',
       priority: 'high',
+      note: 'action_restock',
       relatedEntity: { type: 'product', id: String(product._id), name: product.name },
     }),
   },
@@ -288,8 +290,8 @@ const BUSINESS_RULES = {
       on: 'inventory_scan',
       check: (product) => {
         const isCement = (product.category || '').toLowerCase().includes('cement');
-        const month = new Date().getMonth(); // Feb=1, Mar=2
-        return isCement && (month === 1 || month === 2) && product.quantity < 50;
+        const month = new Date().getMonth(); // Jan=0…May=4 (construction season Feb–Jun)
+        return isCement && month >= 1 && month <= 4 && product.quantity < 50;
       },
       getDedupeKey: (product) => `seasonal:cement:${product._id}`,
       buildNotification: (product) => ({

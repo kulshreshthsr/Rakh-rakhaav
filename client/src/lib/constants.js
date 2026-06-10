@@ -14,6 +14,7 @@ export const UNION_TERRITORIES = [
 
 export const ALL_STATES_AND_UTS = [...INDIAN_STATES, ...UNION_TERRITORIES]; // combined, sorted A-Z
 
+// Must stay in sync with server/lib/sharedUtils.js GSTIN_REGEX and server/lib/gstUtils.js GSTIN_REGEX
 export const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
 export const GSTIN_LENGTH = 15;
@@ -174,7 +175,7 @@ export const buildWhatsAppShareMessage = (sale, shopName) => {
     'Items:',
     itemLines,
     `Taxable Amount: ₹${fmt(sale.taxable_amount)}`,
-    `GST: ₹${fmt(sale.total_gst)}`,
+    ...(sale.total_gst > 0 ? [`GST: ₹${fmt(sale.total_gst)}`] : []),
     `Total Amount: ₹${fmt(sale.total_amount)}`,
     `Payment: ${payLabel}`,
     ...(sale.payment_type === 'credit'

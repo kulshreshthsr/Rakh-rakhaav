@@ -330,6 +330,27 @@ export default function ReportsPage() {
     }, 180);
   };
 
+  const exportStockCsv = async () => {
+    markDownloadStarted('Preparing Stock Valuation CSV...', 'stock-export');
+    try {
+      const res = await fetch(apiUrl('/api/reports/stock-valuation/export-csv'), {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.status === 401) { router.push('/login'); return; }
+      if (!res.ok) throw new Error('Stock export failed');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `Stock_Valuation_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      markDownloadDone('Stock_Valuation CSV download started.', 'stock-export');
+    } catch {
+      markDownloadFailed('Stock export nahi ho paaya. Please try again.', 'stock-export');
+    }
+  };
+
   const fetchGSTReport = async () => {
     const { from, to } = getRange(filter);
     if (!from || !to) return null;
@@ -497,7 +518,7 @@ export default function ReportsPage() {
   ════════════════════════════════════════════════════════════════ */
   return (
     <Layout>
-      <div className="page-shell reports-shell">
+      <div className="desktop-expand page-shell reports-shell">
 
         {/* ── OFFLINE BANNER ── */}
         {!isOnline && (
@@ -1219,6 +1240,16 @@ export default function ReportsPage() {
                 )}
               </SectionCard>
             </div>
+
+            {/* ── Stock Valuation Export ── */}
+            <SectionCard
+              title="Stock Valuation"
+              eyebrow="Inventory · WAC-based"
+              accentColor="linear-gradient(90deg,#0ea5e9,#6366f1)"
+              action={<CsvBtn onClick={exportStockCsv} label="Export CSV" busy={downloadState.active && downloadState.key === 'stock-export'} />}
+            >
+              <p className="text-[13px] text-slate-600 px-1 py-2">Download current inventory valuation with weighted average cost, stock value, and potential revenue for all active products.</p>
+            </SectionCard>
 
             {/* Empty state */}
             {sales.length === 0 && purchases.length === 0 && (

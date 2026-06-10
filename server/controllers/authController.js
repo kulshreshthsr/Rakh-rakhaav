@@ -15,7 +15,7 @@ const {
 
 const AUTH_TOKEN_TTL = '7d';
 const REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
-const MAX_OWNER_PHOTO_SIZE = 5 * 1024 * 1024;
+const MAX_OWNER_PHOTO_SIZE = 500 * 1024;
 
 const isValidOwnerPhoto = (value = '') => {
   if (!value) return true;

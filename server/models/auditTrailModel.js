@@ -15,5 +15,7 @@ const auditTrailSchema = new mongoose.Schema({
 
 auditTrailSchema.index({ shop: 1, timestamp: -1 });
 auditTrailSchema.index({ shop: 1, entity: 1, entity_id: 1, timestamp: -1 });
+// Auto-expire after 90 days
+auditTrailSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 
 module.exports = mongoose.model('AuditTrail', auditTrailSchema);

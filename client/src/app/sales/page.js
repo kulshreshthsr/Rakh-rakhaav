@@ -118,6 +118,7 @@ export default function SalesPage() {
   const [shopGstin, setShopGstin]       = useState('');
   const [shopAddress, setShopAddress]   = useState('');
   const [shopPhone, setShopPhone]       = useState('');
+  const [shopGstType, setShopGstType]   = useState('');
   const [isOnline, setIsOnline]         = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [productBatches, setProductBatches]   = useState({});
   const [productVariants, setProductVariants] = useState({});
@@ -212,6 +213,7 @@ export default function SalesPage() {
         setShopName(shop.name || ''); setShopState(shop.state || '');
         setShopStateCode(shop.gst_state_code || (shop.gstin ? shop.gstin.substring(0, 2) : ''));
         setShopGstin(shop.gstin || ''); setShopAddress(shop.address || ''); setShopPhone(shop.phone || '');
+        setShopGstType(shop.gst_type || '');
         setChallanForm(prev => ({ ...prev, dispatch_from: prev.dispatch_from || shop.address || '' }));
       }).catch(() => {});
   }, [setChallanForm, showModal, sales.length, shopName, shopState]);
@@ -747,6 +749,7 @@ export default function SalesPage() {
         shopGstin={shopGstin}
         shopAddress={shopAddress}
         shopPhone={shopPhone}
+        shopGstType={shopGstType}
         businessType={businessType}
         config={config}
         term={term}

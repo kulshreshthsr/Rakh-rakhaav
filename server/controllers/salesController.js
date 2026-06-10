@@ -43,6 +43,14 @@ function parseWarrantyExpiry(warrantyStr, fromDate = new Date()) {
   return d;
 }
 
+/**
+ * Generate the next invoice number for a shop.
+ * @param {object} shopOrId - MUST be the full shop document to use custom invoice_prefix,
+ *   invoice_number_digits, and invoice_start_number. Passing only a shopId string falls back
+ *   to the generic INV/FY/NNNN format silently.
+ * @param {ClientSession|null} session
+ * @param {Date} invoiceDate
+ */
 const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new Date()) => {
   // Accept either a shop object (with invoice format fields) or just a shopId string
   const shopId = shopOrId?._id || shopOrId;
@@ -87,6 +95,16 @@ const generateQuotationNumber = async (shopId, session = null, date = new Date()
 
 const normalizeState = (value = '') => value.trim().toLowerCase();
 const normalizeGstin = (value = '') => String(value).replace(/[^0-9a-z]/gi, '').toUpperCase().slice(0, 15);
+
+// Reverse map: normalised state name → 2-digit GST state code
+const STATE_NAME_TO_CODE = Object.fromEntries(
+  Object.entries(GST_STATE_CODE_MAP).map(([code, name]) => [name.trim().toLowerCase(), code])
+);
+const getStateCodeFromName = (stateName = '') => STATE_NAME_TO_CODE[stateName.trim().toLowerCase()] || '';
+const getStateCodeFromGstin = (gstin = '') => {
+  const g = normalizeGstin(gstin);
+  return g.length === 15 ? g.slice(0, 2) : '';
+};
 const normalizeOfflineOperationId = (value = '') => {
   const normalized = String(value || '').trim();
   return normalized || null;
@@ -180,11 +198,11 @@ const calculateGSTR3BSummary = (sales = [], purchases = []) => {
   };
 };
 
-const calculateGST = (taxable_amount, gst_rate, shopState, buyerState) => {
+const calculateGST = (taxable_amount, gst_rate, shopStateCode, buyerStateCode) => {
   const totalGst = round2((taxable_amount * gst_rate) / 100);
-  const normalizedShopState = normalizeState(shopState);
-  const normalizedBuyerState = normalizeState(buyerState);
-  const isIGST = normalizedBuyerState && normalizedShopState && normalizedShopState !== normalizedBuyerState;
+  // Use 2-digit GST state codes for reliable inter/intra-state determination.
+  // If either code is missing, default to intra-state (CGST+SGST) as safe fallback.
+  const isIGST = shopStateCode && buyerStateCode && shopStateCode !== buyerStateCode;
   if (isIGST) {
     return {
       cgst_amount: 0, sgst_amount: 0,
@@ -619,6 +637,9 @@ const buildSaleRecordData = async ({
   }
   const saleDate = parsedSaleDate || existingSale?.createdAt || new Date();
   const resolvedBuyerState = getStateFromGstin(normalizedBuyerGstin) || buyer_state || '';
+  // Derive 2-digit state codes for reliable IGST/CGST determination
+  const shopStateCode = shop.gst_state_code || getStateCodeFromGstin(shop.gstin || '') || getStateCodeFromName(shop.state || '');
+  const buyerStateCode = getStateCodeFromGstin(normalizedBuyerGstin) || getStateCodeFromName(resolvedBuyerState);
   const requestedAmountPaid = Number(amount_paid || 0);
   if (!Number.isFinite(requestedAmountPaid) || requestedAmountPaid < 0) {
     throw _bizErr('Invalid amount paid');
@@ -677,7 +698,7 @@ const buildSaleRecordData = async ({
       : (product.weighted_avg_cost > 0 ? product.weighted_avg_cost : (product.cost_price || 0));
     const gst_rate = Number.isFinite(Number(item.gst_rate)) ? Number(item.gst_rate) : (product.gst_rate || 0);
     const taxable = parseFloat((qty * ppu).toFixed(2));
-    const gstCalc = calculateGST(taxable, gst_rate, shop.state, resolvedBuyerState);
+    const gstCalc = calculateGST(taxable, gst_rate, shopStateCode, buyerStateCode);
     const lineTotal = parseFloat((taxable + gstCalc.total_gst).toFixed(2));
     const lineCost = parseFloat((cost * qty).toFixed(2));
 
@@ -896,14 +917,20 @@ const createSale = async (req, res) => {
           return;
         }
       }
+      // Composition dealers must issue Bill of Supply, not Tax Invoice
+      const requestBody = { ...req.body };
+      if (shop.gst_type === 'composition' && requestBody.document_type === 'invoice') {
+        requestBody.document_type = 'bill_of_supply';
+      }
+
       const { data, itemNames } = await buildSaleRecordData({
         shop,
-        payload: req.body,
+        payload: requestBody,
         session,
       });
 
       // Quotations skip stock deduction and use a separate number sequence
-      const isQuotation = req.body.document_type === 'quotation';
+      const isQuotation = requestBody.document_type === 'quotation';
       if (isQuotation) {
         data.document_type   = 'quotation';
         data.invoice_number  = await generateQuotationNumber(shop._id, session, data.createdAt);
@@ -1585,7 +1612,7 @@ const convertToInvoice = async (req, res) => {
       if (!challan) throw Object.assign(new Error('Challan not found'), { statusCode: 404 });
       if (challan.converted_to_invoice) throw Object.assign(new Error('Already converted to invoice'), { statusCode: 400 });
 
-      const invoiceNumber = await generateInvoiceNumber(shop._id, session);
+      const invoiceNumber = await generateInvoiceNumber(shop, session);
       const challanObj = challan.toObject();
       delete challanObj._id;
       delete challanObj.createdAt;

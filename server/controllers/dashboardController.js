@@ -143,7 +143,7 @@ const getDashboardSummary = async (req, res) => {
       aggregateSalesSummary({ shop: shopId, createdAt: monthRange }),
       aggregatePurchaseSummary({ shop: shopId, createdAt: monthRange }),
       Sale.aggregate([
-        { $match: { shop: shopId } },
+        { $match: { shop: shopId, createdAt: { $gte: (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d; })() } } },
         {
           $facet: {
             fromItems: [

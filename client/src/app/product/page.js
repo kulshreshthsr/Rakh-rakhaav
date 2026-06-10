@@ -272,15 +272,18 @@ export default function ProductsPage() {
     setForm({ name:'', description:'', price:'', cost_price:'',
       quantity: trackQty ? '' : '0',
       unit: unitOptions ? unitOptions[0] : 'pcs',
-      barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5,
-      category:'', sub_category:'' });
+      barcode:'', sku:'', hsn_code:'', gst_rate:0, low_stock_threshold:5,
+      category:'', sub_category:'',
+      mrp:'', dealer_price:'', project_price:'',
+      pack_size:'', pack_unit:'', loose_unit:'', sold_in_loose:false, loose_price:'',
+      batch_tracking_enabled:false });
     setMetadata({}); setMetaErrors({});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
   };
 
   const openEdit = (p) => {
     setEditProduct(p);
-    setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5, category:p.category||'', sub_category:p.sub_category||'' });
+    setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', sku:p.sku||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5, category:p.category||'', sub_category:p.sub_category||'', mrp:p.mrp||'', dealer_price:p.dealer_price||'', project_price:p.project_price||'', pack_size:p.pack_size||'', pack_unit:p.pack_unit||'', loose_unit:p.loose_unit||'', sold_in_loose:!!p.sold_in_loose, loose_price:p.loose_price||'', batch_tracking_enabled:!!p.batch_tracking_enabled });
     // Restore metadata from product (MongoDB Map serialises to plain object in JSON response)
     setMetadata(p.metadata && typeof p.metadata === 'object' ? { ...p.metadata } : {}); setMetaErrors({});
     setLastScannedBarcode(''); setError(''); setShowModal(true);
@@ -374,7 +377,7 @@ export default function ProductsPage() {
   const liveMargin = form.cost_price && form.price && Number(form.cost_price) > 0
     ? (((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1) : null;
   const liveProfit = liveMargin != null ? (Number(form.price) - Number(form.cost_price)).toFixed(2) : null;
-  const liveMrp = metadata?.mrp ? Number(metadata.mrp) : null;
+  const liveMrp = form.mrp ? Number(form.mrp) : null;
   const mrpViolation = liveMrp && form.price && Number(form.price) > liveMrp;
   const STOCK_TYPES = {
     manual_add:    { label:'Stock जोड़ो',   color:'border-emerald-400 bg-emerald-50 text-emerald-800', active:'bg-emerald-500 text-white border-emerald-500' },
@@ -767,6 +770,20 @@ export default function ProductsPage() {
                       <span className="text-[12px] text-emerald-600 font-semibold">₹{liveProfit} per unit</span>
                     </div>
                   )}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">MRP</p>
+                      <input className={INP} type="number" step="0.01" placeholder="Max retail price" value={form.mrp} onChange={e => setForm({...form, mrp:e.target.value})} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Dealer Price</p>
+                      <input className={INP} type="number" step="0.01" placeholder="Trade price" value={form.dealer_price} onChange={e => setForm({...form, dealer_price:e.target.value})} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Project Price</p>
+                      <input className={INP} type="number" step="0.01" placeholder="Project rate" value={form.project_price} onChange={e => setForm({...form, project_price:e.target.value})} />
+                    </div>
+                  </div>
                 </div>
 
                 {/* ── STOCK ── */}
@@ -797,6 +814,45 @@ export default function ProductsPage() {
                       <input className={INP} type="number" min="0" placeholder="Default: 5" value={form.low_stock_threshold} onChange={e => setForm({...form, low_stock_threshold:e.target.value})} />
                     </div>
                   )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Pack Size</p>
+                      <input className={INP} type="number" step="0.01" min="0" placeholder="e.g. 12" value={form.pack_size} onChange={e => setForm({...form, pack_size:e.target.value})} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Pack Unit</p>
+                      <input className={INP} placeholder="e.g. box, carton" value={form.pack_unit} onChange={e => setForm({...form, pack_unit:e.target.value})} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Loose Unit</p>
+                      <input className={INP} placeholder="e.g. piece, metre" value={form.loose_unit} onChange={e => setForm({...form, loose_unit:e.target.value})} />
+                    </div>
+                    <div className="flex items-center gap-3 pt-5">
+                      <input id="sold_in_loose" type="checkbox" className="w-4 h-4 accent-green-600" checked={!!form.sold_in_loose} onChange={e => setForm({...form, sold_in_loose:e.target.checked})} />
+                      <label htmlFor="sold_in_loose" className="text-[13px] font-semibold text-slate-700 select-none">Sold in Loose</label>
+                    </div>
+                  </div>
+                  {form.sold_in_loose && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Loose Price</p>
+                      <input className={INP} type="number" step="0.01" placeholder="Price per loose unit" value={form.loose_price} onChange={e => setForm({...form, loose_price:e.target.value})} />
+                    </div>
+                  )}
+                </div>
+
+                {/* ── IDENTIFIERS ── */}
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identifiers & Tracking</p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">SKU</p>
+                    <input className={INP} placeholder="Internal stock-keeping unit code" value={form.sku} onChange={e => setForm({...form, sku:e.target.value})} />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input id="batch_tracking_enabled" type="checkbox" className="w-4 h-4 accent-green-600" checked={!!form.batch_tracking_enabled} onChange={e => setForm({...form, batch_tracking_enabled:e.target.checked})} />
+                    <label htmlFor="batch_tracking_enabled" className="text-[13px] font-semibold text-slate-700 select-none">Batch Tracking Enabled</label>
+                  </div>
                 </div>
 
                 {/* ── GST & TAX ── */}

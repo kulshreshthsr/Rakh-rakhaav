@@ -240,8 +240,12 @@ export default function GSTPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const now = new Date();
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year,  setYear]  = useState(now.getFullYear());
+  // Before the 20th, the filing period is the previous month (GSTR-3B not yet due for last month).
+  const filingDate = now.getDate() <= 20
+    ? new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    : new Date(now.getFullYear(), now.getMonth(), 1);
+  const [month, setMonth] = useState(filingDate.getMonth() + 1);
+  const [year,  setYear]  = useState(filingDate.getFullYear());
   const [summary, setSummary]           = useState(null);
   const [recordsCache, setRecordsCache] = useState({ sales: [], purchases: [] });
   const [loading, setLoading]   = useState(false);

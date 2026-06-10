@@ -36,7 +36,7 @@ export default function SaleFormModal({
   contractors, selectedContractor, setSelectedContractor,
   contractorSearch, setContractorSearch, showContractorDrop, setShowContractorDrop,
   products, productBatches, productVariants,
-  shopName, shopState, shopGstin, shopAddress, shopPhone,
+  shopName, shopState, shopGstin, shopAddress, shopPhone, shopGstType,
   businessType, config, term, sSchema, activeTabs, barcodeEnabled,
   inv, batchSales, variantSales, serialSales, recipeSales,
   isOnline, onOpenBarcodeScanner, apiUrl, getToken,
@@ -52,6 +52,7 @@ export default function SaleFormModal({
   duplicateWarning, setDuplicateWarning, handleConfirmDuplicate,
 }) {
   const hasItems = items.some(i => i.product_id);
+  const hideGst = shopGstType === 'unregistered' || shopGstType === 'exempt';
 
   /* ── Per-bill template override ── */
   const [billTemplate, setBillTemplate] = useState('');
@@ -785,7 +786,10 @@ export default function SaleFormModal({
             {/* Bill summary */}
             {!isChallanMode && (
               <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white">
-                {billTotals.gst > 0 && (() => {
+                {hideGst && (
+                  <p className="text-[10px] font-bold text-amber-400 mb-2">Unregistered dealer — GST not applicable</p>
+                )}
+                {!hideGst && billTotals.gst > 0 && (() => {
                   const gstBreakdown = summariseCartGST(
                     items.filter(i => i.product_id && i.quantity && i.price_per_unit).map(item => {
                       const prod = products.find(p => p._id === item.product_id);
@@ -812,8 +816,8 @@ export default function SaleFormModal({
                   {[
                     billTotals.discountAmount > 0 ? { label: 'Subtotal', val: `₹${fmt(billTotals.subtotal)}`, cls: 'text-slate-300' } : null,
                     billTotals.discountAmount > 0 ? { label: `Discount${form.discount_type === 'percent' ? ` (${form.discount_value}%)` : ''}`, val: `- ₹${fmt(billTotals.discountAmount)}`, cls: 'text-green-400' } : null,
-                    { label: 'Taxable Amount', val: `₹${fmt(billTotals.taxable)}`, cls: 'text-white' },
-                    { label: 'Total GST', val: `₹${fmt(billTotals.gst)}`, cls: 'text-amber-400' },
+                    !hideGst ? { label: 'Taxable Amount', val: `₹${fmt(billTotals.taxable)}`, cls: 'text-white' } : null,
+                    !hideGst ? { label: 'Total GST', val: `₹${fmt(billTotals.gst)}`, cls: 'text-amber-400' } : null,
                     { label: 'Round Off', val: `${roundedBill.roundOff >= 0 ? '+' : ''}₹${fmt(roundedBill.roundOff)}`, cls: 'text-emerald-400' },
                   ].filter(Boolean).map((row) => (
                     <div key={row.label} className="flex justify-between text-[12px]">
