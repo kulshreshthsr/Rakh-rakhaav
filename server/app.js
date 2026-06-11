@@ -22,6 +22,7 @@ const configuredOrigins = (process.env.FRONTEND_URLS || '')
 
 const staticAllowedOrigins = [
   'https://rakh-rakhaav-1.onrender.com',
+  'https://rakh-rakhaav.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
   ...configuredOrigins,
@@ -34,6 +35,12 @@ const staticAllowedOrigins = [
 const isAllowedOrigin = (origin = '') => {
   if (!origin) return true; // same-origin / curl / mobile webview
   if (staticAllowedOrigins.includes(origin)) return true;
+
+  // Allow all preview/production deployments for this specific Vercel project
+  try {
+    const { hostname } = new URL(origin);
+    if (/^rakh-rakhaav(-[a-z0-9]+)?\.vercel\.app$/.test(hostname)) return true;
+  } catch {}
 
   // localhost convenience for development only
   if (process.env.NODE_ENV !== 'production') {
