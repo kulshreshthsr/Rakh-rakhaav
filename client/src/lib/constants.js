@@ -112,7 +112,7 @@ export const getSaleRecordDateISO = (value, reference = new Date()) => {
 // Initial sale form builder
 export const buildInitialSaleForm = (overrides = {}) => ({
   payment_type: 'cash',
-  amount_paid: '',
+  amount_paid: 0,
   buyer_name: '',
   buyer_phone: '',
   buyer_gstin: '',
