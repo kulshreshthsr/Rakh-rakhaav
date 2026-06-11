@@ -499,7 +499,7 @@ export default function QuickSalePage() {
       buyer_name:   buyer.name || '',
       buyer_phone:  buyer.phone || '',
       buyer_gstin:  buyer.gstin || '',
-      payment_type: payType,
+      payment_type: payType === 'card' ? 'bank' : payType,
       amount_paid:  payType === 'credit' ? (Number(amountPaid) || 0) : total,
       notes:        note,
       sale_date:    new Date().toISOString().slice(0, 10),
