@@ -273,7 +273,9 @@ export default function OnboardingPage() {
     setStep3Error('');
     try {
       const token = getToken();
-      const body = { gst_type: gstType };
+      // 'registered' is the UI value; backend schema uses 'regular'
+      const mappedGstType = gstType === 'registered' ? 'regular' : gstType;
+      const body = { gst_type: mappedGstType };
       if (gstType === 'registered' && gstin) body.gstin = gstin;
       const res = await fetch(apiUrl('/api/auth/shop'), {
         method: 'PUT',
@@ -370,6 +372,14 @@ export default function OnboardingPage() {
 
   async function submitProfile(finalAnswers) {
     setProfileSaving(true);
+
+    // Derive mode & tier locally first so a network failure never silently leaves B2C default.
+    const sellsTo = finalAnswers?.sellsTo;
+    const localMode = sellsTo === 'businesses' ? 'b2b' : sellsTo === 'both' ? 'hybrid' : 'b2c';
+    writeStoredDashboardMode(localMode);
+    const stored = JSON.parse(localStorage.getItem('user') || '{}');
+    localStorage.setItem('user', JSON.stringify({ ...stored, dashboardMode: localMode }));
+
     try {
       const res = await fetch(apiUrl('/api/auth/shop/profile'), {
         method: 'POST',
@@ -382,15 +392,16 @@ export default function OnboardingPage() {
       setInferredTier(data.tier);
       writeStoredTier(data.tier);
 
-      // Persist dashboardMode so dashboard routing picks it up immediately
+      // Overwrite with server-confirmed values
       if (data.dashboardMode) {
         writeStoredDashboardMode(data.dashboardMode);
-        const stored = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem('user', JSON.stringify({ ...stored, dashboardMode: data.dashboardMode }));
+        const fresh = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...fresh, dashboardMode: data.dashboardMode }));
       }
 
       setTimeout(() => goTo(5), 1200);
     } catch {
+      // API failed — local mode/tier already written above, proceed normally
       goTo(5);
     } finally {
       setProfileSaving(false);
@@ -452,6 +463,8 @@ export default function OnboardingPage() {
   // ── Step 5 — Finish ─────────────────────────────────────────────────────────
   async function handleFinish(path = '/dashboard') {
     clearOnboardingPending();
+    // Force subscription-status to re-fetch on next page load so tier/mode context is fresh.
+    try { sessionStorage.removeItem('subscription-status:last-refresh'); } catch { /* ignore */ }
     try {
       await fetch(apiUrl('/api/auth/shop'), {
         method: 'PUT',

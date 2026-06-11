@@ -165,7 +165,7 @@ function UserDropdown({ onProfile, onLogout, extraItems, className = '' }) {
 function LayoutInner({ children }) {
   const { locale, t } = useAppLocale();
   const { updateBusinessType, updateDashboardMode, term, isEnabled, businessType } = useIndustry();
-  const { isNavVisible, isFeatureEnabled, updateTier } = useTier();
+  const { isNavVisible, isFeatureEnabled, updateTier, tier } = useTier();
   const [user, setUser] = useState(() => readStoredUser());
   const [subscription, setSubscription] = useState(() => readStoredSubscription());
   const [plans, setPlans] = useState(FALLBACK_PLANS);
@@ -361,14 +361,23 @@ function LayoutInner({ children }) {
     [bilingualLabels, t, tf, locale, NAV_I18N, canAccess, isEnabled, isNavVisible, isFeatureEnabled, TIER_NAV_GATE]
   );
 
-  // Dynamic bottom nav — slot 0 is always Dashboard, slot 1 is always Sales,
-  // slots 2-3 are chosen based on business type.
-  const bottomNavItems = useMemo(() => [
-    { href: '/dashboard', key: 'dashboard', shortLabel: tf('navs_home', 'Home'),                          icon: 'dashboard', permission: 'VIEW_DASHBOARD'   },
-    { href: '/sales',     key: 'sales',     shortLabel: tf('navs_sale', term('sale', 'Sale')),            icon: 'sales',     permission: 'VIEW_SALES'       },
-    { href: '/product',   key: 'products',  shortLabel: tf('navs_stock', term('inventory', 'Stock')),     icon: 'products',  permission: 'MANAGE_INVENTORY' },
-    { href: '/udhaar',    key: 'udhaar',    shortLabel: tf('navs_udhaar', 'Udhaar'),                      icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
-  ], [term, tf]);
+  // Dynamic bottom nav — slot 0 always Dashboard, slot 1 always Sales.
+  // Nano persona: Udhaar (credit/collections) before Stock — matches daily workflow.
+  // Core/Pro: Stock before Udhaar (purchase-heavy workflows).
+  const bottomNavItems = useMemo(() => {
+    const isNano = tier === 'nano';
+    return [
+      { href: '/dashboard', key: 'dashboard', shortLabel: tf('navs_home', 'Home'),                      icon: 'dashboard', permission: 'VIEW_DASHBOARD'   },
+      { href: '/sales',     key: 'sales',     shortLabel: tf('navs_sale', term('sale', 'Sale')),        icon: 'sales',     permission: 'VIEW_SALES'       },
+      ...(isNano ? [
+        { href: '/udhaar',  key: 'udhaar',    shortLabel: tf('navs_udhaar', 'Udhaar'),                  icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
+        { href: '/product', key: 'products',  shortLabel: tf('navs_stock', term('inventory', 'Stock')), icon: 'products',  permission: 'MANAGE_INVENTORY' },
+      ] : [
+        { href: '/product', key: 'products',  shortLabel: tf('navs_stock', term('inventory', 'Stock')), icon: 'products',  permission: 'MANAGE_INVENTORY' },
+        { href: '/udhaar',  key: 'udhaar',    shortLabel: tf('navs_udhaar', 'Udhaar'),                  icon: 'udhaar',    permission: 'VIEW_UDHAAR'      },
+      ]),
+    ];
+  }, [term, tf, tier]);
 
   const filteredBottomNav = useMemo(
     () => bottomNavItems
@@ -377,35 +386,45 @@ function LayoutInner({ children }) {
     [bottomNavItems, canAccess, isNavVisible, TIER_NAV_GATE]
   );
 
+  // Keys always visible in the nano More drawer (everything else is tier-locked).
+  const NANO_DRAWER_KEYS = useMemo(() => new Set(['expenses', 'notifications', 'profile']), []);
+
   const filteredDrawerItems = useMemo(() => {
+    const isNano = tier === 'nano';
+
     const base = MORE_DRAWER_ITEMS
       .filter(item => canAccess(item.permission))
       .filter(item => !TIER_NAV_GATE.has(item.key) || isNavVisible(item.key))
       .filter(item => item.key !== 'purchase_orders' || isFeatureEnabled('erp_purchase_orders'))
+      // Nano: restrict to essential items only (max drawer depth).
+      .filter(item => !isNano || NANO_DRAWER_KEYS.has(item.key))
       .map(item => ({
         ...item,
         label:    tf(`drawer_${item.key}`, item.label),
         sublabel: tf(`drawer_${item.key}_sub`, item.sublabel),
       }));
 
+    // Industry-specific extras are core/pro only — nano stays simple.
     const extras = [];
-    if (businessType === 'hardware') {
-      extras.push(
-        { href: '/contractors', key: 'contractors', label: 'Contractors',  sublabel: 'Credit accounts', icon: 'team',     permission: 'VIEW_SALES'       },
-        { href: '/projects',    key: 'projects',    label: 'Projects',     sublabel: 'Site management', icon: 'checklist',permission: 'VIEW_SALES'       },
-        { href: '/warehouses',  key: 'warehouses',  label: 'Warehouses',   sublabel: 'Multi-godown',    icon: 'products', permission: 'MANAGE_INVENTORY' },
-      );
-    }
-    if (businessType === 'electronics') {
-      extras.push(
-        { href: '/warranty',    key: 'warranty',    label: 'Warranty',     sublabel: 'Claim register',   icon: 'reports',  permission: 'VIEW_SALES'       },
-        { href: '/service',     key: 'service',     label: 'Service Jobs', sublabel: 'Repair tracking',  icon: 'checklist',permission: 'VIEW_SALES'       },
-        { href: '/amc',         key: 'amc',         label: 'AMC',          sublabel: 'Annual contracts', icon: 'udhaar',   permission: 'VIEW_SALES'       },
-      );
+    if (!isNano) {
+      if (businessType === 'hardware') {
+        extras.push(
+          { href: '/contractors', key: 'contractors', label: 'Contractors',  sublabel: 'Credit accounts', icon: 'team',     permission: 'VIEW_SALES'       },
+          { href: '/projects',    key: 'projects',    label: 'Projects',     sublabel: 'Site management', icon: 'checklist',permission: 'VIEW_SALES'       },
+          { href: '/warehouses',  key: 'warehouses',  label: 'Warehouses',   sublabel: 'Multi-godown',    icon: 'products', permission: 'MANAGE_INVENTORY' },
+        );
+      }
+      if (businessType === 'electronics') {
+        extras.push(
+          { href: '/warranty',    key: 'warranty',    label: 'Warranty',     sublabel: 'Claim register',   icon: 'reports',  permission: 'VIEW_SALES'       },
+          { href: '/service',     key: 'service',     label: 'Service Jobs', sublabel: 'Repair tracking',  icon: 'checklist',permission: 'VIEW_SALES'       },
+          { href: '/amc',         key: 'amc',         label: 'AMC',          sublabel: 'Annual contracts', icon: 'udhaar',   permission: 'VIEW_SALES'       },
+        );
+      }
     }
 
     return [...base, ...extras.filter(e => canAccess(e.permission))];
-  }, [canAccess, businessType, isNavVisible, isFeatureEnabled, tf, TIER_NAV_GATE]);
+  }, [tier, canAccess, businessType, isNavVisible, isFeatureEnabled, tf, TIER_NAV_GATE, NANO_DRAWER_KEYS]);
 
   return (
     <NotificationProvider>
