@@ -265,7 +265,7 @@ export default function useSaleForm({
       const res = await fetch(submitUrl, {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ items: submitItems, ...form, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: isChallan ? 0 : (form.payment_type === 'credit' ? amountPaidNum : billTotals.total), extra_fields: { ...extraFields, ...(businessType === 'hardware' && selectedContractor ? { contractor_id: String(selectedContractor._id), contractor_name: selectedContractor.name } : {}) }, ...challanPayload, ...(isQuotation ? { document_type: 'quotation' } : {}) }),
+        body: JSON.stringify({ items: submitItems, ...form, discount_value: parseFloat(form.discount_value) || 0, buyer_gstin: gstinValue, sale_date: form.sale_date, amount_paid: isChallan ? 0 : (form.payment_type === 'credit' ? amountPaidNum : billTotals.total), extra_fields: { ...extraFields, ...(businessType === 'hardware' && selectedContractor ? { contractor_id: String(selectedContractor._id), contractor_name: selectedContractor.name } : {}) }, ...challanPayload, ...(isQuotation ? { document_type: 'quotation' } : {}) }),
       });
       const data = await res.json();
       if (res.ok) {
