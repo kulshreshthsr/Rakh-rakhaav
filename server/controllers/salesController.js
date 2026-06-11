@@ -67,7 +67,7 @@ const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'sale', financial_year: financialYear },
     [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', startNumber - 1] }, 1] } } }],
-    { new: true, upsert: true, updatePipeline: true }
+    { returnDocument: 'after', upsert: true }
   );
   if (session) query = query.session(session);
   const sequence = await query;
@@ -86,7 +86,7 @@ const generateQuotationNumber = async (shopId, session = null, date = new Date()
   let q = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'quotation', financial_year: financialYear },
     [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', 0] }, 1] } } }],
-    { new: true, upsert: true, updatePipeline: true }
+    { returnDocument: 'after', upsert: true }
   );
   if (session) q = q.session(session);
   const seq = await q;
@@ -264,7 +264,7 @@ const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', sessio
     await Product.findByIdAndUpdate(productId, {
       $inc: { quantity: -delta },
     }, session ? { session } : {});
-    await logStockMovements(shopId, [{
+    logStockMovements(shopId, [{
       product: product._id,
       type: delta > 0 ? 'sale' : 'sale_return',
       quantityChange: -delta,
@@ -273,7 +273,7 @@ const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', sessio
       referenceType: 'sale',
       note: '',
       performedBy,
-    }], { session });
+    }]);
   }
 };
 
@@ -755,6 +755,9 @@ const buildSaleRecordData = async ({
   const paid = round2(payment_type === 'credit' ? requestedAmountPaid : grandTotal);
   const grossProfit = round2(totalTaxable - totalCost);
   const firstItem = resolvedItems[0];
+  if (!firstItem) {
+    throw _bizErr('Kam se kam ek valid item zaroori hai');
+  }
   const uniqueRates = [...new Set(resolvedItems.map((item) => Number(item.gst_rate || 0)))];
 
   return {
@@ -814,7 +817,7 @@ const getSaleById = async (req, res) => {
     if (!sale) return res.status(404).json({ message: 'Sale नहीं मिली' });
     res.json(sale);
   } catch (err) {
-    logger.error('[salesController]', err.message || err);
+    logger.error({ err: err.message || String(err), stack: err.stack }, '[salesController] failed');
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -885,7 +888,7 @@ const getSales = async (req, res) => {
 
     res.json({ sales: page, summary: netSummary, hasMore, nextCursor });
   } catch (err) {
-    logger.error('[salesController]', err.message || err);
+    logger.error({ err: err.message || String(err), stack: err.stack }, '[salesController] failed');
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -987,15 +990,7 @@ const createSale = async (req, res) => {
       const createdSale = createdSales[0];
       createdSaleId = createdSale._id;
       if (!isQuotation) {
-        logStockMovements(shop._id, (data.items || []).map(item => ({
-          product:        item.product,
-          type:           'sale',
-          quantityChange: -(Number(item.quantity) || 0),
-          quantityAfter:  0,
-          referenceId:    data.invoice_number,
-          referenceType:  'sale',
-          note:           `Sale to ${data.buyer_name || 'Walk-in'}`,
-        })));
+        // stock movements are logged inside syncSaleStock (with accurate quantityAfter)
         await syncCustomerLedgerForSale(shop._id, createdSale, itemNames, session);
 
         // Update last_sale_date in product.metadata for slow-moving stock rule
@@ -1047,11 +1042,11 @@ const createSale = async (req, res) => {
       entityId: hydratedSale._id,
       referenceId: hydratedSale.invoice_number,
       afterValue: hydratedSale,
-    }).catch((auditErr) => logger.error('[createSale] logAuditEvent failed:', auditErr.message));
+    }).catch((auditErr) => logger.error({ err: auditErr.message }, '[createSale] logAuditEvent failed'));
 
     return res.status(201).json(hydratedSale);
   } catch (err) {
-    logger.error('[createSale]', err.message || err, err.stack);
+    logger.error({ err: err.message || String(err), stack: err.stack }, '[createSale] failed');
     if (err?.code === 11000 && req.body?.offline_operation_id) {
       const shop = await getShopOrFail(req.user.id);
       const existingSale = await Sale.findOne({
@@ -1064,8 +1059,7 @@ const createSale = async (req, res) => {
     }
     const _sc = err.statusCode || err.status || 500;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', debug: err.message });
   } finally {
     await session.endSession();
   }
@@ -1281,7 +1275,7 @@ const getProfitSummary = async (req, res) => {
       purchasesCount: p.purchasesCount,
     });
   } catch (err) {
-    logger.error('[salesController]', err.message || err);
+    logger.error({ err: err.message || String(err), stack: err.stack }, '[salesController] failed');
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1360,7 +1354,7 @@ const getGSTSummary = async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    logger.error('[salesController]', err.message || err);
+    logger.error({ err: err.message || String(err), stack: err.stack }, '[salesController] failed');
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1412,7 +1406,7 @@ const getGSTComplianceReport = async (req, res) => {
 
     res.json(report);
   } catch (err) {
-    logger.error('[salesController]', err.message || err);
+    logger.error({ err: err.message || String(err), stack: err.stack }, '[salesController] failed');
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1460,7 +1454,7 @@ const updateSaleWorkflow = async (req, res) => {
       details:    { newStage: workflow_status },
     }).catch(() => {});
   } catch (err) {
-    logger.error('[salesController]', err.message || err);
+    logger.error({ err: err.message || String(err), stack: err.stack }, '[salesController] failed');
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
@@ -1551,8 +1545,7 @@ const createChallan = async (req, res) => {
   } catch (err) {
     const _sc = err.statusCode || 500;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', debug: err.message });
   } finally {
     await session.endSession();
   }
@@ -1645,8 +1638,7 @@ const convertToInvoice = async (req, res) => {
   } catch (err) {
     const _sc = err.statusCode || 500;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', debug: err.message });
   } finally {
     await session.endSession();
   }
@@ -1734,7 +1726,7 @@ const generateNoteNumber = async (shopId, docType, session = null) => {
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: docType, financial_year: financialYear },
     { $inc: { last_number: 1 } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
   );
   if (session) query = query.session(session);
   const seq = await query;
@@ -1854,8 +1846,7 @@ const createCreditNote = async (req, res) => {
   } catch (err) {
     const _sc = err.statusCode || 400;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', debug: err.message });
   } finally {
     await session.endSession();
   }
@@ -1966,8 +1957,7 @@ const createDebitNote = async (req, res) => {
   } catch (err) {
     const _sc = err.statusCode || 400;
     if (_sc < 500) return res.status(_sc).json({ message: err.message, code: 'BUSINESS_ERROR' });
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', ...(isDev && { debug: err.message }) });
+    res.status(500).json({ message: 'कुछ गलत हुआ। दोबारा try करें।', code: 'INTERNAL_ERROR', debug: err.message });
   } finally {
     await session.endSession();
   }
@@ -1995,7 +1985,7 @@ const generateIRN = async (req, res) => {
 
     return res.json({ irn, ack_no, ack_date, signed_qr_code, einvoice_status: 'generated' });
   } catch (err) {
-    logger.error('[salesController:generateIRN]', err.message || err);
+    logger.error({ err: err.message || String(err) }, '[salesController:generateIRN] failed');
     return res.status(500).json({ message: err.message || 'IRN generation failed' });
   }
 };
@@ -2014,7 +2004,7 @@ const cancelIRN = async (req, res) => {
 
     return res.json({ message: 'IRN cancelled', einvoice_status: 'cancelled' });
   } catch (err) {
-    logger.error('[salesController:cancelIRN]', err.message || err);
+    logger.error({ err: err.message || String(err) }, '[salesController:cancelIRN] failed');
     return res.status(500).json({ message: err.message || 'IRN cancellation failed' });
   }
 };
@@ -2042,7 +2032,7 @@ const generateEwayBill = async (req, res) => {
 
     return res.json({ ewb_number, ewb_valid_until, ewb_status: 'generated' });
   } catch (err) {
-    logger.error('[salesController:generateEwayBill]', err.message || err);
+    logger.error({ err: err.message || String(err) }, '[salesController:generateEwayBill] failed');
     return res.status(500).json({ message: err.message || 'E-Way Bill generation failed' });
   }
 };
@@ -2063,7 +2053,7 @@ const cancelEwayBill = async (req, res) => {
 
     return res.json({ message: 'E-Way Bill cancelled', ewb_status: 'cancelled' });
   } catch (err) {
-    logger.error('[salesController:cancelEwayBill]', err.message || err);
+    logger.error({ err: err.message || String(err) }, '[salesController:cancelEwayBill] failed');
     return res.status(500).json({ message: err.message || 'E-Way Bill cancellation failed' });
   }
 };
@@ -2222,7 +2212,7 @@ const createExchange = async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
-    logger.error('[salesController:createExchange]', err.message || err);
+    logger.error({ err: err.message || String(err) }, '[salesController:createExchange] failed');
     return res.status(500).json({ message: err.message || 'Exchange failed' });
   }
 };

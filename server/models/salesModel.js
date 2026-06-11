@@ -288,7 +288,7 @@ saleSchema.pre('save', async function () {
     let query = DocumentSequence.findOneAndUpdate(
       { shop: this.shop, doc_type: 'challan', financial_year: financialYear },
       { $inc: { last_number: 1 } },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
     );
     if (txSession) query = query.session(txSession);
     const seq = await query;
