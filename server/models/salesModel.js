@@ -220,6 +220,14 @@ const saleSchema = new mongoose.Schema({
   ewb_valid_until:  { type: Date,   default: null },
   ewb_cancel_reason:{ type: String, default: null },
 
+  // ── EMI note (electronics: Bajaj/HDFC etc.) ───────────────────
+  emi_enabled:  { type: Boolean, default: false },
+  emi_provider: { type: String, default: '' },   // 'Bajaj Finserv', 'HDFC', 'ZestMoney', etc.
+  emi_tenure:   { type: Number, default: 0 },    // months
+  emi_amount:   { type: Number, default: 0 },    // monthly instalment (informational only)
+  emi_down_payment: { type: Number, default: 0 },
+  emi_docs_pending: { type: Boolean, default: false }, // true until docs verified
+
   // ── Bill ──────────────────────────────────────────────────────
   invoice_number: { type: String, required: true, maxlength: 60 },
   offline_operation_id: { type: String },

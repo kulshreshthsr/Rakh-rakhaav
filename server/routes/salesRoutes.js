@@ -24,11 +24,13 @@ const {
   cancelEwayBill,
   generateIRN,
   cancelIRN,
+  createExchange,
 } = require('../controllers/salesController');
 
 router.get('/profit-summary',  protect, requirePermission('VIEW_REPORTS'), getProfitSummary);
 router.get('/gst-summary',     protect, requirePermission('VIEW_GST'),     getGSTSummary);
 router.get('/gst-report',      protect, requirePermission('VIEW_GST'),     getGSTComplianceReport);
+router.post('/exchange',      protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createExchange);
 router.post('/challan',       protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createChallan);
 router.post('/credit-note',   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createCreditNote);
 router.post('/debit-note',    protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createDebitNote);

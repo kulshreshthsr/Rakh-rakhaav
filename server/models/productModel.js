@@ -21,6 +21,8 @@ const productSchema = new mongoose.Schema({
   loose_unit: { type: String, default: '' },
   sold_in_loose: { type: Boolean, default: false },
   loose_price: { type: Number, default: 0 },
+  // Electronics: individual unit is serialized (IMEI/serial tracked per piece)
+  has_serials: { type: Boolean, default: false },
   batch_tracking_enabled: { type: Boolean, default: false },
 
   stock_locations: [{
@@ -64,6 +66,8 @@ productSchema.index({ shop: 1, quantity: 1 });
 productSchema.index({ shop: 1, barcode: 1 }, { sparse: true });
 productSchema.index({ shop: 1, sku: 1 }, { sparse: true });
 productSchema.index({ shop: 1, category: 1 });
+// Hardware: size/spec-aware search (e.g. "1 inch", "4mm", "90m coil")
+productSchema.index({ name: 'text', 'metadata.size_spec': 'text' }, { weights: { name: 10, 'metadata.size_spec': 5 }, name: 'product_text_search', sparse: true });
 
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });

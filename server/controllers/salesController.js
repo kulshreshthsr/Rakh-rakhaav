@@ -2068,6 +2068,165 @@ const cancelEwayBill = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/sales/exchange
+ * Creates two linked sale documents:
+ *   1. A return (credit_note) for the items coming back from the customer
+ *   2. A new sale (invoice) for the items going out
+ * The price_difference may result in net payment either way.
+ */
+const createExchange = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const shop = await getShopOrFail(req.user.shopId, res);
+    if (!shop) return;
+
+    const {
+      original_invoice_no,
+      returned_items = [],
+      exchange_items = [],
+      customer_name = '',
+      customer_phone = '',
+      price_difference = 0,
+      payment_type = 'cash',
+    } = req.body;
+
+    if (!original_invoice_no) {
+      await session.abortTransaction(); session.endSession();
+      return res.status(400).json({ message: 'original_invoice_no required' });
+    }
+    if (returned_items.length === 0 && exchange_items.length === 0) {
+      await session.abortTransaction(); session.endSession();
+      return res.status(400).json({ message: 'At least one returned or exchange item is required' });
+    }
+
+    const now = new Date();
+    const invoiceDate = now;
+
+    // Fetch original sale to populate returned item prices when not provided
+    const originalSale = await Sale.findOne({ shop: shop._id, invoice_number: original_invoice_no }).lean();
+    const origItemMap = {};
+    if (originalSale) {
+      (originalSale.items || []).forEach((oi) => {
+        const pid = String(oi.product || '');
+        if (pid) origItemMap[pid] = oi;
+      });
+    }
+
+    // ── Step 1: credit note for returned items ────────────────────
+    let returnSale = null;
+    if (returned_items.length > 0) {
+      const returnItems = returned_items.map((i) => {
+        const orig = origItemMap[String(i.product_id)] || {};
+        const ppu = Number(i.price_per_unit || i.price || orig.price_per_unit) || 0;
+        const qty = Number(i.quantity) || 0;
+        return {
+          product:        i.product_id,
+          product_name:   i.product_name || i.name || orig.product_name || '',
+          quantity:       qty,
+          price_per_unit: ppu,
+          cost_price:     Number(i.cost_price || orig.cost_price) || 0,
+          gst_rate:       Number(i.gst_rate || orig.gst_rate) || 0,
+          total_amount:   qty * ppu,
+        };
+      });
+      const returnTotal = returnItems.reduce((s, i) => s + i.total_amount, 0);
+      const returnInvNo = await generateInvoiceNumber(shop, session, invoiceDate);
+
+      returnSale = new Sale({
+        shop: shop._id,
+        invoice_number: returnInvNo,
+        document_type: 'credit_note',
+        sale_type: 'return',
+        original_invoice_no,
+        credit_debit_reason: 'return_of_goods',
+        buyer_name: customer_name,
+        buyer_phone: customer_phone,
+        payment_type: 'cash',
+        amount_paid: returnTotal,
+        total_amount: returnTotal,
+        items: returnItems,
+        exchange_reference: original_invoice_no,
+      });
+      await returnSale.save({ session });
+
+      // Restore stock for returned items
+      for (const i of returned_items) {
+        if (i.product_id) {
+          await Product.findByIdAndUpdate(
+            i.product_id,
+            { $inc: { quantity: Number(i.quantity) || 0 } },
+            { session }
+          );
+        }
+      }
+    }
+
+    // ── Step 2: new sale for exchange items going out ─────────────
+    let newSale = null;
+    if (exchange_items.length > 0) {
+      const newItems = exchange_items.map((i) => {
+        // ExchangeModal sends `price`; also accept `price_per_unit`
+        const ppu = Number(i.price_per_unit || i.price) || 0;
+        const qty = Number(i.quantity) || 0;
+        return {
+          product:        i.product_id,
+          product_name:   i.product_name || i.name || '',
+          quantity:       qty,
+          price_per_unit: ppu,
+          cost_price:     Number(i.cost_price) || 0,
+          gst_rate:       Number(i.gst_rate) || 0,
+          total_amount:   qty * ppu,
+        };
+      });
+      const newTotal = newItems.reduce((s, i) => s + i.total_amount, 0);
+      const newInvNo = await generateInvoiceNumber(shop, session, invoiceDate);
+
+      newSale = new Sale({
+        shop: shop._id,
+        invoice_number: newInvNo,
+        document_type: 'invoice',
+        sale_type: 'exchange',
+        exchange_reference: original_invoice_no,
+        buyer_name: customer_name,
+        buyer_phone: customer_phone,
+        payment_type,
+        amount_paid: newTotal,
+        total_amount: newTotal,
+        items: newItems,
+      });
+      await newSale.save({ session });
+
+      // Deduct stock for outgoing items
+      for (const i of exchange_items) {
+        if (i.product_id) {
+          await Product.findByIdAndUpdate(
+            i.product_id,
+            { $inc: { quantity: -(Number(i.quantity) || 0) } },
+            { session }
+          );
+        }
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(201).json({
+      message: 'Exchange processed',
+      return_invoice: returnSale?.invoice_number || null,
+      exchange_invoice: newSale?.invoice_number || null,
+      price_difference: Number(price_difference) || 0,
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    logger.error('[salesController:createExchange]', err.message || err);
+    return res.status(500).json({ message: err.message || 'Exchange failed' });
+  }
+};
+
 module.exports = {
   getSaleById,
   getSales,
@@ -2090,4 +2249,5 @@ module.exports = {
   cancelEwayBill,
   generateIRN,
   cancelIRN,
+  createExchange,
 };

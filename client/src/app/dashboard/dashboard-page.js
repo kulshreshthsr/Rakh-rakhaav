@@ -604,6 +604,89 @@ function IndustryPanels({ data, bizConfig }) {
 //  AGING PANEL (B2B + Hybrid)
 // ═══════════════════════════════════════════════════
 
+/**
+ * PendingChallansWidget — shows un-delivered challans for hardware/core+ shops.
+ * Lazy-loads on first mount, refreshes after a delivery is marked.
+ */
+function PendingChallansWidget({ businessType, tier }) {
+  const isHardware = businessType === 'hardware';
+  const isEligible = isHardware && (tier === 'core' || tier === 'pro');
+  const [challans, setChallans]   = useState(null);
+  const [loading, setLoading]     = useState(false);
+  const [marking, setMarking]     = useState(null); // challanId being marked
+  const [error, setError]         = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(apiUrl('/api/sales?document_type=challan&challan_status=dispatched&limit=10'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      setChallans(Array.isArray(data) ? data : (data.sales || []));
+    } catch { setError('Challans load नहीं हुए'); setChallans([]); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (isEligible) load();
+  }, [isEligible, load]);
+
+  const markDelivered = useCallback(async (challan) => {
+    setMarking(challan._id);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(apiUrl(`/api/sales/${challan._id}/mark-delivered`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ received_by: 'site', received_at: new Date().toISOString() }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setChallans((prev) => prev.filter((c) => c._id !== challan._id));
+    } catch { /* ignore — let user retry */ }
+    finally { setMarking(null); }
+  }, []);
+
+  if (!isEligible) return null;
+  if (loading) return <div className="h-20 rounded-2xl bg-slate-100 animate-pulse" />;
+  if (!challans || challans.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-amber-200">
+        <div>
+          <p className="text-[14px] font-black text-amber-900">📋 Pending Deliveries</p>
+          <p className="text-[11px] text-amber-700">{challans.length} challan{challans.length > 1 ? 's' : ''} dispatched — delivery pending</p>
+        </div>
+        <Link href="/sales?document_type=challan" className="text-[11px] font-black text-amber-800 hover:underline">सभी →</Link>
+      </div>
+      {error && <p className="px-4 py-2 text-[11px] text-red-600">{error}</p>}
+      <div className="divide-y divide-amber-100">
+        {challans.map((c) => (
+          <div key={c._id} className="flex items-center gap-3 px-4 py-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-black text-slate-800 truncate">{c.buyer_name || 'Walk-in'}</p>
+              <p className="text-[11px] text-slate-500">
+                #{c.challan_number || c.invoice_number}
+                {c.deliver_to && <> · 📍 {c.deliver_to}</>}
+              </p>
+            </div>
+            <button
+              onClick={() => markDelivered(c)}
+              disabled={marking === c._id}
+              className="flex-shrink-0 h-8 px-3 rounded-xl bg-amber-600 text-white text-[11px] font-black disabled:opacity-50 hover:bg-amber-700 transition-colors"
+            >
+              {marking === c._id ? '…' : '✓ Delivered'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AgingBuckets({ agingData, agingLoading }) {
   if (agingLoading) {
     return (
@@ -1078,9 +1161,10 @@ function B2BDashboard() {
     data, loading, refreshing, error, shopName, shop, hasGstin,
     userName, userRole, isStaffUser, greeting, today,
     fetchDashboard, agingData, agingLoading,
-    fetchCreditAging, notifications, taskCount, term, config,
+    fetchCreditAging, notifications, taskCount, term, config, businessType,
     selectedRange, setSelectedRange,
   } = useDashboardData();
+  const { tier } = useTier();
 
   // Bug 2 fix: only fetch if agingData is null, stable deps
   useEffect(() => {
@@ -1194,6 +1278,9 @@ function B2BDashboard() {
             </div>
           </div>
         )}
+
+        {/* Pending delivery challans — hardware core+ only */}
+        <PendingChallansWidget businessType={businessType} tier={tier} />
 
         {/* Outstanding Receivables */}
         {hasPermission('VIEW_UDHAAR') && (

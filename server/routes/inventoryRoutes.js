@@ -9,6 +9,7 @@ router.use(requirePermission('MANAGE_INVENTORY'));
 // ── Global serial/IMEI lookup / search (must be before /:productId param routes) ─
 router.get('/serials/lookup',               ctrl.lookupSerial);
 router.get('/serials/search',               ctrl.searchSerials);
+router.get('/warranty-lookup',              ctrl.warrantyLookup);
 
 // ── Batch routes ────────────────────────────────────────────────────────────
 router.get ('/batches/expiring',            ctrl.getExpiringBatches);

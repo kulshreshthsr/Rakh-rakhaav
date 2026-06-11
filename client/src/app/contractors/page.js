@@ -10,6 +10,107 @@ import Link from 'next/link';
 const getToken = () => localStorage.getItem('token');
 const fmt = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtD = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '';
+
+function SiteLedgerSheet({ contractor, onClose }) {
+  const [sales, setSales]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState('');
+
+  useEffect(() => {
+    setLoading(true); setError('');
+    const token = getToken();
+    fetch(apiUrl(`/api/sales?contractor=${contractor._id}&limit=200`), {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        const list = Array.isArray(d) ? d : (d.sales || []);
+        setSales(list);
+      })
+      .catch(() => setError('Sales load नहीं हुई'))
+      .finally(() => setLoading(false));
+  }, [contractor._id]);
+
+  // Group by deliver_to or project_name, falling back to "Other"
+  const grouped = sales ? sales.reduce((acc, s) => {
+    const site = s.deliver_to || s.project_name || 'Other';
+    if (!acc[site]) acc[site] = { sales: [], total: 0, paid: 0 };
+    acc[site].sales.push(s);
+    acc[site].total += s.total_amount || 0;
+    acc[site].paid  += s.amount_paid  || 0;
+    return acc;
+  }, {}) : {};
+
+  const sites = Object.entries(grouped).sort((a, b) => b[1].total - a[1].total);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/70 flex items-end" onClick={onClose}>
+      <div
+        className="w-full max-w-lg mx-auto bg-white rounded-t-3xl max-h-[85dvh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+          <div>
+            <p className="text-[16px] font-black text-slate-900">📍 Site-wise Ledger</p>
+            <p className="text-[12px] text-slate-500 mt-0.5">{contractor.name}</p>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 text-[18px]">×</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          {loading && (
+            <div className="space-y-2">
+              {[...Array(3)].map((_, i) => <div key={i} className="h-20 rounded-xl bg-slate-100 animate-pulse" />)}
+            </div>
+          )}
+          {error && <p className="text-[13px] text-rose-600">{error}</p>}
+          {!loading && sites.length === 0 && (
+            <div className="text-center py-10">
+              <p className="text-[14px] font-bold text-slate-500">कोई sale नहीं मिली</p>
+            </div>
+          )}
+          {sites.map(([site, d]) => {
+            const due = d.total - d.paid;
+            return (
+              <div key={site} className="rounded-2xl border-2 border-slate-200 bg-white overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+                  <p className="text-[13px] font-black text-slate-800 truncate">{site}</p>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <p className="text-[13px] font-black text-slate-800">₹{fmt(d.total)}</p>
+                    {due > 0 && <p className="text-[10px] font-bold text-rose-600">₹{fmt(due)} बाकी</p>}
+                  </div>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {d.sales.slice(0, 5).map((s) => (
+                    <div key={s._id} className="flex items-center justify-between px-4 py-2.5">
+                      <div>
+                        <p className="text-[12px] font-bold text-slate-700">
+                          #{s.challan_number || s.invoice_number}
+                          <span className="ml-1.5 text-[10px] text-slate-400 font-normal">{fmtDate(s.createdAt)}</span>
+                        </p>
+                        <p className="text-[10px] text-slate-400">{s.document_type}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[12px] font-bold text-slate-700">₹{fmt(s.total_amount)}</p>
+                        {(s.total_amount - (s.amount_paid || 0)) > 0 && (
+                          <p className="text-[10px] text-rose-500">₹{fmt(s.total_amount - (s.amount_paid || 0))} due</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {d.sales.length > 5 && (
+                    <p className="px-4 py-2 text-[11px] text-slate-400 font-bold">+{d.sales.length - 5} more transactions</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const emptyForm = () => ({
   name: '', phone: '', gst_no: '', address: '',
@@ -49,6 +150,7 @@ export default function ContractorsPage() {
   const [formError, setFormError]       = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
   const [payTarget, setPayTarget]       = useState(null);
+  const [siteLedgerTarget, setSiteLedgerTarget] = useState(null);
   const [payForm, setPayForm]           = useState({ amount: '', mode: 'cash', reference: '' });
   const [payError, setPayError]         = useState('');
   const [paySubmitting, setPaySubmitting] = useState(false);
@@ -232,10 +334,10 @@ export default function ContractorsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-1">
-                      <Link
-                        href={`/sales?contractor=${c._id}`}
+                      <button
+                        onClick={() => setSiteLedgerTarget(c)}
                         className="flex-1 h-9 flex items-center justify-center rounded-xl border-2 border-slate-200 text-[12px] font-bold text-slate-700 hover:border-amber-400 hover:text-amber-700 transition-colors"
-                      >View Sales</Link>
+                      >📍 Site Ledger</button>
                       <button
                         onClick={() => openPayment(c)}
                         className="flex-1 h-9 rounded-xl border-2 border-green-300 bg-green-50 text-[12px] font-bold text-green-700 hover:bg-green-100 transition-colors"
@@ -390,6 +492,12 @@ export default function ContractorsPage() {
             </div>
           </div>
         </div>
+      )}
+      {siteLedgerTarget && (
+        <SiteLedgerSheet
+          contractor={siteLedgerTarget}
+          onClose={() => setSiteLedgerTarget(null)}
+        />
       )}
     </Layout>
   );

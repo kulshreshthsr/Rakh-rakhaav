@@ -564,6 +564,84 @@ const searchSerials = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/inventory/warranty-lookup?q=<serial|imei|phone>
+ * Returns an array of enriched serial records matching the query.
+ * Supports: serial number, IMEI, or 10-digit customer phone (looks up via Sales).
+ */
+const warrantyLookup = async (req, res) => {
+  try {
+    const shop = await getShopOrFail(req.user.id);
+    const q = String(req.query.q || '').trim();
+    if (q.length < 3) return res.status(400).json({ message: 'Query must be at least 3 characters' });
+    const Sale = require('../models/salesModel');
+
+    const isPhone = /^\d{7,15}$/.test(q.replace(/\s+/g, ''));
+    let records = [];
+
+    if (isPhone) {
+      // Find sales by buyer_phone, then find serials referenced in those sales
+      const sales = await Sale.find({ shop: shop._id, buyer_phone: q }).lean();
+      const serialIds = [];
+      for (const sale of sales) {
+        for (const item of (sale.items || [])) {
+          const meta = item.item_metadata;
+          const ids = meta instanceof Map ? (meta.get('serial_ids') || []) : (meta?.serial_ids || []);
+          if (ids.length) serialIds.push(...ids);
+        }
+      }
+      if (serialIds.length) {
+        records = await SerialInventory.find({ shop: shop._id, _id: { $in: serialIds } })
+          .populate('product', 'name').lean();
+      }
+      // Enrich with sale data
+      for (const r of records) {
+        const sale = sales.find((s) =>
+          (s.items || []).some((i) => {
+            const meta = i.item_metadata instanceof Map ? Object.fromEntries(i.item_metadata) : (i.item_metadata || {});
+            return (meta.serial_ids || []).map(String).includes(String(r._id));
+          })
+        );
+        if (sale) {
+          r.invoice_number = sale.invoice_number;
+          r.sold_at = sale.createdAt;
+          r.customer_name = sale.buyer_name;
+          r.customer_phone = sale.buyer_phone;
+        }
+        r.product_name = r.product?.name || r.product_name || '';
+      }
+    } else {
+      // Search by serial / IMEI
+      const record = await SerialInventory.findOne({
+        shop: shop._id,
+        $or: [
+          { serial_number: { $regex: q, $options: 'i' } },
+          { imei_1:       q },
+          { imei_2:       q },
+          { imei_number:  q },
+          { imei2_number: q },
+        ],
+      }).populate('product', 'name').lean();
+      if (record) {
+        const sale = await Sale.findOne({ shop: shop._id, 'items.item_metadata.serial_ids': record._id.toString() }).lean();
+        if (sale) {
+          record.invoice_number = sale.invoice_number;
+          record.sold_at = sale.createdAt;
+          record.customer_name = sale.buyer_name;
+          record.customer_phone = sale.buyer_phone;
+        }
+        record.product_name = record.product?.name || record.product_name || '';
+        records = [record];
+      }
+    }
+
+    return res.json(records);
+  } catch (err) {
+    logger.error('[inventoryController:warrantyLookup]', err.message || err);
+    res.status(err.status || 500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   // Batch
   getBatches, addBatch, updateBatch, deleteBatch, getExpiringBatches,
@@ -572,7 +650,7 @@ module.exports = {
   // Recipe
   getRecipe, saveRecipe, deleteRecipe,
   // Serial
-  getSerials, addSerials, updateSerial, deleteSerial, lookupSerial, searchSerials,
+  getSerials, addSerials, updateSerial, deleteSerial, lookupSerial, searchSerials, warrantyLookup,
   // Summary
   getProductInventorySummary,
 };
