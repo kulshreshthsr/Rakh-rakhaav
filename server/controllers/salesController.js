@@ -235,7 +235,7 @@ const getExistingItemQuantities = (record) => {
   return quantityMap;
 };
 
-const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', session = null) => {
+const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', session = null, shopId = null, performedBy = null) => {
   const previousMap = getExistingItemQuantities(previousSale);
   const nextMap = new Map();
 
@@ -264,7 +264,7 @@ const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', sessio
     await Product.findByIdAndUpdate(productId, {
       $inc: { quantity: -delta },
     }, session ? { session } : {});
-    await logStockMovements(shop._id, [{
+    await logStockMovements(shopId, [{
       product: product._id,
       type: delta > 0 ? 'sale' : 'sale_return',
       quantityChange: -delta,
@@ -272,7 +272,7 @@ const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', sessio
       referenceId: invoiceNumber,
       referenceType: 'sale',
       note: '',
-      performedBy: req.user?.id,
+      performedBy,
     }], { session });
   }
 };
@@ -969,7 +969,7 @@ const createSale = async (req, res) => {
       }
 
       if (!isQuotation) {
-        await syncSaleStock(null, data.items, data.invoice_number, session);
+        await syncSaleStock(null, data.items, data.invoice_number, session, shop._id, req.user?.id);
         await syncSubInventory([], data.items, data.invoice_number, session);
       }
 
@@ -1095,7 +1095,7 @@ const updateSale = async (req, res) => {
       });
 
       await reverseCustomerLedgerForSale(sale, session);
-      await syncSaleStock(sale, data.items, sale.invoice_number, session);
+      await syncSaleStock(sale, data.items, sale.invoice_number, session, shop._id, req.user?.id);
       await syncSubInventory(sale.items || [], data.items, sale.invoice_number, session);
 
       Object.assign(sale, data, { customer: null });
@@ -1635,7 +1635,7 @@ const convertToInvoice = async (req, res) => {
       await challan.save({ session });
 
       // Deduct stock now that invoice is confirmed
-      await syncSaleStock(null, invoice.items || [], invoiceNumber, session);
+      await syncSaleStock(null, invoice.items || [], invoiceNumber, session, shop._id, req.user?.id);
       await syncSubInventory([], invoice.items || [], invoiceNumber, session);
 
       invoiceId = invoice._id;
@@ -1695,7 +1695,7 @@ const convertQuotation = async (req, res) => {
 
       const { data, itemNames } = await buildSaleRecordData({ shop, payload, session });
 
-      await syncSaleStock(null, data.items, data.invoice_number, session);
+      await syncSaleStock(null, data.items, data.invoice_number, session, shop._id, req.user?.id);
       await syncSubInventory([], data.items, data.invoice_number, session);
 
       const [invoice] = await Sale.create([{ ...data, shop: shop._id }], { session });
