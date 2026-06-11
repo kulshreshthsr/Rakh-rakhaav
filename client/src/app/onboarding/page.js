@@ -334,18 +334,17 @@ export default function OnboardingPage() {
         text: 'Credit / उधार पर बेचते हैं? 💳',
         show: () => !isServiceBusiness,
         options: [
-          { label: 'हाँ, काफ़ी customers को', value: true,  emoji: '✅' },
-          { label: 'कभी-कभी',                 value: true,  emoji: '🤔' },
-          { label: 'नहीं',                    value: false, emoji: '❌' },
+          { label: 'हाँ, उधार देते हैं', value: true,  emoji: '✅' },
+          { label: 'नहीं, नकद / online ही', value: false, emoji: '❌' },
         ],
       },
       {
         id: 'hasMultipleSuppliers',
         text: 'Suppliers / distributors कितने हैं? 🚚',
-        show: (answers) => !isServiceBusiness && answers.monthlyBillCount !== 'under_100',
+        show: (answers) => !isServiceBusiness,
         options: [
-          { label: '1-2 ही हैं',         value: false, emoji: '1️⃣' },
-          { label: '3 से ज़्यादा हैं',  value: true,  emoji: '🔢' },
+          { label: '1-2 ही हैं',        value: false, emoji: '1️⃣' },
+          { label: '3 से ज़्यादा हैं', value: true,  emoji: '🔢' },
         ],
       },
       {
@@ -353,9 +352,8 @@ export default function OnboardingPage() {
         text: 'Delivery challan / transport document बनाना पड़ता है? 📋',
         show: (answers) => answers.sellsTo === 'businesses' || answers.sellsTo === 'both',
         options: [
-          { label: 'हाँ, regularly', value: true,  emoji: '✅' },
-          { label: 'कभी-कभी',       value: true,  emoji: '🤔' },
-          { label: 'नहीं',          value: false, emoji: '❌' },
+          { label: 'हाँ, बनाना पड़ता है', value: true,  emoji: '✅' },
+          { label: 'नहीं',               value: false, emoji: '❌' },
         ],
       },
       {
