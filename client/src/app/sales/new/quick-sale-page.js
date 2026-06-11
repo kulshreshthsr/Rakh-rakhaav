@@ -483,6 +483,13 @@ export default function QuickSalePage() {
       showToast(tx('qs_need_customer', 'Udhaar के लिए customer चुनें'), 'error');
       return;
     }
+    for (const i of cart) {
+      const prod = products.find((p) => p._id === i.product_id);
+      if (prod && Number(i.qty) > (prod.quantity || 0)) {
+        showToast(`${prod.name}: sirf ${prod.quantity} stock available hai`, 'error');
+        return;
+      }
+    }
     setSubmitting(true);
     const items = cart.map((i) => ({
       product_id:     i.product_id,
