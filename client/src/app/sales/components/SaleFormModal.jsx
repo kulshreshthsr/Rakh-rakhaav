@@ -840,63 +840,66 @@ export default function SaleFormModal({
             )}
           </div>
 
-          {/* Sticky footer */}
-          <div className="rr-action-bar flex-shrink-0">
-            {/* Error banner — always visible near submit button */}
+          {/* ── Sticky footer ── */}
+          <div className="flex-shrink-0 sticky bottom-0 bg-white/98 backdrop-blur-md border-t border-slate-100">
+
+            {/* Error banner */}
             {error && (
-              <div className="flex items-start gap-2 px-3 py-2 mb-2 rounded-xl bg-rose-50 border border-rose-200 text-[12px] font-semibold text-rose-700">
-                <span className="flex-shrink-0">⚠️</span>
+              <div className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 border-b border-rose-100 text-[12px] font-bold text-rose-700">
+                <span className="flex-shrink-0 text-base">⚠️</span>
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Per-bill template override — compact pill group */}
+            {/* Print style selector — only for new invoices, above the action row */}
             {!isChallanMode && !editingSaleId && (
-              <div className="flex gap-1.5 mb-3 items-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">Template:</span>
-                <div className="flex gap-1 flex-wrap">
+              <div className="flex items-center gap-2 px-5 pt-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">🖨️ Print:</span>
+                <div className="flex gap-1.5 flex-wrap">
                   {Object.values(INVOICE_TEMPLATES).map((t) => (
                     <button key={t.id} type="button"
                       onClick={() => setBillTemplate(billTemplate === t.id ? '' : t.id)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition-all ${
+                      className={`px-3 py-1 rounded-lg text-[11px] font-black border transition-all ${
                         billTemplate === t.id
-                          ? 'bg-green-600 border-green-600 text-white'
-                          : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                          ? 'bg-slate-800 border-slate-800 text-white'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-400 hover:text-slate-700'
                       }`}
                     >{t.label}</button>
                   ))}
-                  {billTemplate && (
-                    <button type="button" onClick={() => setBillTemplate('')}
-                      className="px-2 py-1 rounded-full border border-slate-200 text-[10px] text-slate-400 hover:text-slate-600">✕</button>
-                  )}
                 </div>
+                {billTemplate && (
+                  <button type="button" onClick={() => setBillTemplate('')}
+                    className="ml-auto text-[11px] text-slate-400 hover:text-slate-600 flex-shrink-0">✕ clear</button>
+                )}
               </div>
             )}
 
-            <div className="flex gap-2 items-center">
+            {/* Action row */}
+            <div className="flex gap-2 px-5 py-4">
               {isChallanMode ? (
                 <button type="button" onClick={handleSubmitWithTemplate} disabled={submitting}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 h-13 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
                 >
-                  {submitting ? (<><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Creating Challan...</>) : '🚚 Dispatch — Print 3 Copies'}
+                  {submitting
+                    ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Creating Challan…</>
+                    : '🚚 Dispatch — Print 3 Copies'}
                 </button>
               ) : (
                 <button type="button" onClick={handleSubmitWithTemplate} disabled={submitting}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 h-13 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
                 >
-                  {submitting ? (
-                    <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
-                  ) : !isOnline ? '📥 Offline Save'
-                    : form.payment_type === 'credit' ? `📒 Credit ${term('sale','Sale')} Save करें`
-                    : form.payment_type === 'upi'    ? `📱 UPI ${term('sale','Sale')} Save करें`
-                    : form.payment_type === 'bank'   ? `🏦 Bank ${term('sale','Sale')} Save करें`
-                    : `💵 ${term('sale','Sale')} Save करें`}
+                  {submitting
+                    ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Saving…</>
+                    : !isOnline                         ? '📥 Save Offline'
+                    : form.payment_type === 'credit'   ? `📒 Udhaar Save करें`
+                    : form.payment_type === 'upi'      ? `📱 UPI Sale Save करें`
+                    : form.payment_type === 'bank'     ? `🏦 Bank Sale Save करें`
+                    : `💵 Sale Save करें`}
                 </button>
               )}
               <button type="button" onClick={() => { setShowModal(false); resetForm(); }}
-                className="px-4 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                className="px-5 py-3.5 rounded-2xl border-2 border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
               >Cancel</button>
-              {/* Keyboard shortcuts help */}
               <KeyboardShortcutsTooltip shortcuts={SALE_SHORTCUTS} />
             </div>
           </div>
