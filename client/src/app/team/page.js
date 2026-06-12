@@ -9,6 +9,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
 import { useIndustry } from '../../contexts/IndustryContext';
 import { getSuggestedRoles } from '../../lib/roleConfig';
+import { useAppLocale } from '../../components/AppLocale';
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : '');
@@ -249,6 +250,7 @@ function EditMemberModal({ member, roles, onClose, onUpdated, onReset }) {
 /* ─── Main Page ─────────────────────────────────────────────────────── */
 export default function TeamPage() {
   const router = useRouter();
+  const { t } = useAppLocale();
   const { config } = useIndustry();
   const suggestedRoles = getSuggestedRoles(config);
   const [members, setMembers] = useState([]);
@@ -281,7 +283,7 @@ export default function TeamPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id) => {
-    if (!confirm('क्या आप इस team member को हटाना चाहते हैं?')) return;
+    if (!confirm(t('team_del_confirm'))) return;
     setDeletingId(id);
     try {
       const res = await authFetch(apiUrl(`/api/rbac/team/${id}`), { method: 'DELETE' });
@@ -303,7 +305,7 @@ export default function TeamPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-green-700 mb-1">Settings</p>
-              <PageHeader title="टीम" subtitle="दुकान के users और permissions" />
+              <PageHeader title={t('team_title')} subtitle={t('team_subtitle')} />
             </div>
             <button
               onClick={() => { setAddDefaultRole(null); setShowAdd(true); }}
@@ -364,9 +366,9 @@ export default function TeamPage() {
           {!loading && !error && members.length === 0 && (
             <EmptyState
               emoji="👨‍💼"
-              title="अकेले काम कर रहे हैं?"
-              subtitle="Staff को add करें और उनके permissions control करें।"
-              actionLabel="Staff जोड़ें"
+              title={t('team_empty_title')}
+              subtitle={t('team_empty_sub')}
+              actionLabel={t('team_add_btn')}
               onAction={() => setShowAdd(true)}
             />
           )}

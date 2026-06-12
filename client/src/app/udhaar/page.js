@@ -9,6 +9,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import { useToast } from '../../hooks/useToast';
 import ReminderTemplateSettings, { loadReminderTemplates } from '../../components/ReminderTemplateSettings';
 import { generatePartyStatementHTML } from '../../lib/generatePartyStatement';
+import { useAppLocale } from '../../components/AppLocale';
 
 /* ─── Constants & pure helpers ───────────────────────────────────────────── */
 const getToken  = () => localStorage.getItem('token');
@@ -80,7 +81,7 @@ function buildSupplierPayload(form) {
 function buildReminderMessage(party, templateId = 'reminder') {
   const templates = loadReminderTemplates();
   const template  = templates[templateId] || templates.reminder;
-  let shopName = 'हमारी दुकान';
+  let shopName = 'Our Shop';
   try { shopName = JSON.parse(localStorage.getItem('user') || '{}')?.shopName || shopName; } catch { /**/ }
   return template
     .replace(/{name}/g,     party.name || 'Customer')
@@ -133,6 +134,7 @@ function SHead({ title, subtitle, badge, right }) {
 }
 
 function EntryBadge({ type }) {
+  const { t } = useAppLocale();
   const isDebit = type === 'debit' || type === 'diya';
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${
@@ -140,7 +142,7 @@ function EntryBadge({ type }) {
         ? 'bg-rose-50 border-rose-200 text-rose-700'
         : 'bg-emerald-50 border-emerald-200 text-emerald-700'
     }`}>
-      {isDebit ? '↑ उधार' : '↓ Payment'}
+      {isDebit ? t('udhaar_entry_debit_s') : t('udhaar_entry_credit_s')}
     </span>
   );
 }
@@ -179,6 +181,7 @@ function DueDateBadge({ dueDate }) {
 export default function UdhaarPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useAppLocale();
 
   /* ── Core state ── */
   const [activeTab,           setActiveTab]           = useState('customers');
@@ -274,7 +277,7 @@ export default function UdhaarPage() {
       if (next !== null) setCustomers(next);
       return next ?? [];
     } catch {
-      setError('Customers load नहीं हुए');
+      setError(t('err_customers_load'));
       return [];
     }
   }
@@ -307,7 +310,7 @@ export default function UdhaarPage() {
     setDueReminderParties(due);
     if (due.length > 0) {
       showToast(
-        `${due.length} ${due.length > 1 ? 'parties' : 'party'} को reminder भेजना है`,
+        t('udhaar_reminder_due', { n: due.length, parties: due.length > 1 ? 'parties' : 'party' }),
         'info',
         [{ label: 'Send Now', onClick: () => setShowBulkReminder(true) }]
       );
@@ -385,9 +388,9 @@ export default function UdhaarPage() {
 
   /* Bug 4: sendReminder with try/catch + clipboard fallback */
   const sendReminder = useCallback(async (party, templateId) => {
-    if (!isOnline) { showToast('Offline mode में WhatsApp reminder नहीं खुलेगा।', 'warning'); return; }
+    if (!isOnline) { showToast(t('err_offline_wa'), 'warning'); return; }
     const phone = cleanPhone(party.phone || '');
-    if (!phone) { showToast('इस party का phone number नहीं है', 'error'); return; }
+    if (!phone) { showToast(t('err_no_phone'), 'error'); return; }
     const msg = buildReminderMessage(party, templateId || activeReminderTemplate);
     try {
       window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -399,9 +402,9 @@ export default function UdhaarPage() {
     } catch {
       try {
         await navigator.clipboard.writeText(msg);
-        showToast('WhatsApp open नहीं हुआ — message clipboard में copy हो गया 📋', 'info');
+        showToast(t('err_wa_clipboard'), 'info');
       } catch {
-        showToast('Reminder भेजने में error', 'error');
+        showToast(t('err_wa_failed'), 'error');
       }
     }
   }, [isOnline, activeReminderTemplate, showToast]);
@@ -431,8 +434,8 @@ export default function UdhaarPage() {
   /* Bug 1 + Bug 3: handleSettle */
   const handleSettle = async (e) => {
     e.preventDefault(); setError(''); setSuccess('');
-    if (!isOnline) { setError('Offline mode में payment record नहीं होगा।'); return; }
-    if (!settleAmount || Number(settleAmount) <= 0) { setError('Valid amount enter करें'); return; }
+    if (!isOnline) { setError(t('err_offline_settle')); return; }
+    if (!settleAmount || Number(settleAmount) <= 0) { setError(t('err_invalid_amount')); return; }
     setSettleLoading(true);
     try {
       const base = activeTab === 'customers' ? 'customers' : 'suppliers';
@@ -451,8 +454,8 @@ export default function UdhaarPage() {
         const paid   = parseFloat(settleAmount);
         const newDue = Math.max(0, (selected.totalUdhaar || 0) - paid);
         const toastMsg = newDue <= 0
-          ? `✓ ${selected.name} का पूरा हिसाब साफ! 🎉`
-          : `₹${fmt(paid)} जमा हुआ — ${selected.name} का बाकी ₹${fmt(newDue)}`;
+          ? t('udhaar_settled_full', { name: selected.name })
+          : t('udhaar_settled_part', { paid: fmt(paid), name: selected.name, due: fmt(newDue) });
         setShowSettle(false); resetSettleForm();
         setPayToast(toastMsg);
         setTimeout(() => setPayToast(''), 4000);
@@ -475,9 +478,9 @@ export default function UdhaarPage() {
   /* Bug 2: handlePartySubmit uses extracted payload builders */
   const handlePartySubmit = async (e) => {
     e.preventDefault(); setError(''); setSuccess('');
-    if (!isOnline) { setError('Offline mode में party save नहीं होगी।'); return; }
+    if (!isOnline) { setError(t('err_offline_party')); return; }
     if (!partyForm.name.trim()) {
-      setError(`${partyForm.kind === 'customer' ? 'Customer' : 'Supplier'} का नाम ज़रूरी है।`);
+      setError(t('err_name_required', { kind: partyForm.kind === 'customer' ? 'Customer' : 'Supplier' }));
       return;
     }
     setPartySaving(true);
@@ -492,7 +495,7 @@ export default function UdhaarPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.message || 'Party save नहीं हुई'); setPartySaving(false); return; }
+      if (!res.ok) { setError(data.message || t('err_party_save')); setPartySaving(false); return; }
       await fetchAll();
       if (partyMode === 'edit' && data?._id) {
         setSelected(data);
@@ -508,7 +511,7 @@ export default function UdhaarPage() {
     e.preventDefault();
     if (!selected) return;
     if (!addEntryForm.amount || Number(addEntryForm.amount) <= 0) {
-      showToast('Valid amount enter करें', 'error'); return;
+      showToast(t('err_invalid_amount'), 'error'); return;
     }
     setAddEntryLoading(true);
     try {
@@ -530,9 +533,9 @@ export default function UdhaarPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.message || 'Entry add नहीं हुई', 'error');
+        showToast(data.message || t('err_entry_save'), 'error');
       } else {
-        showToast('Entry add हो गई ✓', 'success');
+        showToast(t('udhaar_entry_added'), 'success');
         setShowAddEntry(false);
         setAddEntryForm(getEmptyAddEntryForm());
         fetchAll().catch(() => {});
@@ -582,7 +585,7 @@ export default function UdhaarPage() {
     }
     setBulkReminderLoading(false);
     const sentCount = Object.values(sent).filter((v) => v === 'sent').length;
-    showToast(`${sentCount} reminder${sentCount !== 1 ? 's' : ''} भेजे गए`, 'success');
+    showToast(t('udhaar_reminders_sent', { n: sentCount }), 'success');
   };
 
   /* Feature 1: bulk payment */
@@ -590,7 +593,7 @@ export default function UdhaarPage() {
     const pending = (activeTab === 'customers' ? customers : suppliers)
       .filter((p) => p.totalUdhaar > 0)
       .map((p) => ({ party: p, amount: String(Math.round(p.totalUdhaar)), checked: true }));
-    if (!pending.length) { showToast('कोई pending payment नहीं है', 'info'); return; }
+    if (!pending.length) { showToast(t('err_no_pending_pay'), 'info'); return; }
     setBulkRows(pending); setBulkDate(todayStr()); setBulkMode('cash'); setBulkResults({});
     setShowBulkPayment(true);
   };
@@ -615,7 +618,7 @@ export default function UdhaarPage() {
     }
     setBulkLoading(false);
     showToast(
-      `${successCount}/${toProcess.length} payments record हो गए`,
+      t('udhaar_bulk_done', { success: successCount, total: toProcess.length }),
       successCount === toProcess.length ? 'success' : 'warning'
     );
     await fetchAll().catch(() => {});
@@ -715,13 +718,13 @@ export default function UdhaarPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <span className="rr-section-label">💸 Credit Ledger</span>
-              <PageHeader title="उधार" subtitle="ग्राहक और supplier का हिसाब" />
+              <PageHeader title={t('udhaar_title')} subtitle={t('udhaar_subtitle')} />
               <div className="mt-2">
                 <span className="rr-big-num text-rose-600">
                   <span className="rr-currency-sym text-rose-400">₹</span>
                   {(totalCustomerUdhaar + totalSupplierUdhaar).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
-                <span className="ml-2 text-[12px] text-slate-500">कुल बाकी</span>
+                <span className="ml-2 text-[12px] text-slate-500">{t('udhaar_total_due_label')}</span>
               </div>
               {!isOnline
                 ? <p className="mt-1 text-[11px] font-semibold text-amber-700">📶 Offline snapshot{cacheLabel ? ` · ${cacheLabel}` : ''}</p>
@@ -751,7 +754,7 @@ export default function UdhaarPage() {
             <span className="text-xl flex-shrink-0">📶</span>
             <div>
               <div className="text-[13px] font-black text-amber-800">Offline Ledger View</div>
-              <div className="text-[11px] text-amber-600">Cached data दिख रहा है। New payments internet आने पर sync होंगी।</div>
+              <div className="text-[11px] text-amber-600">{t('udhaar_offline_msg')}</div>
             </div>
           </div>
         )}
@@ -759,15 +762,15 @@ export default function UdhaarPage() {
         {/* Feature 3: active template style picker */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[11px] font-bold text-slate-400">Reminder style:</span>
-          {['friendly', 'reminder', 'urgent'].map((t) => (
-            <button key={t} type="button" onClick={() => setActiveReminderTemplate(t)}
+          {['friendly', 'reminder', 'urgent'].map((tmpl) => (
+            <button key={tmpl} type="button" onClick={() => setActiveReminderTemplate(tmpl)}
               className={`px-3 py-1 rounded-xl text-[11px] font-black border transition-all ${
-                activeReminderTemplate === t
+                activeReminderTemplate === tmpl
                   ? 'bg-green-500 border-green-500 text-white'
                   : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
               }`}
             >
-              {t === 'friendly' ? '😊 Friendly' : t === 'reminder' ? '🔔 Reminder' : '⚠️ Urgent'}
+              {tmpl === 'friendly' ? '😊 Friendly' : tmpl === 'reminder' ? '🔔 Reminder' : '⚠️ Urgent'}
             </button>
           ))}
         </div>
@@ -838,7 +841,7 @@ export default function UdhaarPage() {
                   <div>
                     <p className="text-[14px] font-black text-slate-900">Credit Ageing</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      कुल बकाया ₹{parseFloat(agingData.grandTotal || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      {t('udhaar_aging_total', { n: parseFloat(agingData.grandTotal || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 }) })}
                     </p>
                   </div>
                   <button type="button" onClick={() => setShowAging((v) => !v)}
@@ -896,7 +899,7 @@ export default function UdhaarPage() {
             {/* Party list */}
             <SCard>
               <SHead
-                title={isCustomer ? 'Customers / ग्राहक' : 'Suppliers / आपूर्तिकर्ता'}
+                title={isCustomer ? t('udhaar_cust_header') : t('udhaar_supp_header')}
                 subtitle={isCustomer ? 'Tap to open ledger & record payment' : 'Tap to view transactions & pay dues'}
                 badge={`${processedList.length} shown`}
                 right={(
@@ -914,7 +917,7 @@ export default function UdhaarPage() {
               <div className="px-4 py-3 border-b border-slate-100 space-y-3">
                 <input
                   className="h-11 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 focus:border-rose-400 transition-all"
-                  placeholder="🔍 नाम या नंबर से खोजें..."
+                  placeholder={`🔍 ${t('udhaar_search_ph')}`}
                   value={partySearch}
                   onChange={(e) => setPartySearch(e.target.value)}
                 />
@@ -982,10 +985,10 @@ export default function UdhaarPage() {
                 </div>
               ) : processedList.length === 0 ? (
                 <EmptyState
-                  emoji="🤝" title="कोई उधार बाकी नहीं"
-                  subtitle="जब कोई customer उधार लेगा, उसका पूरा हिसाब यहाँ दिखेगा।"
-                  actionLabel="नई Sale बनाएं" onAction={() => router.push('/sales')}
-                  secondaryLabel="यह अच्छी बात है! 😊"
+                  emoji="🤝" title={t('udhaar_empty_title')}
+                  subtitle={t('udhaar_empty_sub')}
+                  actionLabel={t('udhaar_create_sale')} onAction={() => router.push('/sales')}
+                  secondaryLabel={t('udhaar_empty_good')}
                 />
               ) : (
                 <div className="divide-y divide-slate-50">
@@ -1008,7 +1011,7 @@ export default function UdhaarPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[14px] font-black text-slate-900 truncate">{item.name}</span>
-                              {isPending && <span className={`rr-pill ${isCustomer ? 'rr-pill-rose' : 'rr-pill-amber'}`}>बाकी</span>}
+                              {isPending && <span className={`rr-pill ${isCustomer ? 'rr-pill-rose' : 'rr-pill-amber'}`}>{t('udhaar_pending')}</span>}
                               {!isPending && <span className="rr-pill rr-pill-green">✓ Clear</span>}
                               {isOverdue && <span className="rr-pill rr-pill-rose">⚠️ Overdue</span>}
                               {item.reminder_enabled && (
@@ -1036,7 +1039,7 @@ export default function UdhaarPage() {
                               <button type="button"
                                 onClick={(e) => { e.stopPropagation(); sendReminder(item); }}
                                 className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-sm hover:bg-emerald-100 transition-colors"
-                                title="WhatsApp reminder भेजें"
+                                title={t('udhaar_remind')}
                               >📲</button>
                             )}
                             <div className="text-right flex-shrink-0">
@@ -1044,7 +1047,7 @@ export default function UdhaarPage() {
                                 {fmtShort(item.totalUdhaar)}
                               </p>
                               <p className="rr-section-label mt-0.5">
-                                {isPending ? (isCustomer ? 'बाकी' : 'देना है') : 'Settled'}
+                                {isPending ? (isCustomer ? t('udhaar_pending') : t('udhaar_to_give')) : 'Settled'}
                               </p>
                             </div>
                             <span className={`text-slate-300 transition-transform duration-200 ${isSelected ? 'rotate-90' : ''}`}>›</span>
@@ -1122,17 +1125,17 @@ export default function UdhaarPage() {
                                 <p className="text-[12px] font-black text-violet-700 mb-3">Manual Ledger Entry</p>
                                 <form onSubmit={handleAddEntry} className="space-y-3">
                                   <div className="grid grid-cols-2 gap-2">
-                                    {['debit', 'credit'].map((t) => (
-                                      <button key={t} type="button"
-                                        onClick={() => setAddEntryForm((f) => ({ ...f, type: t }))}
+                                    {['debit', 'credit'].map((eType) => (
+                                      <button key={eType} type="button"
+                                        onClick={() => setAddEntryForm((f) => ({ ...f, type: eType }))}
                                         className={`py-2 rounded-xl text-[12px] font-black border transition-all ${
-                                          addEntryForm.type === t
-                                            ? t === 'debit'
+                                          addEntryForm.type === eType
+                                            ? eType === 'debit'
                                               ? 'bg-rose-500 border-rose-500 text-white'
                                               : 'bg-emerald-500 border-emerald-500 text-white'
                                             : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                                         }`}
-                                      >{t === 'debit' ? '↑ उधार दिया' : '↓ Payment मिला'}</button>
+                                      >{eType === 'debit' ? t('udhaar_debit_label') : t('udhaar_credit_label')}</button>
                                     ))}
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
@@ -1197,7 +1200,7 @@ export default function UdhaarPage() {
                                 <div className="flex gap-2 flex-col sm:flex-row">
                                   <input
                                     className="flex-1 h-9 px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all"
-                                    placeholder="Note, reference खोजें..." value={ledgerSearch}
+                                    placeholder={t('udhaar_ledger_srch_ph')} value={ledgerSearch}
                                     onChange={(e) => setLedgerSearch(e.target.value)}
                                   />
                                   <input
@@ -1220,8 +1223,8 @@ export default function UdhaarPage() {
                               ) : filteredLedger.length === 0 ? (
                                 <div className="py-10 text-center">
                                   <div className="text-2xl mb-2">📒</div>
-                                  <div className="text-[13px] font-bold text-slate-600">कोई entry नहीं</div>
-                                  <div className="text-[11px] text-slate-400 mt-1">पहली transaction होने पर यहाँ दिखेगी</div>
+                                  <div className="text-[13px] font-bold text-slate-600">{t('udhaar_ledger_empty')}</div>
+                                  <div className="text-[11px] text-slate-400 mt-1">{t('udhaar_ledger_empty_s')}</div>
                                 </div>
                               ) : (
                                 <div className="divide-y divide-slate-50">
@@ -1285,8 +1288,8 @@ export default function UdhaarPage() {
               <SHead title="Overall Position" subtitle="Customer + Supplier combined" />
               <div className="divide-y divide-slate-50">
                 {[
-                  { label: 'Customer Collect करना', val: fmtShort(totalCustomerUdhaar), color: totalCustomerUdhaar > 0 ? 'text-rose-600' : 'text-emerald-600', bg: 'bg-rose-50' },
-                  { label: 'Supplier को देना',       val: fmtShort(totalSupplierUdhaar), color: totalSupplierUdhaar > 0 ? 'text-amber-600' : 'text-emerald-600', bg: 'bg-amber-50' },
+                  { label: t('udhaar_collect_lbl'), val: fmtShort(totalCustomerUdhaar), color: totalCustomerUdhaar > 0 ? 'text-rose-600' : 'text-emerald-600', bg: 'bg-rose-50' },
+                  { label: t('udhaar_payable_lbl'), val: fmtShort(totalSupplierUdhaar), color: totalSupplierUdhaar > 0 ? 'text-amber-600' : 'text-emerald-600', bg: 'bg-amber-50' },
                   { label: 'Net Position',
                     val: fmtShort(Math.abs(totalCustomerUdhaar - totalSupplierUdhaar)),
                     color: totalCustomerUdhaar >= totalSupplierUdhaar ? 'text-emerald-600' : 'text-rose-600',
@@ -1304,7 +1307,7 @@ export default function UdhaarPage() {
               <SCard>
                 <SHead
                   title="Top Pending"
-                  subtitle="सबसे ज़्यादा due customers"
+                  subtitle={t('udhaar_top_due_sub')}
                   badge={`${customers.filter((c) => c.totalUdhaar > 0).length}`}
                 />
                 <div className="divide-y divide-slate-50">
@@ -1326,7 +1329,7 @@ export default function UdhaarPage() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-[17px] font-black text-rose-600 tracking-tight">₹{fmt(c.totalUdhaar)}</p>
-                          <p className="rr-section-label mt-0.5">बाकी</p>
+                          <p className="rr-section-label mt-0.5">{t('udhaar_pending')}</p>
                         </div>
                       </button>
                     ))}
@@ -1335,25 +1338,25 @@ export default function UdhaarPage() {
             )}
 
             <SCard>
-              <SHead title="Quick Actions" subtitle="जल्दी काम" />
+              <SHead title="Quick Actions" subtitle={t('udhaar_qa_subtitle')} />
               <div className="p-4 space-y-2.5">
                 <button type="button" onClick={() => router.push('/sales?open=1&payment=credit')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-rose-100 bg-rose-50 text-[13px] font-black text-rose-700 hover:bg-rose-100 transition-colors text-left"
                 >
                   <span className="text-lg">🧾</span>
-                  <div><div>New Credit Sale</div><div className="text-[10px] font-normal text-rose-500">उधार bill बनाएं</div></div>
+                  <div><div>New Credit Sale</div><div className="text-[10px] font-normal text-rose-500">{t('udhaar_credit_sale_d')}</div></div>
                 </button>
                 <button type="button" onClick={() => router.push('/purchases')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-100 bg-amber-50 text-[13px] font-black text-amber-700 hover:bg-amber-100 transition-colors text-left"
                 >
                   <span className="text-lg">🛒</span>
-                  <div><div>Credit Purchase</div><div className="text-[10px] font-normal text-amber-500">Supplier से credit लें</div></div>
+                  <div><div>Credit Purchase</div><div className="text-[10px] font-normal text-amber-500">{t('udhaar_credit_purch_d')}</div></div>
                 </button>
                 <button type="button" onClick={() => router.push('/sales/customers')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] font-black text-slate-700 hover:bg-white transition-colors text-left"
                 >
                   <span className="text-lg">👥</span>
-                  <div><div>Customer Directory</div><div className="text-[10px] font-normal text-slate-400">सभी contacts देखें</div></div>
+                  <div><div>Customer Directory</div><div className="text-[10px] font-normal text-slate-400">{t('udhaar_dir_desc')}</div></div>
                 </button>
               </div>
             </SCard>
@@ -1406,7 +1409,7 @@ export default function UdhaarPage() {
 
               <form onSubmit={handleSettle} className="space-y-4">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">कितना payment मिला? *</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">{t('udhaar_amount_lbl')}</p>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[18px] font-black text-slate-400">₹</span>
                     <input
@@ -1427,7 +1430,7 @@ export default function UdhaarPage() {
                         { val: r50(due * 0.25), label: `₹${fmt(r50(due * 0.25))}` },
                         { val: r50(due * 0.50), label: `₹${fmt(r50(due * 0.50))}` },
                         { val: r50(due * 0.75), label: `₹${fmt(r50(due * 0.75))}` },
-                        { val: due,             label: `₹${fmt(due)} (पूरा)` },
+                        { val: due,             label: t('udhaar_full_label', { n: fmt(due) }) },
                       ].filter((c, i, arr) => i === 0 || c.val !== arr[i - 1].val);
                       return chips.map((c) => (
                         <button key={c.val} type="button" onClick={() => setSettleAmount(String(c.val))}
@@ -1443,7 +1446,7 @@ export default function UdhaarPage() {
                   {settleAmount && (
                     <div className="mt-2 text-center">
                       <span className={`text-[13px] font-bold ${isCustomer ? 'text-rose-600' : 'text-amber-600'}`}>
-                        बाकी रहेगा: ₹{fmt(Math.max(0, (selected?.totalUdhaar || 0) - parseFloat(settleAmount || 0)))}
+                        {t('udhaar_bal_remains', { amt: fmt(Math.max(0, (selected?.totalUdhaar || 0) - parseFloat(settleAmount || 0))) })}
                       </span>
                     </div>
                   )}
@@ -1489,7 +1492,7 @@ export default function UdhaarPage() {
                         ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/25'
                         : 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/25'
                     }`}
-                  >{settleLoading ? 'Processing...' : settleAmount ? `₹${settleAmount} जमा करें` : 'Confirm Payment'}</button>
+                  >{settleLoading ? 'Processing...' : settleAmount ? t('udhaar_settle_btn', { n: settleAmount }) : 'Confirm Payment'}</button>
                   <button type="button"
                     onClick={() => { setShowSettle(false); resetSettleForm(); }}
                     className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
@@ -1522,7 +1525,7 @@ export default function UdhaarPage() {
                   <h3 className="text-[20px] font-black text-slate-900 mt-0.5">
                     {partyMode === 'edit' ? 'Edit party details' : `Add ${partyForm.kind}`}
                   </h3>
-                  <p className="text-[12px] text-slate-400 mt-1">Opening balance यहाँ से ledger में carry forward होगा।</p>
+                  <p className="text-[12px] text-slate-400 mt-1">{t('udhaar_opening_note')}</p>
                 </div>
                 <button type="button" onClick={closePartyModal}
                   className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
@@ -1608,7 +1611,7 @@ export default function UdhaarPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[13px] font-black text-slate-800">🔔 Auto Reminder</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">WhatsApp reminder automatically भेजें</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{t('udhaar_wa_desc')}</p>
                     </div>
                     <button type="button"
                       onClick={() => setPartyForm((f) => ({ ...f, reminder_enabled: !f.reminder_enabled }))}
@@ -1673,7 +1676,7 @@ export default function UdhaarPage() {
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Bulk Operation</p>
                   <h3 className="text-[20px] font-black text-slate-900 mt-0.5">💳 Bulk Payment</h3>
-                  <p className="text-[12px] text-slate-400 mt-1">Multiple parties को एक साथ settle करें।</p>
+                  <p className="text-[12px] text-slate-400 mt-1">{t('udhaar_bulk_sub')}</p>
                 </div>
                 <button type="button" onClick={() => setShowBulkPayment(false)}
                   className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
@@ -1740,7 +1743,7 @@ export default function UdhaarPage() {
                 <button type="button" onClick={executeBulkPayment}
                   disabled={bulkLoading || bulkRows.filter((r) => r.checked && Number(r.amount) > 0).length === 0}
                   className="flex-1 py-3.5 rounded-2xl text-[15px] font-black text-white bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25 hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60 disabled:translate-y-0 transition-all"
-                >{bulkLoading ? 'Processing...' : `₹${fmt(bulkTotal)} Settle करें`}</button>
+                >{bulkLoading ? 'Processing...' : t('udhaar_bulk_btn', { n: fmt(bulkTotal) })}</button>
                 <button type="button" onClick={() => setShowBulkPayment(false)}
                   className="px-5 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                 >Cancel</button>
@@ -1790,7 +1793,7 @@ export default function UdhaarPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-black text-slate-900 truncate">{party.name}</p>
                         <p className="text-[11px] text-slate-400">
-                          ₹{fmt(party.totalUdhaar)} बाकी · {party.phone ? `📞 ${party.phone}` : 'No phone'}
+                          {t('udhaar_due_summary', { amt: fmt(party.totalUdhaar) })} · {party.phone ? `📞 ${party.phone}` : 'No phone'}
                         </p>
                       </div>
                       <span className="text-[12px] font-black">

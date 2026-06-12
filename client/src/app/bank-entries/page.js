@@ -7,6 +7,7 @@ import { apiUrl } from '../../lib/api';
 import PageShell from '../../components/ui/PageShell';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/ui/EmptyState';
+import { useAppLocale } from '../../components/AppLocale';
 
 /* ── Constants & helpers (UNCHANGED) ── */
 const getToken = () => localStorage.getItem('token');
@@ -28,6 +29,7 @@ const INP = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text
 
 export default function BankEntriesPage() {
   const router = useRouter();
+  const { t } = useAppLocale();
   const [entries,    setEntries]    = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
@@ -90,8 +92,8 @@ export default function BankEntriesPage() {
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
       if (!res.ok) { setError(data.message || 'Bank entry save nahi hui.'); return; }
-      if (editingId) { setEntries((c) => c.map((en) => (en._id === editingId ? data : en))); setSuccess('✅ Bank entry बदली गई'); }
-      else           { setEntries((c) => [data, ...c]); setSuccess('✅ Bank entry जोड़ी गई'); }
+      if (editingId) { setEntries((c) => c.map((en) => (en._id === editingId ? data : en))); setSuccess('✅ ' + t('bank_updated')); }
+      else           { setEntries((c) => [data, ...c]); setSuccess('✅ ' + t('bank_added')); }
       resetForm();
     } catch { setError('Bank entry save nahi hui.'); }
     finally   { setSaving(false); }
@@ -104,7 +106,7 @@ export default function BankEntriesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('क्या आप यह bank entry हटाना चाहते हैं?')) return;
+    if (!window.confirm(t('bank_del_confirm'))) return;
     try {
       setDeletingId(id);
       const res = await fetch(apiUrl(`/api/bank-entries/${id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
@@ -113,7 +115,7 @@ export default function BankEntriesPage() {
       if (!res.ok) { setError(data.message || 'Bank entry delete nahi hui.'); return; }
       setEntries((c) => c.filter((en) => en._id !== id));
       if (editingId === id) resetForm();
-      setSuccess('✅ Bank entry हटाई गई');
+      setSuccess('✅ ' + t('bank_deleted'));
     } catch { setError('Bank entry delete nahi hui.'); }
     finally   { setDeletingId(''); }
   };
@@ -129,7 +131,7 @@ export default function BankEntriesPage() {
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-[10px] font-bold uppercase tracking-widest text-green-700">
               🏦 Bank Movement
             </span>
-            <PageHeader title="बैंक" subtitle="बैंक में आना-जाना का हिसाब" />
+            <PageHeader title={t('bank_title')} subtitle={t('bank_subtitle')} />
             <div className="flex flex-wrap gap-2 mt-3">
               {[{ href: '/expenses', label: '💸 Expenses' }, { href: '/income', label: '💰 Income' }, { href: '/reports', label: '📊 Reports' }].map((l) => (
                 <Link key={l.href} href={l.href}
@@ -168,7 +170,7 @@ export default function BankEntriesPage() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{editingId ? 'Edit bank entry' : 'New bank entry'}</p>
-              <h2 className="text-[15px] font-black text-slate-900 mt-0.5">{editingId ? 'Bank Entry Update करो' : 'Bank Entry Add करो'}</h2>
+              <h2 className="text-[15px] font-black text-slate-900 mt-0.5">{editingId ? t('bank_entry_update') : t('bank_entry_add')}</h2>
             </div>
             {editingId && <button onClick={resetForm} className="px-3 py-1.5 rounded-xl border border-slate-200 text-[12px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>}
           </div>
@@ -219,7 +221,7 @@ export default function BankEntriesPage() {
 
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Narration</p>
-              <input className={INP} placeholder="बैंक नोट, charge कारण, transfer विवरण..." value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
+              <input className={INP} placeholder={t('bank_note_ph')} value={form.note} onChange={(e) => setForm((c) => ({ ...c, note: e.target.value }))} />
             </div>
 
             <button type="submit" disabled={saving}
@@ -241,13 +243,13 @@ export default function BankEntriesPage() {
           {/* Filters */}
           <div className="px-4 py-3 border-b border-slate-50 space-y-2">
             <input className="h-10 w-full px-4 rounded-xl border border-slate-200 bg-slate-50 text-[13px] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/25 focus:border-green-400 transition-all"
-              placeholder="🔍 type, नोट या reference खोजें..."
+              placeholder={`🔍 ${t('bank_search_ph')}`}
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
             <select className="h-10 w-full px-3 rounded-xl border border-slate-200 bg-slate-50 text-[13px] text-slate-700 focus:outline-none transition-all"
               value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
               <option value="all">All Entry Types</option>
-              {ENTRY_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
+              {ENTRY_TYPES.map((et) => <option key={et} value={et}>{TYPE_LABEL[et]}</option>)}
             </select>
           </div>
 
@@ -256,9 +258,9 @@ export default function BankEntriesPage() {
           ) : filteredEntries.length === 0 ? (
             <EmptyState
               emoji="🏦"
-              title="कोई bank entry नहीं"
-              subtitle="Bank से payment आई या गई? यहाँ record करें।"
-              actionLabel="Entry जोड़ें"
+              title={t('bank_no_entries')}
+              subtitle={t('bank_empty_sub')}
+              actionLabel={t('bank_add_btn')}
               onAction={() => document.getElementById('bank-form-top')?.scrollIntoView({ behavior: 'smooth' })}
             />
           ) : (

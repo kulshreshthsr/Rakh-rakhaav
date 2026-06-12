@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import GstDeadlineBanner from '../../components/GstDeadlineBanner';
+import { useAppLocale } from '../../components/AppLocale';
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
@@ -20,6 +21,7 @@ function DeltaBadge({ current, yesterday }) {
 }
 
 function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
+  const { t }  = useAppLocale();
   const today    = new Date();
   const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const dismissKey = `rr-goal-dismissed-${monthKey}`;
@@ -30,10 +32,11 @@ function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
 
   if (!monthlyTarget || monthlyTarget <= 0 || dismissed) return null;
 
-  const pct       = Math.min(100, Math.round((monthRevenue / monthlyTarget) * 100));
-  const remaining = Math.max(0, monthlyTarget - monthRevenue);
-  const achieved  = pct >= 100;
-  const isNear    = pct >= 80 && !achieved;
+  const pct        = Math.min(100, Math.round((monthRevenue / monthlyTarget) * 100));
+  const remaining  = Math.max(0, monthlyTarget - monthRevenue);
+  const daysLeft   = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate();
+  const achieved   = pct >= 100;
+  const isNear     = pct >= 80 && !achieved;
 
   const dismiss = () => {
     try { localStorage.setItem(dismissKey, '1'); } catch {}
@@ -49,9 +52,9 @@ function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="text-xl flex-shrink-0">{achieved ? '🏆' : isNear ? '🔥' : '🎯'}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-black text-slate-900">इस महीने का Target</p>
+          <p className="text-[13px] font-black text-slate-900">{t('dash_goal_title')}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            {achieved ? 'Target पूरा! 🎉' : isNear ? 'लगभग target पूरा! 🔥' : `₹${fmt(remaining)} और चाहिए`}
+            {achieved ? t('dash_goal_achieved') : isNear ? t('dash_goal_near') : t('dash_goal_remaining', { days: daysLeft, remaining: fmt(remaining) })}
           </p>
         </div>
         <button type="button" onClick={dismiss}
@@ -73,19 +76,23 @@ function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
   );
 }
 
-const RETAIL_ACTIONS = [
-  { icon: '🧾', label: 'नई Sale',     href: '/sales?open=1',  tint: 'green'  },
-  { icon: '📦', label: 'Stock डालो',  href: '/product',        tint: 'blue'   },
-  { icon: '💸', label: 'उधार लो',     href: '/udhaar',         tint: 'amber'  },
-  { icon: '📊', label: 'Report देखो', href: '/reports',        tint: 'purple' },
-];
+function getRetailActions(t) {
+  return [
+    { icon: '🧾', label: t('qa_new_sale'),       href: '/sales?open=1',  tint: 'green'  },
+    { icon: '📦', label: t('qa_add_stock'),       href: '/product',        tint: 'blue'   },
+    { icon: '💸', label: t('qa_collect_udhaar'),  href: '/udhaar',         tint: 'amber'  },
+    { icon: '📊', label: t('qa_view_report'),     href: '/reports',        tint: 'purple' },
+  ];
+}
 
-const B2B_ACTIONS = [
-  { icon: '📄', label: 'Bill बनाओ',    href: '/sales?open=1&type=invoice',   tint: 'blue'   },
-  { icon: '📋', label: 'Challan भेजो', href: '/sales?open=1&type=challan',   tint: 'amber'  },
-  { icon: '💬', label: 'Quote बनाओ',   href: '/sales?open=1&type=quotation', tint: 'purple' },
-  { icon: '📊', label: 'GST / हिसाब', href: '/gst',                          tint: 'orange' },
-];
+function getB2BActions(t) {
+  return [
+    { icon: '📄', label: t('qa_make_bill'),    href: '/sales?open=1&type=invoice',   tint: 'blue'   },
+    { icon: '📋', label: t('qa_send_challan'), href: '/sales?open=1&type=challan',   tint: 'amber'  },
+    { icon: '💬', label: t('qa_make_quote'),   href: '/sales?open=1&type=quotation', tint: 'purple' },
+    { icon: '📊', label: t('qa_gst_reports'),  href: '/gst',                          tint: 'orange' },
+  ];
+}
 
 const TINT = {
   green:  'bg-green-50 border-green-200 text-green-700',
@@ -117,30 +124,31 @@ function FocusItem({ icon, title, color, href }) {
   );
 }
 
-function buildFocusItems(intel, dashData) {
+function buildFocusItems(intel, dashData, t) {
   const items = [];
   const expiryStats = dashData?.expiryStats || {};
   if ((expiryStats.expiredCount || 0) > 0)
-    items.push({ icon: '☠️', title: `${expiryStats.expiredCount} items expire हो गए`, color: 'red', href: '/product?filter=expiring' });
+    items.push({ icon: '☠️', title: `${expiryStats.expiredCount} items expired`, color: 'red', href: '/product?filter=expiring' });
   if ((intel?.b2bData?.overdueReceivablesTotal || 0) > 0)
     items.push({ icon: '💳', title: `₹${fmt(intel.b2bData.overdueReceivablesTotal)} B2B receivables overdue`, color: 'red', href: '/udhaar?filter=overdue' });
   if ((dashData?.pendingPickup || 0) > 0)
-    items.push({ icon: '📱', title: `${dashData.pendingPickup} devices pickup के लिए ready हैं`, color: 'blue', href: '/sales?filter=ready' });
+    items.push({ icon: '📱', title: `${dashData.pendingPickup} devices ready for pickup`, color: 'blue', href: '/sales?filter=ready' });
   if ((dashData?.stock?.lowStockCount || 0) > 0)
-    items.push({ icon: '📦', title: `${dashData.stock.lowStockCount} items का stock कम है`, color: 'amber', href: '/product' });
+    items.push({ icon: '📦', title: t('dash_stock_low_msg', { n: dashData.stock.lowStockCount, item: 'items' }), color: 'amber', href: '/product' });
   if ((dashData?.udhaar?.pendingCount || 0) > 0)
-    items.push({ icon: '💸', title: `₹${fmt(dashData.udhaar.totalDue)} उधार collect करना है`, color: 'amber', href: '/udhaar' });
+    items.push({ icon: '💸', title: t('dash_collect_total', { amt: fmt(dashData.udhaar.totalDue) }), color: 'amber', href: '/udhaar' });
   return items;
 }
 
 // Mini bar chart for weekly pattern
 function WeeklyMiniChart({ weekPattern }) {
+  const { t } = useAppLocale();
   if (!weekPattern || weekPattern.length < 2) return null;
   const maxVal = Math.max(...weekPattern.map(d => d.revenue || 0), 1);
   const DAYS   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-4">
-      <p className="text-[11px] font-black text-slate-500 uppercase tracking-wide mb-3">इस हफ़्ते का Sales</p>
+      <p className="text-[11px] font-black text-slate-500 uppercase tracking-wide mb-3">{t('dash_weekly_sales')}</p>
       <div className="flex items-end gap-1 h-16">
         {weekPattern.slice(0, 7).map((d, i) => {
           const pct = Math.round(((d.revenue || 0) / maxVal) * 100);
@@ -159,6 +167,9 @@ function WeeklyMiniChart({ weekPattern }) {
 }
 
 export default function BothDashboard({ intel, dashData, loading, firstName, shop }) {
+  const { t } = useAppLocale();
+  const RETAIL_ACTIONS = getRetailActions(t);
+  const B2B_ACTIONS    = getB2BActions(t);
   const todayRevenue    = dashData?.today?.revenue      || 0;
   const todayBills      = dashData?.today?.bills        || 0;
   const monthRevenue    = dashData?.month?.revenue      || 0;
@@ -178,7 +189,7 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
     try { return Number(localStorage.getItem('rr-monthly-target') || 0); } catch { return 0; }
   })();
   const hasGstin = !!(shop?.gstin && shop.gstin.length === 15 && shop?.gst_type !== 'unregistered');
-  const focusItems = buildFocusItems(intel, dashData);
+  const focusItems = buildFocusItems(intel, dashData, t);
 
   if (loading) {
     return (
@@ -198,12 +209,12 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
 
       {/* 1. Split Header */}
       <div className="rr-page-hero">
-        <p className="text-[12px] font-semibold text-green-700 mb-1">नमस्ते{firstName ? `, ${firstName}` : ''} 🙏</p>
+        <p className="text-[12px] font-semibold text-green-700 mb-1">{t('dash_namaste')}{firstName ? `, ${firstName}` : ''} 🙏</p>
         <div className="flex items-baseline gap-3 flex-wrap">
           <p className="text-[32px] font-black text-slate-900 leading-none">₹{fmt(todayRevenue)}</p>
           <DeltaBadge current={todayRevenue} yesterday={yesterdayRev} />
         </div>
-        <p className="text-[12px] text-slate-400 mt-1">आज की कमाई · {todayBills} bills</p>
+        <p className="text-[12px] text-slate-400 mt-1">{t('dash_today_earn')} · {todayBills} bills</p>
         {(b2cRevenue > 0 || b2bRevenue > 0) && (
           <div className="flex gap-3 mt-2">
             <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-700">
@@ -215,7 +226,7 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
           </div>
         )}
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-[11px] text-slate-500">मुनाफा: ₹{fmt(todayProfit)}</span>
+          <span className="text-[11px] text-slate-500">{t('dash_profit_short')}: ₹{fmt(todayProfit)}</span>
           <DeltaBadge current={todayProfit} yesterday={yesterdayProfit} />
         </div>
       </div>
@@ -225,7 +236,7 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
 
       {/* 2. KPI Grid */}
       <div>
-        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-2 px-0.5">आज का हिसाब</p>
+        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-2 px-0.5">{t('dash_today_summary')}</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <p className="text-[10px] text-slate-400 font-semibold">Retail bills</p>
@@ -236,11 +247,11 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
             <p className="text-[22px] font-black text-blue-700 leading-none mt-1">{b2bCount}</p>
           </div>
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-            <p className="text-[10px] text-slate-400 font-semibold">Cash आया</p>
+            <p className="text-[10px] text-slate-400 font-semibold">{t('dash_cash_in')}</p>
             <p className="text-[22px] font-black text-green-700 leading-none mt-1">₹{fmt(cashInHand)}</p>
           </div>
           <div className={`rounded-2xl p-4 shadow-sm border ${outstanding > 0 ? 'bg-rose-50 border-red-200' : 'bg-white border-slate-200'}`}>
-            <p className="text-[10px] text-slate-400 font-semibold">बाकी मिलना है</p>
+            <p className="text-[10px] text-slate-400 font-semibold">{t('dash_pending_label')}</p>
             <p className={`text-[22px] font-black leading-none mt-1 ${outstanding > 0 ? 'text-red-700' : 'text-green-700'}`}>
               {outstanding > 0 ? `₹${fmt(outstanding)}` : '✓ Zero'}
             </p>
@@ -250,17 +261,17 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
 
       {/* 3. Quick Actions */}
       <div>
-        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-3 px-0.5">सबसे ज़रूरी काम</p>
+        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-3 px-0.5">{t('dash_quick_actions')}</p>
         <div className="space-y-3">
           <div>
-            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-2 px-1">Retail के लिए</p>
+            <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-2 px-1">{t('dash_for_retail')}</p>
             <div className="grid grid-cols-4 gap-2">
               {RETAIL_ACTIONS.map((a) => <QuickBtn key={a.href + a.label} href={a.href} icon={a.icon} label={a.label} tint={a.tint} />)}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap">B2B के लिए</span>
+            <span className="text-[10px] text-slate-400 font-semibold whitespace-nowrap">{t('dash_for_b2b')}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -272,7 +283,7 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
       {/* 4. Focus Items */}
       {focusItems.length > 0 && (
         <div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-2 px-0.5">ध्यान देने वाली बातें</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-2 px-0.5">{t('dash_focus_items')}</p>
           <div className="space-y-2">
             {focusItems.map((item, i) => (
               <FocusItem key={i} icon={item.icon} title={item.title} color={item.color} href={item.href} />
@@ -283,7 +294,7 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
 
       {/* 5. Split Outstanding */}
       <div>
-        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-2 px-0.5">बाकी पैसे</p>
+        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide mb-2 px-0.5">{t('dash_outstanding')}</p>
         <div className="grid grid-cols-2 gap-3">
           <div className={`rounded-2xl p-4 shadow-sm border-l-4 bg-white ${b2cUdhaar > 0 ? 'border-l-amber-400' : 'border-l-green-400'} border border-slate-200`}>
             <p className="text-[10px] text-slate-500 font-semibold">Retail Udhaar</p>
@@ -291,7 +302,7 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
               <>
                 <p className="text-[20px] font-black text-amber-700 leading-none mt-1">₹{fmt(b2cUdhaar)}</p>
                 <p className="text-[11px] text-slate-400 mt-1">{b2cUdhaarCount} customers</p>
-                <Link href="/udhaar" className="block text-[11px] font-bold text-amber-600 mt-2">देखो →</Link>
+                <Link href="/udhaar" className="block text-[11px] font-bold text-amber-600 mt-2">{t('dash_view_link')}</Link>
               </>
             ) : (
               <p className="text-[18px] font-black text-green-700 mt-1">✓ Zero</p>
@@ -303,7 +314,7 @@ export default function BothDashboard({ intel, dashData, loading, firstName, sho
               <>
                 <p className="text-[20px] font-black text-red-600 leading-none mt-1">₹{fmt(b2bReceivables)}</p>
                 <p className="text-[11px] text-slate-400 mt-1">{b2bReceivablesCount} parties</p>
-                <Link href="/udhaar?filter=overdue" className="block text-[11px] font-bold text-red-600 mt-2">देखो →</Link>
+                <Link href="/udhaar?filter=overdue" className="block text-[11px] font-bold text-red-600 mt-2">{t('dash_view_link')}</Link>
               </>
             ) : (
               <p className="text-[18px] font-black text-green-700 mt-1">✓ Zero</p>

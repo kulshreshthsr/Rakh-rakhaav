@@ -13,6 +13,7 @@ import { getWorkflowConfig, getDashboardWidgets, getQuickActions } from '../../l
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useTier } from '../../contexts/TierContext';
 import DashboardNano from './DashboardNano';
+import { useAppLocale } from '../../components/AppLocale';
 
 const DASHBOARD_CACHE_KEY = 'dashboard-page';
 
@@ -20,34 +21,35 @@ const getToken = () => localStorage.getItem('token');
 const fmt  = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const fmtD = (n) => parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function getGreeting() {
+function getGreeting(t) {
   const h = new Date().getHours();
-  if (h < 12) return 'शुभ प्रभात 🌅';
-  if (h < 17) return 'नमस्ते 🙏';
-  if (h < 20) return 'शुभ संध्या 🌇';
-  return 'शुभ रात्रि 🌙';
+  if (h < 12) return t('nd_morning');
+  if (h < 17) return t('nd_noon');
+  if (h < 20) return t('nd_evening');
+  return t('nd_night');
 }
 
-function getTodayLabel() {
-  return new Date().toLocaleDateString('hi-IN', {
+function getTodayLabel(locale) {
+  const jsLocale = locale === 'en' ? 'en-IN' : 'hi-IN';
+  return new Date().toLocaleDateString(jsLocale, {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 }
 
-function buildUdhaarReminder(customer, shopName) {
-  return `नमस्ते ${customer.name} जी 🙏\n\nहमारी दुकान *${shopName || 'रखरखाव'}* से आपका उधार बाकी है:\n\n*₹${fmtD(customer.due)}*\n\nकृपया जल्द से जल्द payment करें।\n\nधन्यवाद 🙏`;
+function buildUdhaarReminder(customer, shopName, t) {
+  return `${t('nd_wa_greet')} ${customer.name} ${t('nd_wa_ji')} 🙏\n\n${t('nd_wa_body')} *${shopName || 'Rakhaav'}* ${t('nd_wa_body2')}\n\n*₹${fmtD(customer.due)}*\n\n${t('nd_wa_pay')}\n\n${t('nd_wa_thanks')}`;
 }
 
 // ═══════════════════════════════════════════════════
 //  SHARED COMPONENTS
 // ═══════════════════════════════════════════════════
 
-function DashboardHeader({ shopName, userName, greeting, today, dashboardMode }) {
+function DashboardHeader({ shopName, userName, greeting, today, dashSubLabel, dashboardMode }) {
   return (
     <div className="rr-page-hero rr-fade-in">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="rr-section-label mb-1">🔧 Hardware & Electronics · दुकान हिसाब</p>
+          <p className="rr-section-label mb-1">🔧 Hardware & Electronics · {dashSubLabel}</p>
           <h1 className="text-[24px] font-black text-slate-900 leading-tight tracking-[-0.03em]">{greeting}</h1>
           {(userName || shopName) && (
             <p className="text-[13px] font-bold text-green-700 mt-1 truncate flex items-center gap-1.5">
@@ -89,16 +91,19 @@ function StaffBanner({ userRole, config }) {
   );
 }
 
-// Date range selector pill group
-const RANGE_OPTIONS = [
-  { id: 'today',      label: 'आज'     },
-  { id: 'week',       label: 'सप्ताह' },
-  { id: 'month',      label: 'महीना'  },
-  { id: 'last_month', label: 'पिछला'  },
-];
-const RANGE_LABELS = { today: 'आज', week: 'इस सप्ताह', month: 'इस महीने', last_month: 'पिछले महीने' };
+// Date range selector pill group — keys resolved via t() inside the component
+function getRangeLabels(t) {
+  return { today: t('range_lbl_today'), week: t('range_lbl_week'), month: t('range_lbl_month'), last_month: t('range_lbl_last_month') };
+}
 
 function DateRangePicker({ selected, onChange }) {
+  const { t } = useAppLocale();
+  const RANGE_OPTIONS = [
+    { id: 'today',      label: t('range_today') },
+    { id: 'week',       label: t('range_week')  },
+    { id: 'month',      label: t('range_month') },
+    { id: 'last_month', label: t('range_prev')  },
+  ];
   return (
     <div className="flex gap-1.5 flex-wrap">
       {RANGE_OPTIONS.map((r) => (
@@ -116,6 +121,7 @@ function DateRangePicker({ selected, onChange }) {
 
 // Delta indicator for yesterday P&L comparison
 function DeltaBadge({ current, yesterday }) {
+  const { t } = useAppLocale();
   if (!yesterday || yesterday === 0) return null;
   const pct = Math.round(((current - yesterday) / yesterday) * 100);
   if (pct === 0) return null;
@@ -124,7 +130,7 @@ function DeltaBadge({ current, yesterday }) {
     <span className={`inline-flex items-center gap-0.5 text-[11px] font-black px-2 py-0.5 rounded-lg ${
       up ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
     }`}>
-      {up ? '▲' : '▼'} {Math.abs(pct)}% vs कल
+      {up ? '▲' : '▼'} {Math.abs(pct)}% {t('dash_vs_yesterday')}
     </span>
   );
 }
@@ -158,24 +164,23 @@ function QuickActionCard({ href, emoji, label, sublabel }) {
 }
 
 // ── Hero dual-metric row: Today's Revenue | Total Udhaar ──────────────
-function HeroDualMetric({ revenue, udhaar, udhaarCount, delta, term }) {
+function HeroDualMetric({ revenue, udhaar, udhaarCount, delta }) {
+  const { t } = useAppLocale();
   return (
     <div className="grid grid-cols-2 gap-3">
       <Link href="/sales" className="rounded-2xl bg-white border border-slate-200 p-4 hover:border-green-300 transition-colors">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">आज की कमाई</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{t('dash_today_rev_label')}</p>
         <p className="text-[26px] font-black text-slate-900 leading-tight mt-1">₹{fmt(revenue)}</p>
         {delta != null && (
           <span className={`text-[11px] font-bold mt-1 inline-block ${delta >= 0 ? 'text-green-600' : 'text-rose-500'}`}>
             {delta >= 0 ? '↑' : '↓'} {Math.abs(Math.round(delta))}%
           </span>
         )}
-        <p className="text-[10px] text-slate-400 mt-0.5">Today&apos;s sales</p>
       </Link>
       <Link href="/udhaar" className="rounded-2xl bg-white border border-slate-200 p-4 hover:border-amber-300 transition-colors">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">कुल उधार</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{t('dash_total_udhaar')}</p>
         <p className="text-[26px] font-black text-amber-700 leading-tight mt-1">₹{fmt(udhaar)}</p>
-        <p className="text-[10px] text-slate-400 mt-0.5">{udhaarCount} ग्राहक</p>
-        <p className="text-[10px] text-amber-600 font-bold mt-0.5">Total udhaar</p>
+        <p className="text-[10px] text-slate-400 mt-0.5">{t('dash_n_customers', { n: udhaarCount })}</p>
       </Link>
     </div>
   );
@@ -212,6 +217,7 @@ function AlertStrip({ alertCount, items }) {
 
 // Monthly goal progress card
 function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
+  const { t } = useAppLocale();
   const today = new Date();
   const monthKey  = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const dismissKey = `rr-goal-dismissed-${monthKey}`;
@@ -243,13 +249,13 @@ function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
       <div className="flex items-center gap-3 px-4 py-3 border-b border-current/10">
         <span className="text-xl flex-shrink-0">{achieved ? '🏆' : isNear ? '🔥' : '🎯'}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-black text-slate-900">इस महीने का Target</p>
+          <p className="text-[13px] font-black text-slate-900">{t('dash_goal_title')}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">
             {achieved
-              ? 'Target पूरा! 🎉'
+              ? t('dash_goal_achieved')
               : isNear
-              ? 'लगभग target पूरा! 🔥'
-              : `${daysLeft} दिन बाकी — ₹${fmt(remaining)} और चाहिए`}
+              ? t('dash_goal_near')
+              : t('dash_goal_remaining', { days: daysLeft, remaining: fmt(remaining) })}
           </p>
         </div>
         <button type="button" onClick={dismiss}
@@ -277,7 +283,7 @@ function MonthlyGoalCard({ monthRevenue, monthlyTarget }) {
   );
 }
 
-function UrgentTasksPanel({ data, shopName, term }) {
+function UrgentTasksPanel({ data, shopName, term, t }) {
   const low_stock      = data?.stock?.lowStockCount   || 0;
   const out_of_stock   = data?.stock?.outOfStockCount || 0;
   const udhaar_count   = data?.udhaar?.pendingCount   || 0;
@@ -292,9 +298,9 @@ function UrgentTasksPanel({ data, shopName, term }) {
   return (
     <div>
       <div className="rr-section-head px-0.5">
-        <span className="rr-section-label">⚠️ ज़रूरी काम</span>
+        <span className="rr-section-label">{t('dash_urgent')}</span>
         {(low_stock > 0 || out_of_stock > 0) && hasPermission('MANAGE_INVENTORY') && (
-          <Link href="/product" className="rr-section-link">सभी देखें →</Link>
+          <Link href="/product" className="rr-section-link">{t('dash_see_all')}</Link>
         )}
       </div>
       <div className="space-y-3">
@@ -304,13 +310,13 @@ function UrgentTasksPanel({ data, shopName, term }) {
               <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl flex-shrink-0">⚠️</div>
               <div className="flex-1">
                 <p className="text-[14px] font-black text-amber-900">
-                  {out_of_stock > 0 ? `${out_of_stock} ${term('product','product')} खत्म हो गया` : `${low_stock} ${term('product','product')} कम हो रहा है`}
+                  {out_of_stock > 0 ? t('dash_stock_out_msg', { n: out_of_stock, item: term('product','product') }) : t('dash_stock_low_msg', { n: low_stock, item: term('product','product') })}
                 </p>
                 <p className="text-[11px] text-amber-700 font-medium mt-0.5">
-                  {out_of_stock > 0 && low_stock > 0 ? `${out_of_stock} खत्म • ${low_stock} कम` : out_of_stock > 0 ? 'Stock zero है — अभी order करो' : 'जल्दी माल मंगाओ'}
+                  {out_of_stock > 0 && low_stock > 0 ? t('dash_stock_both_msg', { out: out_of_stock, low: low_stock }) : out_of_stock > 0 ? t('dash_stock_zero_msg') : t('dash_stock_reorder')}
                 </p>
               </div>
-              <Link href="/product" className="flex-shrink-0 px-4 py-2 rounded-xl bg-amber-600 text-[11px] font-black text-white hover:bg-amber-700 transition-colors">देखो</Link>
+              <Link href="/product" className="flex-shrink-0 px-4 py-2 rounded-xl bg-amber-600 text-[11px] font-black text-white hover:bg-amber-700 transition-colors">{t('dash_stock_view')}</Link>
             </div>
             {lowStockItems.length > 0 && (
               <div className="divide-y divide-amber-100">
@@ -318,7 +324,7 @@ function UrgentTasksPanel({ data, shopName, term }) {
                   <div key={item._id || i} className="flex items-center justify-between px-4 py-3">
                     <span className="text-[13px] font-bold text-slate-800">{item.name}</span>
                     <span className={`text-[12px] font-black px-3 py-1 rounded-lg ${item.quantity === 0 ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'}`}>
-                      {item.quantity === 0 ? 'खत्म' : `${item.quantity} बचा`}
+                      {item.quantity === 0 ? t('dash_item_out') : t('dash_item_left', { n: item.quantity })}
                     </span>
                   </div>
                 ))}
@@ -332,10 +338,10 @@ function UrgentTasksPanel({ data, shopName, term }) {
             <div className="flex items-center gap-3 px-4 py-4 border-b border-red-100 bg-red-50">
               <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-xl flex-shrink-0">💸</div>
               <div className="flex-1">
-                <p className="text-[14px] font-black text-red-900">{udhaar_count} ग्राहक से पैसे लेने हैं</p>
-                <p className="text-[11px] text-red-700 font-medium mt-0.5">कुल ₹{fmtD(total_udhaar)} बाकी है</p>
+                <p className="text-[14px] font-black text-red-900">{t('dash_collect_from', { n: udhaar_count })}</p>
+                <p className="text-[11px] text-red-700 font-medium mt-0.5">{t('dash_collect_total', { amt: fmtD(total_udhaar) })}</p>
               </div>
-              <Link href="/udhaar" className="flex-shrink-0 px-4 py-2 rounded-xl bg-red-600 text-[11px] font-black text-white hover:bg-red-700 transition-colors">सब देखो</Link>
+              <Link href="/udhaar" className="flex-shrink-0 px-4 py-2 rounded-xl bg-red-600 text-[11px] font-black text-white hover:bg-red-700 transition-colors">{t('dash_view_all_btn')}</Link>
             </div>
             {topUdhaarCusts.length > 0 && (
               <div className="divide-y divide-slate-100">
@@ -438,8 +444,8 @@ function DashboardSkeleton() {
   );
 }
 
-// Bug 3 fix: retry feedback + Devanagari text
 function DashboardError({ error, onRetry }) {
+  const { t } = useAppLocale();
   const [retrying, setRetrying]     = useState(false);
   const [retryFailed, setRetryFailed] = useState(false);
 
@@ -459,11 +465,11 @@ function DashboardError({ error, onRetry }) {
     <Layout>
       <div className="desktop-expand max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-28">
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-5">
-          <p className="text-[16px] font-black text-red-900">Data load नहीं हो पाया</p>
+          <p className="text-[16px] font-black text-red-900">{t('dash_load_failed')}</p>
           <p className="mt-2 text-[13px] text-red-700">{error}</p>
           {retryFailed && (
             <p className="mt-2 text-[12px] font-semibold text-red-600">
-              फिर से error आई — internet connection check करें।
+              {t('dash_retry_failed')}
             </p>
           )}
           <button
@@ -478,7 +484,7 @@ function DashboardError({ error, onRetry }) {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
               </svg>
             )}
-            {retrying ? 'Load हो रहा है…' : 'दोबारा Load करो'}
+            {retrying ? t('btn_loading') : t('dash_retry')}
           </button>
         </div>
       </div>
@@ -773,6 +779,7 @@ function AgingBuckets({ agingData, agingLoading }) {
 
 function useDashboardData() {
   const router = useRouter();
+  const { t, locale } = useAppLocale();
   const { term, config, businessType } = useIndustry();
   const { notifications, taskCount }   = useNotifications();
 
@@ -795,8 +802,8 @@ function useDashboardData() {
   const [userName,         setUserName]         = useState('');
   const [userRole,         setUserRole]         = useState(null);
   const [isStaffUser,      setIsStaffUser]      = useState(false);
-  const [greeting]                              = useState(getGreeting);
-  const [today]                                 = useState(getTodayLabel);
+  const greeting = getGreeting(t);
+  const today    = getTodayLabel(locale);
   const [workflowCounts,   setWorkflowCounts]   = useState({});
   const [agingData,        setAgingData]        = useState(null);
   const [agingLoading,     setAgingLoading]     = useState(false);
@@ -901,6 +908,7 @@ function useDashboardData() {
     notifications, taskCount, term, config, businessType,
     bizConfig, wfc, wfWidgets, wfActions, dashCfg,
     selectedRange, setSelectedRange,
+    t, dashSubLabel: t('dash_shop_sub'),
   };
 }
 
@@ -948,11 +956,11 @@ function AMCExpiryBanner() {
 function B2CDashboard() {
   const {
     data, loading, refreshing, error, shopName, shop, hasGstin,
-    userName, userRole, isStaffUser, greeting, today,
+    userName, userRole, isStaffUser, greeting, today, dashSubLabel,
     fetchDashboard, workflowCounts,
     notifications, taskCount, term, config, businessType,
-    wfc, wfWidgets, wfActions, dashCfg, bizConfig,
-    selectedRange, setSelectedRange,
+    wfc, wfWidgets, dashCfg, bizConfig,
+    selectedRange, setSelectedRange, t,
   } = useDashboardData();
 
   if (loading) return <DashboardSkeleton />;
@@ -973,13 +981,13 @@ function B2CDashboard() {
     try { return Number(localStorage.getItem('rr-monthly-target') || 0); } catch { return 0; }
   })();
 
-  const primaryLabel  = RANGE_LABELS[selectedRange] || 'आज';
+  const primaryLabel  = getRangeLabels(t)[selectedRange] || t('range_lbl_today');
 
   const b2cActions = [
-    { href: '/sales/new',       emoji: config?.icon || '🧾', label: term('quickNewSaleHindi', 'Bill बनाओ'),       sublabel: 'New Invoice',   permission: 'CREATE_INVOICE'  },
-    { href: '/purchases',      emoji: '🛒',                  label: term('quickPurchaseHindi', 'माल खरीदो'),    sublabel: 'New Purchase',  permission: 'CREATE_PURCHASE' },
-    { href: '/udhaar',         emoji: '💸',                  label: 'Payment लो',                                sublabel: 'Add Payment',   permission: 'VIEW_UDHAAR'     },
-    { href: '/product',        emoji: '📦',                  label: term('quickAddStockHindi', 'Stock जोड़ो'),  sublabel: 'Receive Stock', permission: 'MANAGE_INVENTORY'},
+    { href: '/sales/new',  emoji: config?.icon || '🧾', label: term('quickNewSaleHindi',   t('qa_make_bill')),  sublabel: 'New Invoice',   permission: 'CREATE_INVOICE'  },
+    { href: '/purchases',  emoji: '🛒',                  label: term('quickPurchaseHindi',  t('btn_add')),       sublabel: 'New Purchase',  permission: 'CREATE_PURCHASE' },
+    { href: '/udhaar',     emoji: '💸',                  label: t('qa_collect_udhaar'),                          sublabel: 'Add Payment',   permission: 'VIEW_UDHAAR'     },
+    { href: '/product',    emoji: '📦',                  label: term('quickAddStockHindi',  t('qa_add_stock')),  sublabel: 'Receive Stock', permission: 'MANAGE_INVENTORY'},
   ].filter(a => hasPermission(a.permission));
 
   const deltaRevenuePct = yest_revenue > 0
@@ -998,11 +1006,11 @@ function B2CDashboard() {
   const payablesCount = data?.purchases?.creditCount || 0;
 
   const kpiTiles = [
-    hasPermission('VIEW_UDHAAR') && { label: 'उधार बाकी', value: `₹${fmt(total_udhaar)}`, sublabel: `${udhaar_count} ग्राहक`, href: '/udhaar', alert: udhaar_count > 5 ? 'red' : udhaar_count > 0 ? 'amber' : null },
+    hasPermission('VIEW_UDHAAR') && { label: t('dash_udhaar'), value: `₹${fmt(total_udhaar)}`, sublabel: t('dash_n_customers', { n: udhaar_count }), href: '/udhaar', alert: udhaar_count > 5 ? 'red' : udhaar_count > 0 ? 'amber' : null },
     hasPermission('CREATE_PURCHASE') && payablesDue > 0 && { label: 'Payables Due', value: `₹${fmt(payablesDue)}`, sublabel: `${payablesCount} supplier${payablesCount !== 1 ? 's' : ''}`, href: '/purchases?filter=credit_due', alert: 'amber' },
-    hasGstin && hasPermission('VIEW_GST') && { label: 'GST Payable', value: `₹${fmt(gst_payable)}`, sublabel: 'This month', href: '/gst' },
-    hasPermission('VIEW_REPORTS') && { label: 'इस महीने', value: `₹${fmt(month_sales)}`, sublabel: 'Monthly revenue', href: '/reports' },
-    (low_stock > 0 || out_of_stock > 0) && hasPermission('MANAGE_INVENTORY') && { label: 'Stock Alerts', value: `${out_of_stock + low_stock}`, sublabel: `${out_of_stock} खत्म, ${low_stock} कम`, href: '/product', alert: out_of_stock > 0 ? 'red' : 'amber' },
+    hasGstin && hasPermission('VIEW_GST') && { label: 'GST Payable', value: `₹${fmt(gst_payable)}`, sublabel: t('dash_this_month_label'), href: '/gst' },
+    hasPermission('VIEW_REPORTS') && { label: t('dash_this_month_label'), value: `₹${fmt(month_sales)}`, sublabel: 'Monthly revenue', href: '/reports' },
+    (low_stock > 0 || out_of_stock > 0) && hasPermission('MANAGE_INVENTORY') && { label: t('dash_stock_alerts'), value: `${out_of_stock + low_stock}`, sublabel: t('dash_stock_both_msg', { out: out_of_stock, low: low_stock }), href: '/product', alert: out_of_stock > 0 ? 'red' : 'amber' },
   ].filter(Boolean);
 
   return (
@@ -1015,7 +1023,7 @@ function B2CDashboard() {
           </div>
         )}
 
-        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="b2c" />
+        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashSubLabel={dashSubLabel} dashboardMode="b2c" />
         {isStaffUser && userRole && <StaffBanner userRole={userRole} config={config} />}
         {hasGstin && <GstDeadlineBanner shop={shop} />}
 
@@ -1049,13 +1057,13 @@ function B2CDashboard() {
         {hasPermission('VIEW_SALES') && (
           <div>
             <div className="page-section-row px-0.5">
-              <span className="page-section-label">{primaryLabel} का हाल</span>
-              <Link href="/sales" className="page-section-link">सभी bills →</Link>
+              <span className="page-section-label">{t('dash_section_title', { range: primaryLabel })}</span>
+              <Link href="/sales" className="page-section-link">{t('dash_all_bills')}</Link>
             </div>
             <DateRangePicker selected={selectedRange} onChange={setSelectedRange} />
             <div className="mt-3">
               <Link href="/sales" className="metric-card accent-money block">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{primaryLabel} की कमाई</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{t('dash_revenue_range', { range: primaryLabel })}</p>
                 <div className="flex items-baseline gap-3 mt-1">
                   <p className="text-[36px] font-black text-slate-900 leading-none">₹{fmt(today_sales)}</p>
                   {selectedRange === 'today' && <DeltaBadge current={today_sales} yesterday={yest_revenue} />}
@@ -1067,10 +1075,9 @@ function B2CDashboard() {
                   </div>
                   <div className="w-px h-8 bg-slate-200" />
                   <div>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">मुनाफा</p>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">{t('dash_profit_short')}</p>
                     <div className="flex items-center gap-2">
                       <p className="text-[18px] font-black text-green-700">₹{fmt(today_profit)}</p>
-                      {selectedRange === 'today' && <DeltaBadge current={today_profit} yesterday={yest_profit} />}
                     </div>
                   </div>
                 </div>
@@ -1087,7 +1094,7 @@ function B2CDashboard() {
           <div>
             <div className="page-section-row px-0.5">
               <span className="page-section-label">{wfc.saleNounPlural || 'Operations'}</span>
-              <Link href="/sales" className="page-section-link">सभी देखें →</Link>
+              <Link href="/sales" className="page-section-link">{t('dash_see_all')}</Link>
             </div>
             <div className="grid grid-cols-2 min-[480px]:grid-cols-3 gap-3">
               {wfWidgets.map(widget => {
@@ -1113,7 +1120,7 @@ function B2CDashboard() {
         )}
 
         {/* Urgent tasks */}
-        <UrgentTasksPanel data={data} shopName={shopName} term={term} />
+        <UrgentTasksPanel data={data} shopName={shopName} term={term} t={t} />
 
         {/* Industry-specific panels (config-driven) */}
         <IndustryPanels
@@ -1135,15 +1142,14 @@ function B2CDashboard() {
         <div className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex-1">
             <p className="text-[13px] font-black text-slate-800">
-              {today_bills === 0 ? `आज का पहला ${term('invoice','bill')} बनाओ ` :
-               today_bills === 1 ? `एक ${term('invoice','bill')} हो गया, और करो! ` :
-               `आज ${today_bills} ${term('invoice','bill')} बन गए — बढ़िया! `}
+              {today_bills === 0 ? `${t('range_lbl_today')} · ${term('invoice', t('qa_make_bill'))}` :
+               `${t('range_lbl_today')} · ${today_bills} ${term('invoice', t('qa_make_bill'))} ✓`}
             </p>
-            <p className="text-[11px] text-slate-500 mt-1">{shopName} — रखरखाव के साथ</p>
+            <p className="text-[11px] text-slate-500 mt-1">{shopName}</p>
           </div>
           {hasPermission('CREATE_INVOICE') && (
             <Link href="/sales" className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-[13px] font-black text-white transition-colors">
-              बिल बनाओ →
+              {t('qa_make_bill')} →
             </Link>
           )}
         </div>
@@ -1159,10 +1165,10 @@ function B2CDashboard() {
 function B2BDashboard() {
   const {
     data, loading, refreshing, error, shopName, shop, hasGstin,
-    userName, userRole, isStaffUser, greeting, today,
+    userName, userRole, isStaffUser, greeting, today, dashSubLabel,
     fetchDashboard, agingData, agingLoading,
-    fetchCreditAging, notifications, taskCount, term, config, businessType,
-    selectedRange, setSelectedRange,
+    fetchCreditAging, notifications, taskCount, term, config,
+    selectedRange, setSelectedRange, t,
   } = useDashboardData();
   const { tier } = useTier();
 
@@ -1187,7 +1193,7 @@ function B2BDashboard() {
     try { return Number(localStorage.getItem('rr-monthly-target') || 0); } catch { return 0; }
   })();
 
-  const primaryLabel = RANGE_LABELS[selectedRange] || 'आज';
+  const primaryLabel = getRangeLabels(t)[selectedRange] || t('range_lbl_today');
 
   const b2bActions = [
     { href: '/sales?open=1&doc=invoice',  emoji: '🧾', label: 'Tax Invoice',      sublabel: 'GST Invoice',       permission: 'CREATE_INVOICE'   },
@@ -1219,7 +1225,7 @@ function B2BDashboard() {
           </div>
         )}
 
-        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="b2b" />
+        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashSubLabel={dashSubLabel} dashboardMode="b2b" />
         {isStaffUser && userRole && <StaffBanner userRole={userRole} config={config} />}
 
         {/* GST Filing Deadline Banner */}
@@ -1335,7 +1341,7 @@ function B2BDashboard() {
         {kpiTiles.length > 0 && <KPIStrip tiles={kpiTiles} />}
 
         {/* Urgent tasks (stock) */}
-        <UrgentTasksPanel data={data} shopName={shopName} term={term} />
+        <UrgentTasksPanel data={data} shopName={shopName} term={term} t={t} />
 
         {/* Notifications */}
         <NotificationsPanel notifications={notifications} taskCount={taskCount} />
@@ -1366,11 +1372,11 @@ function B2BDashboard() {
 function HybridDashboard() {
   const {
     data, loading, refreshing, error, shopName, shop, hasGstin,
-    userName, userRole, isStaffUser, greeting, today,
+    userName, userRole, isStaffUser, greeting, today, dashSubLabel,
     fetchDashboard, agingData, agingLoading,
     fetchCreditAging,
-    notifications, taskCount, term, config, businessType, dashCfg, bizConfig,
-    selectedRange, setSelectedRange,
+    notifications, taskCount, term, config, dashCfg, bizConfig,
+    selectedRange, setSelectedRange, t,
   } = useDashboardData();
 
   const [showAging, setShowAging] = useState(false);
@@ -1392,13 +1398,13 @@ function HybridDashboard() {
     try { return Number(localStorage.getItem('rr-monthly-target') || 0); } catch { return 0; }
   })();
 
-  const primaryLabel = RANGE_LABELS[selectedRange] || 'आज';
+  const primaryLabel = getRangeLabels(t)[selectedRange] || t('range_lbl_today');
 
   const retailActions = [
-    { href: '/sales?open=1&payment=cash',   emoji: config?.icon || '🧾', label: 'Bill बनाओ',  sublabel: 'Cash Invoice',  permission: 'CREATE_INVOICE'  },
-    { href: '/sales?open=1&payment=credit', emoji: '📒',                  label: 'उधार दो',    sublabel: 'Credit Sale',   permission: 'CREATE_INVOICE'  },
-    { href: '/product',                     emoji: '📦',                  label: 'Stock',       sublabel: 'Inventory',     permission: 'MANAGE_INVENTORY'},
-    { href: '/expenses',                    emoji: '💳',                  label: 'खर्च लिखो',  sublabel: 'Expenses',      permission: 'VIEW_EXPENSES'   },
+    { href: '/sales?open=1&payment=cash',   emoji: config?.icon || '🧾', label: t('qa_make_bill'),         sublabel: 'Cash Invoice',  permission: 'CREATE_INVOICE'  },
+    { href: '/sales?open=1&payment=credit', emoji: '📒',                  label: t('udhaar_create_sale'),   sublabel: 'Credit Sale',   permission: 'CREATE_INVOICE'  },
+    { href: '/product',                     emoji: '📦',                  label: t('nav_stock'),            sublabel: 'Inventory',     permission: 'MANAGE_INVENTORY'},
+    { href: '/expenses',                    emoji: '💳',                  label: t('nav_expenses'),         sublabel: 'Expenses',      permission: 'VIEW_EXPENSES'   },
   ].filter(a => hasPermission(a.permission));
 
   const b2bActions = [
@@ -1425,7 +1431,7 @@ function HybridDashboard() {
           </div>
         )}
 
-        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashboardMode="hybrid" />
+        <DashboardHeader shopName={shopName} userName={userName} greeting={greeting} today={today} dashSubLabel={dashSubLabel} dashboardMode="hybrid" />
         {isStaffUser && userRole && <StaffBanner userRole={userRole} config={config} />}
 
         {/* GST Filing Deadline Banner */}
@@ -1535,7 +1541,7 @@ function HybridDashboard() {
         )}
 
         {/* Urgent tasks */}
-        <UrgentTasksPanel data={data} shopName={shopName} term={term} />
+        <UrgentTasksPanel data={data} shopName={shopName} term={term} t={t} />
 
         {/* Industry-specific panels (config-driven) */}
         <IndustryPanels
@@ -1557,15 +1563,14 @@ function HybridDashboard() {
         <div className="rounded-2xl border border-green-200 bg-green-50 px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex-1">
             <p className="text-[13px] font-black text-slate-800">
-              {today_bills === 0 ? `आज का पहला ${term('invoice','bill')} बनाओ ` :
-               today_bills === 1 ? `एक ${term('invoice','bill')} हो गया, और करो! ` :
-               `आज ${today_bills} ${term('invoice','bill')} बन गए — बढ़िया! `}
+              {today_bills === 0 ? `${t('range_lbl_today')} · ${term('invoice', t('qa_make_bill'))}` :
+               `${t('range_lbl_today')} · ${today_bills} ${term('invoice', t('qa_make_bill'))} ✓`}
             </p>
-            <p className="text-[11px] text-slate-500 mt-1">{shopName} — रखरखाव के साथ</p>
+            <p className="text-[11px] text-slate-500 mt-1">{shopName}</p>
           </div>
           {hasPermission('CREATE_INVOICE') && (
             <Link href="/sales" className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-[13px] font-black text-white transition-colors">
-              बिल बनाओ →
+              {t('qa_make_bill')} →
             </Link>
           )}
         </div>
