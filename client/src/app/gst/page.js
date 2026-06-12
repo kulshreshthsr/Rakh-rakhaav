@@ -285,16 +285,21 @@ export default function GSTPage() {
       const from = new Date(year, month - 1, 1).toISOString();
       const to   = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
       const headers = { Authorization: `Bearer ${getToken()}` };
-      const [salesRes, purchasesRes] = await Promise.all([
-        fetch(apiUrl(`/api/sales?from=${from}&to=${to}`), { headers }),
-        fetch(apiUrl(`/api/purchases?from=${from}&to=${to}`), { headers }),
+      // Use dedicated GST summary endpoint (no pagination limit, proper document_type filter)
+      // + fetch raw records separately for drill-down (max 500)
+      const [summaryRes, salesRes, purchasesRes] = await Promise.all([
+        fetch(apiUrl(`/api/sales/gst-summary?month=${month}&year=${year}`), { headers }),
+        fetch(apiUrl(`/api/sales?from=${from}&to=${to}&limit=500`), { headers }),
+        fetch(apiUrl(`/api/purchases?from=${from}&to=${to}&limit=500`), { headers }),
       ]);
-      if (salesRes.status === 401 || purchasesRes.status === 401) { router.push('/login'); return; }
+      if (summaryRes.status === 401 || salesRes.status === 401 || purchasesRes.status === 401) { router.push('/login'); return; }
       const salesPayload     = salesRes.ok     ? await salesRes.json()     : { sales: [] };
       const purchasesPayload = purchasesRes.ok ? await purchasesRes.json() : { purchases: [] };
       const sales     = Array.isArray(salesPayload?.sales)         ? salesPayload.sales         : [];
       const purchases = Array.isArray(purchasesPayload?.purchases) ? purchasesPayload.purchases : [];
-      const nextSummary = buildLocalGSTSummary(sales, purchases, month, year);
+      const nextSummary = summaryRes.ok
+        ? await summaryRes.json()
+        : buildLocalGSTSummary(sales, purchases, month, year);
       setSummary(nextSummary); setRecordsCache({ sales, purchases });
       writePageCache(getGSTCacheKey(month, year), { summary: nextSummary, sales, purchases });
       setCacheUpdatedAt(new Date().toISOString()); setCacheLoaded(true);

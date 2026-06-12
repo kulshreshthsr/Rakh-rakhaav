@@ -1292,7 +1292,7 @@ const getGSTSummary = async (req, res) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate   = new Date(year, month, 0, 23, 59, 59);
 
-    const sales     = await Sale.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate }, document_type: { $in: ['invoice', 'bill_of_supply'] } });
+    const sales     = await Sale.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate }, $or: [{ document_type: { $exists: false } }, { document_type: { $in: [null, 'invoice', 'bill_of_supply'] } }] });
     const purchases = await Purchase.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
 
     const b2b = sales.filter(s => s.invoice_type === 'B2B');
