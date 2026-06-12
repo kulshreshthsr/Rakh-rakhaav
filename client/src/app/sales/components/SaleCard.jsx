@@ -53,6 +53,7 @@ export default function SaleCard({
 }) {
   const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
   const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [showEwbDetails, setShowEwbDetails] = useState(false);
 
   const accentCls = s._isOffline ? 'accent-amber' : s.payment_type === 'credit' ? 'accent-amber' : 'accent-green';
   return (
@@ -228,43 +229,95 @@ export default function SaleCard({
           )}
 
           {/* E-Way Bill */}
-          {!s._isOffline && (s.ewb_status === 'pending' || s.ewb_status === 'generated' || (s.ewb_status === 'not_required' && s.total_amount > 50000 && s.document_type === 'invoice')) && (
+          {!s._isOffline && s.document_type === 'invoice' && s.total_amount > 50000 && (
             <div className="mt-2">
-              {(s.ewb_status === 'pending' || s.ewb_status === 'not_required') && (
-                <button onClick={async () => {
-                  if (!confirm(`Generate E-Way Bill for ${s.invoice_number}?\n\nThis will call the NIC EWB API and requires valid credentials in server config.`)) return;
-                  try {
-                    const r = await fetch(apiUrl(`/api/sales/${s._id}/generate-ewb`), { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } });
-                    const d = await r.json();
-                    if (!r.ok) { alert(d.message || 'EWB generation failed'); return; }
-                    alert(`E-Way Bill generated!\nEWB No: ${d.ewb_number}\nValid until: ${d.ewb_valid_until ? new Date(d.ewb_valid_until).toLocaleDateString() : 'N/A'}`);
-                    fetchAll();
-                  } catch { alert('Server error'); }
-                }} className="w-full min-h-[38px] py-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-[11px] font-bold text-orange-700 hover:bg-orange-100 transition-all">
-                  🛣️ Generate E-Way Bill
-                </button>
-              )}
-              {s.ewb_status === 'generated' && (
+              {s.ewb_status === 'generated' && s.ewb_number ? (
                 <div className="rounded-xl border-2 border-orange-200 bg-orange-50 px-3 py-2 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-orange-700">E-Way Bill</span>
+                    <span className="text-[10px] font-bold text-orange-700">🛣️ E-Way Bill</span>
                     <span className="text-[10px] font-bold text-emerald-700">✓ Generated</span>
                   </div>
                   <p className="text-xs font-black text-slate-800">{s.ewb_number}</p>
-                  {s.ewb_valid_until && <p className="text-[10px] text-slate-500">Valid till {new Date(s.ewb_valid_until).toLocaleDateString()}</p>}
-                  <button onClick={async () => {
-                    const reason = prompt('Cancellation reason:\n1. Duplicate\n2. Order Cancelled\n3. Data Entry Mistake\n4. Others\n\nEnter reason:') || 'Others';
-                    try {
-                      const r = await fetch(apiUrl(`/api/sales/${s._id}/cancel-ewb`), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ reason }) });
-                      const d = await r.json();
-                      if (!r.ok) { alert(d.message || 'Cancellation failed'); return; }
-                      alert('E-Way Bill cancelled.');
-                      fetchAll();
-                    } catch { alert('Server error'); }
-                  }} className="w-full min-h-[32px] py-1 rounded-lg border border-rose-200 bg-rose-50 text-[10px] font-bold text-rose-600 hover:bg-rose-100 transition-all">
-                    Cancel EWB
-                  </button>
+                  {s.ewb_valid_until && <p className="text-[10px] text-slate-500">Valid till {new Date(s.ewb_valid_until).toLocaleDateString('en-IN')}</p>}
                 </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setShowEwbDetails(v => !v)}
+                    className="w-full min-h-[38px] py-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-[11px] font-bold text-orange-700 hover:bg-orange-100 transition-all"
+                  >
+                    🛣️ E-Way Bill {showEwbDetails ? '▲' : '▼'}
+                  </button>
+                  {showEwbDetails && (
+                    <div className="mt-1 rounded-xl border-2 border-orange-200 bg-white p-3 space-y-3 text-[11px]">
+                      <a
+                        href="https://ewaybillgst.gov.in"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 w-full min-h-[36px] py-2 rounded-lg bg-orange-600 text-white font-black text-[12px] hover:bg-orange-700 transition-all"
+                      >
+                        Open EWB Portal ↗
+                      </a>
+                      <p className="text-[10px] text-slate-500 text-center -mt-1">Login करें और नीचे दिए details भरें</p>
+
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-orange-700 uppercase tracking-wide">Invoice Details</p>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-slate-700">
+                          <span className="text-slate-500">Invoice No</span>
+                          <span className="font-black font-mono text-slate-900">{s.invoice_number}</span>
+                          <span className="text-slate-500">Date</span>
+                          <span className="font-bold">{new Date(s.createdAt).toLocaleDateString('en-IN')}</span>
+                          <span className="text-slate-500">Total Value</span>
+                          <span className="font-black text-slate-900">₹{fmt(s.total_amount)}</span>
+                          <span className="text-slate-500">Taxable Amount</span>
+                          <span className="font-bold">₹{fmt(s.taxable_amount)}</span>
+                          {s.cgst_amount > 0 && <><span className="text-slate-500">CGST</span><span className="font-bold">₹{fmt(s.cgst_amount)}</span></>}
+                          {s.sgst_amount > 0 && <><span className="text-slate-500">SGST</span><span className="font-bold">₹{fmt(s.sgst_amount)}</span></>}
+                          {s.igst_amount > 0 && <><span className="text-slate-500">IGST</span><span className="font-bold">₹{fmt(s.igst_amount)}</span></>}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-orange-700 uppercase tracking-wide">From (Supplier)</p>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-slate-700">
+                          <span className="text-slate-500">GSTIN</span>
+                          <span className="font-black font-mono text-slate-900">{shopGstin || '—'}</span>
+                          <span className="text-slate-500">Name</span>
+                          <span className="font-bold">{shopName || '—'}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-orange-700 uppercase tracking-wide">To (Buyer)</p>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-slate-700">
+                          <span className="text-slate-500">GSTIN</span>
+                          <span className="font-black font-mono text-slate-900">{s.buyer_gstin || 'URP'}</span>
+                          <span className="text-slate-500">Name</span>
+                          <span className="font-bold">{s.buyer_name || 'Walk-in'}</span>
+                          {s.buyer_address && (
+                            <><span className="text-slate-500">Address</span><span className="font-bold">{s.buyer_address}</span></>
+                          )}
+                        </div>
+                      </div>
+
+                      {s.items && s.items.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-orange-700 uppercase tracking-wide">Items</p>
+                          <div className="space-y-1.5">
+                            {s.items.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between gap-2 py-1 border-b border-orange-100 last:border-0">
+                                <span className="font-bold text-slate-800 truncate">{item.product_name}</span>
+                                <span className="text-slate-500 shrink-0">
+                                  {item.hsn_code ? `HSN ${item.hsn_code} · ` : ''}Qty {item.quantity} · GST {item.gst_rate || 0}%
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
