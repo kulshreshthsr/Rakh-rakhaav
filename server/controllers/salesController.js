@@ -67,7 +67,7 @@ const generateInvoiceNumber = async (shopOrId, session = null, invoiceDate = new
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'sale', financial_year: financialYear },
     [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', startNumber - 1] }, 1] } } }],
-    { returnDocument: 'after', upsert: true }
+    { new: true, upsert: true, updatePipeline: true }
   );
   if (session) query = query.session(session);
   const sequence = await query;
@@ -86,7 +86,7 @@ const generateQuotationNumber = async (shopId, session = null, date = new Date()
   let q = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: 'quotation', financial_year: financialYear },
     [{ $set: { last_number: { $add: [{ $ifNull: ['$last_number', 0] }, 1] } } }],
-    { returnDocument: 'after', upsert: true }
+    { new: true, upsert: true, updatePipeline: true }
   );
   if (session) q = q.session(session);
   const seq = await q;
@@ -1726,7 +1726,7 @@ const generateNoteNumber = async (shopId, docType, session = null) => {
   let query = DocumentSequence.findOneAndUpdate(
     { shop: shopId, doc_type: docType, financial_year: financialYear },
     { $inc: { last_number: 1 } },
-    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
+    { new: true, upsert: true, setDefaultsOnInsert: true }
   );
   if (session) query = query.session(session);
   const seq = await query;
