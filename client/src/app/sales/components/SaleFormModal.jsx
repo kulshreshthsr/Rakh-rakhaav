@@ -194,6 +194,13 @@ export default function SaleFormModal({
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
+            {isChallanMode && (
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-blue-600 text-white text-[12px] font-black">
+                <span>🚚 Delivery Challan Mode — stock will NOT be deducted, no payment recorded</span>
+                <button type="button" onClick={() => setDocumentType('invoice')} className="ml-3 px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[11px] font-black transition-colors whitespace-nowrap">Switch to Invoice</button>
+              </div>
+            )}
+
             {!shopState && !editingSaleId && (
               <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-[12px] font-semibold text-amber-800">
                 <span className="text-base leading-none flex-shrink-0">⚠️</span>

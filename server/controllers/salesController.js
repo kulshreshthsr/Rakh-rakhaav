@@ -1292,7 +1292,7 @@ const getGSTSummary = async (req, res) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate   = new Date(year, month, 0, 23, 59, 59);
 
-    const sales     = await Sale.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
+    const sales     = await Sale.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate }, document_type: { $in: ['invoice', 'bill_of_supply'] } });
     const purchases = await Purchase.find({ shop: shop._id, createdAt: { $gte: startDate, $lte: endDate } });
 
     const b2b = sales.filter(s => s.invoice_type === 'B2B');
@@ -1394,7 +1394,7 @@ const getGSTComplianceReport = async (req, res) => {
     }
 
     const [sales, purchases] = await Promise.all([
-      Sale.find(filter).sort({ createdAt: 1 }).lean(),
+      Sale.find({ ...filter, document_type: { $in: ['invoice', 'bill_of_supply'] } }).sort({ createdAt: 1 }).lean(),
       Purchase.find({ shop: shop._id, createdAt: filter.createdAt }).sort({ createdAt: 1 }).lean(),
     ]);
 

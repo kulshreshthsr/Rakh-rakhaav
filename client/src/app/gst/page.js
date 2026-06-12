@@ -98,8 +98,11 @@ const calculateGSTR3BSummary = (sales = [], purchases = []) => {
     net_payable: round2(liabilities.cgst + liabilities.sgst + liabilities.igst),
   };
 };
+const GST_INVOICE_TYPES = ['invoice', 'bill_of_supply'];
+const isGSTInvoice = (s) => !s.document_type || GST_INVOICE_TYPES.includes(s.document_type);
+
 const buildLocalGSTSummary = (sales = [], purchases = [], month, year) => {
-  const normalizedSales = sales.map((sale) => {
+  const normalizedSales = sales.filter(isGSTInvoice).map((sale) => {
     const taxHeads = getRecordTaxHeads(sale);
     return { ...sale, invoice_type: getRecordInvoiceType(sale, 'sale'), gst_type: getRecordGstType(sale), gst_rate: getRecordGstRate(sale), cgst_amount: taxHeads.cgst, sgst_amount: taxHeads.sgst, igst_amount: taxHeads.igst, total_gst: round2(sale?.total_gst || taxHeads.cgst + taxHeads.sgst + taxHeads.igst) };
   });
@@ -328,14 +331,15 @@ export default function GSTPage() {
   const openDrill = async (type) => {
     if (drillType === type) { setDrillType(null); return; }
     setDrillType(type); setDrillLoading(true);
-    if (!isOnline) { setDrillData(type === 'sales' ? recordsCache.sales : recordsCache.purchases); setDrillLoading(false); return; }
+    if (!isOnline) { setDrillData(type === 'sales' ? recordsCache.sales.filter(isGSTInvoice) : recordsCache.purchases); setDrillLoading(false); return; }
     const from = new Date(year, month - 1, 1).toISOString();
     const to   = new Date(year, month, 0, 23, 59, 59).toISOString();
     try {
       const url = type === 'sales' ? apiUrl(`/api/sales?from=${from}&to=${to}`) : apiUrl(`/api/purchases?from=${from}&to=${to}`);
       const res  = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
       const data = await res.json();
-      setDrillData(type === 'sales' ? (data.sales || data) : (data.purchases || data));
+      const raw = type === 'sales' ? (data.sales || data) : (data.purchases || data);
+      setDrillData(type === 'sales' ? raw.filter(isGSTInvoice) : raw);
     } catch {}
     setDrillLoading(false);
   };
