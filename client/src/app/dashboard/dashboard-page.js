@@ -1167,7 +1167,7 @@ function B2BDashboard() {
     data, loading, refreshing, error, shopName, shop, hasGstin,
     userName, userRole, isStaffUser, greeting, today, dashSubLabel,
     fetchDashboard, agingData, agingLoading,
-    fetchCreditAging, notifications, taskCount, term, config,
+    fetchCreditAging, notifications, taskCount, term, config, businessType,
     selectedRange, setSelectedRange, t,
   } = useDashboardData();
   const { tier } = useTier();
