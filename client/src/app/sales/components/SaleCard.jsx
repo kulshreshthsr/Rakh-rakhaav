@@ -167,7 +167,7 @@ export default function SaleCard({
           </div>
 
           {/* Feature 4: Recurring invoice button */}
-          {!s._isOffline && (!s.sale_type || s.sale_type === 'sale') && (
+          {!s._isOffline && (!s.sale_type || s.sale_type === 'sale') && s.document_type !== 'challan' && s.document_type !== 'quotation' && (
             <div className="mt-2">
               <button type="button" onClick={() => setShowRecurringModal(true)}
                 className="w-full min-h-[38px] py-2 rounded-xl border-2 border-violet-200 bg-violet-50 text-[11px] font-bold text-violet-700 hover:bg-violet-100 transition-all">

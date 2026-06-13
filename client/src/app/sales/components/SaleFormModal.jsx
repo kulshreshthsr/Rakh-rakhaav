@@ -171,15 +171,6 @@ export default function SaleFormModal({
             </div>
 
             {/* Document type toggle */}
-            {!editingSaleId && businessType === 'hardware' && (
-              <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mt-2">
-                {[{id:'invoice',label:'Invoice'},{id:'challan',label:'Delivery Challan'}].map(d => (
-                  <button key={d.id} type="button" onClick={() => setDocumentType(d.id)}
-                    className={`flex-1 py-2 rounded-lg text-[12px] font-black transition-all ${documentType === d.id ? (d.id === 'challan' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white') : 'text-slate-500 hover:text-slate-700'}`}
-                  >{d.label}</button>
-                ))}
-              </div>
-            )}
             {!editingSaleId && businessType === 'electronics' && (
               <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mt-2">
                 {[{id:'invoice',label:'Invoice'},{id:'quotation',label:'Quotation'}].map(d => (
@@ -195,9 +186,8 @@ export default function SaleFormModal({
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
             {isChallanMode && (
-              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-blue-600 text-white text-[12px] font-black">
+              <div className="flex items-center px-4 py-3 rounded-xl bg-blue-600 text-white text-[12px] font-black">
                 <span>🚚 Delivery Challan Mode — stock will NOT be deducted, no payment recorded</span>
-                <button type="button" onClick={() => setDocumentType('invoice')} className="ml-3 px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[11px] font-black transition-colors whitespace-nowrap">Switch to Invoice</button>
               </div>
             )}
 
@@ -217,7 +207,7 @@ export default function SaleFormModal({
             {/* Invoice + Date */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Invoice No.</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">{isChallanMode ? 'Challan No.' : 'Invoice No.'}</p>
                 <div className="flex items-center h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 gap-2">
                   <span className="font-mono text-[11px] text-green-700 truncate flex-1 min-w-0">{invoicePreview}</span>
                   <button type="button" onClick={() => navigator?.clipboard?.writeText(invoicePreview)} className="text-slate-400 hover:text-slate-600 flex-shrink-0 text-xs">📋</button>

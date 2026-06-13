@@ -543,6 +543,15 @@ export default function SalesPage() {
               >
                 ⚡ Quick Invoice
               </Link>
+              {businessType === 'hardware' && (
+                <button
+                  type="button"
+                  onClick={() => { resetForm(); setDocumentType('challan'); setShowModal(true); }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold text-blue-700 bg-blue-50 border-2 border-blue-200 shadow-md hover:border-blue-400 hover:bg-blue-100 hover:-translate-y-0.5 transition-all"
+                >
+                  🚚 New Challan
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => { resetForm(); setShowModal(true); }}
