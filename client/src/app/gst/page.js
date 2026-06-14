@@ -576,6 +576,17 @@ export default function GSTPage() {
           />
         )}
 
+        {/* ── Period has no invoices ── */}
+        {!loading && summary && summary.sales?.total === 0 && (
+          <div className="flex items-start gap-3 px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span className="text-xl mt-0.5">📭</span>
+            <div>
+              <p className="text-[13px] font-black text-slate-800">{monthEn} {year} में कोई invoice नहीं मिला</p>
+              <p className="text-[12px] text-slate-500 mt-0.5">ऊपर से अलग month/year select करें, या पहले Sales में invoice बनाएं।</p>
+            </div>
+          </div>
+        )}
+
         {summary && (
           <>
             {/* ══════════════════════════════════════

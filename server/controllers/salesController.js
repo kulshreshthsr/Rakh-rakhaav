@@ -132,11 +132,30 @@ const getStateFromGstin = (gstin = '') => {
   return GST_STATE_CODE_MAP[normalized.slice(0, 2)] || '';
 };
 
-const sumTaxHeads = (records = []) => ({
-  cgst: round2(records.reduce((sum, record) => sum + (record.cgst_amount || 0), 0)),
-  sgst: round2(records.reduce((sum, record) => sum + (record.sgst_amount || 0), 0)),
-  igst: round2(records.reduce((sum, record) => sum + (record.igst_amount || 0), 0)),
-});
+const sumTaxHeads = (records = []) => {
+  let cgst = 0, sgst = 0, igst = 0;
+  for (const record of records) {
+    const c = Number(record.cgst_amount || 0);
+    const s = Number(record.sgst_amount || 0);
+    const i = Number(record.igst_amount || 0);
+    if (c || s || i) {
+      cgst += c; sgst += s; igst += i;
+    } else {
+      // Fallback for records that only store total_gst (pre-migration or legacy)
+      const totalGst = Number(record.total_gst || 0);
+      if (totalGst > 0) {
+        if (record.gst_type === 'IGST') {
+          igst += totalGst;
+        } else {
+          const half = Math.floor(Math.round(totalGst * 100) / 2) / 100;
+          cgst += half;
+          sgst += round2(totalGst - half);
+        }
+      }
+    }
+  }
+  return { cgst: round2(cgst), sgst: round2(sgst), igst: round2(igst) };
+};
 
 const applyCredit = (availableCredit, liabilities, fromHead, targets, utilization) => {
   let remainingCredit = availableCredit[fromHead] || 0;
