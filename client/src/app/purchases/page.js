@@ -16,6 +16,7 @@ import usePurchasesData from './hooks/usePurchasesData';
 import usePurchaseForm from './hooks/usePurchaseForm';
 import PurchaseFormModal from './components/PurchaseFormModal';
 import PurchaseCard from './components/PurchaseCard';
+import ErrorBoundary from '../../components/ErrorBoundary';
 import PurchaseSummary from './components/PurchaseSummary';
 import PurchaseReturnModal from './components/PurchaseReturnModal';
 import EmptyState from '../../components/ui/EmptyState';
@@ -399,16 +400,17 @@ export default function PurchasesPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {sortedPurchases.map((p) => (
-              <PurchaseCard
-                key={p._id}
-                p={p}
-                isHighlighted={p._id === highlightedPurchaseId}
-                sendPurchaseWhatsApp={sendPurchaseWhatsApp}
-                handleEditPurchase={handleEditPurchase}
-                editLoadingId={editLoadingId}
-                handleDelete={handleDelete}
-                onReturnClick={setReturnPurchase}
-              />
+              <ErrorBoundary key={p._id}>
+                <PurchaseCard
+                  p={p}
+                  isHighlighted={p._id === highlightedPurchaseId}
+                  sendPurchaseWhatsApp={sendPurchaseWhatsApp}
+                  handleEditPurchase={handleEditPurchase}
+                  editLoadingId={editLoadingId}
+                  handleDelete={handleDelete}
+                  onReturnClick={setReturnPurchase}
+                />
+              </ErrorBoundary>
             ))}
             {hasMorePurchases && !normalizedBillSearch && !billMonth && (
               <button onClick={loadMorePurchases} disabled={loadingMore}

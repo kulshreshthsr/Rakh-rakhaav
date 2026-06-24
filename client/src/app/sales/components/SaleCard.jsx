@@ -3,6 +3,8 @@ import { useState } from 'react';
 import WorkflowStatusBadge from '../../../components/WorkflowStatusBadge';
 import { printDeliveryChallan } from '../../../lib/generateChallan';
 import RecurringInvoiceModal from './RecurringInvoiceModal';
+import FeatureLockedModal from '../../../components/FeatureLockedModal';
+import { isFeatureLockedError } from '../../../lib/apiErrors';
 
 const PAY_BADGE = {
   cash:   { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: '💵 Cash' },
@@ -54,6 +56,7 @@ export default function SaleCard({
   const meta = s._isOffline ? getOfflineBadgeMeta(s._queueStatus) : null;
   const [showRecurringModal, setShowRecurringModal] = useState(false);
   const [showEwbDetails, setShowEwbDetails] = useState(false);
+  const [lockedInfo, setLockedInfo] = useState(null);
 
   const accentCls = s._isOffline ? 'accent-amber' : s.payment_type === 'credit' ? 'accent-amber' : 'accent-green';
   return (
@@ -185,7 +188,10 @@ export default function SaleCard({
                   try {
                     const r = await fetch(apiUrl(`/api/sales/${s._id}/convert-quotation`), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` } });
                     const d = await r.json();
-                    if (!r.ok) { alert(d.message || 'Conversion failed'); return; }
+                    if (!r.ok) {
+                      if (isFeatureLockedError(r, d)) { setLockedInfo(d); return; }
+                      alert(d.message || 'Conversion failed'); return;
+                    }
                     fetchAll();
                     if (d.invoice) printInvoice(d.invoice);
                   } catch { alert('Server error'); }
@@ -207,7 +213,10 @@ export default function SaleCard({
                   try {
                     const r = await fetch(apiUrl(`/api/sales/${s._id}/generate-irn`), { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } });
                     const d = await r.json();
-                    if (!r.ok) { alert(d.message || 'IRN generation failed'); return; }
+                    if (!r.ok) {
+                      if (isFeatureLockedError(r, d)) { setLockedInfo(d); return; }
+                      alert(d.message || 'IRN generation failed'); return;
+                    }
                     alert(`IRN Generated!\nIRN: ${d.irn}\nAck No: ${d.ack_no}`);
                     fetchAll();
                   } catch { alert('Server error'); }
@@ -230,26 +239,82 @@ export default function SaleCard({
 
           {/* E-Way Bill */}
           {!s._isOffline && s.document_type === 'invoice' && s.total_amount > 50000 && (
-            <div className="mt-2">
+            <div className="mt-2 space-y-2">
               {s.ewb_status === 'generated' && s.ewb_number ? (
-                <div className="rounded-xl border-2 border-orange-200 bg-orange-50 px-3 py-2 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-orange-700">🛣️ E-Way Bill</span>
-                    <span className="text-[10px] font-bold text-emerald-700">✓ Generated</span>
+                <>
+                  <div className="rounded-xl border-2 border-orange-200 bg-orange-50 px-3 py-2 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-orange-700">🛣️ E-Way Bill</span>
+                      <span className="text-[10px] font-bold text-emerald-700">✓ Generated</span>
+                    </div>
+                    <p className="text-xs font-black text-slate-800">{s.ewb_number}</p>
+                    {s.ewb_valid_until && <p className="text-[10px] text-slate-500">Valid till {new Date(s.ewb_valid_until).toLocaleDateString('en-IN')}</p>}
                   </div>
-                  <p className="text-xs font-black text-slate-800">{s.ewb_number}</p>
-                  {s.ewb_valid_until && <p className="text-[10px] text-slate-500">Valid till {new Date(s.ewb_valid_until).toLocaleDateString('en-IN')}</p>}
-                </div>
+                  {/* Cancel EWB */}
+                  <button
+                    onClick={async () => {
+                      if (!confirm(
+                        `Cancel E-Way Bill ${s.ewb_number}?\n\n` +
+                        `Cancellation is allowed within 24 hours of generation.\n` +
+                        `Please ensure this EWB has not already been used for movement.\n\nContinue?`
+                      )) return;
+                      try {
+                        const r = await fetch(apiUrl(`/api/sales/${s._id}/cancel-ewb`), {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                          body: JSON.stringify({ reason: 'Order Cancelled', remarks: 'Cancelled by user' }),
+                        });
+                        const d = await r.json();
+                        if (!r.ok) {
+                          if (isFeatureLockedError(r, d)) { setLockedInfo(d); return; }
+                          alert(d.message || 'E-Way Bill cancellation failed'); return;
+                        }
+                        alert(`E-Way Bill cancelled successfully.`);
+                        fetchAll();
+                      } catch { alert('Server error'); }
+                    }}
+                    className="w-full min-h-[34px] py-1.5 rounded-xl border-2 border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-all"
+                  >
+                    ✕ Cancel EWB
+                  </button>
+                </>
               ) : (
                 <>
+                  {/* Auto-generate button */}
                   <button
-                    onClick={() => setShowEwbDetails(v => !v)}
+                    onClick={async () => {
+                      if (!confirm(
+                        `Auto-generate E-Way Bill for ${s.invoice_number}?\n\n` +
+                        `This calls the NIC E-Way Bill API and requires valid credentials in server config.\n\nContinue?`
+                      )) return;
+                      try {
+                        const r = await fetch(apiUrl(`/api/sales/${s._id}/generate-ewb`), {
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${getToken()}` },
+                        });
+                        const d = await r.json();
+                        if (!r.ok) {
+                          if (isFeatureLockedError(r, d)) { setLockedInfo(d); return; }
+                          alert(d.message || 'E-Way Bill generation failed'); return;
+                        }
+                        alert(`E-Way Bill Generated!\nEWB No: ${d.ewb_number}${d.ewb_valid_until ? `\nValid till: ${new Date(d.ewb_valid_until).toLocaleDateString('en-IN')}` : ''}`);
+                        fetchAll();
+                      } catch { alert('Server error'); }
+                    }}
                     className="w-full min-h-[38px] py-2 rounded-xl border-2 border-orange-200 bg-orange-50 text-[11px] font-bold text-orange-700 hover:bg-orange-100 transition-all"
                   >
-                    🛣️ E-Way Bill {showEwbDetails ? '▲' : '▼'}
+                    🛣️ Generate E-Way Bill (Auto)
+                  </button>
+
+                  {/* Manual portal fallback toggle */}
+                  <button
+                    onClick={() => setShowEwbDetails(v => !v)}
+                    className="w-full min-h-[34px] py-1.5 rounded-xl border border-orange-200 bg-white text-[11px] font-semibold text-orange-600 hover:bg-orange-50 transition-all"
+                  >
+                    {showEwbDetails ? '▲ Hide manual details' : '↗ या manually file करें (Portal)'}
                   </button>
                   {showEwbDetails && (
-                    <div className="mt-1 rounded-xl border-2 border-orange-200 bg-white p-3 space-y-3 text-[11px]">
+                    <div className="rounded-xl border-2 border-orange-200 bg-white p-3 space-y-3 text-[11px]">
                       <a
                         href="https://ewaybillgst.gov.in"
                         target="_blank"
@@ -366,6 +431,14 @@ export default function SaleCard({
           sale={s}
           onClose={() => setShowRecurringModal(false)}
           onSaved={() => setShowRecurringModal(false)}
+        />
+      )}
+
+      {lockedInfo && (
+        <FeatureLockedModal
+          feature={lockedInfo.feature}
+          currentTier={lockedInfo.currentTier}
+          onClose={() => setLockedInfo(null)}
         />
       )}
     </>

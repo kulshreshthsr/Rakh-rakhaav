@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
+import FeatureLockedModal from '../../components/FeatureLockedModal';
+import { isFeatureLockedError } from '../../lib/apiErrors';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
@@ -126,6 +128,7 @@ export default function ReportsPage() {
   const reportCfg   = getReportConfig(config);
   const [filter,       setFilter]       = useState('month');
   const [loading,      setLoading]      = useState(false);
+  const [lockedInfo,   setLockedInfo]   = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [sales,        setSales]        = useState([]);
   const [purchases,    setPurchases]    = useState([]);
@@ -337,6 +340,11 @@ export default function ReportsPage() {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.status === 401) { router.push('/login'); return; }
+      if (res.status === 403) {
+        const errData = await res.json();
+        if (isFeatureLockedError(res, errData)) { setLockedInfo(errData); return; }
+        throw new Error(errData.message || 'Stock export failed');
+      }
       if (!res.ok) throw new Error('Stock export failed');
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
@@ -1263,6 +1271,13 @@ export default function ReportsPage() {
         )}
       </div>
 
+      {lockedInfo && (
+        <FeatureLockedModal
+          feature={lockedInfo.feature}
+          currentTier={lockedInfo.currentTier}
+          onClose={() => setLockedInfo(null)}
+        />
+      )}
     </Layout>
   );
 }

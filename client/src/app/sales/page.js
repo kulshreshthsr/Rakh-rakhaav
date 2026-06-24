@@ -22,6 +22,7 @@ import WorkflowStatusBadge from '../../components/WorkflowStatusBadge';
 import eventBus from '../../lib/eventBus';
 import { validateGSTIN as _validateGSTINFull, getSupplyType as _getSupplyType, summariseCartGST } from '../../lib/gstValidation';
 import SaleCard from './components/SaleCard';
+import ErrorBoundary from '../../components/ErrorBoundary';
 import ChallanSection from './components/ChallanSection';
 import MarkDeliveredModal from './components/MarkDeliveredModal';
 import SaleFormModal from './components/SaleFormModal';
@@ -663,8 +664,8 @@ export default function SalesPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {filteredSales.map((s) => (
+              <ErrorBoundary key={s._id}>
               <SaleCard
-                key={s._id}
                 s={s}
                 businessType={businessType}
                 config={config}
@@ -691,6 +692,7 @@ export default function SalesPage() {
                 setShowDeliveredModal={setShowDeliveredModal}
                 onReturnClick={setReturnSale}
               />
+              </ErrorBoundary>
             ))}
             {hasMoreSales && (
               <button onClick={loadMoreSales} disabled={loadingMore}

@@ -5,6 +5,8 @@ import Layout from '../../components/Layout';
 import { apiUrl } from '../../lib/api';
 import { getToken, fmt } from '../../lib/constants';
 import { useToast } from '../../hooks/useToast';
+import FeatureLockedModal from '../../components/FeatureLockedModal';
+import { isFeatureLockedError } from '../../lib/apiErrors';
 
 const STATUS_FILTERS = [
   { id: 'all', label: 'All' },
@@ -33,6 +35,7 @@ export default function PurchaseOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedPO, setSelectedPO] = useState(null);
+  const [lockedInfo, setLockedInfo] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [createMode, setCreateMode] = useState(false);
   const [receiveMode, setReceiveMode] = useState(false);
@@ -72,6 +75,7 @@ export default function PurchaseOrdersPage() {
         fetch(apiUrl('/api/products'), { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const poData = await poRes.json();
+      if (isFeatureLockedError(poRes, poData)) { setLockedInfo(poData); setLoading(false); return; }
       const supplierData = await supplierRes.json();
       const productData = await productRes.json();
       setPurchaseOrders(Array.isArray(poData.purchaseOrders) ? poData.purchaseOrders : []);
@@ -155,6 +159,7 @@ export default function PurchaseOrdersPage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (isFeatureLockedError(res, data)) { setLockedInfo(data); return; }
         throw new Error(data.message || 'Could not create purchase order');
       }
       showToast(`PO ${data.po_number} created`, 'success');
@@ -174,7 +179,10 @@ export default function PurchaseOrdersPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Could not load purchase order');
+      if (!res.ok) {
+        if (isFeatureLockedError(res, data)) { setLockedInfo(data); return; }
+        throw new Error(data.message || 'Could not load purchase order');
+      }
       setSelectedPO(data);
       setReceiveItems((data.items || []).map((item) => ({
         product: item.product?._id || item.product,
@@ -204,7 +212,10 @@ export default function PurchaseOrdersPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Could not receive stock');
+      if (!res.ok) {
+        if (isFeatureLockedError(res, data)) { setLockedInfo(data); return; }
+        throw new Error(data.message || 'Could not receive stock');
+      }
       setGrnNotice(`GRN ${data.grn_number} created`);
       showToast(`GRN ${data.grn_number} created`, 'success');
       await fetchAll();
@@ -226,7 +237,10 @@ export default function PurchaseOrdersPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Could not convert purchase order');
+      if (!res.ok) {
+        if (isFeatureLockedError(res, data)) { setLockedInfo(data); return; }
+        throw new Error(data.message || 'Could not convert purchase order');
+      }
       showToast(`Converted to purchase ${data.purchase?.invoice_number || ''}`.trim(), 'success');
       await fetchAll();
       setSelectedPO(data.purchaseOrder);
@@ -591,6 +605,14 @@ export default function PurchaseOrdersPage() {
           </div>
         )}
       </div>
+
+      {lockedInfo && (
+        <FeatureLockedModal
+          feature={lockedInfo.feature}
+          currentTier={lockedInfo.currentTier}
+          onClose={() => setLockedInfo(null)}
+        />
+      )}
     </Layout>
   );
 }
