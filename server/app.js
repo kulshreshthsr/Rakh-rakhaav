@@ -14,6 +14,7 @@ const logger = require('./utils/logger');
 const { initScheduler } = require('./services/schedulerService');
 
 const app = express();
+app.set('trust proxy', 1);
 
 const configuredOrigins = (process.env.FRONTEND_URLS || '')
   .split(',')
