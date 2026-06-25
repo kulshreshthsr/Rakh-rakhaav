@@ -31,6 +31,7 @@ const isValidOwnerPhoto = (value = '') => {
 
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
+const emailService = require('../services/emailService');
 
 const serializeAuthUser = (user) => ({
   id: user._id,
@@ -61,7 +62,11 @@ const register = async (req, res) => {
       trialEndDate: new Date(now.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000)),
       paymentStatus: 'trial',
     });
-    await Shop.create({ name: 'My Shop', owner: user._id });
+    const shop = await Shop.create({ name: 'My Shop', owner: user._id });
+
+    if (user.email) {
+      emailService.sendWelcomeEmail(user.email, user.name, shop.name).catch(() => {});
+    }
 
     const token         = jwt.sign({ id: user._id, username: user.username, tv: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: AUTH_TOKEN_TTL });
     const refresh_token = await issueRefreshToken(user);
@@ -328,6 +333,10 @@ const forgotPassword = async (req, res) => {
     user.passwordResetToken = crypto.createHash('sha256').update(token).digest('hex');
     user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
+
+    const frontendUrl = (process.env.FRONTEND_URLS || '').split(',')[0].trim() || 'http://localhost:3000';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+    emailService.sendPasswordResetEmail(user.email, resetLink).catch(() => {});
 
     const isDev = process.env.NODE_ENV !== 'production';
     logger.info(`[forgotPassword] Reset token for ${email}: ${token}`);

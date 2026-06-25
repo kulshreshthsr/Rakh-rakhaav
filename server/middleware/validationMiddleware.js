@@ -56,7 +56,7 @@ const forgotPasswordValidation = [
 ];
 
 const resetPasswordValidation = [
-  param('token')
+  body('token')
     .notEmpty().withMessage('Reset token is required')
     .isLength({ min: 64, max: 64 }).withMessage('Invalid reset token'),
   body('password')
@@ -107,19 +107,20 @@ const createSaleValidation = [
     .isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
   body('items.*.price')
     .isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('buyerName')
+  body('buyer_name')
     .optional()
     .trim()
     .isLength({ max: 200 }).withMessage('Buyer name max 200 characters')
     .escape(),
-  body('buyerGstin')
+  body('buyer_gstin')
     .optional()
     .trim()
     .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
     .withMessage('Invalid GSTIN format'),
-  body('paymentMode')
-    .isIn(['cash', 'card', 'upi', 'bank_transfer', 'credit'])
-    .withMessage('Invalid payment mode'),
+  body('payment_type')
+    .optional()
+    .isIn(['cash', 'credit', 'upi', 'bank', 'insurance'])
+    .withMessage('Invalid payment type'),
   validate
 ];
 

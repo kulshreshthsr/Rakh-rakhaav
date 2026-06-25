@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
 const { requireFeature } = require('../middleware/tierMiddleware');
+const { createSaleValidation, paginationValidation, mongoIdValidation } = require('../middleware/validationMiddleware');
 const {
   getSaleById,
   getSales,
@@ -43,9 +44,9 @@ router.post('/:id/cancel-ewb',   protect, checkSubscriptionStatus, requirePermis
 router.post('/:id/generate-irn', protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), requireFeature('erp_einvoice'),  generateIRN);
 router.post('/:id/cancel-irn',   protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),   requireFeature('erp_einvoice'),  cancelIRN);
 
-router.get('/',    protect, requirePermission('VIEW_SALES'),   getSales);
-router.get('/:id', protect, requirePermission('VIEW_SALES'),   getSaleById);
-router.post('/',   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createSale);
+router.get('/',    protect, requirePermission('VIEW_SALES'),   paginationValidation, getSales);
+router.get('/:id', protect, requirePermission('VIEW_SALES'),   mongoIdValidation(), getSaleById);
+router.post('/',   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'), createSaleValidation, createSale);
 router.patch('/:id/workflow', protect, requirePermission('CREATE_INVOICE'), updateSaleWorkflow);
 router.put('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),  updateSale);
 router.delete('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'), deleteSale);

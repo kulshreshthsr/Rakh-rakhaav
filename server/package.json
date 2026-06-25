@@ -12,7 +12,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@getbrevo/brevo": "^5.0.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -28,7 +27,6 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.7",
     "pino": "^10.3.1",
-    "resend": "^6.9.4",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
