@@ -2,13 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
-import CameraBarcodeScanner from '../../components/CameraBarcodeScanner';
 import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from '../../lib/pageCache';
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
-import DynamicFormField from '../../components/DynamicFormField';
+import AddMaterialModal from '../../components/AddMaterialModal';
 
-import DynamicFormSection, { flattenSectionFields, formatMetaValue, validateSections } from '../../components/DynamicFormSection';
+import DynamicFormSection, { flattenSectionFields, formatMetaValue } from '../../components/DynamicFormSection';
 import { getInvBehavior, hasInventoryPanel, isBatchMode, isVariantMode, isSerialMode, isRecipeMode, getPrimaryPanelLabel } from '../../lib/inventoryBehavior';
 import { queueStockAdjust } from '../../lib/offlineQueue';
 import PageHeader from '../../components/ui/PageHeader';
@@ -19,14 +18,11 @@ import SerialInventoryPanel from '../../components/SerialInventoryPanel';
 
 /* ─── Constants & helpers (ALL UNCHANGED) ────────────────────────── */
 const getToken = () => localStorage.getItem('token');
-const HSN_GST_HINTS = { 84:18, 85:18, 30:12, 61:5, 62:5, 64:12, 90:18 };
 const PRODUCTS_CACHE_KEY = 'products-page';
-const normalizeBarcode = (v = '') => String(v).replace(/\s+/g, '').trim();
 const historyTypeLabel = (t) => ({ purchase:'Purchase', sale:'Sale', manual_add:'Added', manual_remove:'Removed', adjustment:'Adjusted' }[t] || t);
 
 /* ─── Shared classes ── */
 const INP = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
-const SEL = 'h-11 w-full rounded-xl border-2 border-slate-200 bg-white px-4 text-[14px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-600 transition-all';
 
 /* ─── Stock status helpers ── */
 function stockStatus(p) {
@@ -39,16 +35,6 @@ function marginColor(m) {
   if (m >= 30)   return 'text-emerald-600';
   if (m >= 15)   return 'text-amber-600';
   return 'text-rose-600';
-}
-
-function parseProductCSV(text) {
-  const lines  = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
-  }).filter(r => r.name || r.Name);
 }
 
 /* ─── Modal backdrop ── */
@@ -71,23 +57,7 @@ export default function ProductsPage() {
   const router = useRouter();
   const { term, config } = useIndustry();
 
-  /* ── Schema-derived constants ── */
-  const pSchema    = config.productFormSchema || {};
-  const trackQty   = pSchema.trackQuantity !== false;
-  const showBarcode = pSchema.showBarcode !== false;
-  const unitOptions = Array.isArray(pSchema.unitOptions) ? pSchema.unitOptions : null;
-  const nameLabel  = pSchema.nameLabel        || term('product', 'Product') + ' Name';
-  const descLabel  = pSchema.descriptionLabel || 'Description';
-  const attrsTitle = pSchema.attributesTitle  || (term('product', 'Product') + ' Details');
-
-  /* ── Section labels (entity-aware, from config or base defaults) ── */
-  const sl = config.formSectionLabels || {};
-  const labelBasics  = sl.basics  || 'Basic Information';
-  const labelPricing = sl.pricing || 'Pricing';
-  const labelStock   = sl.stock   || 'Stock & Inventory';
-  const labelTax     = sl.tax     || 'GST & Tax';
-
-  /* ── All state (UNCHANGED) ── */
+  /* ── All state ── */
   const [products,   setProducts]   = useState([]);
   const [filtered,   setFiltered]   = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -106,11 +76,6 @@ export default function ProductsPage() {
 
   const [showModal,   setShowModal]   = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [form, setForm] = useState({ name:'', description:'', price:'', cost_price:'', quantity:'', unit:'pcs', barcode:'', hsn_code:'', gst_rate:0, low_stock_threshold:5, category:'', sub_category:'' });
-  const [metadata, setMetadata] = useState({});
-  const [metaErrors, setMetaErrors] = useState({});
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [lastScannedBarcode, setLastScannedBarcode] = useState('');
 
   const [showStockModal,  setShowStockModal]  = useState(false);
   const [stockProduct,    setStockProduct]    = useState(null);
@@ -269,52 +234,30 @@ export default function ProductsPage() {
 
   const openAdd = () => {
     setEditProduct(null);
-    setForm({ name:'', description:'', price:'', cost_price:'',
-      quantity: trackQty ? '' : '0',
-      unit: unitOptions ? unitOptions[0] : 'pcs',
-      barcode:'', sku:'', hsn_code:'', gst_rate:0, low_stock_threshold:5,
-      category:'', sub_category:'',
-      mrp:'', dealer_price:'', project_price:'',
-      pack_size:'', pack_unit:'', loose_unit:'', sold_in_loose:false, loose_price:'',
-      batch_tracking_enabled:false });
-    setMetadata({}); setMetaErrors({});
-    setLastScannedBarcode(''); setError(''); setShowModal(true);
+    setError('');
+    setShowModal(true);
   };
 
   const openEdit = (p) => {
     setEditProduct(p);
-    setForm({ name:p.name, description:p.description||'', price:p.price, cost_price:p.cost_price||'', quantity:p.quantity, unit:p.unit||'pcs', barcode:p.barcode||'', sku:p.sku||'', hsn_code:p.hsn_code||'', gst_rate:p.gst_rate||0, low_stock_threshold:p.low_stock_threshold||5, category:p.category||'', sub_category:p.sub_category||'', mrp:p.mrp||'', dealer_price:p.dealer_price||'', project_price:p.project_price||'', pack_size:p.pack_size||'', pack_unit:p.pack_unit||'', loose_unit:p.loose_unit||'', sold_in_loose:!!p.sold_in_loose, loose_price:p.loose_price||'', batch_tracking_enabled:!!p.batch_tracking_enabled });
-    // Restore metadata from product (MongoDB Map serialises to plain object in JSON response)
-    setMetadata(p.metadata && typeof p.metadata === 'object' ? { ...p.metadata } : {}); setMetaErrors({});
-    setLastScannedBarcode(''); setError(''); setShowModal(true);
+    setError('');
+    setShowModal(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setError('');
-    if (!isOnline) { setError('Offline mode me product save nahi hoga.'); return; }
-
-    /* ── Schema validation for required attribute fields ── */
-    const sections = config.productAttributeSections || [];
-    const errs = validateSections(sections, metadata);
-    if (Object.keys(errs).length > 0) {
-      setMetaErrors(errs);
-      setError(`Please fill in the required fields: ${Object.values(errs).join(', ')}`);
-      return;
-    }
-    setMetaErrors({});
-    const url = editProduct ? apiUrl(`/api/products/${editProduct._id}`) : apiUrl('/api/products');
-    try {
-      const res = await fetch(url, { method: editProduct ? 'PUT' : 'POST', headers: { 'Content-Type':'application/json', Authorization:`Bearer ${getToken()}` }, body: JSON.stringify({ ...form, metadata }) });
-      const data = await res.json();
-      if (res.ok) { setShowModal(false); fetchProducts(); } else setError(data.message || 'Could not save product');
-    } catch { setError('Server error'); }
-  };
-
-  const handleBarcodeDetected = (code) => {
-    const nb = normalizeBarcode(code);
-    setForm(c => ({ ...c, barcode: nb }));
-    setLastScannedBarcode(nb);
-    setShowBarcodeScanner(false);
+  /* Async save handler passed to AddMaterialModal.
+     Throws on failure so the modal can show the error inline. */
+  const handleSaveProduct = async (formData, metadata) => {
+    const url = editProduct
+      ? apiUrl(`/api/products/${editProduct._id}`)
+      : apiUrl('/api/products');
+    const res = await fetch(url, {
+      method:  editProduct ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+      body:    JSON.stringify({ ...formData, metadata }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Could not save');
+    fetchProducts();
   };
 
   const handleDelete = async (id) => {
@@ -373,12 +316,6 @@ export default function ProductsPage() {
   const lowStockCount   = products.filter(p => p.is_low_stock && p.quantity > 0).length;
   const outOfStockCount = products.filter(p => p.quantity === 0).length;
   const totalValue      = products.reduce((s, p) => s + (p.cost_price || 0) * p.quantity, 0);
-  const suggestedGstRate = (() => { const prefix = parseInt(String(form.hsn_code || '').slice(0,2), 10); return HSN_GST_HINTS[prefix]; })();
-  const liveMargin = form.cost_price && form.price && Number(form.cost_price) > 0
-    ? (((Number(form.price) - Number(form.cost_price)) / Number(form.cost_price)) * 100).toFixed(1) : null;
-  const liveProfit = liveMargin != null ? (Number(form.price) - Number(form.cost_price)).toFixed(2) : null;
-  const liveMrp = form.mrp ? Number(form.mrp) : null;
-  const mrpViolation = liveMrp && form.price && Number(form.price) > liveMrp;
   const STOCK_TYPES = {
     manual_add:    { label:'Stock जोड़ो',   color:'border-emerald-400 bg-emerald-50 text-emerald-800', active:'bg-emerald-500 text-white border-emerald-500' },
     manual_remove: { label:'Stock हटाओ',   color:'border-rose-400 bg-rose-50 text-rose-800',         active:'bg-rose-500 text-white border-rose-500' },
@@ -678,292 +615,18 @@ export default function ProductsPage() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════
-          ADD / EDIT MODAL
+          ADD / EDIT MODAL — redesigned progressive-disclosure form
       ════════════════════════════════════════════════════════════ */}
       {showModal && (
-        <Backdrop onClose={() => setShowModal(false)}>
-          <div className="w-full sm:max-w-[520px] max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-white shadow-2xl">
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1 sm:hidden flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-200" />
-            </div>
-
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-5 py-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{editProduct ? `Edit ${term('product','Product')}` : `New ${term('product','Product')}`}</p>
-                  <h3 className="text-[18px] font-black text-slate-900 mt-0.5">{editProduct ? editProduct.name : `${term('product','Product')} Add करो`}</h3>
-                </div>
-                <button onClick={() => setShowModal(false)}
-                  className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
-                >✕</button>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 space-y-4">
-              {error && <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-[13px] font-semibold text-rose-700">⚠️ {error}</div>}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-
-                {/* ── BASICS ── */}
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{labelBasics}</p>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{nameLabel} *</p>
-                    <input className={INP} value={form.name} onChange={e => setForm({...form, name:e.target.value})} required placeholder={nameLabel} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{descLabel}</p>
-                    <input className={INP} value={form.description} onChange={e => setForm({...form, description:e.target.value})} placeholder={descLabel} />
-                  </div>
-                  {showBarcode && (
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Barcode</p>
-                      <div className="flex gap-2">
-                        <input className={`${INP} flex-1`} placeholder="Scan or type barcode"
-                          value={form.barcode}
-                          onChange={e => { const nb = normalizeBarcode(e.target.value); setForm({...form, barcode:nb}); setLastScannedBarcode(c => c===nb?c:''); }}
-                        />
-                        <button type="button" onClick={() => setShowBarcodeScanner(true)}
-                          className="px-4 h-11 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:bg-slate-50 flex-shrink-0 transition-colors"
-                        >📷 Scan</button>
-                      </div>
-                      {lastScannedBarcode && (
-                        <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-[12px] font-semibold text-emerald-700">
-                          ✓ Scanned: <span className="font-mono font-black">{lastScannedBarcode}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* ── PRICING ── */}
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{labelPricing}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Cost Price</p>
-                      <input className={INP} type="number" step="0.01" placeholder="Your cost" value={form.cost_price} onChange={e => setForm({...form, cost_price:e.target.value})} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                        Selling Price *
-                        {liveMrp && <span className="text-slate-400 font-normal ml-1">(MRP: ₹{liveMrp})</span>}
-                      </p>
-                      <input className={`${INP} ${mrpViolation ? 'border-red-400 focus:border-red-500' : ''}`} type="number" step="0.01" placeholder="Customer pays" value={form.price} onChange={e => setForm({...form, price:e.target.value})} required />
-                      {mrpViolation && (
-                        <p className="text-red-600 text-[10px] font-semibold mt-1">
-                          ⚠️ Selling price ₹{form.price} MRP ₹{liveMrp} से ज़्यादा है — DPCO violation
-                        </p>
-                      )}
-                      {!mrpViolation && liveMrp && form.price && Number(form.price) < liveMrp && (
-                        <p className="text-green-600 text-[10px] mt-1">
-                          ✓ ₹{(liveMrp - Number(form.price)).toFixed(2)} discount below MRP
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {liveMargin !== null && (
-                    <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
-                      <span className="text-[13px] font-bold text-emerald-700">Margin: <strong>{liveMargin}%</strong></span>
-                      <span className="text-[12px] text-emerald-600 font-semibold">₹{liveProfit} per unit</span>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">MRP</p>
-                      <input className={INP} type="number" step="0.01" placeholder="Max retail price" value={form.mrp} onChange={e => setForm({...form, mrp:e.target.value})} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Dealer Price</p>
-                      <input className={INP} type="number" step="0.01" placeholder="Trade price" value={form.dealer_price} onChange={e => setForm({...form, dealer_price:e.target.value})} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Project Price</p>
-                      <input className={INP} type="number" step="0.01" placeholder="Project rate" value={form.project_price} onChange={e => setForm({...form, project_price:e.target.value})} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── STOCK ── */}
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{labelStock}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {trackQty && (
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{editProduct ? 'Quantity' : 'Opening Stock *'}</p>
-                        <input className={INP} type="number" min="0" value={form.quantity} onChange={e => setForm({...form, quantity:e.target.value})} required={!editProduct} />
-                        {editProduct && <p className="text-[10px] text-slate-400 mt-1">Stock action se adjust karo</p>}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Unit</p>
-                      {unitOptions ? (
-                        <select className={SEL} value={form.unit} onChange={e => setForm({...form, unit:e.target.value})}>
-                          {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                      ) : (
-                        <input className={INP} placeholder="pcs, kg, litre..." value={form.unit||'pcs'} onChange={e => setForm({...form, unit:e.target.value})} />
-                      )}
-                    </div>
-                  </div>
-                  {trackQty && (
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Low Stock Alert ≤</p>
-                      <input className={INP} type="number" min="0" placeholder="Default: 5" value={form.low_stock_threshold} onChange={e => setForm({...form, low_stock_threshold:e.target.value})} />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Pack Size</p>
-                      <input className={INP} type="number" step="0.01" min="0" placeholder="e.g. 12" value={form.pack_size} onChange={e => setForm({...form, pack_size:e.target.value})} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Pack Unit</p>
-                      <input className={INP} placeholder="e.g. box, carton" value={form.pack_unit} onChange={e => setForm({...form, pack_unit:e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Loose Unit</p>
-                      <input className={INP} placeholder="e.g. piece, metre" value={form.loose_unit} onChange={e => setForm({...form, loose_unit:e.target.value})} />
-                    </div>
-                    <div className="flex items-center gap-3 pt-5">
-                      <input id="sold_in_loose" type="checkbox" className="w-4 h-4 accent-green-600" checked={!!form.sold_in_loose} onChange={e => setForm({...form, sold_in_loose:e.target.checked})} />
-                      <label htmlFor="sold_in_loose" className="text-[13px] font-semibold text-slate-700 select-none">Sold in Loose</label>
-                    </div>
-                  </div>
-                  {form.sold_in_loose && (
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Loose Price</p>
-                      <input className={INP} type="number" step="0.01" placeholder="Price per loose unit" value={form.loose_price} onChange={e => setForm({...form, loose_price:e.target.value})} />
-                    </div>
-                  )}
-                </div>
-
-                {/* ── IDENTIFIERS ── */}
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identifiers & Tracking</p>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">SKU</p>
-                    <input className={INP} placeholder="Internal stock-keeping unit code" value={form.sku} onChange={e => setForm({...form, sku:e.target.value})} />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input id="batch_tracking_enabled" type="checkbox" className="w-4 h-4 accent-green-600" checked={!!form.batch_tracking_enabled} onChange={e => setForm({...form, batch_tracking_enabled:e.target.checked})} />
-                    <label htmlFor="batch_tracking_enabled" className="text-[13px] font-semibold text-slate-700 select-none">Batch Tracking Enabled</label>
-                  </div>
-                </div>
-
-                {/* ── GST & TAX ── */}
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{labelTax}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">HSN/SAC Code</p>
-                      <input className={INP} placeholder="e.g. 8471"
-                        value={form.hsn_code}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g,'').slice(0,8);
-                          const prefix = parseInt(v.slice(0,2),10);
-                          const suggested = HSN_GST_HINTS[prefix];
-                          setForm(c => ({ ...c, hsn_code:v, gst_rate: suggested ?? c.gst_rate }));
-                        }}
-                      />
-                      {suggestedGstRate !== undefined && (
-                        <p className="text-[10px] text-green-700 mt-1">Suggested GST: {suggestedGstRate}%</p>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">GST Rate</p>
-                      <select className={SEL} value={form.gst_rate} onChange={e => setForm({...form, gst_rate:parseInt(e.target.value)})}>
-                        <option value={0}>0% — No GST</option>
-                        <option value={5}>5% GST</option>
-                        <option value={12}>12% GST</option>
-                        <option value={18}>18% GST</option>
-                        <option value={28}>28% GST</option>
-                      </select>
-                    </div>
-                  </div>
-                  {form.price && form.gst_rate > 0 && (
-                    <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-green-50 border border-green-200 text-[12px]">
-                      <span className="text-slate-500">GST Preview</span>
-                      <span className="font-bold text-green-700">
-                        ₹{parseFloat(form.price||0).toFixed(2)} + {form.gst_rate}% = <strong>₹{(parseFloat(form.price||0)*(1+form.gst_rate/100)).toFixed(2)}</strong>
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── CATEGORY ── */}
-                {config.categoryConfig && (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Category</p>
-                      <select className={SEL} value={form.category}
-                        onChange={e => setForm(prev => ({ ...prev, category: e.target.value, sub_category: '' }))}>
-                        <option value="">— Select Category —</option>
-                        {config.categoryConfig.categories.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    {form.category && config.categoryConfig.subCategories[form.category]?.length > 0 && (
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Sub-Category</p>
-                        <select className={SEL} value={form.sub_category}
-                          onChange={e => setForm(prev => ({ ...prev, sub_category: e.target.value }))}>
-                          <option value="">— All Sub-categories —</option>
-                          {config.categoryConfig.subCategories[form.category].map(sc => <option key={sc} value={sc}>{sc}</option>)}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ── INDUSTRY-SPECIFIC ATTRIBUTES (sections take priority over flat list) ── */}
-                {config.productAttributeSections?.length > 0
-                  ? config.productAttributeSections.map(section => {
-                      if (section.visibleWhenCategory && section.visibleWhenCategory !== form.category) return null;
-                      return (
-                        <DynamicFormSection
-                          key={section.title}
-                          section={section}
-                          values={metadata}
-                          onChange={(key, v) => { setMetadata(prev => ({ ...prev, [key]: v })); setMetaErrors(prev => { const n = { ...prev }; delete n[key]; return n; }); }}
-                          errors={metaErrors}
-                        />
-                      );
-                    })
-                  : config.productAttributes?.length > 0 && (
-                      <div className="rounded-2xl border border-green-100 bg-green-50/60 p-4 space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-green-700">{attrsTitle}</p>
-                        {config.productAttributes.map(attr => (
-                          <div key={attr.key}>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">{attr.label}</p>
-                            <DynamicFormField
-                              field={attr}
-                              value={metadata[attr.key] || ''}
-                              onChange={v => setMetadata(prev => ({ ...prev, [attr.key]: v }))}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )
-                }
-
-                {/* Submit */}
-                <div className="flex gap-3 pb-2">
-                  <button type="submit" disabled={!!mrpViolation}
-                    className="flex-1 py-3.5 rounded-2xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-600/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:translate-y-0"
-                  >{editProduct ? `✓ Update ${term('product','Product')}` : `+ ${term('addProduct','Add Product')}`}</button>
-                  <button type="button" onClick={() => setShowModal(false)}
-                    className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-[14px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-                  >Cancel</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </Backdrop>
+        <AddMaterialModal
+          config={config}
+          term={term}
+          editProduct={editProduct}
+          products={products}
+          isOnline={isOnline}
+          onSave={handleSaveProduct}
+          onClose={() => setShowModal(false)}
+        />
       )}
 
       {/* ════════════════════════════════════════════════════════════
@@ -1181,15 +844,6 @@ export default function ProductsPage() {
           </div>
         </Backdrop>
       )}
-
-      {/* Barcode scanner (UNCHANGED) */}
-      <CameraBarcodeScanner
-        open={showBarcodeScanner}
-        title="Scan product barcode"
-        description="Camera scan se barcode field auto-fill ho jayegi."
-        onClose={() => setShowBarcodeScanner(false)}
-        onDetected={handleBarcodeDetected}
-      />
 
       {showImportModal && (
         <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-0 sm:p-4">
