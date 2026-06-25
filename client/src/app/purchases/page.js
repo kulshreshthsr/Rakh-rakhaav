@@ -14,7 +14,9 @@ import { validateGSTIN as _validateGSTIN, RCM_CATEGORIES, ITC_BLOCKED_REASONS } 
 import OfflineQueueDrawer, { OfflineQueueBadge } from '../../components/OfflineQueueDrawer';
 import usePurchasesData from './hooks/usePurchasesData';
 import usePurchaseForm from './hooks/usePurchaseForm';
+import useElectronicsPurchaseForm from './hooks/useElectronicsPurchaseForm';
 import PurchaseFormModal from './components/PurchaseFormModal';
+import ElectronicsPurchaseModal from './components/ElectronicsPurchaseModal';
 import PurchaseCard from './components/PurchaseCard';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import PurchaseSummary from './components/PurchaseSummary';
@@ -102,6 +104,8 @@ export default function PurchasesPage() {
     fetchPurchases, loadMorePurchases, fetchAll,
   } = usePurchasesData({ router, isOnline, products, setProducts, fetchProducts });
 
+  const elec = useElectronicsPurchaseForm({ shopState, isOnline, fetchAll, products, setProducts, setPurchases });
+
   const {
     showModal, setShowModal, submitting, editingPurchaseId, error, setError,
     gstinTouched, items, setItems, form, updateForm,
@@ -133,6 +137,7 @@ export default function PurchasesPage() {
       await fetchProducts();
       setEditLoadingId(null);
     }
+    if (serialPurch) { elec.startEditPurchase(purchase); return; }
     startEditPurchase(purchase);
   };
 
@@ -273,7 +278,8 @@ export default function PurchasesPage() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50 text-[13px] font-bold text-amber-800 shadow-md hover:border-amber-300 hover:bg-amber-100 hover:-translate-y-0.5 transition-all">
                 PO Flow
               </Link>
-              <button type="button" onClick={() => { resetModal(); setShowModal(true); }}
+              <button type="button"
+                onClick={() => serialPurch ? elec.openNew() : (resetModal(), setShowModal(true))}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[14px] font-black text-white bg-gradient-to-r from-green-600 to-emerald-700 shadow-lg shadow-green-500/30 hover:-translate-y-1 hover:shadow-xl transition-all">
                 + {term('newPurchase', 'New Purchase')}
               </button>
@@ -436,53 +442,78 @@ export default function PurchasesPage() {
       )}
 
       {/* PURCHASE FORM MODAL */}
-      <PurchaseFormModal
-        showModal={showModal}
-        resetModal={resetModal}
-        editingPurchaseId={editingPurchaseId}
-        term={term}
-        form={form}
-        updateForm={updateForm}
-        error={error}
-        submitting={submitting}
-        gstinValue={gstinValue}
-        gstinTouched={gstinTouched}
-        showGstinError={showGstinError}
-        showGstinLengthHint={showGstinLengthHint}
-        handleSupplierGstinChange={handleSupplierGstinChange}
-        items={items}
-        setItems={setItems}
-        products={products}
-        updateItem={updateItem}
-        addItem={addItem}
-        removeItem={removeItem}
-        openInlineProductForm={openInlineProductForm}
-        showInlineProductForm={showInlineProductForm}
-        inlineProductRowIndex={inlineProductRowIndex}
-        newProductForm={newProductForm}
-        setNewProductForm={setNewProductForm}
-        creatingProduct={creatingProduct}
-        resetInlineProductForm={resetInlineProductForm}
-        createInlineProduct={createInlineProduct}
-        calcRowGST={calcRowGST}
-        batchPurch={batchPurch}
-        variantPurch={variantPurch}
-        serialPurch={serialPurch}
-        inv={inv}
-        billTotals={billTotals}
-        roundedBill={roundedBill}
-        balanceDue={balanceDue}
-        handleSubmit={handleSubmit}
-        isOnline={isOnline}
-        rcmSuggestion={rcmSuggestion}
-        dismissRcmSuggestion={dismissRcmSuggestion}
-        applyRcmFromSuggestion={applyRcmFromSuggestion}
-        documentType={documentType}
-        setDocumentType={setDocumentType}
-        duplicateWarning={duplicateWarning}
-        setDuplicateWarning={setDuplicateWarning}
-        handleConfirmDuplicate={handleConfirmDuplicate}
-      />
+      {serialPurch ? (
+        <ElectronicsPurchaseModal
+          showModal={elec.showModal}
+          resetModal={elec.resetModal}
+          editingPurchaseId={elec.editingPurchaseId}
+          submitting={elec.submitting}
+          error={elec.error}
+          setError={elec.setError}
+          form={elec.form}
+          updateForm={elec.updateForm}
+          items={elec.items}
+          updateItem={elec.updateItem}
+          addItem={elec.addItem}
+          removeItem={elec.removeItem}
+          suppliers={elec.suppliers}
+          loadSuppliers={elec.loadSuppliers}
+          fillSupplier={elec.fillSupplier}
+          onProductSelect={elec.onProductSelect}
+          billTotals={elec.billTotals}
+          handleSubmit={elec.handleSubmit}
+          products={products}
+          isOnline={isOnline}
+        />
+      ) : (
+        <PurchaseFormModal
+          showModal={showModal}
+          resetModal={resetModal}
+          editingPurchaseId={editingPurchaseId}
+          term={term}
+          form={form}
+          updateForm={updateForm}
+          error={error}
+          submitting={submitting}
+          gstinValue={gstinValue}
+          gstinTouched={gstinTouched}
+          showGstinError={showGstinError}
+          showGstinLengthHint={showGstinLengthHint}
+          handleSupplierGstinChange={handleSupplierGstinChange}
+          items={items}
+          setItems={setItems}
+          products={products}
+          updateItem={updateItem}
+          addItem={addItem}
+          removeItem={removeItem}
+          openInlineProductForm={openInlineProductForm}
+          showInlineProductForm={showInlineProductForm}
+          inlineProductRowIndex={inlineProductRowIndex}
+          newProductForm={newProductForm}
+          setNewProductForm={setNewProductForm}
+          creatingProduct={creatingProduct}
+          resetInlineProductForm={resetInlineProductForm}
+          createInlineProduct={createInlineProduct}
+          calcRowGST={calcRowGST}
+          batchPurch={batchPurch}
+          variantPurch={variantPurch}
+          serialPurch={serialPurch}
+          inv={inv}
+          billTotals={billTotals}
+          roundedBill={roundedBill}
+          balanceDue={balanceDue}
+          handleSubmit={handleSubmit}
+          isOnline={isOnline}
+          rcmSuggestion={rcmSuggestion}
+          dismissRcmSuggestion={dismissRcmSuggestion}
+          applyRcmFromSuggestion={applyRcmFromSuggestion}
+          documentType={documentType}
+          setDocumentType={setDocumentType}
+          duplicateWarning={duplicateWarning}
+          setDuplicateWarning={setDuplicateWarning}
+          handleConfirmDuplicate={handleConfirmDuplicate}
+        />
+      )}
 
       {/* Offline queue drawer */}
       <OfflineQueueDrawer
