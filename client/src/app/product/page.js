@@ -6,6 +6,7 @@ import { cancelDeferred, readPageCache, scheduleDeferred, writePageCache } from 
 import { apiUrl } from '../../lib/api';
 import { useIndustry } from '../../contexts/IndustryContext';
 import AddMaterialModal from '../../components/AddMaterialModal';
+import AddElectronicsModal from '../../components/AddElectronicsModal';
 
 import DynamicFormSection, { flattenSectionFields, formatMetaValue } from '../../components/DynamicFormSection';
 import { getInvBehavior, hasInventoryPanel, isBatchMode, isVariantMode, isSerialMode, isRecipeMode, getPrimaryPanelLabel } from '../../lib/inventoryBehavior';
@@ -618,15 +619,27 @@ export default function ProductsPage() {
           ADD / EDIT MODAL — redesigned progressive-disclosure form
       ════════════════════════════════════════════════════════════ */}
       {showModal && (
-        <AddMaterialModal
-          config={config}
-          term={term}
-          editProduct={editProduct}
-          products={products}
-          isOnline={isOnline}
-          onSave={handleSaveProduct}
-          onClose={() => setShowModal(false)}
-        />
+        isSerialMode(inv) ? (
+          <AddElectronicsModal
+            config={config}
+            term={term}
+            editProduct={editProduct}
+            products={products}
+            isOnline={isOnline}
+            onSave={handleSaveProduct}
+            onClose={() => setShowModal(false)}
+          />
+        ) : (
+          <AddMaterialModal
+            config={config}
+            term={term}
+            editProduct={editProduct}
+            products={products}
+            isOnline={isOnline}
+            onSave={handleSaveProduct}
+            onClose={() => setShowModal(false)}
+          />
+        )
       )}
 
       {/* ════════════════════════════════════════════════════════════
