@@ -994,6 +994,9 @@ function B2CDashboard() {
     ? ((today_sales - yest_revenue) / yest_revenue) * 100
     : null;
 
+  const payablesDue   = data?.purchases?.totalDue    || 0;
+  const payablesCount = data?.purchases?.creditCount || 0;
+
   const alertItems = [
     out_of_stock > 0 && { emoji: '🔴', label: `${out_of_stock} items out of stock`, href: '/product' },
     low_stock > 0    && { emoji: '🟡', label: `${low_stock} items low on stock`, href: '/product' },
@@ -1001,9 +1004,6 @@ function B2CDashboard() {
     payablesDue > 0  && { emoji: '💳', label: `Supplier dues ₹${fmt(payablesDue)}`, href: '/purchases?filter=credit_due' },
   ].filter(Boolean);
   const alertCount = alertItems.length;
-
-  const payablesDue   = data?.purchases?.totalDue    || 0;
-  const payablesCount = data?.purchases?.creditCount || 0;
 
   const kpiTiles = [
     hasPermission('VIEW_UDHAAR') && { label: t('dash_udhaar'), value: `₹${fmt(total_udhaar)}`, sublabel: t('dash_n_customers', { n: udhaar_count }), href: '/udhaar', alert: udhaar_count > 5 ? 'red' : udhaar_count > 0 ? 'amber' : null },
