@@ -456,7 +456,7 @@ const generatePLStatement = async ({ shopId, from = null, to = null }) => {
       .select('total_amount total_cost gross_profit total_gst taxable_amount')
       .lean(),
     SaleReturn.find({ ...withDate(), status: { $ne: 'cancelled' } })
-      .select('total_amount total_gst taxable_amount refund_amount')
+      .select('total_amount total_gst taxable_amount refund_amount items.cost_price items.quantity')
       .lean(),
     Purchase.find(withDate())
       .select('total_amount total_gst taxable_amount itc_eligible is_reverse_charge')
@@ -485,8 +485,21 @@ const generatePLStatement = async ({ shopId, from = null, to = null }) => {
   // total_cost on each sale = sum(cost_price × quantity) at time of sale.
   // This is true COGS — not total purchases, which includes unsold inventory.
   const cogsFromSales        = round2(sales.reduce((s, x) => s + (x.total_cost || 0), 0));
-  // Approximate COGS reversal for returns: use refund_amount as a proxy.
-  const cogsReturnCredit     = round2(saleReturns.reduce((s, x) => s + (x.refund_amount || 0) * 0.5, 0));
+  // BUGFIX: this previously used `refund_amount * 0.5` as a blanket 50%
+  // margin guess for every return, regardless of the item's real margin —
+  // silently distorting gross/net profit on any P&L period containing
+  // returns. saleReturnModel.js already stores cost_price and quantity per
+  // line item (captured at time of sale), so the actual cost reversal is
+  // directly computable — no approximation needed.
+  const cogsReturnCredit     = round2(
+    saleReturns.reduce((sum, ret) => {
+      const itemsCost = (ret.items || []).reduce(
+        (itemSum, item) => itemSum + (item.cost_price || 0) * (item.quantity || 0),
+        0
+      );
+      return sum + itemsCost;
+    }, 0)
+  );
   // Net COGS = sold cost minus the cost portion of returns
   const netCOGS              = round2(Math.max(0, cogsFromSales - cogsReturnCredit));
 

@@ -14,6 +14,7 @@ const ProductBatch    = require('../models/productBatchModel');
 const ProductVariant  = require('../models/productVariantModel');
 const Recipe          = require('../models/recipeModel');
 const SerialInventory = require('../models/serialInventoryModel');
+const { adjustStock } = require('../lib/stockHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -271,20 +272,28 @@ const syncSaleStock = async (previousSale, nextItems, invoiceNumber = '', sessio
     const delta = nextQty - previousQty;
     if (!delta) continue;
 
-    let productQuery = Product.findById(productId);
-    if (session) productQuery = productQuery.session(session);
-    const product = await productQuery;
-    if (!product) throw new Error('Product not found while updating sale');
-    if (delta > 0 && product.quantity < delta) {
-      throw new Error(`${product.name}: sirf ${product.quantity} stock available hai`);
+    // BUGFIX: previously did `Product.findByIdAndUpdate($inc: quantity)`
+    // directly, completely bypassing stock_locations. The moment a shop
+    // used the warehouse feature, this field and stock_locations
+    // permanently diverged — see README / lib/stockHelper.js for the full
+    // writeup. Routed through adjustStock so every sale keeps
+    // stock_locations (the real source of truth) in sync.
+    let quantityAfter;
+    try {
+      const result = await adjustStock(shopId, productId, -delta, { session });
+      quantityAfter = result.quantityAfter;
+    } catch (err) {
+      if (err.status === 400) {
+        // Preserve the existing bilingual UX for the common "not enough
+        // stock" case rather than surfacing the generic helper message.
+        const product = await (session ? Product.findById(productId).session(session) : Product.findById(productId));
+        throw new Error(`${product?.name || 'Product'}: sirf ${product?.quantity ?? 0} stock available hai`);
+      }
+      throw err;
     }
 
-    const quantityAfter = round2(product.quantity - delta);
-    await Product.findByIdAndUpdate(productId, {
-      $inc: { quantity: -delta },
-    }, session ? { session } : {});
     logStockMovements(shopId, [{
-      product: product._id,
+      product: productId,
       type: delta > 0 ? 'sale' : 'sale_return',
       quantityChange: -delta,
       quantityAfter,

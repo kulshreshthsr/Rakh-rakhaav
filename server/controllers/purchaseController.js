@@ -10,6 +10,7 @@ const { cloneForAudit, logAuditEvent } = require('../utils/auditTrail');
 const ProductBatch    = require('../models/productBatchModel');
 const ProductVariant  = require('../models/productVariantModel');
 const SerialInventory = require('../models/serialInventoryModel');
+const { adjustStock } = require('../lib/stockHelper');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers
@@ -99,7 +100,7 @@ const getExistingPurchaseQuantities = (record) => {
 // Stock sync with history logging
 // ─────────────────────────────────────────────────────────────────────────────
 
-const syncPurchaseStock = async (previousPurchase, nextItems, invoiceNumber = '', session = null) => {
+const syncPurchaseStock = async (previousPurchase, nextItems, invoiceNumber = '', session = null, shopId = null, performedBy = null) => {
   const previousQuantities = previousPurchase ? getExistingPurchaseQuantities(previousPurchase) : new Map();
   const nextQuantities = nextItems.reduce((map, item) => {
     const productId = String(item.product);
@@ -118,10 +119,12 @@ const syncPurchaseStock = async (previousPurchase, nextItems, invoiceNumber = ''
     const product = await productQuery;
     if (!product) continue;
 
-    const quantityAfter = round2(product.quantity + delta);
     const nextItem = nextItems.find((item) => String(item.product) === productId);
 
-    const update = { $inc: { quantity: delta } };
+    // Weighted-average cost must be computed against the pre-update
+    // quantity/cost, same as before — only the actual stock write below
+    // changed (now routed through adjustStock).
+    let costUpdate = null;
     if (nextItem) {
       const purchasePrice = nextItem.price_per_unit || 0;
       const currentQty    = product.quantity;
@@ -130,11 +133,33 @@ const syncPurchaseStock = async (previousPurchase, nextItems, invoiceNumber = ''
       const newWAC        = delta > 0 && newQty > 0
         ? round2(((currentQty * currentWAC) + (delta * purchasePrice)) / newQty)
         : currentWAC;
-      update.$set = { cost_price: purchasePrice, weighted_avg_cost: newWAC };
+      costUpdate = { cost_price: purchasePrice, weighted_avg_cost: newWAC };
     }
 
-    await Product.findByIdAndUpdate(productId, update, session ? { session } : {});
-    await logStockMovements(product.shop, [{
+    // BUGFIX (stock integrity): previously `Product.findByIdAndUpdate($inc:
+    // quantity)` directly, bypassing stock_locations — see README /
+    // lib/stockHelper.js for the full writeup of why that silently breaks
+    // multi-warehouse shops. Purchases add stock, so allowNegative is
+    // irrelevant here but harmless either way for a positive delta.
+    const { quantityAfter } = await adjustStock(shopId || product.shop, productId, delta, {
+      session,
+      allowNegative: true,
+    });
+
+    if (costUpdate) {
+      let costQuery = Product.findByIdAndUpdate(productId, { $set: costUpdate });
+      if (session) costQuery = costQuery.session(session);
+      await costQuery;
+    }
+
+    // BUGFIX (crash): this referenced `req.user?.id`, but `req` does not
+    // exist anywhere in this function's scope — it's a module-level helper,
+    // not a route handler. Every purchase create/edit that touched stock
+    // threw `ReferenceError: req is not defined` right here. Threaded
+    // `performedBy` through as a real parameter instead (both call sites
+    // updated to pass req.user?.id from the route handler where req
+    // actually exists).
+    await logStockMovements(shopId || product.shop, [{
       product: product._id,
       type: delta > 0 ? 'purchase' : 'purchase_return',
       quantityChange: delta,
@@ -142,7 +167,7 @@ const syncPurchaseStock = async (previousPurchase, nextItems, invoiceNumber = ''
       referenceId: invoiceNumber,
       referenceType: 'purchase',
       note: '',
-      performedBy: req.user?.id,
+      performedBy,
     }], { session });
   }
 };
@@ -594,7 +619,7 @@ const createPurchase = async (req, res) => {
 
       const receiptStatus = req.body.receipt_status === 'ordered' ? 'ordered' : 'received';
       if (receiptStatus === 'received') {
-        await syncPurchaseStock(null, data.items, data.invoice_number, session);
+        await syncPurchaseStock(null, data.items, data.invoice_number, session, shop._id, req.user?.id);
         await syncSubInventoryOnPurchase([], data.items, data.invoice_number, shop._id, session);
         logStockMovements(shop._id, (data.items || []).map(item => ({
           product:        item.product,
@@ -675,7 +700,7 @@ const updatePurchase = async (req, res) => {
       });
 
       await reverseSupplierLedgerForPurchase(purchase, session);
-      await syncPurchaseStock(purchase, data.items, purchase.invoice_number, session);
+      await syncPurchaseStock(purchase, data.items, purchase.invoice_number, session, shop._id, req.user?.id);
       await syncSubInventoryOnPurchase(purchase.items || [], data.items, purchase.invoice_number, shop._id, session);
 
       Object.assign(purchase, data, { supplier: null });
@@ -729,10 +754,10 @@ const deletePurchase = async (req, res) => {
           if (session) productQuery = productQuery.session(session);
           const product = await productQuery;
           if (!product) continue;
-        const quantityAfter = round2(product.quantity - Number(item.quantity || 0));
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { quantity: -item.quantity },
-        }, { session });
+        const { quantityAfter } = await adjustStock(shop._id, item.product, -Number(item.quantity || 0), {
+          session,
+          allowNegative: true, // deleting a purchase must always succeed in reversing it
+        });
         await logStockMovements(purchase.shop, [{
           product: product._id,
           type: 'purchase_return',
@@ -937,18 +962,16 @@ const receivePurchase = async (req, res) => {
       for (const { productId, delta } of stockIncrements) {
         const product = await Product.findById(productId).session(session);
         if (!product) continue;
-        const qAfter = round2(product.quantity + delta);
         const purchasePrice = purchasePriceMap.get(productId) || 0;
         const currentWAC = product.weighted_avg_cost > 0 ? product.weighted_avg_cost : (product.cost_price || 0);
         const newQty = product.quantity + delta;
         const newWAC = purchasePrice > 0 && delta > 0 && newQty > 0
           ? round2(((product.quantity * currentWAC) + (delta * purchasePrice)) / newQty)
           : currentWAC;
-        const grnUpdate = { $inc: { quantity: delta } };
+        const { quantityAfter: qAfter } = await adjustStock(shop._id, productId, delta, { session, allowNegative: true });
         if (purchasePrice > 0 && delta > 0) {
-          grnUpdate.$set = { cost_price: newWAC, weighted_avg_cost: newWAC };
+          await Product.findByIdAndUpdate(productId, { $set: { cost_price: newWAC, weighted_avg_cost: newWAC } }, { session });
         }
-        await Product.findByIdAndUpdate(productId, grnUpdate, { session });
         await logStockMovements(purchase.shop, [{
           product: product._id,
           type: 'purchase',

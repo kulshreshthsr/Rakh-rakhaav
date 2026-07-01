@@ -7,11 +7,13 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const hpp = require('hpp');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const apiRouter   = require('./routes/apiRouter');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 const { initScheduler } = require('./services/schedulerService');
+const { apiLimiter, paymentLimiter } = require('./middleware/securityMiddleware');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -75,8 +77,21 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// SECURITY: strips any request keys starting with '$' or containing '.' from
+// req.body/query/params, closing NoSQL operator-injection vectors (e.g.
+// { "shop": { "$ne": null } } sneaking into a filter built from user input).
+// This package was already a dependency but was never actually mounted.
+app.use(mongoSanitize());
+
 app.get('/api/health',    (req, res) => res.status(200).json({ status: 'ok' }));
 app.get('/api/v1/health', (req, res) => res.status(200).json({ status: 'ok', version: 'v1' }));
+
+// SECURITY: general throttle on every API route as a floor, on top of the
+// tighter per-endpoint limiters (auth, payments) applied inside their own
+// route files. Previously defined in securityMiddleware.js but never mounted
+// anywhere, so nothing outside /auth/* had any request ceiling at all.
+app.use('/api/v1', apiLimiter);
+app.use('/api', apiLimiter);
 
 // Mount all routes at both /api (legacy) and /api/v1 (versioned)
 app.use('/api/v1', apiRouter);

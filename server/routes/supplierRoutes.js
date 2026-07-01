@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
+const { paginationValidation, mongoIdValidation } = require('../middleware/validationMiddleware');
 const {
   getSuppliers,
   getSupplierById,
@@ -14,14 +15,14 @@ const {
   updateReminderTimestamp,
 } = require('../controllers/supplierController');
 
-router.get('/', protect, getSuppliers);
-router.post('/', protect, checkSubscriptionStatus, createSupplier);
-router.get('/:id', protect, getSupplierById);
-router.put('/:id', protect, checkSubscriptionStatus, updateSupplier);
-router.delete('/:id', protect, checkSubscriptionStatus, deleteSupplier);
-router.get('/:id/udhaar', protect, getSupplierLedger);
-router.post('/:id/udhaar', protect, checkSubscriptionStatus, addSupplierUdhaar);
-router.post('/:id/settle', protect, checkSubscriptionStatus, settleSupplierPayment);
-router.patch('/:id/remind', protect, checkSubscriptionStatus, updateReminderTimestamp);
+router.get('/',      protect, requirePermission('MANAGE_SUPPLIERS'), paginationValidation, getSuppliers);
+router.post('/',     protect, checkSubscriptionStatus, requirePermission('MANAGE_SUPPLIERS'), createSupplier);
+router.get('/:id',   protect, requirePermission('MANAGE_SUPPLIERS'), mongoIdValidation(), getSupplierById);
+router.put('/:id',   protect, checkSubscriptionStatus, requirePermission('MANAGE_SUPPLIERS'), mongoIdValidation(), updateSupplier);
+router.delete('/:id', protect, checkSubscriptionStatus, requirePermission('MANAGE_SUPPLIERS'), mongoIdValidation(), deleteSupplier);
+router.get('/:id/udhaar',  protect, requirePermission('MANAGE_SUPPLIERS'), mongoIdValidation(), getSupplierLedger);
+router.post('/:id/udhaar', protect, checkSubscriptionStatus, requirePermission('MANAGE_SUPPLIERS'), mongoIdValidation(), addSupplierUdhaar);
+router.post('/:id/settle', protect, checkSubscriptionStatus, requirePermission('MANAGE_SUPPLIERS'), mongoIdValidation(), settleSupplierPayment);
+router.patch('/:id/remind', protect, checkSubscriptionStatus, requirePermission('MANAGE_SUPPLIERS'), mongoIdValidation(), updateReminderTimestamp);
 
 module.exports = router;

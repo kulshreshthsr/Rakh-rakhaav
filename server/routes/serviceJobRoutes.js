@@ -5,13 +5,14 @@ const {
 } = require('../controllers/serviceJobController');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { checkSubscriptionStatus } = require('../middleware/subscriptionMiddleware');
+const { paginationValidation, mongoIdValidation } = require('../middleware/validationMiddleware');
 
-router.get('/',                    protect, requirePermission('VIEW_SALES'),                               getJobs);
-router.get('/:id',                 protect, requirePermission('VIEW_SALES'),                               getJob);
-router.get('/:id/job-card',        protect, requirePermission('VIEW_SALES'),                               getJobCard);
+router.get('/',                    protect, requirePermission('VIEW_SALES'),                               paginationValidation, getJobs);
+router.get('/:id',                 protect, requirePermission('VIEW_SALES'),                               mongoIdValidation(), getJob);
+router.get('/:id/job-card',        protect, requirePermission('VIEW_SALES'),                               mongoIdValidation(), getJobCard);
 router.post('/',                   protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'),  createJob);
-router.patch('/:id/status',        protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'),  updateJobStatus);
-router.post('/:id/parts',          protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'),  addPart);
-router.post('/:id/deliver',        protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),    markDelivered);
+router.patch('/:id/status',        protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'),  mongoIdValidation(), updateJobStatus);
+router.post('/:id/parts',          protect, checkSubscriptionStatus, requirePermission('CREATE_INVOICE'),  mongoIdValidation(), addPart);
+router.post('/:id/deliver',        protect, checkSubscriptionStatus, requirePermission('MANAGE_SALES'),    mongoIdValidation(), markDelivered);
 
 module.exports = router;

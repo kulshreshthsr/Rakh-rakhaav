@@ -11,6 +11,7 @@ const SerialInventory = require('../models/serialInventoryModel');
 const { logAuditEvent } = require('../utils/auditTrail');
 const { getShopOrFail } = require('../utils/shopGuard');
 const { logStockMovements } = require('../utils/stockMovementLogger');
+const { adjustStock } = require('../lib/stockHelper');
 
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
 
@@ -146,12 +147,16 @@ const createPurchaseReturn = async (req, res) => {
         totalGST += gst;
         grandTotal += lineTotal;
 
-        // Restore stock with history
-        const currentProduct = await Product.findById(product._id).session(session);
-        const quantityAfter = round2((currentProduct?.quantity || 0) + qty);
-        await Product.findByIdAndUpdate(product._id, {
-          $inc: { quantity: qty },
-        }, { session });
+        // BUGFIX (critical, always-wrong): this was previously
+        // `$inc: { quantity: qty }` — a POSITIVE increment — on a purchase
+        // return. A purchase return sends goods back to the supplier, out
+        // of the shop's stock; it must DECREASE quantity, not increase it.
+        // Every purchase return processed through this endpoint was
+        // silently inflating stock counts (the opposite of "sale return",
+        // which correctly increases stock since goods come back to the
+        // shop). This is not a multi-warehouse edge case — it corrupted
+        // inventory on every single use of this feature.
+        const { quantityAfter } = await adjustStock(shop._id, product._id, -qty, { session });
         await logStockMovements(shop._id, [{
           product: product._id,
           type: 'purchase_return',
@@ -168,16 +173,31 @@ const createPurchaseReturn = async (req, res) => {
         const metaObj = meta instanceof Map ? Object.fromEntries(meta) : meta;
         const opts = { session };
 
+        // BUGFIX: same sign error as the main stock update above, repeated
+        // across every sub-inventory type — this function was evidently
+        // cloned from saleReturnController.js (where these increments are
+        // correct, since a sale return brings stock back into the shop)
+        // without flipping the direction for a purchase return (which sends
+        // stock OUT to the supplier).
         if (metaObj.batch_id) {
-          await ProductBatch.findByIdAndUpdate(metaObj.batch_id, { $inc: { quantity: qty }, $set: { is_depleted: false } }, opts);
+          const batch = await ProductBatch.findById(metaObj.batch_id).session(session);
+          if (batch) {
+            batch.quantity = Math.max(0, round2((batch.quantity || 0) - qty));
+            batch.is_depleted = batch.quantity === 0;
+            await batch.save(opts);
+          }
         }
         if (metaObj.variant_id) {
-          await ProductVariant.findByIdAndUpdate(metaObj.variant_id, { $inc: { quantity: qty } }, opts);
+          const variant = await ProductVariant.findById(metaObj.variant_id).session(session);
+          if (variant) {
+            variant.quantity = Math.max(0, round2((variant.quantity || 0) - qty));
+            await variant.save(opts);
+          }
         }
         if (Array.isArray(metaObj.serial_ids) && metaObj.serial_ids.length > 0) {
           await SerialInventory.updateMany(
             { _id: { $in: metaObj.serial_ids } },
-            { $set: { status: 'in_stock' }, $unset: { purchase_invoice: '' } },
+            { $set: { status: 'returned' }, $unset: { purchase_invoice: '' } },
             opts
           );
         }

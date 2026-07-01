@@ -12,6 +12,7 @@ const { logAuditEvent } = require('../utils/auditTrail');
 const { getShopOrFail } = require('../utils/shopGuard');
 const logger = require('../utils/logger');
 const { logStockMovements } = require('../utils/stockMovementLogger');
+const { adjustStock } = require('../lib/stockHelper');
 
 const round2 = (value) => parseFloat(Number(value || 0).toFixed(2));
 
@@ -161,12 +162,16 @@ const createSaleReturn = async (req, res) => {
         totalGST += gst;
         grandTotal += lineTotal;
 
-        // Restore stock with history
-        const currentProduct = await Product.findById(product._id).session(session);
-        const quantityAfter = round2((currentProduct?.quantity || 0) + qty);
-        await Product.findByIdAndUpdate(product._id, {
-          $inc: { quantity: qty },
-        }, { session });
+        // Restore stock with history — routed through adjustStock so
+        // stock_locations stays in sync (see lib/stockHelper.js). Sales
+        // don't yet capture which warehouse an item was sold from, so this
+        // restores to the shop's default warehouse until that's wired up;
+        // still correct for the ~majority single-location case and no
+        // longer silently corrupts stock_locations for multi-warehouse shops.
+        const { quantityAfter } = await adjustStock(shop._id, product._id, qty, {
+          session,
+          allowNegative: true, // a return should never fail to restore stock
+        });
         await logStockMovements(shop._id, [{
           product: product._id,
           type: 'sale_return',
